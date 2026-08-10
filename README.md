@@ -29,7 +29,7 @@ Ava <http://localhost:3005>.
 
 ## Kohalik käivitamine ilma rakenduse Dockerita
 
-Vaja on Node.js 20 ja töötavat PostgreSQL-i.
+Vaja on Node.js 22 ja töötavat PostgreSQL-i.
 
 ```bash
 npm ci

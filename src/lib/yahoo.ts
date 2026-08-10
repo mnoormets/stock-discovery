@@ -1,9 +1,7 @@
 import YahooFinance from 'yahoo-finance2';
 import type { Fundamentals } from './types';
 
-const yahooFinance = new YahooFinance();
-// Vaigista yahoo-finance2 "survey"/valideerimise hoiatused konsoolis (kui versioon toetab).
-(yahooFinance as any).suppressNotices?.(['yahooSurvey']);
+const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

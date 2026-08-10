@@ -1,14 +1,20 @@
 import YahooFinance from 'yahoo-finance2';
 import type { CompanyResearch, NewsItem, SecFiling } from './investment';
 import { normalizeTicker } from './investment';
+import { saveCompanyResearch } from './db';
 
-const yahooFinance = new YahooFinance();
-(yahooFinance as any).suppressNotices?.(['yahooSurvey']);
+const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 const QUOTE_TIMEOUT_MS = 8_000;
 const ENRICHMENT_TIMEOUT_MS = 5_000;
 const RESEARCH_CACHE_MS = 5 * 60_000;
 const researchCache = new Map<string, { expires: number; value: CompanyResearch }>();
+
+function saveInBackground(research: CompanyResearch): void {
+  void saveCompanyResearch(research).catch((error) => {
+    console.error(`Ettevõtte ${research.quote.ticker} live-andmete salvestamine ebaõnnestus:`, error);
+  });
+}
 
 async function withTimeout<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -158,9 +164,15 @@ export async function fetchCompanyResearch(rawTicker: string): Promise<CompanyRe
   const ticker = normalizeTicker(rawTicker);
   if (!ticker) return null;
   const cached = researchCache.get(ticker);
-  if (cached && cached.expires > Date.now()) return cached.value;
+  if (cached && cached.expires > Date.now()) {
+    saveInBackground(cached.value);
+    return cached.value;
+  }
 
   const research = await fetchCompanyResearchUncached(ticker);
-  if (research) researchCache.set(ticker, { expires: Date.now() + RESEARCH_CACHE_MS, value: research });
+  if (research) {
+    researchCache.set(ticker, { expires: Date.now() + RESEARCH_CACHE_MS, value: research });
+    saveInBackground(research);
+  }
   return research;
 }
