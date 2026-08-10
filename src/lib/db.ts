@@ -336,10 +336,193 @@ export async function ensureSchema(): Promise<void> {
       detail TEXT,
       source_url TEXT,
       occurred_at TIMESTAMPTZ NOT NULL,
+      dedupe_key TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       UNIQUE (company_id, kind, title, occurred_at)
     );
+    ALTER TABLE alerts ADD COLUMN IF NOT EXISTS dedupe_key TEXT;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_alerts_dedupe_key
+      ON alerts (dedupe_key) WHERE dedupe_key IS NOT NULL;
   `);
+}
+
+export type DailyAlertKind = 'needs review' | 'no major changes' | 'new catalyst' | 'new risk';
+
+export interface DailyPricePoint {
+  id: number;
+  price: number | null;
+  capturedAt: string;
+}
+
+export interface DailyNewsEvent {
+  id: string;
+  title: string;
+  url: string;
+  discoveredAt: string;
+}
+
+export interface DailySecEvent {
+  id: string;
+  form: string;
+  description: string | null;
+  url: string;
+  filedAt: string | null;
+  discoveredAt: string;
+}
+
+export interface DailyEarningsEvent {
+  id: number;
+  eventAt: string;
+}
+
+export interface DailyHistory {
+  companyId: number;
+  currentPrice: DailyPricePoint | null;
+  previousPrice: DailyPricePoint | null;
+  currentAlreadyCompared: boolean;
+  newNews: DailyNewsEvent[];
+  newSecEvents: DailySecEvent[];
+  upcomingEarnings: DailyEarningsEvent | null;
+}
+
+export interface DailyAlertInput {
+  companyId: number;
+  positionId: number;
+  kind: DailyAlertKind;
+  title: string;
+  detail: string;
+  sourceUrl: string | null;
+  occurredAt: string;
+  dedupeKey: string;
+}
+
+// Võrdlusaken algab viimase Daily alert'i loomise hetkest. Esimesel korral
+// kasutatakse eelmist hinnasnapshot'i või viimast 24 tundi.
+export async function getDailyHistory(ticker: string): Promise<DailyHistory | null> {
+  const companyResult = await pool.query('SELECT id FROM companies WHERE ticker = $1', [ticker]);
+  if (!companyResult.rowCount) return null;
+  const companyId = Number(companyResult.rows[0].id);
+
+  const priceResult = await pool.query(
+    `SELECT id, price, captured_at
+     FROM price_snapshots
+     WHERE company_id = $1
+     ORDER BY captured_at DESC, id DESC
+     LIMIT 2`,
+    [companyId],
+  );
+  const prices: DailyPricePoint[] = priceResult.rows.map((row) => ({
+    id: Number(row.id),
+    price: row.price == null ? null : Number(row.price),
+    capturedAt: new Date(row.captured_at).toISOString(),
+  }));
+
+  const lastAlertResult = await pool.query(
+    `SELECT max(created_at) AS compared_at
+     FROM alerts
+     WHERE company_id = $1 AND dedupe_key LIKE 'daily:%'`,
+    [companyId],
+  );
+  const fallback = prices[1]?.capturedAt || new Date(Date.now() - 86_400_000).toISOString();
+  const comparedAt = lastAlertResult.rows[0]?.compared_at
+    ? new Date(lastAlertResult.rows[0].compared_at).toISOString()
+    : fallback;
+  const currentAlreadyCompared = Boolean(
+    lastAlertResult.rows[0]?.compared_at
+      && prices[0]
+      && new Date(lastAlertResult.rows[0].compared_at).getTime() >= new Date(prices[0].capturedAt).getTime(),
+  );
+
+  const [newsResult, secResult, earningsResult] = await Promise.all([
+    pool.query(
+      `SELECT id, title, url, discovered_at
+       FROM news_items
+       WHERE company_id = $1 AND discovered_at > $2
+       ORDER BY discovered_at ASC`,
+      [companyId, comparedAt],
+    ),
+    pool.query(
+      `SELECT id, form_type, description, url, filed_at, discovered_at
+       FROM sec_events
+       WHERE company_id = $1 AND discovered_at > $2
+       ORDER BY discovered_at ASC`,
+      [companyId, comparedAt],
+    ),
+    pool.query(
+      `SELECT id, event_at
+       FROM earnings_events
+       WHERE company_id = $1 AND event_at >= now() AND event_at <= now() + interval '14 days'
+         AND NOT EXISTS (
+           SELECT 1 FROM alerts a
+           WHERE a.dedupe_key = 'daily:earnings:' || $1::text || ':' || earnings_events.id::text
+         )
+       ORDER BY event_at ASC LIMIT 1`,
+      [companyId],
+    ),
+  ]);
+
+  return {
+    companyId,
+    currentPrice: prices[0] || null,
+    previousPrice: prices[1] || null,
+    currentAlreadyCompared,
+    newNews: newsResult.rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      url: row.url,
+      discoveredAt: new Date(row.discovered_at).toISOString(),
+    })),
+    newSecEvents: secResult.rows.map((row) => ({
+      id: row.id,
+      form: row.form_type || 'SEC filing',
+      description: row.description || null,
+      url: row.url,
+      filedAt: row.filed_at ? new Date(row.filed_at).toISOString().slice(0, 10) : null,
+      discoveredAt: new Date(row.discovered_at).toISOString(),
+    })),
+    upcomingEarnings: earningsResult.rowCount
+      ? {
+          id: Number(earningsResult.rows[0].id),
+          eventAt: new Date(earningsResult.rows[0].event_at).toISOString(),
+        }
+      : null,
+  };
+}
+
+export async function saveDailyAlerts(alerts: DailyAlertInput[]): Promise<number> {
+  if (alerts.length === 0) return 0;
+  const client = await pool.connect();
+  let inserted = 0;
+  try {
+    await client.query('BEGIN');
+    for (const alert of alerts) {
+      const result = await client.query(
+        `INSERT INTO alerts
+           (company_id, position_id, kind, title, detail, source_url, occurred_at, dedupe_key)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT DO NOTHING
+         RETURNING id`,
+        [
+          alert.companyId,
+          alert.positionId,
+          alert.kind,
+          alert.title,
+          alert.detail,
+          alert.sourceUrl,
+          alert.occurredAt,
+          alert.dedupeKey,
+        ],
+      );
+      inserted += result.rowCount || 0;
+    }
+    await client.query('COMMIT');
+    return inserted;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 // Salvesta/uuenda SEC peatamised (akumuleerub ajas, sest feed näitab ainult hiljutisi).
