@@ -9,6 +9,10 @@ node_modules
 npm-debug.log*
 *.tsbuildinfo
 
+# Kohalikud PostgreSQL varukoopiad võivad sisaldada portfelli ja teese
+*.dump
+*.backup
+
 # OS
 .DS_Store
 Thumbs.db
