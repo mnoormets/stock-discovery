@@ -1,0 +1,49 @@
+services:
+  # --- PostgreSQL andmebaas: hoiab päevaseid snapshotte ---
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: discovery
+      POSTGRES_PASSWORD: discovery
+      POSTGRES_DB: discovery
+    ports:
+      - "5433:5432"   # host 5433, et ei põrkuks su teise Postgresiga
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U discovery"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- Next.js rakendus: dashboard + kogumise API ---
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://discovery:discovery@db:5432/discovery
+      TZ: Europe/Tallinn
+      # Loetakse .env failist (compose interpoleerib automaatselt). Kui puudub → tühi.
+      FMP_API_KEY: ${FMP_API_KEY:-}
+    ports:
+      - "3005:3000"   # host 3005 (3000 on juba st-app kasutuses)
+    volumes:
+      - ./:/app
+      - /app/node_modules   # ära kirjuta konteineri node_modules'i üle
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # --- Ajastaja: kutsub iga päev kl 08:00 kogumise API-t ---
+  scheduler:
+    build:
+      context: ./scheduler
+    environment:
+      TZ: Europe/Tallinn
+      COLLECT_URL: http://app:3000/api/collect
+      CRON_SCHEDULE: "0 8 * * *"
+    depends_on:
+      - app
+
+volumes:
+  db_data:
