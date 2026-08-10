@@ -52,6 +52,24 @@ Loo `.env` faili väärtused kohaliku `.env.example` põhjal. `.env` ei ole GitH
 - `CRON_SECRET`;
 - korrektne kontaktiga `SEC_USER_AGENT`.
 
+GitHub ei sisalda ka kohalikku Dockeri `db_data` volume'it. Ilma varukoopiata käivitub tööarvutis sama kood uue tühja PostgreSQL andmebaasiga. Avalikud turu- ja SEC andmed saab uuesti koguda, kuid portfell, Watchlist, teesid ja score-ajalugu vajavad täpse seisundi säilitamiseks dump'i.
+
+Loo praeguses arvutis binaarne varukoopia (ära commit'i seda reposse):
+
+```bash
+docker compose exec -T db pg_dump -U discovery -d discovery -Fc -f /tmp/stock-discovery.dump
+docker compose cp db:/tmp/stock-discovery.dump ./stock-discovery.dump
+```
+
+Vii `stock-discovery.dump` tööarvutisse turvalise kanali kaudu. Pärast konteinerite käivitamist taasta see:
+
+```bash
+docker compose cp ./stock-discovery.dump db:/tmp/stock-discovery.dump
+docker compose exec -T db pg_restore -U discovery -d discovery --clean --if-exists /tmp/stock-discovery.dump
+```
+
+`*.dump` ja `*.backup` on `.gitignore` failis, sest varukoopia võib sisaldada isiklikke portfelliandmeid ja investeerimisteese.
+
 Seejärel:
 
 ```bash
