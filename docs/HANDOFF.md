@@ -80,6 +80,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 Eesmärk on muuta Watchlisti idee struktureeritud, tõenditega seotud ja ümberlükatavaks teesiks. Uusi andmeallikaid selleks ei lisata.
 
+Thesis Builder on enne laia “järgmise RKLB” automaatotsingut teadlikult esimene: süsteem oskab juba näidata, milline ettevõte paistab andmete järgi huvitav, kuid peab järgmisena aitama vastata, miks seda ettevõtet võiks omada ja mis muudaks selle mõtte valeks.
+
 ## Roadmap
 
 ### NOW – järgmine arendustükk
@@ -87,8 +89,10 @@ Eesmärk on muuta Watchlisti idee struktureeritud, tõenditega seotud ja ümberl
 Watchlisti tickeri **Thesis Card**:
 
 - kasutaja väljad: `business`, `why now`, `moat`, `mispricing`, `catalyst`, `invalidation`, ajahorisont;
+- eraldi väli **“Mis peab järgmise 12 kuu jooksul juhtuma?”**;
 - staatus: `draft`, `researching`, `ready`, `rejected`;
 - automaatselt seotud olemasolevad Growth/Health/Coverage tõendid;
+- iga Growth/Health skoori kolm kõige olulisemat positiivset või negatiivset põhjust, näiteks “Health 36, sest …”;
 - teesi versiooniajalugu;
 - detailvaade “5-minute defense”.
 
@@ -97,22 +101,47 @@ Valmiskriteeriumid:
 - teesi saab Watchlistist luua, muuta ja versioonida;
 - kasutaja näeb, millised väited on tõendatud ja millised on tema oletused;
 - invalidation on kohustuslik enne staatust `ready`;
+- 12 kuu kontrollpunkt on mõõdetav ega korda lihtsalt pikaajalist teesi;
+- skoori number on seotud komponentide ja kolme peamise põhjusega;
 - korduv salvestamine ei tekita duplikaatversioone;
 - päris UI ja DB test on tehtud ning ajutised read koristatud.
 
 ### NEXT
 
 - Thesis Evidence Engine: olemasolevad SEC/uudise/earnings/score signaalid teesi poolt ja vastu.
+- Watchlisti alert, kui Growth või Health muutub oluliselt; alert peab näitama muutunud komponente, mudeliversiooni ja võrreldud snapshot'e.
+- **“Leia järgmine RKLB” Discovery v1** olemasoleva kogutud universumi põhjal: tagasta 3–5 uurimiskandidaati, mitte ostusoovitust.
 - Otsuse hetke snapshot: hind, skoorid, tees, eeldused ja allikad.
 - Ülevaatuse kuupäev ja “mis muutus pärast eelmist ülevaatust?”.
-- Bear/base/bull stsenaarium kasutaja enda eeldustega.
+- Bear/base/bull stsenaarium kasutaja enda eeldustega ning eraldi 12 kuu kontrollpunktiga.
+
+Discovery v1 otsib mustrit, mitte RKLB sektorit:
+
+1. väike või varajase faasi ettevõte, kasutades läbipaistvat market cap'i vahemikku;
+2. erakordne kasv koos piisava Coverage Score'iga;
+3. finantsiline runway ja riskid, ilma et kahjumlik varajane ettevõte automaatselt välja kukuks;
+4. nähtav lähenev katalüsaator olemasolevatest earnings/SEC/news andmetest;
+5. hinnastuse või analüütikute vaate vihje, selgelt nõrga abisignaalina;
+6. kasutaja kinnitatavad küsimused: konkurentsieelis, mispricing ja “miks just praegu?”.
+
+Tulemus näitab iga kriteeriumi eraldi staatust `supported`, `uncertain` või `missing`. Üht läbipaistmatut “RKLB tõenäosuse” numbrit ei looda.
+
+Esimene UX võib olla `/scanner` eelseadistus **“Leia järgmine RKLB”**: kuupäevaga 3–5 kandidaadikaarti, igaühel “miks nimekirjas”, “mis on puudu”, peamine risk ning tegevused `Lisa Watchlisti` ja `Alusta teesi`. Nii muutub avastamine otse Thesis Builderi sisendiks.
 
 ### LATER
 
 - Fikseeritud horisondi tulemuste ülevaade (6 kuud / 1 aasta / 3 aastat), mitte ideaalne tagantjärele tipuhind.
+- **Score backtest / walk-forward valideerimine:** kas Growth 90+ ettevõtted edestavad universumit või benchmark'i ning kas Health 90+ lisab väärtust võrreldes ainult revenue growth filtriga.
+- Backtesti mõõdikud: mediaantootlus, hit rate, ületootlus benchmark'i suhtes, max drawdown ja valimi suurus; tulemused mudeliversiooni ja Coverage vahemiku kaupa.
+- Sector-relative ranking: software vs software, semiconductor vs semiconductor jne; eeldab usaldusväärset sektoriklassifikatsiooni ja piisavat valimit.
+- **Nasdaqi uute noteeringute radar:** tuvasta uued tickerid, kogu olemasolevad SEC/Yahoo andmed ning kuva iga päev kuni 3–5 kõige paremini põhjendatud uurimiskandidaati koos puuduvate andmete hoiatusega.
 - Teesi eelduste täitumise analüüs: hea protsess vs õnnelik tulemus.
 - Valuation Score alles pärast läbipaistva valuation-mudeli ja piisava coverage'i valmimist.
 - Vajadusel keskne PostgreSQL, kui kahe arvuti dump/restore muutub liiga tülikaks.
+
+Backtest peab olema point-in-time: kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte ja siis kehtinud score-versiooni. Praegune score-snapshot ajalugu võimaldab ausat prospektiivset mõõtmist alustada nüüd; retrospektiivset tulemust ei tohi konstrueerida tänaste/restated SEC faktidega. See väldib look-ahead ja survivorship bias'i.
+
+Nasdaqi uute noteeringute automaatne tuvastamine vajab tulevikus tasuta ja kontrollitavat noteeringute nimekirja. See on võimalik erand uute andmeallikate pausile, kuid seda ei rakendata enne Thesis Builderit ja eraldi allikaotsust.
 
 ### TEADLIKULT MITTE PRAEGU
 
@@ -129,7 +158,17 @@ Valmiskriteeriumid:
 - Score-versioon muutub alati, kui valem või kaalud sisuliselt muutuvad.
 - Growth/Health sortimisel tulevad vähemalt 70 Coverage read enne madala kattega ridu.
 - Watchlist kasutab `portfolio_positions.status = 'watch'`, kogust 0 ja ostuhinda 0.
+- “Leia järgmine RKLB” on põhjendustega kandidaadisõel, mitte tulevase tootluse ennustus ega ostusignaal.
+- Skoori oluline muutus võrreldakse sama mudeliversiooni snapshot'idega; versioonivahetus kuvatakse eraldi ega tekitata eksitavat alert'i.
 - Git on koodi tõeallikas; `.env` ja PostgreSQL volume on masinapõhised.
+
+## Avatud sõltuvused ja otsused
+
+- Mis piir loetakse Growth/Health “oluliseks muutuseks”: esialgne kandidaat on vähemalt 10 punkti või komponendi staatuse oluline muutus, kuid see tuleb päris ajaloo peal kalibreerida.
+- Mis benchmark'i backtest kasutab: lai turg, vastav sektor või mõlemad.
+- Sector-relative ranking vajab ettevõtete usaldusväärset sektorivälja; praegu ei tohi puuduvat sektorit oletada.
+- Uute Nasdaqi tickerite radar vajab eraldi tasuta listing-feed'i otsust ja idempotentset universumi ajalugu (`first_seen_at`, `last_seen_at`, listing status).
+- Moat ja mispricing ei ole praegustest SEC faktidest automaatselt tõestatavad; need jäävad Thesis Builderis kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
 
 ## Käivitamine uues arvutis
 
@@ -242,7 +281,7 @@ Loo Watchlisti tickerile Thesis Card, mis sisaldab:
 - Watchlisti lisamine/eemaldamine kontrollitud päris server action'i ja DB reaga.
 - Score snapshot kordusjooks on idempotentne.
 - `scripts/setup-local-env.ps1`: loob nõutud võtmetega lokaalse faili, genereerib 256-bitise juhusliku saladuse ja kordusjooks ei kirjuta olemasolevat faili üle.
-- Viimane GitHubi põhiseis enne käesolevat master-dokumendi täiendust: `18f560e`.
+- Viimane pushitud master-dokument enne käesolevaid roadmap'i täiendusi: `eaacbac`.
 
 ## Sessioonilogi
 
@@ -254,3 +293,5 @@ Loo Watchlisti tickerile Thesis Card, mis sisaldab:
 - RKLB 2023 kogemuse põhjal valiti järgmiseks põhisuunaks Thesis Builder ja “5-minute defense”.
 - Muudeti see fail elavaks master-dokumendiks ning lisati `AGENTS.md` uuendamiskohustus.
 - Lisati masinapõhine `.env` setup ja kahe arvuti töövoog.
+- Täpsustati tootetee: Thesis Builder koos 12 kuu kontrollpunkti ja skoori põhjustega, seejärel Watchlisti score-alertid ning läbipaistev “Leia järgmine RKLB” kandidaadisõel.
+- Lisati tulevikuplaani point-in-time backtest, sector-relative ranking ja uute Nasdaqi noteeringute 3–5 kandidaadi radar; uue listing-feed'i lisamine jäeti teadlikult hilisemaks otsuseks.
