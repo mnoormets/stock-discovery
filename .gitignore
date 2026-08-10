@@ -1,0 +1,12 @@
+# Saladused — MITTE KUNAGI Giti (siin on su FMP_API_KEY)
+.env
+.env.local
+
+# Sõltuvused ja build
+node_modules
+.next
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
