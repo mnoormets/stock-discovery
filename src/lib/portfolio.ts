@@ -27,6 +27,37 @@ export async function listPositions(): Promise<PortfolioPosition[]> {
   return rows.map(mapPosition);
 }
 
+export interface LatestPortfolioPrice {
+  ticker: string;
+  price: number;
+  capturedAt: string;
+}
+
+export async function getLatestPortfolioPrices(tickers: string[]): Promise<Map<string, LatestPortfolioPrice>> {
+  const prices = new Map<string, LatestPortfolioPrice>();
+  if (tickers.length === 0) return prices;
+
+  const { rows } = await pool.query(
+    `SELECT DISTINCT ON (c.ticker)
+       c.ticker, p.price, p.captured_at
+     FROM companies c
+     JOIN price_snapshots p ON p.company_id = c.id
+     WHERE c.ticker = ANY($1::text[]) AND p.price IS NOT NULL
+     ORDER BY c.ticker, p.captured_at DESC, p.id DESC`,
+    [tickers],
+  );
+  for (const row of rows) {
+    const price = Number(row.price);
+    if (!Number.isFinite(price)) continue;
+    prices.set(row.ticker, {
+      ticker: row.ticker,
+      price,
+      capturedAt: new Date(row.captured_at).toISOString(),
+    });
+  }
+  return prices;
+}
+
 export interface PositionInput {
   ticker: string;
   quantity: number;

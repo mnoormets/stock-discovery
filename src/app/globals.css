@@ -80,6 +80,14 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .positionForm { display: grid; gap: 14px; padding: 20px; }
 .formGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .positionList, .dailyList { display: grid; gap: 12px; }
+.portfolioSummary { align-items: stretch; }
+.positionSummary { display: grid; gap: 8px; min-width: 0; }
+.positionPerformance { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; font-size: 13px; }
+.positionPerformance > span { color: var(--muted); }
+.positionPerformance strong { color: var(--text); margin-left: 4px; }
+.positionPerformance strong.positive { color: var(--green); }
+.positionPerformance strong.negative { color: var(--red); }
+.priceUnavailable { color: var(--amber); font-size: 13px; font-weight: 700; }
 .pill, .reviewLabel { border: 1px solid var(--border); border-radius: 999px; padding: 4px 9px; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
 .pill.active, .reviewLabel.no-major-changes { color: var(--green); border-color: #2f7049; }
 .pill.watch, .reviewLabel.needs-review { color: var(--amber); border-color: #75602e; }
