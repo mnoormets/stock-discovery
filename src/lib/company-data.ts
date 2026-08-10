@@ -1,8 +1,28 @@
-import yahooFinance from 'yahoo-finance2';
+import YahooFinance from 'yahoo-finance2';
 import type { CompanyResearch, NewsItem, SecFiling } from './investment';
 import { normalizeTicker } from './investment';
 
+const yahooFinance = new YahooFinance();
 (yahooFinance as any).suppressNotices?.(['yahooSurvey']);
+
+const QUOTE_TIMEOUT_MS = 8_000;
+const ENRICHMENT_TIMEOUT_MS = 5_000;
+const RESEARCH_CACHE_MS = 5 * 60_000;
+const researchCache = new Map<string, { expires: number; value: CompanyResearch }>();
+
+async function withTimeout<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`Andmeallika päring aegus (${milliseconds} ms).`)), milliseconds);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 function asNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
@@ -27,6 +47,7 @@ async function fetchYahooNews(ticker: string): Promise<NewsItem[]> {
   const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(ticker)}&quotesCount=1&newsCount=8`;
   const res = await fetch(url, {
     headers: { 'User-Agent': 'stock-discovery/1.0' },
+    signal: AbortSignal.timeout(ENRICHMENT_TIMEOUT_MS),
     next: { revalidate: 900 },
   });
   if (!res.ok) return [];
@@ -53,6 +74,7 @@ async function fetchSecFilings(ticker: string): Promise<SecFiling[]> {
   if (!secTickerCache || secTickerCache.expires < Date.now()) {
     const mappingRes = await fetch('https://www.sec.gov/files/company_tickers.json', {
       headers: { 'User-Agent': userAgent },
+      signal: AbortSignal.timeout(ENRICHMENT_TIMEOUT_MS),
       next: { revalidate: 86400 },
     });
     if (!mappingRes.ok) return [];
@@ -65,6 +87,7 @@ async function fetchSecFilings(ticker: string): Promise<SecFiling[]> {
   const cik = String(match.cik_str).padStart(10, '0');
   const submissionsRes = await fetch(`https://data.sec.gov/submissions/CIK${cik}.json`, {
     headers: { 'User-Agent': userAgent },
+    signal: AbortSignal.timeout(ENRICHMENT_TIMEOUT_MS),
     next: { revalidate: 3600 },
   });
   if (!submissionsRes.ok) return [];
@@ -87,47 +110,57 @@ async function fetchSecFilings(ticker: string): Promise<SecFiling[]> {
   });
 }
 
+async function fetchCompanyResearchUncached(ticker: string): Promise<CompanyResearch | null> {
+  const [quoteResult, newsResult, secResult] = await Promise.allSettled([
+    withTimeout(yahooFinance.quote(ticker), QUOTE_TIMEOUT_MS),
+    fetchYahooNews(ticker),
+    fetchSecFilings(ticker),
+  ]);
+  if (quoteResult.status === 'rejected') {
+    console.warn(`Ettevõtte ${ticker} turuandmete päring ebaõnnestus:`, quoteResult.reason);
+    return null;
+  }
+
+  const quote: any = quoteResult.value;
+  if (!quote?.symbol || String(quote.symbol).toUpperCase() !== ticker) return null;
+
+  const warnings: string[] = [];
+  const news = newsResult.status === 'fulfilled' ? newsResult.value : [];
+  const secFilings = secResult.status === 'fulfilled' ? secResult.value : [];
+  if (newsResult.status === 'rejected') warnings.push('Uudiste allikas ei vastanud.');
+  if (!process.env.SEC_USER_AGENT) warnings.push('SEC andmed pole seadistatud.');
+  else if (secResult.status === 'rejected') warnings.push('SEC andmete allikas ei vastanud.');
+
+  return {
+    quote: {
+      ticker,
+      name: quote.longName || quote.shortName || null,
+      exchange: quote.fullExchangeName || quote.exchange || null,
+      quoteType: quote.quoteType || null,
+      price: asNumber(quote.regularMarketPrice),
+      previousClose: asNumber(quote.regularMarketPreviousClose),
+      marketCap: asNumber(quote.marketCap),
+      volume: asNumber(quote.regularMarketVolume),
+      currency: quote.currency || null,
+      earningsAt: asFutureIso(
+        quote.earningsTimestamp,
+        quote.earningsTimestampStart,
+        quote.earningsTimestampEnd,
+      ),
+    },
+    news,
+    secFilings,
+    warnings,
+  };
+}
+
 export async function fetchCompanyResearch(rawTicker: string): Promise<CompanyResearch | null> {
   const ticker = normalizeTicker(rawTicker);
   if (!ticker) return null;
+  const cached = researchCache.get(ticker);
+  if (cached && cached.expires > Date.now()) return cached.value;
 
-  try {
-    const quote: any = await yahooFinance.quote(ticker);
-    if (!quote?.symbol || String(quote.symbol).toUpperCase() !== ticker) return null;
-
-    const warnings: string[] = [];
-    const [newsResult, secResult] = await Promise.allSettled([
-      fetchYahooNews(ticker),
-      fetchSecFilings(ticker),
-    ]);
-    const news = newsResult.status === 'fulfilled' ? newsResult.value : [];
-    const secFilings = secResult.status === 'fulfilled' ? secResult.value : [];
-    if (newsResult.status === 'rejected') warnings.push('Uudiste allikas ei vastanud.');
-    if (!process.env.SEC_USER_AGENT) warnings.push('SEC andmed pole seadistatud.');
-    else if (secResult.status === 'rejected') warnings.push('SEC andmete allikas ei vastanud.');
-
-    return {
-      quote: {
-        ticker,
-        name: quote.longName || quote.shortName || null,
-        exchange: quote.fullExchangeName || quote.exchange || null,
-        quoteType: quote.quoteType || null,
-        price: asNumber(quote.regularMarketPrice),
-        previousClose: asNumber(quote.regularMarketPreviousClose),
-        marketCap: asNumber(quote.marketCap),
-        volume: asNumber(quote.regularMarketVolume),
-        currency: quote.currency || null,
-        earningsAt: asFutureIso(
-          quote.earningsTimestamp,
-          quote.earningsTimestampStart,
-          quote.earningsTimestampEnd,
-        ),
-      },
-      news,
-      secFilings,
-      warnings,
-    };
-  } catch {
-    return null;
-  }
+  const research = await fetchCompanyResearchUncached(ticker);
+  if (research) researchCache.set(ticker, { expires: Date.now() + RESEARCH_CACHE_MS, value: research });
+  return research;
 }
