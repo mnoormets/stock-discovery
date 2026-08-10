@@ -25,6 +25,8 @@ services:
       TZ: Europe/Tallinn
       # Loetakse .env failist (compose interpoleerib automaatselt). Kui puudub → tühi.
       FMP_API_KEY: ${FMP_API_KEY:-}
+      CRON_SECRET: ${CRON_SECRET:?CRON_SECRET peab olema .env failis määratud}
+      SEC_USER_AGENT: ${SEC_USER_AGENT:-}
     ports:
       - "3005:3000"   # host 3005 (3000 on juba st-app kasutuses)
     volumes:
@@ -41,6 +43,7 @@ services:
     environment:
       TZ: Europe/Tallinn
       COLLECT_URL: http://app:3000/api/collect
+      CRON_SECRET: ${CRON_SECRET:?CRON_SECRET peab olema .env failis määratud}
       CRON_SCHEDULE: "0 8 * * *"
     depends_on:
       - app

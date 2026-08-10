@@ -3,35 +3,53 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Käsitsi kogumise nupp. Kutsub /api/collect ja värskendab lehe.
 export default function CollectButton() {
+  const [secret, setSecret] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
   const router = useRouter();
 
   async function run() {
+    if (!secret) {
+      setStatus('Sisesta CRON_SECRET. Seda ei salvestata brauserisse.');
+      return;
+    }
     setLoading(true);
-    setStatus('Kogun andmeid (ApeWisdom + Tradestie + Yahoo)…');
+    setStatus('Kogun radari andmeid…');
     try {
-      const res = await fetch('/api/collect', { method: 'POST' });
+      const res = await fetch('/api/collect', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${secret}` },
+      });
       const data = await res.json();
-      if (data.ok) {
-        setStatus(`Valmis: skännisin ${data.scanned}, leidsin ${data.candidates} kandidaati.`);
+      setSecret('');
+      if (res.ok && data.ok) {
+        setStatus(`Valmis: skännitud ${data.scanned}, kandidaate ${data.candidates}.`);
         router.refresh();
       } else {
-        setStatus(`Viga: ${data.error}`);
+        setStatus(res.status === 401 ? 'Vale või puuduv CRON_SECRET.' : `Viga: ${data.error}`);
       }
-    } catch (e) {
-      setStatus(`Viga: ${(e as Error).message}`);
+    } catch (error) {
+      setStatus(`Viga: ${(error as Error).message}`);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="bar">
+    <div className="collectBox">
+      <label>
+        <span>Manuaalne radari värskendus</span>
+        <input
+          type="password"
+          value={secret}
+          onChange={(event) => setSecret(event.target.value)}
+          placeholder="CRON_SECRET"
+          autoComplete="off"
+        />
+      </label>
       <button className="primary" onClick={run} disabled={loading}>
-        {loading ? 'Kogun…' : '▶ Kogu andmed nüüd'}
+        {loading ? 'Kogun…' : 'Kogu andmed'}
       </button>
       {status && <span className="status">{status}</span>}
     </div>

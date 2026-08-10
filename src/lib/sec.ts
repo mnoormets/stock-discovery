@@ -42,9 +42,11 @@ function decodeEntities(s: string): string {
 
 // Tõmba ja parsi SEC feed. Ilma XML-teegita — lihtne regex, sest struktuur on stabiilne.
 export async function fetchSecSuspensions(): Promise<SecSuspension[]> {
+  const userAgent = process.env.SEC_USER_AGENT;
+  if (!userAgent) throw new Error('SEC_USER_AGENT puudub');
   const res = await fetch(FEED_URL, {
     // SEC nõuab tuvastatavat User-Agenti kontaktiga, muidu blokeerib.
-    headers: { 'User-Agent': 'stock-discovery research contact@example.com' },
+    headers: { 'User-Agent': userAgent },
     redirect: 'follow',
   });
   if (!res.ok) throw new Error(`SEC feed vastas ${res.status}`);

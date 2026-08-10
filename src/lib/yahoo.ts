@@ -1,6 +1,7 @@
-import yahooFinance from 'yahoo-finance2';
+import YahooFinance from 'yahoo-finance2';
 import type { Fundamentals } from './types';
 
+const yahooFinance = new YahooFinance();
 // Vaigista yahoo-finance2 "survey"/valideerimise hoiatused konsoolis (kui versioon toetab).
 (yahooFinance as any).suppressNotices?.(['yahooSurvey']);
 
@@ -22,8 +23,10 @@ export async function fetchFundamentals(tickers: string[]): Promise<Map<string, 
     let ok = false;
     for (let attempt = 0; attempt <= RETRY_WAITS.length && !ok; attempt++) {
       try {
-        const quotes = await yahooFinance.quote(chunk);
-        const arr = Array.isArray(quotes) ? quotes : [quotes];
+        // yahoo-finance2 v3 tüübid ei järelda dünaamilise tickerite massiivi
+        // tagastust korrektselt, seega normaliseerime selle siin teadlikult.
+        const quotes: any = await yahooFinance.quote(chunk);
+        const arr: any[] = Array.isArray(quotes) ? quotes : [quotes];
         for (const q of arr) {
           if (!q?.symbol) continue;
           const vol =

@@ -1,121 +1,88 @@
+import Link from 'next/link';
 import CollectButton from './CollectButton';
+import TickerSearch from './TickerSearch';
 import { getLatestDate, getTop } from '@/lib/db';
 import { TOP_N } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 
-function fmtCap(cap: number | null): string {
-  if (!cap) return '—';
+function formatCap(cap: number | null): string {
+  if (!cap) return 'No data available yet';
   if (cap >= 1e9) return `$${(cap / 1e9).toFixed(2)}B`;
   if (cap >= 1e6) return `$${(cap / 1e6).toFixed(0)}M`;
-  return `$${cap}`;
+  return `$${cap.toLocaleString('et-EE')}`;
 }
 
-function growth(g: number | null) {
-  if (g == null) return <span className="badge new">uus</span>;
-  const pct = Math.round(Number(g) * 100);
-  return <span className={pct >= 0 ? 'up' : 'down'}>{pct >= 0 ? '+' : ''}{pct}%</span>;
-}
-
-function parseWarnings(w: any): string[] {
-  if (!w) return [];
-  try { return JSON.parse(w); } catch { return []; }
+function parseWarnings(value: unknown): string[] {
+  if (!value) return [];
+  try { return JSON.parse(String(value)); } catch { return []; }
 }
 
 export default async function Home() {
   let date: string | null = null;
   let rows: any[] = [];
   let dbError = '';
-
   try {
     date = await getLatestDate();
     if (date) rows = await getTop(date, TOP_N);
-  } catch (e) {
-    dbError = (e as Error).message;
+  } catch (error) {
+    dbError = (error as Error).message;
   }
 
   return (
-    <div className="wrap">
-      <h1>📡 Stock Discovery</h1>
-      <p className="sub">
-        Radar vähemtuntud aktsiatele, mis tõusevad tähelepanu alt üles
-        {date ? ` · viimane kogumine: ${date}` : ''}
-      </p>
+    <main className="wrap pageStack">
+      <section className="hero">
+        <p className="eyebrow">INVESTMENT MONITORING V1</p>
+        <h1>Jälgi ettevõtteid ja oma investeerimisteesi kontrollitavate andmetega.</h1>
+        <p className="lead">See tööriist ei anna ostu- ega müügisoovitusi. See aitab märgata infot, mis vajab sinu ülevaatust.</p>
+      </section>
 
-      <div className="warn">
-        ⚠️ <strong>Informatiivne ideede-leidmise tööriist, MITTE investeerimisnõustamine.</strong>{' '}
-        Väike turukap + järsk mainimiste kasv on ka klassikaline pump-and-dump profiil.
-        Kõrge skoor tähendab „uuri lähemalt", mitte „osta". Kontrolli alati ise.
+      <TickerSearch />
+
+      <div className="quickGrid">
+        <Link className="card linkCard" href="/portfolio">
+          <strong>Portfell</strong>
+          <span>Positsioonid, teesid ja ajahorisondid</span>
+        </Link>
+        <Link className="card linkCard" href="/daily">
+          <strong>Daily Changes</strong>
+          <span>Uudised, hinnaliikumised ja lähenevad sündmused</span>
+        </Link>
       </div>
 
-      <CollectButton />
-
-      {dbError && (
-        <div className="warn">Andmebaasi viga: {dbError}. Kas Postgres töötab?</div>
-      )}
-
-      {!dbError && rows.length === 0 && (
-        <div className="empty">
-          Andmeid pole veel. Vajuta „▶ Kogu andmed nüüd", et esimene snapshot teha.
+      <section className="section">
+        <div className="sectionHeading">
+          <div>
+            <p className="eyebrow">LEGACY RADAR</p>
+            <h2>Redditi tähelepanuradar</h2>
+          </div>
+          <span className="muted">{date ? `Viimane kogumine: ${date}` : 'Andmeid pole veel kogutud'}</span>
         </div>
-      )}
-
-      {rows.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Ticker</th>
-              <th>Skoor</th>
-              <th>Mainimised</th>
-              <th>Kasv vs eile</th>
-              <th>Sentiment</th>
-              <th>Turukap</th>
-              <th>Hind</th>
-              <th>Link</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={r.ticker}>
-                <td>{i + 1}</td>
-                <td className="ticker">
-                  {r.ticker} {r.is_new && <span className="badge new">🆕</span>}
-                  {r.rising_days >= 2 && <span className="badge tradestie">↑{r.rising_days}p</span>}
-                  <div className="name">{r.name}</div>
-                  {parseWarnings(r.warnings).map((w, k) => (
-                    <div key={k} className="warn-flag">{w}</div>
-                  ))}
-                </td>
-                <td><span className={`score ${parseWarnings(r.warnings).length ? 'flagged' : ''}`}>{Number(r.discovery_score).toFixed(1)}</span></td>
-                <td>{r.mentions}</td>
-                <td>{growth(r.mention_growth)}</td>
-                <td>
-                  {r.sentiment}{' '}
-                  <span className={`badge ${r.sentiment_source === 'tradestie' ? 'tradestie' : ''}`}>
-                    {r.sentiment_source === 'tradestie' ? 'Tradestie' : 'proxy'}
-                  </span>
-                </td>
-                <td>
-                  {fmtCap(r.market_cap ? Number(r.market_cap) : null)}
-                  {r.fundamentals_source && <span className="src">{r.fundamentals_source}</span>}
-                </td>
-                <td>{r.price ? `${Number(r.price).toFixed(2)} ${r.currency ?? ''}` : '—'}</td>
-                <td>
-                  <a
-                    href={`https://finance.yahoo.com/quote/${r.ticker}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: 'var(--accent)' }}
-                  >
-                    Yahoo ↗
-                  </a>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+        <div className="notice">Kõrge skoor tähendab “uuri lähemalt”, mitte “osta”. Väike turukapitalisatsioon ja mainimiste järsk kasv võivad viidata manipulatsiooniriskile.</div>
+        <CollectButton />
+        {dbError && <div className="notice danger">Andmebaas pole saadaval: {dbError}</div>}
+        {!dbError && rows.length === 0 && <div className="empty card">Radari andmeid pole veel.</div>}
+        {rows.length > 0 && (
+          <div className="tableWrap">
+            <table>
+              <thead><tr><th>Ticker</th><th>Skoor</th><th>Mainimised</th><th>Kasv</th><th>Turukapitalisatsioon</th><th>Hind</th></tr></thead>
+              <tbody>{rows.map((row) => {
+                const growth = row.mention_growth == null ? null : Math.round(Number(row.mention_growth) * 100);
+                return (
+                  <tr key={row.ticker}>
+                    <td><Link className="ticker" href={`/company/${row.ticker}`}>{row.ticker}</Link><div className="name">{row.name}</div>{parseWarnings(row.warnings).map((warning) => <div className="riskText" key={warning}>{warning}</div>)}</td>
+                    <td><span className="score">{Number(row.discovery_score).toFixed(1)}</span></td>
+                    <td>{row.mentions}</td>
+                    <td>{growth == null ? 'Uus' : `${growth >= 0 ? '+' : ''}${growth}%`}</td>
+                    <td>{formatCap(row.market_cap ? Number(row.market_cap) : null)}</td>
+                    <td>{row.price ? `${Number(row.price).toFixed(2)} ${row.currency || ''}` : 'No data available yet'}</td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </main>
   );
 }
