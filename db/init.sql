@@ -137,9 +137,12 @@ CREATE TABLE IF NOT EXISTS alerts (
   detail        TEXT,
   source_url    TEXT,
   occurred_at   TIMESTAMPTZ NOT NULL,
+  dedupe_key    TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (company_id, kind, title, occurred_at)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_alerts_dedupe_key
+  ON alerts (dedupe_key) WHERE dedupe_key IS NOT NULL;
 
 -- SEC kauplemispeatamised (akumuleerub ajas; feed näitab ainult hiljutisi).
 -- Sobitamine käib firma NIME järgi, sest SEC feedis pole tickereid.

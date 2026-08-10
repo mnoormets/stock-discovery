@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { listPositions } from '@/lib/portfolio';
 import { fetchCompanyResearch } from '@/lib/company-data';
+import { saveCompanyResearch, getDailyHistory, saveDailyAlerts } from '@/lib/db';
+import type { DailyAlertInput, DailyAlertKind } from '@/lib/db';
 import type { CompanyResearch, PortfolioPosition } from '@/lib/investment';
 
 export const dynamic = 'force-dynamic';
@@ -14,45 +16,132 @@ interface DailyCard {
   reasons: string[];
 }
 
-function evaluate(position: PortfolioPosition, research: CompanyResearch | null): DailyCard {
-  if (!research) return { position, research, label: 'needs review', reasons: ['Turuandmeid ei õnnestunud laadida.'] };
-  const reasons: string[] = [];
-  let label: ReviewLabel = 'no major changes';
-  const now = Date.now();
-  const day = 86_400_000;
-  const move = research.quote.price != null && research.quote.previousClose
-    ? ((research.quote.price - research.quote.previousClose) / research.quote.previousClose) * 100
-    : null;
+const labelPriority: Record<ReviewLabel, number> = {
+  'no major changes': 0,
+  'needs review': 1,
+  'new catalyst': 2,
+  'new risk': 3,
+};
 
-  if (move != null && Math.abs(move) >= 5) {
-    label = 'needs review';
-    reasons.push(`Hind liikus eelmise sulgemisega võrreldes ${move >= 0 ? '+' : ''}${move.toFixed(2)}%.`);
+function strongestLabel(labels: ReviewLabel[]): ReviewLabel {
+  return labels.reduce((strongest, label) =>
+    labelPriority[label] > labelPriority[strongest] ? label : strongest,
+  'no major changes');
+}
+
+async function evaluate(position: PortfolioPosition, research: CompanyResearch | null): Promise<DailyCard> {
+  if (!research) return { position, research, label: 'needs review', reasons: ['Turuandmeid ei õnnestunud laadida.'] };
+  try {
+    // Daily vajab kindlat praegust snapshot'i, et võrrelda kahte DB rida.
+    await saveCompanyResearch(research);
+    const history = await getDailyHistory(position.ticker);
+    if (!history) return { position, research, label: 'needs review', reasons: ['Salvestatud hinnaajalugu puudub.'] };
+
+    const reasons: string[] = [];
+    const labels: ReviewLabel[] = [];
+    const alerts: DailyAlertInput[] = [];
+    const addAlert = (
+      kind: DailyAlertKind,
+      title: string,
+      detail: string,
+      sourceUrl: string | null,
+      occurredAt: string,
+      dedupeKey: string,
+    ) => {
+      labels.push(kind);
+      reasons.push(detail);
+      alerts.push({
+        companyId: history.companyId,
+        positionId: position.id,
+        kind,
+        title,
+        detail,
+        sourceUrl,
+        occurredAt,
+        dedupeKey,
+      });
+    };
+
+    const current = history.currentPrice;
+    const previous = history.previousPrice;
+    const move = current?.price != null && previous?.price
+      ? ((current.price - previous.price) / previous.price) * 100
+      : null;
+    if (move != null && Math.abs(move) >= 5) {
+      const detail = `Hind muutus eelmise salvestatud snapshot'iga võrreldes ${move >= 0 ? '+' : ''}${move.toFixed(2)}%.`;
+      addAlert(
+        'needs review',
+        `${position.ticker}: hinnamuutus ${move >= 0 ? '+' : ''}${move.toFixed(2)}%`,
+        detail,
+        null,
+        current!.capturedAt,
+        `daily:price:${history.companyId}:${current!.id}:${previous!.id}`,
+      );
+    }
+
+    for (const item of history.newNews) {
+      const isRisk = /investigation|lawsuit|offering|dilution|recall|bankrupt|bankruptcy|probe|warning|downgrade|bearish/i.test(item.title);
+      const kind: DailyAlertKind = isRisk ? 'new risk' : 'needs review';
+      addAlert(
+        kind,
+        `${position.ticker}: ${item.title}`,
+        `${isRisk ? 'Uus võimaliku riskiga uudis' : 'Uus uudis'}: ${item.title}`,
+        item.url,
+        item.discoveredAt,
+        `daily:news:${history.companyId}:${item.id}`,
+      );
+    }
+
+    for (const event of history.newSecEvents) {
+      const isRisk = ['S-1', 'S-3', 'NT 10-Q', 'NT 10-K'].includes(event.form);
+      const kind: DailyAlertKind = isRisk ? 'new risk' : 'needs review';
+      addAlert(
+        kind,
+        `${position.ticker}: uus SEC ${event.form} (${event.id})`,
+        `Uus SEC dokument: ${event.form}${event.filedAt ? ` (${event.filedAt})` : ''}.`,
+        event.url,
+        event.discoveredAt,
+        `daily:sec:${history.companyId}:${event.id}`,
+      );
+    }
+
+    if (history.upcomingEarnings) {
+      const eventAt = new Date(history.upcomingEarnings.eventAt);
+      const days = Math.max(0, Math.ceil((eventAt.getTime() - Date.now()) / 86_400_000));
+      addAlert(
+        'new catalyst',
+        `${position.ticker}: lähenev earnings`,
+        `Tulemuste sündmus on ${days === 0 ? 'täna' : `${days} päeva pärast`} (${eventAt.toLocaleDateString('et-EE')}).`,
+        null,
+        history.upcomingEarnings.eventAt,
+        `daily:earnings:${history.companyId}:${history.upcomingEarnings.id}`,
+      );
+    }
+
+    if (alerts.length === 0) {
+      const detail = 'Uute snapshot’ide ja sündmuste võrdluses ei tuvastatud suuremat muutust.';
+      labels.push('no major changes');
+      reasons.push(detail);
+      if (!history.currentAlreadyCompared) {
+        alerts.push({
+          companyId: history.companyId,
+          positionId: position.id,
+          kind: 'no major changes',
+          title: `${position.ticker}: suuremaid muutusi pole`,
+          detail,
+          sourceUrl: null,
+          occurredAt: current?.capturedAt || new Date().toISOString(),
+          dedupeKey: `daily:no-major:${history.companyId}:${current?.id || 0}:${previous?.id || 0}`,
+        });
+      }
+    }
+
+    await saveDailyAlerts(alerts);
+    return { position, research, label: strongestLabel(labels), reasons };
+  } catch (error) {
+    console.error(`Daily Changes ${position.ticker} hindamine ebaõnnestus:`, error);
+    return { position, research, label: 'needs review', reasons: ['Snapshot-ajaloo hindamine ebaõnnestus.'] };
   }
-  const recentRisk = research.news.find((item) => {
-    const recent = item.publishedAt && now - new Date(item.publishedAt).getTime() < day;
-    return recent && /investigation|lawsuit|offering|dilution|recall|bankrupt|probe/i.test(item.title);
-  });
-  if (recentRisk) {
-    label = 'new risk';
-    reasons.push(`Uus riskiga seotud pealkiri vajab kontrolli: ${recentRisk.title}`);
-  }
-  const earningsAt = research.quote.earningsAt ? new Date(research.quote.earningsAt).getTime() : null;
-  if (label !== 'new risk' && earningsAt && earningsAt >= now && earningsAt - now <= 14 * day) {
-    label = 'new catalyst';
-    reasons.push(`Tulemuste sündmus on järgmise ${Math.ceil((earningsAt - now) / day)} päeva jooksul.`);
-  }
-  const recentSec = research.secFilings.find((filing) => now - new Date(filing.filedAt).getTime() < 3 * day);
-  if (recentSec) {
-    if (label === 'no major changes') label = 'needs review';
-    reasons.push(`Uus SEC dokument: ${recentSec.form} (${recentSec.filedAt}).`);
-  }
-  const recentNews = research.news.filter((item) => item.publishedAt && now - new Date(item.publishedAt).getTime() < day);
-  if (recentNews.length && reasons.length === 0) {
-    label = 'needs review';
-    reasons.push(`${recentNews.length} uut uudist viimase 24 tunni jooksul.`);
-  }
-  if (reasons.length === 0) reasons.push('Kontrollitud allikates ei tuvastatud suuremat muutust.');
-  return { position, research, label, reasons };
 }
 
 export default async function DailyPage() {
@@ -61,7 +150,9 @@ export default async function DailyPage() {
   try { positions = (await listPositions()).filter((position) => position.status !== 'closed').slice(0, 20); }
   catch (error) { dbError = (error as Error).message; }
 
-  const results = await Promise.all(positions.map(async (position) => evaluate(position, await fetchCompanyResearch(position.ticker))));
+  const results = await Promise.all(positions.map(async (position) =>
+    evaluate(position, await fetchCompanyResearch(position.ticker)),
+  ));
 
   return (
     <main className="wrap pageStack">
