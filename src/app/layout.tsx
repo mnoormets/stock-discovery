@@ -15,6 +15,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <nav className="nav wrap">
             <Link className="brand" href="/">Stock Discovery</Link>
             <div className="navLinks">
+              <Link href="/scanner">Skänner</Link>
+              <Link href="/watchlist">Watchlist</Link>
               <Link href="/portfolio">Portfell</Link>
               <Link href="/daily">Daily Changes</Link>
             </div>

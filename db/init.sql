@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS companies (
   quote_type    TEXT,
   currency      TEXT,
   source        TEXT,
+  sec_cik       TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -141,6 +142,75 @@ CREATE TABLE IF NOT EXISTS alerts (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (company_id, kind, title, occurred_at)
 );
+
+CREATE TABLE IF NOT EXISTS financial_facts (
+  id               BIGSERIAL PRIMARY KEY,
+  company_id       BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  metric           TEXT NOT NULL,
+  value            NUMERIC NOT NULL,
+  unit             TEXT NOT NULL,
+  period_start     DATE,
+  period_end       DATE NOT NULL,
+  period_kind      TEXT NOT NULL,
+  fiscal_year      INTEGER,
+  fiscal_period    TEXT,
+  form_type        TEXT NOT NULL,
+  filed_at         DATE NOT NULL,
+  accession_number TEXT NOT NULL,
+  taxonomy         TEXT NOT NULL,
+  tag              TEXT NOT NULL,
+  is_derived       BOOLEAN NOT NULL DEFAULT false,
+  source_url       TEXT NOT NULL,
+  fact_key         TEXT NOT NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (company_id, fact_key)
+);
+CREATE INDEX IF NOT EXISTS idx_financial_facts_company_metric_period
+  ON financial_facts (company_id, metric, period_end DESC, filed_at DESC);
+
+CREATE TABLE IF NOT EXISTS company_score_snapshots (
+  id               BIGSERIAL PRIMARY KEY,
+  company_id       BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  scoring_version  TEXT NOT NULL,
+  input_hash       TEXT NOT NULL,
+  growth_score     INTEGER,
+  health_score     INTEGER,
+  coverage_score   INTEGER NOT NULL,
+  payload          JSONB NOT NULL,
+  calculated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (company_id, scoring_version, input_hash)
+);
+CREATE INDEX IF NOT EXISTS idx_company_scores_company_time
+  ON company_score_snapshots (company_id, calculated_at DESC, id DESC);
+
+CREATE TABLE IF NOT EXISTS analyst_targets (
+  id                    BIGSERIAL PRIMARY KEY,
+  company_id            BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  captured_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  target_mean_price     NUMERIC,
+  target_high_price     NUMERIC,
+  target_low_price      NUMERIC,
+  recommendation_mean   NUMERIC,
+  recommendation_key    TEXT,
+  analyst_count          INTEGER,
+  source                 TEXT NOT NULL,
+  data_hash              TEXT NOT NULL,
+  UNIQUE (company_id, data_hash)
+);
+CREATE INDEX IF NOT EXISTS idx_analyst_company_time ON analyst_targets (company_id, captured_at DESC);
+
+CREATE TABLE IF NOT EXISTS research_briefs (
+  id            BIGSERIAL PRIMARY KEY,
+  company_id    BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  input_hash    TEXT NOT NULL,
+  model         TEXT NOT NULL,
+  content       JSONB NOT NULL,
+  source_count  INTEGER NOT NULL DEFAULT 0,
+  generated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (company_id, input_hash)
+);
+CREATE INDEX IF NOT EXISTS idx_research_briefs_company_time ON research_briefs (company_id, generated_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_alerts_dedupe_key
   ON alerts (dedupe_key) WHERE dedupe_key IS NOT NULL;
 

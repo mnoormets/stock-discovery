@@ -48,6 +48,14 @@ export default async function Home() {
           <strong>Daily Changes</strong>
           <span>Uudised, hinnaliikumised ja lähenevad sündmused</span>
         </Link>
+        <Link className="card linkCard" href="/scanner">
+          <strong>Turu skänner</strong>
+          <span>Top movers, earnings, SEC filingud ja uudised</span>
+        </Link>
+        <Link className="card linkCard" href="/watchlist">
+          <strong>Watchlist</strong>
+          <span>Jälgitavad tickerid ja SEC skooridel põhinevad ideed</span>
+        </Link>
       </div>
 
       <section className="section">

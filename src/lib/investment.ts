@@ -44,6 +44,8 @@ export interface CompanyResearch {
   news: NewsItem[];
   secFilings: SecFiling[];
   warnings: string[];
+  dataOrigin?: 'live' | 'database';
+  refreshedAt?: string | null;
 }
 
 export interface PortfolioPosition {

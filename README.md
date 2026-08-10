@@ -6,7 +6,12 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 - Tickeri valideeritud otsing ja ettevõtte detailvaade.
 - Yahoo Finance’i hind, turukapitalisatsioon, maht, uudised ja tulemuste aeg, kui need on saadaval.
-- SEC EDGARi viimased avaldused, kui `SEC_USER_AGENT` on seadistatud.
+- SEC EDGARi viimased avaldused ja tasuta CompanyFactsi finantsajalugu (revenue, net income, OCF, tuletatud FCF, cash, debt ja shares outstanding), kui `SEC_USER_AGENT` on seadistatud.
+- PostgreSQL-ist kohe avanev ettevõtte detailvaade; aegunud live-andmed värskendatakse taustal.
+- Tasuta modulaarse signaalimootoriga Research Brief ettevõtte hinnamuutustest, finantsidest, katalüsaatoritest ja riskidest koos allikaviidetega.
+- Läbipaistvad 0–100 Growth ja Financial Health skoorid koos komponentide, kaalude ja andmekattega; fundamentaalne edetabel on mõlema skoori järgi sorditav.
+- Eraldi Coverage Score ning versioonitud score-snapshotid: iga tulemus säilitab kasutatud SEC fact ID-d, perioodid, komponendid ja input-hashi.
+- Lihtne Watchlist kasutab olemasolevat portfelli `watch` staatust ning aitab Growth, Financial Health ja Coverage skooride järgi uusi uurimisideid leida.
 - Portfelli CRUD: ticker, kogus, keskmine ostuhind, tees, ajahorisont, staatus ja märkmed.
 - Teesi muutmise ajalugu PostgreSQL-is.
 - “Daily Changes” aktiivsetele ja jälgitavatele positsioonidele.
@@ -53,7 +58,7 @@ curl -X POST http://localhost:3005/api/collect \
 |---|---:|---|
 | `DATABASE_URL` | jah | PostgreSQL ühendus |
 | `CRON_SECRET` | jah | `/api/collect` kaitse |
-| `SEC_USER_AGENT` | SEC jaoks | SEC EDGAR ja kauplemispeatamiste feed |
+| `SEC_USER_AGENT` | SEC jaoks | SEC EDGAR, CompanyFacts ja kauplemispeatamiste feed |
 | `FMP_API_KEY` | ei | Yahoo varuallikas radari fundamentaalidele |
 | `TZ` | ei | Ajavöönd, vaikimisi Europe/Tallinn |
 
@@ -67,9 +72,14 @@ npm run typecheck
 npm run build
 ```
 
-## V1 piirid
+## Praegused piirid
 
 - “Daily Changes” kasutab läbipaistvaid reegleid ja kuni 20 aktiivset/jälgitavat positsiooni ühe vaate kohta.
 - Uudise pealkirja märksõna on ainult ülevaatuse signaal, mitte faktihinnang.
-- Rakendus ei sisalda optsioone, analüütikute konsensust, kogu turu skännerit, backtesti ega automaatset kauplemist.
+- SEC CompanyFacts ei ühtlusta kõigi emitentide XBRL tage täielikult; puuduv näitaja kuvatakse tühja olekuna. Free cash flow on rakenduses tuletatud kui operating cash flow miinus capital expenditure.
+- Growth Score kaalub revenue, net income’i, operating cash flow ja free cash flow aastamuutusi. Financial Health kaalub rahavoogude kvaliteeti, cash/debt suhet, kasumlikkust ja aktsiate arvu muutust. Mõlemad on uurimisfiltrid, mitte investeerimissoovitused.
+- Coverage Score on Growth ja Financial Health mudelite kaalutud sisendikatte keskmine. Growth/Health edetabelites kuvatakse vähemalt 70 coverage ettevõtted enne madalama kattega tulemusi, et üksiku komponendi kõrge skoor ei oleks eksitav.
+- Score-mudeli versioon on salvestatud iga snapshotiga. Valemi muutmisel tuleb versiooni tõsta, et eri valemitega tulemusi ei võrreldaks vaikimisi sama ajaloona.
+- Rakendus ei sisalda optsioonianalüüsi, backtesti ega automaatset kauplemist.
+- Research Brief kasutab läbipaistvaid kohalikke reegleid ja rakendusse kogutud allikaid; see ei asenda algdokumentide kontrollimist ega investeerimisnõustamist.
 - Redditi skoor on uurimisnimekirja signaal, mitte tootluse prognoos.

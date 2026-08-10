@@ -1,4 +1,5 @@
 import { Pool, type PoolClient } from 'pg';
+import { createHash } from 'node:crypto';
 import type { Candidate } from './types';
 import type { SecSuspension } from './sec';
 import type { CompanyResearch } from './investment';
@@ -155,6 +156,35 @@ export async function saveCompanyResearch(research: CompanyResearch): Promise<vo
       );
     }
 
+    if (research.analystView) {
+      const analyst = research.analystView;
+      const dataHash = createHash('sha256').update(JSON.stringify([
+        analyst.targetMeanPrice,
+        analyst.targetHighPrice,
+        analyst.targetLowPrice,
+        analyst.recommendationMean,
+        analyst.recommendationKey,
+        analyst.numberOfAnalystOpinions,
+      ])).digest('hex');
+      await client.query(
+        `INSERT INTO analyst_targets
+           (company_id, target_mean_price, target_high_price, target_low_price,
+            recommendation_mean, recommendation_key, analyst_count, source, data_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'yahoo', $8)
+         ON CONFLICT (company_id, data_hash) DO UPDATE SET captured_at = now()`,
+        [
+          companyId,
+          analyst.targetMeanPrice,
+          analyst.targetHighPrice,
+          analyst.targetLowPrice,
+          analyst.recommendationMean,
+          analyst.recommendationKey,
+          analyst.numberOfAnalystOpinions,
+          dataHash,
+        ],
+      );
+    }
+
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
@@ -297,6 +327,74 @@ export async function ensureSchema(): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       UNIQUE (company_id, event_at, source)
     );
+    ALTER TABLE companies ADD COLUMN IF NOT EXISTS sec_cik TEXT;
+    CREATE TABLE IF NOT EXISTS financial_facts (
+      id BIGSERIAL PRIMARY KEY,
+      company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      metric TEXT NOT NULL,
+      value NUMERIC NOT NULL,
+      unit TEXT NOT NULL,
+      period_start DATE,
+      period_end DATE NOT NULL,
+      period_kind TEXT NOT NULL,
+      fiscal_year INTEGER,
+      fiscal_period TEXT,
+      form_type TEXT NOT NULL,
+      filed_at DATE NOT NULL,
+      accession_number TEXT NOT NULL,
+      taxonomy TEXT NOT NULL,
+      tag TEXT NOT NULL,
+      is_derived BOOLEAN NOT NULL DEFAULT false,
+      source_url TEXT NOT NULL,
+      fact_key TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (company_id, fact_key)
+    );
+    CREATE INDEX IF NOT EXISTS idx_financial_facts_company_metric_period
+      ON financial_facts (company_id, metric, period_end DESC, filed_at DESC);
+    CREATE TABLE IF NOT EXISTS company_score_snapshots (
+      id BIGSERIAL PRIMARY KEY,
+      company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      scoring_version TEXT NOT NULL,
+      input_hash TEXT NOT NULL,
+      growth_score INTEGER,
+      health_score INTEGER,
+      coverage_score INTEGER NOT NULL,
+      payload JSONB NOT NULL,
+      calculated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (company_id, scoring_version, input_hash)
+    );
+    CREATE INDEX IF NOT EXISTS idx_company_scores_company_time
+      ON company_score_snapshots (company_id, calculated_at DESC, id DESC);
+    CREATE TABLE IF NOT EXISTS analyst_targets (
+      id BIGSERIAL PRIMARY KEY,
+      company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      captured_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      target_mean_price NUMERIC,
+      target_high_price NUMERIC,
+      target_low_price NUMERIC,
+      recommendation_mean NUMERIC,
+      recommendation_key TEXT,
+      analyst_count INTEGER,
+      source TEXT NOT NULL,
+      data_hash TEXT NOT NULL,
+      UNIQUE (company_id, data_hash)
+    );
+    CREATE INDEX IF NOT EXISTS idx_analyst_company_time
+      ON analyst_targets (company_id, captured_at DESC);
+    CREATE TABLE IF NOT EXISTS research_briefs (
+      id BIGSERIAL PRIMARY KEY,
+      company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      input_hash TEXT NOT NULL,
+      model TEXT NOT NULL,
+      content JSONB NOT NULL,
+      source_count INTEGER NOT NULL DEFAULT 0,
+      generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (company_id, input_hash)
+    );
+    CREATE INDEX IF NOT EXISTS idx_research_briefs_company_time
+      ON research_briefs (company_id, generated_at DESC);
     CREATE TABLE IF NOT EXISTS portfolio_positions (
       id BIGSERIAL PRIMARY KEY,
       company_id BIGINT REFERENCES companies(id) ON DELETE RESTRICT,
