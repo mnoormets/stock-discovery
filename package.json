@@ -3,21 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "dev": "node node_modules/next/dist/bin/next dev",
+    "lint": "node node_modules/next/dist/bin/next lint",
+    "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run build",
+    "build": "node node_modules/next/dist/bin/next build",
+    "start": "node node_modules/next/dist/bin/next start"
   },
   "dependencies": {
-    "next": "14.2.5",
+    "next": "14.2.35",
     "pg": "8.12.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "yahoo-finance2": "2.11.3"
+    "yahoo-finance2": "3.15.4"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
     "@types/pg": "8.11.6",
     "@types/react": "18.3.3",
+    "eslint": "8.57.0",
+    "eslint-config-next": "14.2.35",
     "typescript": "5.5.3"
   }
 }

@@ -17,6 +17,28 @@ if (!globalForPg._pgPool) globalForPg._pgPool = pool;
 // olemasolev (varem loodud) andmebaas saaks uued veerud/tabelid ilma reset'ita.
 export async function ensureSchema(): Promise<void> {
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS snapshots (
+      id BIGSERIAL PRIMARY KEY,
+      capture_date DATE NOT NULL,
+      captured_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      ticker TEXT NOT NULL,
+      name TEXT,
+      mentions INTEGER NOT NULL DEFAULT 0,
+      mentions_prev INTEGER,
+      mention_growth NUMERIC,
+      upvotes INTEGER,
+      rank INTEGER,
+      rank_prev INTEGER,
+      sentiment TEXT,
+      sentiment_source TEXT,
+      sentiment_value NUMERIC,
+      market_cap BIGINT,
+      price NUMERIC,
+      currency TEXT,
+      discovery_score NUMERIC,
+      is_new BOOLEAN NOT NULL DEFAULT false,
+      UNIQUE (capture_date, ticker)
+    );
     ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS volume BIGINT;
     ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS fundamentals_source TEXT;
     ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS rising_days INTEGER DEFAULT 0;
@@ -30,6 +52,102 @@ export async function ensureSchema(): Promise<void> {
       pub_date    TEXT,
       first_seen  TIMESTAMPTZ NOT NULL DEFAULT now(),
       last_seen   TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS companies (
+      id BIGSERIAL PRIMARY KEY,
+      ticker TEXT NOT NULL UNIQUE,
+      name TEXT,
+      exchange TEXT,
+      quote_type TEXT,
+      currency TEXT,
+      source TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS price_snapshots (
+      id BIGSERIAL PRIMARY KEY,
+      company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      captured_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      price NUMERIC,
+      previous_close NUMERIC,
+      market_cap BIGINT,
+      volume BIGINT,
+      currency TEXT,
+      source TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS news_items (
+      id TEXT PRIMARY KEY,
+      company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      publisher TEXT,
+      summary TEXT,
+      url TEXT NOT NULL,
+      published_at TIMESTAMPTZ,
+      source TEXT NOT NULL,
+      discovered_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (company_id, url)
+    );
+    CREATE TABLE IF NOT EXISTS sec_events (
+      id TEXT PRIMARY KEY,
+      company_id BIGINT REFERENCES companies(id) ON DELETE CASCADE,
+      form_type TEXT,
+      filed_at DATE,
+      description TEXT,
+      url TEXT NOT NULL,
+      source TEXT NOT NULL DEFAULT 'sec',
+      discovered_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS earnings_events (
+      id BIGSERIAL PRIMARY KEY,
+      company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      event_at TIMESTAMPTZ NOT NULL,
+      timing TEXT,
+      source TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (company_id, event_at, source)
+    );
+    CREATE TABLE IF NOT EXISTS portfolio_positions (
+      id BIGSERIAL PRIMARY KEY,
+      company_id BIGINT REFERENCES companies(id) ON DELETE RESTRICT,
+      ticker TEXT NOT NULL,
+      quantity NUMERIC NOT NULL CHECK (quantity >= 0),
+      average_buy_price NUMERIC NOT NULL CHECK (average_buy_price >= 0),
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'watch', 'closed')),
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS investment_theses (
+      id BIGSERIAL PRIMARY KEY,
+      position_id BIGINT NOT NULL REFERENCES portfolio_positions(id) ON DELETE CASCADE,
+      thesis TEXT NOT NULL,
+      time_horizon TEXT,
+      is_current BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_one_current_thesis
+      ON investment_theses (position_id) WHERE is_current;
+    CREATE TABLE IF NOT EXISTS thesis_change_events (
+      id BIGSERIAL PRIMARY KEY,
+      position_id BIGINT NOT NULL REFERENCES portfolio_positions(id) ON DELETE CASCADE,
+      previous_thesis TEXT,
+      new_thesis TEXT,
+      change_reason TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS alerts (
+      id BIGSERIAL PRIMARY KEY,
+      company_id BIGINT REFERENCES companies(id) ON DELETE CASCADE,
+      position_id BIGINT REFERENCES portfolio_positions(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'info',
+      title TEXT NOT NULL,
+      detail TEXT,
+      source_url TEXT,
+      occurred_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (company_id, kind, title, occurred_at)
     );
   `);
 }

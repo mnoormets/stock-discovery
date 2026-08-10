@@ -5,8 +5,8 @@ FROM node:20-slim
 WORKDIR /app
 
 # Paigalda ainult sõltuvused (kiirem cache)
-COPY package.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # Ülejäänud kood tuleb docker-compose bind-mountiga (live edit)
 COPY . .

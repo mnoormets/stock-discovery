@@ -1,83 +1,75 @@
-# 📡 Stock Discovery — vähemtuntud aktsiate radar
+# Stock Discovery V1
 
-Personaalne tööriist, mis leiab **vähemtuntud** aktsiaid, mille tähelepanu
-**tõuseb alt üles** — mitte neid, mis on juba kõigi huulil (NVDA, TSLA jne).
+Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõtte faktivaate, portfelli ja reeglipõhise “Daily Changes” kokkuvõtte. Rakendus ei anna ostu- ega müügisoovitusi ega kasuta AI-d finantsandmete väljamõtlemiseks.
 
-> ⚠️ **Informatiivne ideede-leidmise tööriist, MITTE investeerimisnõustamine.**
-> Väike turukap + järsk mainimiste kasv on ka klassikaline pump-and-dump profiil.
+## V1 võimalused
 
----
+- Tickeri valideeritud otsing ja ettevõtte detailvaade.
+- Yahoo Finance’i hind, turukapitalisatsioon, maht, uudised ja tulemuste aeg, kui need on saadaval.
+- SEC EDGARi viimased avaldused, kui `SEC_USER_AGENT` on seadistatud.
+- Portfelli CRUD: ticker, kogus, keskmine ostuhind, tees, ajahorisont, staatus ja märkmed.
+- Teesi muutmise ajalugu PostgreSQL-is.
+- “Daily Changes” aktiivsetele ja jälgitavatele positsioonidele.
+- Varasem Redditi tähelepanuradar on säilitatud eraldi abisignaalina.
 
-## Kuidas see töötab (lihtsalt)
+Kui allikas andmeid ei anna, kuvab rakendus `No data available yet`.
 
-Iga kogumine käib läbi 5 sammu (fail `src/lib/collect.ts`):
+## Kohalik käivitamine Dockeriga
 
-1. **ApeWisdom** (tasuta, ilma võtmeta) — kust ticker mainimised kasvavad. Peamine signaal. Katab ~15 000 tickerit.
-2. **Tradestie** (tasuta, ilma võtmeta) — sentiment (Bullish/Bearish). Katab ainult WSB top ~50.
-   - Kui tickerit Tradestie's pole → kasutame ApeWisdomi upvote-suhet **nõrga varusentimendina** (aruandes märgitud "proxy").
-3. **Hind + turukap + maht** — kaheastmeline:
-   - **Yahoo Finance** (`yahoo-finance2`, ilma võtmeta) esimesena.
-   - Kui Yahoo 429/tühi → **Financial Modeling Prep** (FMP) varuvariant, `/stable/profile` endpoint (turukap + hind + keskmine maht ühe kutsega). Vajab tasuta võtit `.env`-is (`FMP_API_KEY`). Pärib ainult top-kandidaatidele (250/päev limiit).
-   - _NB: FMP uuel tasuta plaanil on `/market-capitalization` ja `/quote` PREMIUM — seepärast kasutame `/profile`, mis on tasuta ja annab kõik korraga._
-4. **SEC kauplemispeatamised** (`src/lib/sec.ts`, ilma võtmeta) — RSS-feed peatatud ettevõtetest. Sobitus firma NIME järgi (feedis pole tickereid). Klapp → suur trahv + ⚠️ märgis.
-5. **Avastamise loogika** (`src/lib/discovery.ts`) — filtreerib suured nimed ja annab skoori 0–100:
-   - **BAAS:** mainimiste kasv (max 35, tipp ~+150%) + mitmepäevane järjekindlus (max 15) + sentiment (max 25) + väiksem turukap (max 25) + uudsus (max 5)
-   - **TRAHVID:** SEC-peatamine −60, üliäge üleöö-piik −20, madal likviidsus/mikrokapp −12
-   - Kahtlaseid tickereid **ei kustutata** — märgitakse ⚠️ hoiatusega, et ise näeksid.
-6. **Salvestab** päevase snapshoti PostgreSQL-i, et näha trende ajas.
-
-**Ainus võti = FMP** (tasuta), ja seegi on valikuline (ilma selleta jääb turukap Yahoo najale). Pane `.env` faili:
-
-```
-FMP_API_KEY=sinu_voti_siia
-```
-
----
-
-## Käivitamine
+1. Kopeeri `.env.example` failiks `.env`.
+2. Määra pikk juhuslik `CRON_SECRET`.
+3. Määra SEC nõuetele vastav `SEC_USER_AGENT`, kui soovid EDGARi andmeid.
+4. Käivita:
 
 ```bash
 docker compose up --build
 ```
 
-Seejärel ava **http://localhost:3005** ja vajuta **„▶ Kogu andmed nüüd"**.
+Ava <http://localhost:3005>.
 
-- Dashboard näitab top leide: ticker, skoor, mainimised, kasv vs eile, sentiment (+allikas), turukap, hind.
-- Ajastaja (`scheduler`) kogub automaatselt iga päev kl 08:00 (Europe/Tallinn). Muuda aega `docker-compose.yml`-is `CRON_SCHEDULE`.
-- Andmebaas kuulab hostis pordil **5433** (et mitte segada su teist Postgresi).
+## Kohalik käivitamine ilma rakenduse Dockerita
 
-### Käsitsi kogumine ilma dashboardita
+Vaja on Node.js 20 ja töötavat PostgreSQL-i.
+
 ```bash
-curl -X POST http://localhost:3005/api/collect
+npm ci
+npm run dev
 ```
 
-### Loetav päevaaruanne (JSON + markdown)
+`DATABASE_URL` peab osutama andmebaasile. Esmakäivitusel loob rakendus vajalikud V1 tabelid; värske Dockeri andmebaas kasutab ka faili `db/init.sql`.
+
+## Kaitstud radari kogumine
+
+Ajastaja saadab `CRON_SECRET` väärtuse Bearer tokenina. Käsitsi saab koguda dashboardi vormist või käsurealt:
+
 ```bash
-curl http://localhost:3005/api/report
+curl -X POST http://localhost:3005/api/collect \
+  -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
 
----
+## Keskkonnamuutujad
 
-## Häälestamine
+| Muutuja | Vajalik | Kasutus |
+|---|---:|---|
+| `DATABASE_URL` | jah | PostgreSQL ühendus |
+| `CRON_SECRET` | jah | `/api/collect` kaitse |
+| `SEC_USER_AGENT` | SEC jaoks | SEC EDGAR ja kauplemispeatamiste feed |
+| `FMP_API_KEY` | ei | Yahoo varuallikas radari fundamentaalidele |
+| `TZ` | ei | Ajavöönd, vaikimisi Europe/Tallinn |
 
-Kõik nupud failis `src/lib/config.ts`:
+Yahoo Finance, ApeWisdom ja Tradestie ei vaja selles prototüübis API-võtit, kuid nende avalikud liidesed võivad olla piiratud või muutuda.
 
-| Muutuja | Mida teeb |
-|---|---|
-| `BLACKLIST` | tuntud nimed, mis alati välja filtreerida |
-| `MAX_MARKET_CAP` | ülempiir turukapile (vaikimisi $10 mld) |
-| `MIN_MENTIONS` | müralävi — alla selle ignoreeri |
-| `TOP_N` | mitu leidu dashboardile/aruandesse |
+## Kvaliteedikontroll
 
-Skoori valem: `src/lib/discovery.ts` → `scoreCandidate()`.
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
 
----
+## V1 piirid
 
-## Riskid (loe enne kasutamist)
-
-- **Pump-and-dump** — sinu sihtprofiil kattub manipulatsiooniskeemi profiiliga.
-- **Müra** — üksik thread/bot võib mainimised üleöö üles ajada.
-- **Hilinemine** — Reddit-tähelepanu tuleb tihti *pärast* hinnaliikumist.
-- **Likviidsus** — väikeaktsiaid on lihtne manipuleerida, raske müüa.
-
-Kohtle tulemusi kui **„mida uurida"** nimekirja, mitte kui ostusoovitust.
+- “Daily Changes” kasutab läbipaistvaid reegleid ja kuni 20 aktiivset/jälgitavat positsiooni ühe vaate kohta.
+- Uudise pealkirja märksõna on ainult ülevaatuse signaal, mitte faktihinnang.
+- Rakendus ei sisalda optsioone, analüütikute konsensust, kogu turu skännerit, backtesti ega automaatset kauplemist.
+- Redditi skoor on uurimisnimekirja signaal, mitte tootluse prognoos.
