@@ -1,5 +1,5 @@
 import YahooFinance from 'yahoo-finance2';
-import type { CompanyResearch, NewsItem, SecFiling } from './investment';
+import type { AnalystView, CompanyResearch, NewsItem, SecFiling } from './investment';
 import { normalizeTicker } from './investment';
 import { saveCompanyResearch } from './db';
 
@@ -117,10 +117,11 @@ async function fetchSecFilings(ticker: string): Promise<SecFiling[]> {
 }
 
 async function fetchCompanyResearchUncached(ticker: string): Promise<CompanyResearch | null> {
-  const [quoteResult, newsResult, secResult] = await Promise.allSettled([
+  const [quoteResult, newsResult, secResult, analystResult] = await Promise.allSettled([
     withTimeout(yahooFinance.quote(ticker), QUOTE_TIMEOUT_MS),
     fetchYahooNews(ticker),
     fetchSecFilings(ticker),
+    fetchAnalystView(ticker),
   ]);
   if (quoteResult.status === 'rejected') {
     console.warn(`Ettevõtte ${ticker} turuandmete päring ebaõnnestus:`, quoteResult.reason);
@@ -133,7 +134,9 @@ async function fetchCompanyResearchUncached(ticker: string): Promise<CompanyRese
   const warnings: string[] = [];
   const news = newsResult.status === 'fulfilled' ? newsResult.value : [];
   const secFilings = secResult.status === 'fulfilled' ? secResult.value : [];
+  const analystView = analystResult.status === 'fulfilled' ? analystResult.value : null;
   if (newsResult.status === 'rejected') warnings.push('Uudiste allikas ei vastanud.');
+  if (analystResult.status === 'rejected') warnings.push('Analüütikute andmeallikas ei vastanud.');
   if (!process.env.SEC_USER_AGENT) warnings.push('SEC andmed pole seadistatud.');
   else if (secResult.status === 'rejected') warnings.push('SEC andmete allikas ei vastanud.');
 
@@ -154,10 +157,37 @@ async function fetchCompanyResearchUncached(ticker: string): Promise<CompanyRese
         quote.earningsTimestampEnd,
       ),
     },
+    analystView,
     news,
     secFilings,
     warnings,
   };
+}
+
+async function fetchAnalystView(ticker: string): Promise<AnalystView | null> {
+  const summary: any = await withTimeout(
+    yahooFinance.quoteSummary(ticker, { modules: ['financialData'] }),
+    QUOTE_TIMEOUT_MS,
+  );
+  const data = summary?.financialData;
+  if (!data) return null;
+
+  const rawRecommendationKey = typeof data.recommendationKey === 'string'
+    ? data.recommendationKey.trim().toLowerCase()
+    : '';
+  const analystCount = asNumber(data.numberOfAnalystOpinions);
+
+  const analystView: AnalystView = {
+    targetMeanPrice: asNumber(data.targetMeanPrice),
+    targetHighPrice: asNumber(data.targetHighPrice),
+    targetLowPrice: asNumber(data.targetLowPrice),
+    recommendationMean: asNumber(data.recommendationMean),
+    recommendationKey: rawRecommendationKey && rawRecommendationKey !== 'none'
+      ? rawRecommendationKey
+      : null,
+    numberOfAnalystOpinions: analystCount != null && analystCount > 0 ? analystCount : null,
+  };
+  return Object.values(analystView).some((value) => value != null) ? analystView : null;
 }
 
 export async function fetchCompanyResearch(rawTicker: string): Promise<CompanyResearch | null> {

@@ -29,8 +29,18 @@ export interface SecFiling {
   url: string;
 }
 
+export interface AnalystView {
+  targetMeanPrice: number | null;
+  targetHighPrice: number | null;
+  targetLowPrice: number | null;
+  recommendationMean: number | null;
+  recommendationKey: string | null;
+  numberOfAnalystOpinions: number | null;
+}
+
 export interface CompanyResearch {
   quote: CompanyQuote;
+  analystView: AnalystView | null;
   news: NewsItem[];
   secFilings: SecFiling[];
   warnings: string[];

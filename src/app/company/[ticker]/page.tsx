@@ -20,6 +20,16 @@ function dateTime(value: string | null): string {
   return new Intl.DateTimeFormat('et-EE', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
+function decimal(value: number | null): string {
+  if (value == null) return 'No data available yet';
+  return value.toLocaleString('et-EE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+function recommendation(value: string | null): string {
+  if (!value) return 'No data available yet';
+  return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export default async function CompanyPage({ params }: { params: { ticker: string } }) {
   const ticker = normalizeTicker(decodeURIComponent(params.ticker));
   const research = ticker ? await fetchCompanyResearch(ticker) : null;
@@ -33,11 +43,14 @@ export default async function CompanyPage({ params }: { params: { ticker: string
     );
   }
 
-  const { quote, news, secFilings } = research;
+  const { quote, analystView, news, secFilings } = research;
   const move = quote.price != null && quote.previousClose
     ? ((quote.price - quote.previousClose) / quote.previousClose) * 100
     : null;
   const riskItems = secFilings.filter((filing) => ['8-K', '10-Q', '10-K', 'S-1'].includes(filing.form));
+  const analystUpside = quote.price != null && quote.price !== 0 && analystView?.targetMeanPrice != null
+    ? ((analystView.targetMeanPrice - quote.price) / quote.price) * 100
+    : null;
 
   return (
     <main className="wrap pageStack">
@@ -55,6 +68,21 @@ export default async function CompanyPage({ params }: { params: { ticker: string
       </div>
 
       {research.warnings.map((warning) => <div className="notice" key={warning}>{warning}</div>)}
+
+      <section className="section">
+        <div className="sectionHeading">
+          <div><p className="eyebrow">YAHOO FINANCE CONSENSUS</p><h2>Analüütikute vaade</h2></div>
+          {analystView?.numberOfAnalystOpinions != null && <span className="muted">{analystView.numberOfAnalystOpinions} analüütiku arvamust</span>}
+        </div>
+        {!analystView ? <div className="empty card">Analüütikute andmed puuduvad.</div> : (
+          <div className="metricGrid">
+            <div className="metric"><span>Keskmine hinnasiht</span><strong>{money(analystView.targetMeanPrice, quote.currency)}</strong>{analystUpside != null && <small className={analystUpside >= 0 ? 'positive' : 'negative'}>{analystUpside >= 0 ? '+' : '−'}{Math.abs(analystUpside).toLocaleString('et-EE', { maximumFractionDigits: 1 })}% keskmise hinnasihini</small>}</div>
+            <div className="metric"><span>Kõrge hinnasiht</span><strong>{money(analystView.targetHighPrice, quote.currency)}</strong></div>
+            <div className="metric"><span>Madal hinnasiht</span><strong>{money(analystView.targetLowPrice, quote.currency)}</strong></div>
+            <div className="metric"><span>Konsensusreiting</span><strong>{recommendation(analystView.recommendationKey)}</strong><small>{analystView.recommendationMean == null ? 'Reitingu skoor puudub' : `${decimal(analystView.recommendationMean)} / 5`}</small></div>
+          </div>
+        )}
+      </section>
 
       <div className="contentGrid">
         <section className="card section"><h2>Viimased uudised</h2>{news.length === 0 ? <p className="muted">No data available yet</p> : <div className="itemList">{news.map((item) => <article key={item.id}><a href={item.url} target="_blank" rel="noreferrer">{item.title}</a><small>{item.publisher || 'Allikas teadmata'} · {dateTime(item.publishedAt)}</small></article>)}</div>}</section>
