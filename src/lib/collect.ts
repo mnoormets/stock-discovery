@@ -5,7 +5,8 @@ import { fetchFmpFundamentals } from './fmp';
 import { fetchSecSuspensions } from './sec';
 import { buildCandidates } from './discovery';
 import {
-  saveSnapshot, ensureSchema, upsertSecSuspensions, getSecSuspendedSet, getMentionHistory,
+  saveSnapshot, saveCollectedCompanies, ensureSchema, upsertSecSuspensions,
+  getSecSuspendedSet, getMentionHistory,
 } from './db';
 import { BLACKLIST, MIN_MENTIONS, TOP_N, FUND_LOOKUP_LIMIT } from './config';
 import type { Fundamentals } from './types';
@@ -90,6 +91,11 @@ export async function runCollection() {
 
   // 7) Salvesta päevane snapshot.
   await saveSnapshot(captureDate, candidates);
+
+  // Live-tabelite kirjutamine ei tohi kogumise vastust blokeerida ega nurjata.
+  void saveCollectedCompanies(candidates).catch((error) => {
+    console.error('Kogutud ettevõtete live-andmete salvestamine ebaõnnestus:', error);
+  });
 
   return {
     captureDate,

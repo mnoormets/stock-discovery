@@ -1,6 +1,6 @@
 # Lihtne dev-image: käivitab Next.js arendusserveri.
 # Personaalseks lokaalseks tööriistaks piisab dev-režiimist (kiirem, lihtsam mõista).
-FROM node:20-slim
+FROM node:22-slim
 
 WORKDIR /app
 

@@ -1,6 +1,7 @@
-import { Pool } from 'pg';
+import { Pool, type PoolClient } from 'pg';
 import type { Candidate } from './types';
 import type { SecSuspension } from './sec';
+import type { CompanyResearch } from './investment';
 
 // Üks jagatud ühenduste bassein kogu rakenduse peale.
 const globalForPg = globalThis as unknown as { _pgPool?: Pool };
@@ -12,6 +13,195 @@ export const pool =
       'postgres://discovery:discovery@db:5432/discovery',
   });
 if (!globalForPg._pgPool) globalForPg._pgPool = pool;
+
+async function upsertCompany(
+  client: Pick<PoolClient, 'query'>,
+  company: {
+    ticker: string;
+    name: string | null;
+    exchange: string | null;
+    quoteType: string | null;
+    currency: string | null;
+    source: string;
+  },
+): Promise<number> {
+  const { rows } = await client.query(
+    `INSERT INTO companies (ticker, name, exchange, quote_type, currency, source)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (ticker) DO UPDATE SET
+       name = COALESCE(EXCLUDED.name, companies.name),
+       exchange = COALESCE(EXCLUDED.exchange, companies.exchange),
+       quote_type = COALESCE(EXCLUDED.quote_type, companies.quote_type),
+       currency = COALESCE(EXCLUDED.currency, companies.currency),
+       source = EXCLUDED.source,
+       updated_at = now()
+     RETURNING id`,
+    [
+      company.ticker,
+      company.name,
+      company.exchange,
+      company.quoteType,
+      company.currency,
+      company.source,
+    ],
+  );
+  return Number(rows[0].id);
+}
+
+async function insertPriceSnapshot(
+  client: Pick<PoolClient, 'query'>,
+  companyId: number,
+  values: {
+    price: number | null;
+    previousClose: number | null;
+    marketCap: number | null;
+    volume: number | null;
+    currency: string | null;
+    source: string;
+  },
+): Promise<void> {
+  await client.query('SELECT pg_advisory_xact_lock($1)', [companyId]);
+  await client.query(
+    `INSERT INTO price_snapshots
+       (company_id, price, previous_close, market_cap, volume, currency, source)
+     SELECT $1, $2, $3, $4, $5, $6, $7
+     WHERE NOT EXISTS (
+       SELECT 1 FROM price_snapshots
+       WHERE company_id = $1
+         AND captured_at >= now() - interval '5 minutes'
+         AND price IS NOT DISTINCT FROM $2::numeric
+         AND previous_close IS NOT DISTINCT FROM $3::numeric
+         AND market_cap IS NOT DISTINCT FROM $4::bigint
+         AND volume IS NOT DISTINCT FROM $5::bigint
+         AND currency IS NOT DISTINCT FROM $6::text
+         AND source = $7
+     )`,
+    [
+      companyId,
+      values.price,
+      values.previousClose,
+      values.marketCap,
+      values.volume,
+      values.currency,
+      values.source,
+    ],
+  );
+}
+
+// Salvesta ettevõtte detailvaate live-andmed ühe transaktsioonina.
+// Uudised, SEC sündmused ja earnings on idempotentsed; hinnast ei tehta sama
+// väärtusega uut rida iga lehe refresh'i kohta viie minuti jooksul.
+export async function saveCompanyResearch(research: CompanyResearch): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { quote } = research;
+    const companyId = await upsertCompany(client, {
+      ticker: quote.ticker,
+      name: quote.name,
+      exchange: quote.exchange,
+      quoteType: quote.quoteType,
+      currency: quote.currency,
+      source: 'yahoo',
+    });
+
+    await insertPriceSnapshot(client, companyId, {
+      price: quote.price,
+      previousClose: quote.previousClose,
+      marketCap: quote.marketCap,
+      volume: quote.volume,
+      currency: quote.currency,
+      source: 'yahoo',
+    });
+
+    for (const item of research.news) {
+      await client.query(
+        `INSERT INTO news_items
+           (id, company_id, title, publisher, url, published_at, source)
+         VALUES ($1, $2, $3, $4, $5, $6, 'yahoo')
+         ON CONFLICT DO NOTHING`,
+        [item.id, companyId, item.title, item.publisher, item.url, item.publishedAt],
+      );
+    }
+
+    for (const filing of research.secFilings) {
+      await client.query(
+        `INSERT INTO sec_events
+           (id, company_id, form_type, filed_at, description, url, source)
+         VALUES ($1, $2, $3, $4, $5, $6, 'sec')
+         ON CONFLICT (id) DO UPDATE SET
+           company_id = EXCLUDED.company_id,
+           form_type = EXCLUDED.form_type,
+           filed_at = EXCLUDED.filed_at,
+           description = EXCLUDED.description,
+           url = EXCLUDED.url`,
+        [filing.id, companyId, filing.form, filing.filedAt || null, filing.description, filing.url],
+      );
+    }
+
+    if (quote.earningsAt) {
+      await client.query(
+        `DELETE FROM earnings_events
+         WHERE company_id = $1 AND source = 'yahoo'
+           AND event_at >= now() AND event_at <> $2::timestamptz`,
+        [companyId, quote.earningsAt],
+      );
+      await client.query(
+        `INSERT INTO earnings_events (company_id, event_at, source)
+         VALUES ($1, $2, 'yahoo')
+         ON CONFLICT (company_id, event_at, source)
+         DO UPDATE SET updated_at = now()`,
+        [companyId, quote.earningsAt],
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+// /api/collect saab fundamentaalidest ettevõtte ja hinnainfo. Teised live-tabelid
+// täituvad siis, kui detailne research-päring annab vastavad andmed.
+export async function saveCollectedCompanies(candidates: Candidate[]): Promise<void> {
+  const withMarketData = candidates.filter((candidate) =>
+    candidate.price != null || candidate.marketCap != null || candidate.volume != null,
+  );
+  if (withMarketData.length === 0) return;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const candidate of withMarketData) {
+      const source = candidate.fundamentalsSource || 'collection';
+      const companyId = await upsertCompany(client, {
+        ticker: candidate.ticker,
+        name: candidate.name || null,
+        exchange: null,
+        quoteType: null,
+        currency: candidate.currency,
+        source,
+      });
+      await insertPriceSnapshot(client, companyId, {
+        price: candidate.price,
+        previousClose: null,
+        marketCap: candidate.marketCap,
+        volume: candidate.volume,
+        currency: candidate.currency,
+        source,
+      });
+    }
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 // Idempotentne skeemi-migratsioon. Käivitatakse iga kogumise alguses, et
 // olemasolev (varem loodud) andmebaas saaks uued veerud/tabelid ilma reset'ita.
