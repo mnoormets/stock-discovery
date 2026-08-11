@@ -165,7 +165,12 @@ export async function deletePosition(id: number): Promise<void> {
   await pool.query('DELETE FROM portfolio_positions WHERE id=$1', [id]);
 }
 
-export async function addTickerToWatchlist(rawTicker: string): Promise<boolean> {
+export interface EnsuredWatchPosition {
+  id: number;
+  created: boolean;
+}
+
+export async function ensureTickerWatchPosition(rawTicker: string): Promise<EnsuredWatchPosition> {
   const ticker = normalizeTicker(rawTicker);
   if (!ticker) throw new Error('Ticker ei ole korrektses vormingus.');
   await ensureSchema();
@@ -180,27 +185,32 @@ export async function addTickerToWatchlist(rawTicker: string): Promise<boolean> 
     );
     if (existing.rowCount) {
       await client.query('COMMIT');
-      return false;
+      return { id: Number(existing.rows[0].id), created: false };
     }
     const company = await client.query(
       `INSERT INTO companies (ticker, source) VALUES ($1, 'watchlist')
        ON CONFLICT (ticker) DO UPDATE SET updated_at = now() RETURNING id`,
       [ticker],
     );
-    await client.query(
+    const position = await client.query(
       `INSERT INTO portfolio_positions
          (company_id, ticker, quantity, average_buy_price, status, notes)
-       VALUES ($1, $2, 0, 0, 'watch', 'Lisatud Watchlisti idee-avastusest')`,
+       VALUES ($1, $2, 0, 0, 'watch', 'Lisatud Watchlisti idee-avastusest')
+       RETURNING id`,
       [company.rows[0].id, ticker],
     );
     await client.query('COMMIT');
-    return true;
+    return { id: Number(position.rows[0].id), created: true };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
   }
+}
+
+export async function addTickerToWatchlist(rawTicker: string): Promise<boolean> {
+  return (await ensureTickerWatchPosition(rawTicker)).created;
 }
 
 export async function removeTickerFromWatchlist(id: number): Promise<boolean> {

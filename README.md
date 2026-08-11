@@ -1,5 +1,7 @@
 # Stock Discovery V1
 
+Uue kasutaja töövoog ja funktsioonide selgitused: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
+
 Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõtte faktivaate, portfelli ja reeglipõhise “Daily Changes” kokkuvõtte. Rakendus ei anna ostu- ega müügisoovitusi ega kasuta AI-d finantsandmete väljamõtlemiseks.
 
 ## V1 võimalused
@@ -14,6 +16,10 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 - Watchlist kasutab olemasolevat portfelli `watch` staatust ning aitab Growth, Financial Health ja Coverage skooride järgi uusi uurimisideid leida.
 - Thesis Builder loob Watchlisti ideest struktureeritud ja versioonitud teesi, seob selle otsuse hetke skoorisnapshotiga ning näitab Growthi ja Financial Healthi kolme peamist põhjust.
 - Watchlist ja Daily Changes võrdlevad järjestikuseid sama mudeliversiooni score-snapshot'e ning näitavad olulise muutuse korral skoorid, muutunud komponendid ja täpsed snapshot'i viited.
+- Skänneri „Leia järgmine RKLB” preset annab olemasolevast universumist 0-5 läbipaistvalt põhjendatud uurimiskandidaati, ilma koondskoori või ostusoovituseta.
+- Iga RKLB discovery jooks salvestab muutumatu otsusehetke universumi, kaasatud ja välistatud tickerid, põhjused, skoorid, hinna, market cap'i, runway-kirjelduse, katalüsaatori, riskid ja teadmata info.
+- `/validation` mõõdab kaasatud kandidaatide tegelikku hinnamuutust eraldi 1 nädala, 2 nädala, 1 kuu, 3 kuu ja 6 kuu horisondil ning näitab keskmist, mediaani, võitjaid, kaotajaid, parimat ja halvimat tulemust.
+- Rakenduses ja failis `docs/USER_GUIDE.md` on uue kasutaja töövoogu selgitav kasutusjuhend.
 - Portfelli CRUD: ticker, kogus, keskmine ostuhind, tees, ajahorisont, staatus ja märkmed.
 - Teesi muutmise ajalugu PostgreSQL-is.
 - “Daily Changes” aktiivsetele ja jälgitavatele positsioonidele.
@@ -83,5 +89,6 @@ npm run build
 - Coverage Score on Growth ja Financial Health mudelite kaalutud sisendikatte keskmine. Growth/Health edetabelites kuvatakse vähemalt 70 coverage ettevõtted enne madalama kattega tulemusi, et üksiku komponendi kõrge skoor ei oleks eksitav.
 - Score-mudeli versioon on salvestatud iga snapshotiga. Valemi muutmisel tuleb versiooni tõsta, et eri valemitega tulemusi ei võrreldaks vaikimisi sama ajaloona.
 - Rakendus ei sisalda optsioonianalüüsi, backtesti ega automaatset kauplemist.
+- Validation on forward outcome tracking, mitte täielik ajalooline backtest: see kogub tulemusi alates salvestatud discovery jooksudest ega rekonstrueeri minevikku tänaste andmetega.
 - Research Brief kasutab läbipaistvaid kohalikke reegleid ja rakendusse kogutud allikaid; see ei asenda algdokumentide kontrollimist ega investeerimisnõustamist.
 - Redditi skoor on uurimisnimekirja signaal, mitte tootluse prognoos.

@@ -145,9 +145,7 @@ export async function getScannerData(scoreSort: ScannerScoreSort = 'growth'): Pr
   }));
 
   const latestPrices = new Map(pricesResult.rows.map((row) => [row.ticker, row]));
-  void saveCompanyScoreSnapshots(financials).catch((error) => {
-    console.error('Scanneri skoorisnapshotide salvestamine ebaõnnestus:', error);
-  });
+  await saveCompanyScoreSnapshots(financials);
   const scoreRows: ScannerScoreRow[] = financials.map((financial) => {
     const scores = calculateCompanyScores(financial);
     const latestPrice = latestPrices.get(financial.ticker);

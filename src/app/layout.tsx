@@ -19,6 +19,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href="/watchlist">Watchlist</Link>
               <Link href="/portfolio">Portfell</Link>
               <Link href="/daily">Daily Changes</Link>
+              <Link href="/validation">Validation</Link>
+              <Link href="/guide">Kasutusjuhend</Link>
             </div>
           </nav>
         </header>
