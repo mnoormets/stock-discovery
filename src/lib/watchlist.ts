@@ -2,6 +2,7 @@ import { getAllStoredCompanyFinancials } from './company-financials';
 import { calculateCompanyScores } from './company-scores';
 import { getLatestPortfolioPrices, listPositions } from './portfolio';
 import { saveCompanyScoreSnapshots } from './score-tracking';
+import { evaluateScoreChanges, type ScoreReview } from './score-alerts';
 
 export type WatchlistSort = 'growth' | 'health' | 'coverage';
 
@@ -15,6 +16,7 @@ export interface WatchlistRow {
   coverageScore: number;
   signal: string;
   warning: string | null;
+  scoreReview: ScoreReview | null;
 }
 
 export interface WatchlistData {
@@ -36,7 +38,13 @@ function describe(growth: number | null, health: number | null, coverage: number
 
 export async function getWatchlistData(sort: WatchlistSort = 'growth'): Promise<WatchlistData> {
   const [financials, positions] = await Promise.all([getAllStoredCompanyFinancials(), listPositions()]);
-  void saveCompanyScoreSnapshots(financials).catch((error) => console.error('Watchlisti skoorisnapshotide salvestamine ebaõnnestus:', error));
+  await saveCompanyScoreSnapshots(financials).catch((error) => console.error('Watchlisti skoorisnapshotide salvestamine ebaõnnestus:', error));
+  const watchedPositions = positions.filter((position) => position.status === 'watch');
+  const scoreReviews = await evaluateScoreChanges(watchedPositions.map((position) => position.id))
+    .catch((error) => {
+      console.error('Watchlisti score-muutuste hindamine ebaõnnestus:', error);
+      return new Map<number, ScoreReview>();
+    });
   const prices = await getLatestPortfolioPrices([...new Set([
     ...financials.map((financial) => financial.ticker),
     ...positions.map((position) => position.ticker),
@@ -56,11 +64,12 @@ export async function getWatchlistData(sort: WatchlistSort = 'growth'): Promise<
       growthScore: scores.growth?.score ?? null,
       healthScore: scores.financialHealth?.score ?? null,
       coverageScore: scores.coverage.score,
+      scoreReview: positionId == null ? null : scoreReviews.get(positionId) || null,
       ...description,
     };
   };
 
-  const watched = positions.filter((position) => position.status === 'watch').map((position) => toRow(position.ticker, position.id));
+  const watched = watchedPositions.map((position) => toRow(position.ticker, position.id));
   const ideas = financials
     .filter((financial) => !openTickers.has(financial.ticker))
     .map((financial) => toRow(financial.ticker, null))

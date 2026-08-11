@@ -11,6 +11,34 @@ function scoreTone(value: number | null): string {
   return 'scoreNeutral';
 }
 
+function scoreChange(value: number | null): string {
+  if (value == null) return '—';
+  return `${value >= 0 ? '+' : ''}${value}`;
+}
+
+function ScoreReviewCell({ row }: { row: WatchlistRow }) {
+  const review = row.scoreReview;
+  if (!review) return <span className="muted">No data available yet</span>;
+  const important = review.componentChanges.filter((change) => change.significant).slice(0, 4);
+  return (
+    <details className="scoreReviewDetails">
+      <summary><span className={`reviewLabel ${review.label.replaceAll(' ', '-')}`}>{review.label}</span></summary>
+      <div className="scoreReviewBody">
+        <p>{review.summary}</p>
+        {review.comparable && <div className="scoreDeltaGrid">
+          <span>Growth <strong>{scoreChange(review.growth?.delta ?? null)}</strong></span>
+          <span>Health <strong>{scoreChange(review.health?.delta ?? null)}</strong></span>
+          <span>Coverage <strong>{scoreChange(review.coverage?.delta ?? null)}</strong></span>
+        </div>}
+        {important.length > 0 && <ul>{important.map((change) => (
+          <li key={`${change.scoreKind}:${change.componentId}`}><strong>{change.scoreKind}: {change.label}</strong><span>{change.previous ?? '—'} → {change.current ?? '—'} · kaal {change.weight}%</span></li>
+        ))}</ul>}
+        <small>Mudel {review.modelVersion || 'puudub'} · snapshot #{review.previousSnapshotId || '—'} → #{review.currentSnapshotId || '—'}</small>
+      </div>
+    </details>
+  );
+}
+
 function Row({ row, watched }: { row: WatchlistRow; watched: boolean }) {
   return (
     <tr>
@@ -19,9 +47,13 @@ function Row({ row, watched }: { row: WatchlistRow; watched: boolean }) {
       <td><strong className={scoreTone(row.healthScore)}>{row.healthScore ?? '—'}</strong></td>
       <td><strong className={scoreTone(row.coverageScore)}>{row.coverageScore}</strong></td>
       <td><span>{row.signal}</span>{row.warning && <div className="riskText">{row.warning}</div>}</td>
+      {watched && <td><ScoreReviewCell row={row} /></td>}
       <td>{row.price == null ? <span className="muted">Hind puudub</span> : row.price.toLocaleString('et-EE', { maximumFractionDigits: 2 })}</td>
       <td>{watched ? (
-        <form action={removeWatchlistAction}><input type="hidden" name="id" value={row.positionId || ''} /><button className="secondary compactButton" type="submit">Eemalda</button></form>
+        <div className="rowActions">
+          <Link className="button secondary compactButton" href={`/thesis/${row.positionId}`}>Alusta / muuda teesi</Link>
+          <form action={removeWatchlistAction}><input type="hidden" name="id" value={row.positionId || ''} /><button className="dangerButton compactButton" type="submit">Eemalda</button></form>
+        </div>
       ) : (
         <form action={addWatchlistAction}><input type="hidden" name="ticker" value={row.ticker} /><button className="secondary compactButton" type="submit">+ Watchlist</button></form>
       )}</td>
@@ -31,7 +63,7 @@ function Row({ row, watched }: { row: WatchlistRow; watched: boolean }) {
 
 function WatchTable({ rows, watched, empty }: { rows: WatchlistRow[]; watched: boolean; empty: string }) {
   if (!rows.length) return <div className="empty card">{empty}</div>;
-  return <div className="tableWrap card watchTable"><table><thead><tr><th>Ticker</th><th>Growth</th><th>Health</th><th>Coverage</th><th>Miks vaadata?</th><th>Hind</th><th /></tr></thead><tbody>{rows.map((row) => <Row row={row} watched={watched} key={`${row.positionId || 'idea'}:${row.ticker}`} />)}</tbody></table></div>;
+  return <div className="tableWrap card watchTable"><table><thead><tr><th>Ticker</th><th>Growth</th><th>Health</th><th>Coverage</th><th>Miks vaadata?</th>{watched && <th>Skoori muutus</th>}<th>Hind</th><th /></tr></thead><tbody>{rows.map((row) => <Row row={row} watched={watched} key={`${row.positionId || 'idea'}:${row.ticker}`} />)}</tbody></table></div>;
 }
 
 export default async function WatchlistPage({ searchParams }: { searchParams?: { sort?: string; message?: string; error?: string } }) {
@@ -39,7 +71,7 @@ export default async function WatchlistPage({ searchParams }: { searchParams?: {
   const data = await getWatchlistData(sort);
   return (
     <main className="wrap pageStack">
-      <section className="hero compact"><p className="eyebrow">EXISTING DATA · NO NEW SOURCES</p><h1>Watchlist ja uued ideed</h1><p className="lead">Jälgi huvitavaid tickereid ning avasta olemasolevate SEC skooride põhjal ettevõtteid, mida tasub ise lähemalt uurida.</p></section>
+      <section className="hero compact"><p className="eyebrow">EXISTING DATA · NO NEW SOURCES</p><h1>Watchlist ja uued ideed</h1><p className="lead">Jälgi huvitavaid tickereid ning muuda olemasolevad SEC skoorid struktureeritud, ümberlükatavaks investeerimisteesiks.</p></section>
       {searchParams?.message && <div className="notice success">{searchParams.message}</div>}
       {searchParams?.error && <div className="notice danger">{searchParams.error}</div>}
 

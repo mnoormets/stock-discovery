@@ -3,7 +3,7 @@ import TickerSearch from '../../TickerSearch';
 import ResearchBrief from './ResearchBrief';
 import { getCompanyResearchDbFirst } from '@/lib/company-research-store';
 import { getCompanyFinancialsDbFirst, type FinancialMetric, type FinancialMetricSummary } from '@/lib/company-financials';
-import { calculateCompanyScores, type CompanyScore } from '@/lib/company-scores';
+import { calculateCompanyScores, getTopScoreReasons, type CompanyScore } from '@/lib/company-scores';
 import { getTrackedCompanyScores, type ScoreSnapshot } from '@/lib/score-tracking';
 import { getResearchBriefState } from '@/lib/research-brief';
 import { normalizeTicker } from '@/lib/investment';
@@ -68,6 +68,7 @@ function scoreTone(value: number): string {
 }
 
 function ScoreCard({ title, score }: { title: string; score: CompanyScore | null }) {
+  const topReasons = getTopScoreReasons(score);
   if (!score) return <article className="card scoreCard emptyScore"><h3>{title}</h3><p className="muted">Skoori jaoks pole veel piisavalt võrreldavaid SEC perioode.</p></article>;
   return (
     <article className={`card scoreCard ${scoreTone(score.score)}`}>
@@ -84,6 +85,18 @@ function ScoreCard({ title, score }: { title: string; score: CompanyScore | null
           </div>
         ))}
       </div>
+      {score.kind !== 'coverage' && (
+        <div className="scoreReasons">
+          <h4>Kolm peamist põhjust</h4>
+          <ol>{topReasons.map((reason) => (
+            <li className={reason.direction} key={reason.componentId}>
+              <strong>{reason.label}</strong><span>{reason.detail}</span>
+              <small>Kaalutud mõju {reason.weightedInfluence > 0 ? '+' : ''}{reason.weightedInfluence}</small>
+            </li>
+          ))}</ol>
+          {topReasons.length < 3 && <small className="muted">Arvutatavaid komponente oli ainult {topReasons.length}.</small>}
+        </div>
+      )}
     </article>
   );
 }

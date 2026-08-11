@@ -95,6 +95,17 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .watchAdd h2, .watchAdd p { margin: 0; }
 .watchAdd form { display: flex; gap: 8px; }
 .watchTable { padding: 4px 12px; }
+.scoreReviewDetails { min-width: 190px; }
+.scoreReviewDetails summary { cursor: pointer; list-style: none; }
+.scoreReviewDetails summary::-webkit-details-marker { display: none; }
+.scoreReviewBody { display: grid; gap: 9px; min-width: 280px; margin-top: 9px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: #101a29; }
+.scoreReviewBody p { margin: 0; font-size: 12px; line-height: 1.5; }
+.scoreReviewBody ul { display: grid; gap: 7px; margin: 0; padding-left: 18px; }
+.scoreReviewBody li > * { display: block; }
+.scoreReviewBody li span { color: var(--muted); font-size: 11px; }
+.scoreDeltaGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.scoreDeltaGrid span { display: grid; gap: 2px; padding: 7px; border-radius: 8px; background: #162235; font-size: 10px; color: var(--muted); }
+.scoreDeltaGrid strong { color: var(--text); font-size: 14px; }
 .compactButton { padding: 6px 10px; white-space: nowrap; }
 .empty { text-align: center; color: var(--muted); padding: 42px 20px; }
 .empty h1 { color: var(--text); font-size: 30px; margin-bottom: 8px; }
@@ -169,11 +180,54 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .spinner { width: 17px; height: 17px; border: 2px solid rgba(117,183,255,.25); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 .briefActions { display: flex; align-items: center; gap: 14px; }
 code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
+.headerActions, .rowActions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rowActions form { margin: 0; }
+.thesisBuilderLink { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.thesisEvidenceGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.thesisEvidenceCard { display: grid; gap: 14px; }
+.thesisEvidenceCard h3 { margin: 3px 0 0; }
+.thesisEvidenceTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.thesisEvidenceTop > strong { font-size: 34px; line-height: 1; }
+.thesisEvidenceTop > strong small { color: var(--muted); font-size: 12px; }
+.evidenceType { color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+.reasonList, .scoreReasons ol { display: grid; gap: 10px; margin: 0; padding-left: 20px; }
+.reasonList li, .scoreReasons li { padding-left: 3px; }
+.reasonList li::marker, .scoreReasons li::marker { color: var(--muted); font-weight: 800; }
+.reasonList li > *, .scoreReasons li > * { display: block; }
+.reasonList li.positive strong, .scoreReasons li.positive strong { color: var(--green); }
+.reasonList li.negative strong, .scoreReasons li.negative strong { color: var(--red); }
+.reasonList li.neutral strong, .scoreReasons li.neutral strong { color: var(--amber); }
+.scoreReasons { display: grid; gap: 9px; padding-top: 14px; border-top: 1px solid var(--border); }
+.scoreReasons h4 { margin: 0; }
+.thesisBuilder { display: grid; gap: 20px; }
+.thesisForm { display: grid; gap: 16px; }
+.thesisForm label > span { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: var(--text); font-weight: 700; }
+.thesisForm label em { color: var(--muted); font-size: 11px; font-style: normal; font-weight: 500; text-transform: uppercase; }
+.thesisFormGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.thesisMetaGrid { display: grid; grid-template-columns: 1fr minmax(180px, .35fr); gap: 16px; }
+.criticalField, .checkpointField { padding: 14px; border: 1px solid #6d4c2a; border-radius: 10px; background: rgba(240,191,91,.06); }
+.checkLabel { display: flex; gap: 10px; align-items: flex-start; }
+.checkLabel input { width: auto; margin-top: 4px; }
+.checkLabel span { display: block !important; margin: 0 !important; font-weight: 500 !important; }
+.defenseCard { display: grid; gap: 18px; border-top: 3px solid var(--accent); }
+.defenseGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.defenseGrid > div { padding: 13px; border: 1px solid var(--border); border-radius: 9px; background: rgba(9,14,20,.45); }
+.defenseGrid span, .historyBody span { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.defenseGrid p, .historyBody p { margin: 5px 0 0; white-space: pre-wrap; }
+.thesisStatus { border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.thesisStatus.ready { color: var(--green); border-color: #2f7049; }
+.thesisStatus.researching { color: var(--accent); border-color: #34618d; }
+.thesisStatus.rejected { color: var(--red); border-color: #7a3939; }
+.thesisHistory { display: grid; gap: 10px; }
+.thesisHistory details { padding: 0; overflow: hidden; }
+.thesisHistory summary { display: flex; justify-content: space-between; gap: 14px; padding: 16px 18px; cursor: pointer; }
+.thesisHistory details[open] summary { border-bottom: 1px solid var(--border); }
+.historyBody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 18px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 760px) {
   .pageStack { padding-top: 28px; }
-  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody { grid-template-columns: 1fr; }
+  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody { grid-template-columns: 1fr; }
   .collectBox { grid-template-columns: 1fr; align-items: stretch; }
   .companyHeader, .sectionHeading, .dailyTop { align-items: flex-start; flex-direction: column; }
   .navLinks { gap: 12px; font-size: 14px; }
@@ -181,4 +235,5 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .briefActions { align-items: flex-start; flex-direction: column; }
   .watchAdd { grid-template-columns: 1fr; }
   .watchAdd form { flex-direction: column; }
+  .thesisBuilderLink { align-items: flex-start; flex-direction: column; }
 }

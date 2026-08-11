@@ -4,6 +4,9 @@ import { fetchCompanyResearch } from '@/lib/company-data';
 import { saveCompanyResearch, getDailyHistory, saveDailyAlerts } from '@/lib/db';
 import type { DailyAlertInput, DailyAlertKind } from '@/lib/db';
 import type { CompanyResearch, PortfolioPosition } from '@/lib/investment';
+import { getAllStoredCompanyFinancials } from '@/lib/company-financials';
+import { saveCompanyScoreSnapshots } from '@/lib/score-tracking';
+import { evaluateScoreChanges, type ScoreReview } from '@/lib/score-alerts';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,16 +32,21 @@ function strongestLabel(labels: ReviewLabel[]): ReviewLabel {
   'no major changes');
 }
 
-async function evaluate(position: PortfolioPosition, research: CompanyResearch | null): Promise<DailyCard> {
-  if (!research) return { position, research, label: 'needs review', reasons: ['Turuandmeid ei õnnestunud laadida.'] };
+async function evaluate(position: PortfolioPosition, research: CompanyResearch | null, scoreReview: ScoreReview | null): Promise<DailyCard> {
+  if (!research) return {
+    position,
+    research,
+    label: scoreReview?.label || 'needs review',
+    reasons: ['Turuandmeid ei õnnestunud laadida.', ...(scoreReview ? [`Score: ${scoreReview.summary}`] : [])],
+  };
   try {
     // Daily vajab kindlat praegust snapshot'i, et võrrelda kahte DB rida.
     await saveCompanyResearch(research);
     const history = await getDailyHistory(position.ticker);
     if (!history) return { position, research, label: 'needs review', reasons: ['Salvestatud hinnaajalugu puudub.'] };
 
-    const reasons: string[] = [];
-    const labels: ReviewLabel[] = [];
+    const reasons: string[] = scoreReview ? [`Score: ${scoreReview.summary}`] : [];
+    const labels: ReviewLabel[] = scoreReview ? [scoreReview.label] : [];
     const alerts: DailyAlertInput[] = [];
     const addAlert = (
       kind: DailyAlertKind,
@@ -150,8 +158,18 @@ export default async function DailyPage() {
   try { positions = (await listPositions()).filter((position) => position.status !== 'closed').slice(0, 20); }
   catch (error) { dbError = (error as Error).message; }
 
+  const openTickers = new Set(positions.map((position) => position.ticker));
+  const storedFinancials = await getAllStoredCompanyFinancials().catch(() => []);
+  await saveCompanyScoreSnapshots(storedFinancials.filter((financial) => openTickers.has(financial.ticker))).catch((error) => {
+    console.error('Daily score-snapshotide salvestamine ebaõnnestus:', error);
+  });
+  const scoreReviews = await evaluateScoreChanges(positions.map((position) => position.id)).catch((error) => {
+    console.error('Daily score-muutuste hindamine ebaõnnestus:', error);
+    return new Map<number, ScoreReview>();
+  });
+
   const results = await Promise.all(positions.map(async (position) =>
-    evaluate(position, await fetchCompanyResearch(position.ticker)),
+    evaluate(position, await fetchCompanyResearch(position.ticker), scoreReviews.get(position.id) || null),
   ));
 
   return (

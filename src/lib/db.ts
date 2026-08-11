@@ -410,12 +410,38 @@ export async function ensureSchema(): Promise<void> {
       id BIGSERIAL PRIMARY KEY,
       position_id BIGINT NOT NULL REFERENCES portfolio_positions(id) ON DELETE CASCADE,
       thesis TEXT NOT NULL,
+      business TEXT,
+      why_now TEXT,
+      moat TEXT,
+      mispricing TEXT,
+      catalyst TEXT,
+      invalidation TEXT,
+      twelve_month_checkpoint TEXT,
+      checkpoint_is_measurable BOOLEAN NOT NULL DEFAULT false,
       time_horizon TEXT,
+      status TEXT NOT NULL DEFAULT 'draft',
+      version INTEGER NOT NULL DEFAULT 1,
+      content_hash TEXT,
+      score_snapshot_id BIGINT,
       is_current BOOLEAN NOT NULL DEFAULT true,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS business TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS why_now TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS moat TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS mispricing TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS catalyst TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS invalidation TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS twelve_month_checkpoint TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS checkpoint_is_measurable BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'draft';
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS content_hash TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS score_snapshot_id BIGINT;
     CREATE UNIQUE INDEX IF NOT EXISTS idx_one_current_thesis
       ON investment_theses (position_id) WHERE is_current;
+    CREATE INDEX IF NOT EXISTS idx_thesis_position_history
+      ON investment_theses (position_id, version DESC, created_at DESC);
     CREATE TABLE IF NOT EXISTS thesis_change_events (
       id BIGSERIAL PRIMARY KEY,
       position_id BIGINT NOT NULL REFERENCES portfolio_positions(id) ON DELETE CASCADE,
@@ -435,12 +461,16 @@ export async function ensureSchema(): Promise<void> {
       source_url TEXT,
       occurred_at TIMESTAMPTZ NOT NULL,
       dedupe_key TEXT,
+      payload JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       UNIQUE (company_id, kind, title, occurred_at)
     );
     ALTER TABLE alerts ADD COLUMN IF NOT EXISTS dedupe_key TEXT;
+    ALTER TABLE alerts ADD COLUMN IF NOT EXISTS payload JSONB NOT NULL DEFAULT '{}'::jsonb;
     CREATE UNIQUE INDEX IF NOT EXISTS idx_alerts_dedupe_key
       ON alerts (dedupe_key) WHERE dedupe_key IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_alerts_position_occurred
+      ON alerts (position_id, occurred_at DESC, id DESC);
   `);
 }
 
