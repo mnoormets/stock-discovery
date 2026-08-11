@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-08-11
+Uuendatud: 2026-08-12
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -146,6 +146,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 Sprint kinnitas kaks hüpoteesi. Catalyst hard gate tekitas research false negative'e: BW-l oli päris Q2/backlog/Base Electron catalyst ning CAKE-l earnings/comparable-sales/unit-opening evidence, kuigi collector märkis catalyst'i puuduvaks. Coverage on endiselt completeness/presence; uus kiht teeb BW 100 Coverage + 2021 debt vastuolu nüüd nähtavaks. Järgmine samm ei ole uus provider: kasuta warning'uid järgmises manual research otsuses ja otsusta seejärel eraldi, kas catalyst hard gate muuta structured evidence field'iks.
 
+Catalyst-otsuse jaoks on nüüd olemas kirjalik disain [`docs/CATALYST_EVIDENCE_V2.md`](CATALYST_EVIDENCE_V2.md): see on ainult disain, koodi, filtreid, skeemi ega provider'eid selle põhjal veel ei muudetud. Ehitamise eelduseks jääb sama cohort'i kasutamine märgistatud testhulgana.
+
 ## Roadmap
 
 ### NOW - järgmine töö
@@ -155,7 +157,7 @@ Kasuta Data Freshness + Period Alignment V1 päris research-kihina enne järgmis
 - kontrolli API, BW, CAKE, HIMS ja ACHR olemasolevad teesiotsused uue evidence-ploki kõrval üle;
 - dokumenteeri, kas warning muutis inimese tõlgendust või ainult kinnitas juba teadaolevat riski;
 - kalibreeri 550 päeva stale-, 120 päeva good-alignment- ja 730 päeva poor-alignment piire ainult päris näidete põhjal;
-- otsusta pärast seda eraldi, kas catalyst hard gate muuta structured evidence field'iks: materiality, suund, allikas, uudsus ja thesis-relevance;
+- otsusta pärast seda eraldi, kas catalyst hard gate muuta structured evidence field'iks: materiality, suund, allikas, uudsus ja thesis-relevance; disain on valmis failis [`docs/CATALYST_EVIDENCE_V2.md`](CATALYST_EVIDENCE_V2.md), kuid ehitamise otsus on veel tegemata;
 - jätka viie päris teesi 12 kuu checkpoint'ide jälgimist; ära kustuta neid integration-test andmetena.
 
 Auditi järel ootel collection reliability ja canonical cloud-history:
@@ -196,6 +198,13 @@ Pärast keskse kogumise käivitamist jätkub päris forward-valimi kasvatamine j
 - Fikseeritud horisondid 6 kuud, 1 aasta ja 3 aastat; mitte ideaalne tagantjärele tipuhind.
 - Mõõdikud: mediaantootlus, hit rate, ületootlus benchmark'i suhtes, max drawdown ja valimi suurus; tulemused mudeliversiooni ja Coverage vahemiku kaupa.
 - Enne backtesti tuleb fikseerida universum, benchmark ja otsuse hetke andmete säilitamise reegel.
+- Catalyst Evidence V2 vastavalt disainile [`docs/CATALYST_EVIDENCE_V2.md`](CATALYST_EVIDENCE_V2.md), kui kasutaja otsustab selle ehitada:
+  - `catalyst_events` vaatlus ja versioonitud `catalyst_assessments` hinnang hoitakse lahus, et ümberhindamine ei kirjutaks vaatlust ümber;
+  - viis eraldi mõõdet on materiality, direction, source quality, novelty ja thesis-relevance; mandate-relevance on neist eraldi;
+  - `scheduled_window` (earnings-kuupäev) ei tohi kunagi olla `supported`; tõendiks muutub see alles uue `financial_facts` perioodi sidumisel;
+  - catalyst muutub kaasamise eeltingimusest järjestuse sisendiks; uut koondskoori ei teki;
+  - kaasamisreegli muutus nõuab mudeliversiooni tõstmist `rklb-discovery-v2`-ks, et frequency ei võrdleks v1 ja v2 run'e ühe loona;
+  - kalibreerimise testhulk on olemasolev cohort: API tugev, BW mixed-tugev, CAKE off-mandate, HIMS mixed, ACHR adjacent ja PLUG false-positive stress-test.
 - Thesis Evidence Engine: olemasolevad SEC/uudise/earnings/score signaalid teesi poolt ja vastu.
 - Ülevaatuse kuupäev ja „mis muutus pärast eelmist ülevaatust?”.
 
@@ -271,6 +280,8 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Viimase snapshot'i 42 tickerist oli 31-l hind/market cap, 10-l SEC/score, 0-l sector/industry ning ainult kahel persisted `quote_type`; universumi kvaliteeti ei saa hinnata ainult toore ticker-count'i järgi.
 - Coverage Score mõõdab praegu komponendi olemasolu, mitte sisendi värskust. Audit leidis ARR revenue 2011/2010, BW debt 2021 ja PLUG debt 2024 segatuna uuemate 2026 faktidega; neid skoore ei tohi käsitleda võrdselt värske ja joondatud CAKE evidence'iga.
 - Praeguse auditi põhjal on catalyst hard gate tõenäoliselt liiga karm; `BW` ja `CAKE` välistati ainult katalüsaatori puudumise tõttu. Koodi ei muudeta enne manual research sprinti.
+- Catalyst Evidence V2 on 2026-08-12 seisuga ainult disain ([`docs/CATALYST_EVIDENCE_V2.md`](CATALYST_EVIDENCE_V2.md)). Praegune `catalystCriterion` boolean gate jääb tootesse kuni eraldi ehitamisotsuseni; disaini olemasolu ei ole luba filtreid muuta.
+- Catalyst V2 lahtised küsimused enne ehitamist: kes annab `thesis_relevance` väärtuse enne teesi olemasolu; kuidas tuvastada `primary_ir` allikat ilma uue provider'ita, kui ainus tee on `news_items` pealkiri koos `sec_events` filing'uga; kas 45/30/14 päeva aknad kehtivad edaspidi ainult `scheduled_window` ja novelty kohta; kust tuleb `linked_fact_ids` seos, mis ei tohi olla pealkirja sõnesobitus.
 - Catalyst counterfactual: immutable run oleks hard gate'ita lisanud BW ja CAKE; tänaste post-enrichment score'idega läbivad muud baasfiltrid BW, CAKE, API, HR ja PLUG, kuid ühelgi neist pole stored catalyst'it.
 - Freshnessi range 2 aasta piir leidis 60 olemasolevast core metricust kaks vana sisendit: ARR revenue 2011 ja BW debt 2021. PLUG debt 2024 ei ületa veel kaht aastat, kuid jääb ettevõtte uusimast score-sisendist 675 päeva maha.
 - Coverage, Freshness ja Period Alignment peavad jääma eraldi mõisteteks: completeness ei tohi vaikimisi tähendada, et kõik score-komponendid on värsked ja samast aruandeperioodist.
@@ -411,6 +422,16 @@ npm run build
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-08-12 - Catalyst Evidence V2 disain
+
+- Koostati [`docs/CATALYST_EVIDENCE_V2.md`](CATALYST_EVIDENCE_V2.md) ainult olemasoleva funnel-auditi, viie ettevõtte research sprindi ja `data-quality-v1` kihi põhjal; uut andmeallikat ei eeldatud.
+- Eristati kolm mõistet: sündmus, tõend ja catalyst. Praegune gate mõõdab ainult kirje olemasolu ajaaknas.
+- Määrati viis hinnangumõõdet (materiality, direction, source quality, novelty, thesis-relevance) ning neist eraldi mandate-relevance, mille vajadust tõestas CAKE.
+- Eristati earnings-kuupäev päris katalüsaatorist: `scheduled_window` ei saa olla `supported`, tõend nõuab uue `financial_facts` perioodi sidumist ning möödunud kuupäev ilma uue perioodita on `collection_gap`, mitte sündmusetus.
+- Kirjeldati andmemudel `catalyst_events` + versioonitud `catalyst_assessments` ja otsusehetke väljad `discovery_decisions` uutel ridadel ilma backfill'ita; kaasamisreegli muutus nõuab `rklb-discovery-v2` mudeliversiooni.
+- Kirjeldati BW ja CAKE juhtumite muutus ning kaheksa kaitset PLUG tüüpi false positive'ide vastu; lisati cohort'i põhine kalibreerimise testhulk.
+- Koodi, filtreid, skeemi, score-valemeid ega provider'eid ei muudetud. Ehitamisotsus jääb kasutajale.
 
 ### 2026-08-11 - Data Freshness + Period Alignment V1
 
