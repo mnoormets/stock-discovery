@@ -223,3 +223,78 @@ Do a **manual research sprint** first, using `API`, `BW`, `CAKE`, `HIMS`, and `A
 - Only after the cohort and decision baselines exist should centralized collection infrastructure become the next priority, because then it preserves an evidence-generating process rather than an untested signal.
 
 No buy/sell recommendation or price target is made in this audit.
+
+## 7. Follow-up: catalyst counterfactual and data freshness
+
+### Catalyst as evidence instead of a hard gate
+
+Two views must be kept separate:
+
+1. In the immutable canonical run, only `BW` and `CAKE` passed every non-catalyst gate. Removing the catalyst hard gate would have changed the run from 0 to 2 candidates.
+2. Using all score snapshots already present at follow-up time, including enrichment completed after the canonical run, five current radar companies pass Growth ≥65, Coverage ≥70, known market cap ≤$75b, and the RKLB exclusion without requiring a catalyst.
+
+| Counterfactual rank | Ticker | Growth | Health | Coverage | Current catalyst | Product judgment |
+|---:|---|---:|---:|---:|---|---|
+| 1 | BW | 100 | 67 | 100 | no | Research-worthy turnaround evidence, but stale debt and +47.3% dilution prevent trusting the headline scores. |
+| 2 | CAKE | 81 | 81 | 100 | no | Research-worthy and the cleanest aligned financial evidence; may be a quality/mature case rather than an RKLB-like case. |
+| 3 | API | 81 | 92 | 93 | no | Research-worthy inflection, but slow revenue growth and a pump warning require human review. |
+| 4 | HR | 76 | 42 | 80 | no | Likely a useful exclusion: weak fit, low Health, and REIT-like structure. |
+| 5 | PLUG | 71 | 50 | 100 | no | Useful false-positive stress test: negative OCF/FCF, +21% shares, and only +2.5% revenue despite passing G/C. |
+
+The order above applies the scanner's existing lexicographic ordering after removing catalyst as an eligibility condition: supported criteria count, Growth, Coverage, Health, ticker. It is not a buy ranking.
+
+The current catalyst field provides no positive discrimination in this snapshot:
+
+- the only radar names with a stored event inside the windows are `ARR` and `ACHR`;
+- `ARR` fails Growth/Coverage;
+- `ACHR` has no score because SEC facts are missing;
+- all five otherwise eligible names have no stored catalyst.
+
+The small sample cannot statistically prove “false negative”, because none of the five has completed human research or an outcome. Product judgment nevertheless favors treating catalyst as an evidence field: it appears to block three plausible research ideas (`BW`, `CAKE`, `API`) and two questionable names (`HR`, `PLUG`) without distinguishing between them. A missing event is not evidence that the business is uninteresting, while the existence of any headline/filing is not evidence of a material positive catalyst.
+
+`ACHR` is a useful negative-control case. The user's multi-year watchlist experience—narrative excitement, one hype-driven rise, subsequent decline, and increased skepticism—does not itself prove the company will fail, but it demonstrates why “air taxis + Boeing-related news + recent 8-K” must not equal thesis confirmation. ACHR should be researched through milestone delivery, cash runway, funding/dilution, and an explicit invalidation condition; a justified `rejected` thesis would be a valuable product result.
+
+### Does Coverage measure coverage or presence?
+
+For this audit, a **core metric** is one of revenue, net income, operating cash flow, free cash flow, cash, debt, or shares outstanding. The strict freshness cutoff is 2024-08-11: more than two years before the 2026-08-11 audit date.
+
+- Scored radar companies: **10**.
+- Available core metrics: **60** out of a theoretical 70 unweighted metric slots.
+- Core metrics older than two years: **2/60 (3.3%)**.
+- Companies with at least one >2-year-old metric: **2/10**.
+- Stale metrics: `ARR revenue` at 2011-06-30 and `BW debt` at 2021-09-30.
+
+| Ticker | Current Coverage | Core present | >2y old | Fresh among present | Fresh core / 7 | Oldest → newest period |
+|---|---:|---:|---:|---:|---:|---|
+| BW | 100 | 7/7 | 1 | 86% | 86% | 2021-09-30 → 2026-08-04 |
+| CAKE | 100 | 7/7 | 0 | 100% | 100% | 2026-03-31 → 2026-07-27 |
+| DJT | 100 | 7/7 | 0 | 100% | 100% | 2026-06-30 → 2026-08-07 |
+| PLUG | 100 | 7/7 | 0 by strict cutoff | 100% | 100% | 2024-09-30 → 2026-08-06 |
+| API | 93 | 6/7 | 0 | 100% | 86% | 2025-12-31 → 2025-12-31 |
+| HR | 80 | 6/7 | 0 | 100% | 86% | 2026-06-30 → 2026-07-27 |
+| IQ | 78 | 5/7 | 0 | 100% | 71% | 2025-12-31 → 2025-12-31 |
+| FRMI | 68 | 6/7 | 0 | 100% | 86% | 2026-03-31 → 2026-05-11 |
+| ARR | 65 | 5/7 | 1 | 80% | 57% | 2011-06-30 → 2026-07-21 |
+| HIMS | 58 | 4/7 | 0 | 100% | 57% | 2026-06-30 → 2026-06-30 |
+
+`PLUG debt` is not older than the strict two-year cutoff, but it is 675 days behind that company's newest score input. This shows why a global two-year flag alone is insufficient: freshness must also measure alignment to the company's current reporting anchor.
+
+Conclusion: the current Coverage Score primarily measures **weighted input presence**. That is a legitimate completeness concept, but the label can be misread as “current and decision-ready data coverage”. It should remain separate from Freshness rather than silently changing meaning.
+
+A future data-quality model should expose at least three concepts:
+
+1. **Coverage / completeness:** how much of the expected metric set exists.
+2. **Freshness:** how recently each available metric's economic period ended, using metric-appropriate windows rather than one universal cutoff.
+3. **Period alignment:** whether metrics combined into one score describe approximately the same reporting period; balance-sheet values must not silently mix 2021 debt with 2026 cash.
+
+No score formula or UI was changed. Before implementation, freshness rules should specify flow versus balance-sheet windows, the anchor period, treatment of annual foreign-issuer facts, and whether stale components become unavailable or remain visible with a warning.
+
+### Follow-up recommendation
+
+The next step should still be the **manual research sprint**, not an immediate catalyst code change:
+
+- the audit can manually discount the two stale metrics in a ten-company scored sample;
+- human labels are still needed before calling `BW`, `CAKE`, or `API` false negatives;
+- `ACHR` can serve as a likely skepticism/rejection test rather than a forced positive thesis.
+
+After the sprint, the first product-integrity change should be a separate Data Freshness/Period Alignment layer. Only after scores clearly expose stale inputs should catalyst be removed as a hard gate and retained as structured evidence. This order avoids widening the funnel on top of potentially misleading score inputs.
