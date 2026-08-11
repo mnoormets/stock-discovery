@@ -9,6 +9,8 @@ import { getResearchBriefState } from '@/lib/research-brief';
 import { normalizeTicker } from '@/lib/investment';
 import { getSectorRelativeStats } from '@/lib/sector-relative';
 import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
+import DataQualityEvidence from '@/components/DataQualityEvidence';
+import { calculateDataQuality } from '@/lib/data-quality';
 
 export const dynamic = 'force-dynamic';
 
@@ -148,6 +150,7 @@ export default async function CompanyPage({ params }: { params: { ticker: string
     return null;
   });
   const scores = calculateCompanyScores(financials);
+  const dataQuality = calculateDataQuality(financials);
   const trackedScores = await getTrackedCompanyScores(ticker, financials).catch((error) => {
     console.error(`Ettevõtte ${ticker} skooriajalugu ei õnnestunud laadida:`, error);
     return { current: null, previous: null, history: [] };
@@ -203,6 +206,7 @@ export default async function CompanyPage({ params }: { params: { ticker: string
           <ScoreCard title="Financial Health Score" score={scores.financialHealth} />
           <ScoreCard title="Coverage Score" score={scores.coverage} />
         </div>
+        <DataQualityEvidence summary={dataQuality} />
         <SectorRelativeEvidence stats={sectorRelative} />
         {trackedScores.current && <ScoreHistory current={trackedScores.current} history={trackedScores.history} />}
         <p className="muted scoreIntro">Growth kaalub revenue, net income’i, operating cash flow ja free cash flow YoY muutusi. Financial Health kaalub rahavoogude märki ja trendi, cash/debt suhet, kasumlikkust ning aktsiate arvu muutust. Coverage näitab nende kahe mudeli kaalutud sisendikatet. Skoor ei ole ostu- ega müügisoovitus.</p>

@@ -38,6 +38,19 @@ Näitab, kui suur osa mudeli kaalutud sisenditest oli arvutatav. Madala Coverage
 
 Iga Growth/Health skoor näitab kolme suurima kaalutud mõjuga põhjust. Score snapshot säilitab kasutatud faktid, komponendid, mudeliversiooni ja arvutamise aja.
 
+## Data Freshness ja Period Alignment
+
+Ettevõtte detail, RKLB kandidaadikaart ja Thesis Builder näitavad Coverage'ist eraldi andmekvaliteedi plokki.
+
+- **Freshness** näitab score'is kasutatud viimaste SEC faktide vanust. V1 loeb üle 550 päeva vana fakti stale sisendiks ning kuvab oleku `fresh`, `mixed`, `stale` või `unknown`.
+- **Period Alignment** näitab, kas kasutatud mõõdikud kirjeldavad võrreldavat majandushetke. Kuni 120-päevane vahe on hea ainult siis, kui flow-mõõdikutes pole läbisegi annual/quarter/YTD kestusi; üle 730-päevane vahe on `poor`.
+- Plokk näitab iga olemasoleva põhimõõdiku väärtust, perioodi, perioodiliiki, vanust, fact ID-d, accession number'it ja SEC algallikat.
+- Puuduv mõõdik vähendab endiselt Coverage'it, kuid seda ei fabritseerita teadmata perioodiga sisendiks. Ühe teadaoleva mõõdiku põhjal jääb Alignment ausalt `unknown`.
+
+Coverage 100 võib seega olla samal ajal Alignment `poor`. Näiteks BW cash on 2026. aasta perioodist, kuid score'is kasutatud debt pärineb 2021. aastast. Growth ja Financial Health punkte V1 ei muuda; hoiatus ütleb investorile, milline algallikas tuleb enne järeldust üle kontrollida.
+
+Thesis Builder kuvab alignment/freshness probleemi korral `ready` staatuse juures soft warning'u. See ei blokeeri salvestamist, sest lõpliku tõendi piisavuse otsustab kasutaja.
+
 ## Sector-relative ranking
 
 Plokk **Compared with similar companies** võrdleb ettevõtte Growth, Financial Health ja Coverage skoori sama industry või sector grupi mediaani ning percentile'iga. Võrdluses kasutatakse ainult sama score-versiooni ettevõtteid, millel on kõik kolm skoori olemas. Market cap saab eraldi percentile'i.

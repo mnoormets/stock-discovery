@@ -4,6 +4,7 @@ import { calculateCompanyScores, getTopScoreReasons, type CompanyScore } from '.
 import { listPositions } from './portfolio';
 import { saveCompanyScoreSnapshots } from './score-tracking';
 import { getSectorRelativeStatsMap, type SectorRelativeStats } from './sector-relative';
+import { calculateDataQuality, type DataQualitySummary } from './data-quality';
 import {
   recordDiscoveryRun,
   type DiscoveryDecisionInput,
@@ -39,6 +40,7 @@ export interface RklbCandidate {
   proofQuestions: string[];
   catalystAt: string | null;
   sectorRelative: SectorRelativeStats;
+  dataQuality: DataQualitySummary;
 }
 
 export interface RklbDiscoveryResult {
@@ -99,6 +101,7 @@ interface EvaluatedCompany {
   proofQuestions: string[];
   exclusionReasons: string[];
   sectorRelative: SectorRelativeStats;
+  dataQuality: DataQualitySummary;
 }
 
 const MAX_KNOWN_MARKET_CAP = 75_000_000_000;
@@ -385,6 +388,7 @@ export async function getRklbDiscoveryCandidates(
       ],
       exclusionReasons: exclusions,
       sectorRelative,
+      dataQuality: calculateDataQuality(financial),
     });
   }
 
@@ -420,6 +424,7 @@ export async function getRklbDiscoveryCandidates(
     proofQuestions: item.proofQuestions,
     catalystAt: item.catalyst.catalystAt,
     sectorRelative: item.sectorRelative,
+    dataQuality: item.dataQuality,
   }));
 
   return {
