@@ -2,7 +2,7 @@
 
 Uuendatud: 2026-08-11
 
-See on projekti elav master-dokument ja toote/tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
+See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
 ## North Star
 
@@ -11,48 +11,38 @@ Kasutaja peab suutma leida huvitava ettevõtte, eristada lugu tõenditest ning k
 - miks see ettevõte;
 - miks praegu;
 - mida turg võib valesti hinnata;
-- mis peab õnnestuma;
-- milline sündmus või mõõdik muudab teesi valeks.
+- mis peab järgmise 12 kuu jooksul juhtuma;
+- milline mõõdetav sündmus muudab teesi valeks.
 
 Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada otsustusprotsessi kvaliteeti ja säilitada see, mida otsuse hetkel tegelikult teati.
 
 ## Püsivad tootepõhimõtted
 
-- Kõrge skoor tähendab “uuri lähemalt”, mitte “osta”.
-- Faktid, järeldused ja kasutaja oletused peavad olema eristatavad.
-- Iga skoor ja automaatne järeldus peab näitama sisendeid, coverage'it, versiooni ja algallikaid.
-- Säilita ajalooline “as known at the time” seis, et vähendada hindsight bias'i.
-- Ära lisa uusi väliseid andmeallikaid enne, kui olemasoleva andmestiku kasutajakogemus ja Thesis Builder on valmis.
-- Puuduvad andmed ei tohi muutuda automaatselt nullpunktideks ega lehte crash'ida.
-
-## Projekti eesmärk
-
-Aidata investoril leida varajasi tugeva potentsiaaliga ettevõtteid ja ehitada nende kohta kontrollitav investeerimistees. Rakendus ei anna ostu- ega müügisoovitusi.
-
-Oluline kasutuslugu: 2023. aastal leiti RKLB intuitsiooni ja Redditi kaudu, kuid puudus konkreetne viis põhjendada, miks ettevõte võiks olla hea investeering just sel ajahetkel. Rakendus peab aitama muuta intuitsiooni tõenditega kaitstavaks teesiks.
+- Kõrge skoor tähendab „uuri lähemalt”, mitte „osta”.
+- Faktid, automaatsed järeldused ja kasutaja oletused peavad olema eristatavad.
+- Iga skoor peab näitama komponente, katvust, mudeliversiooni ja algallikaid.
+- Ajalooline seis peab olema „as known at the time”, et vähendada hindsight bias'i.
+- Puuduvad andmed ei muutu automaatselt nullpunktideks ega tohi lehte katki teha.
+- Päeval, mil tugevaid kandidaate pole, näitab avastusvaade null kandidaati; süsteem ei leiuta kohustuslikku esikolmikut.
+- Rakendus ei anna ostu- ega müügisoovitusi.
 
 ## Praegune töötav seis
 
-- Next.js 14.2.35 + PostgreSQL + Docker Compose, rakendus pordil `3005`.
+- Next.js 14.2.35, PostgreSQL ja Docker Compose; rakendus pordil `3005`.
 - Yahoo Finance hinnad, uudised, earnings ja analüütikute konsensus.
-- SEC filingud ja tasuta SEC CompanyFacts:
-  - revenue;
-  - net income;
-  - operating cash flow;
-  - tuletatud free cash flow;
-  - cash;
-  - debt;
-  - shares outstanding.
-- CompanyFactsi perioodid ja YoY võrdlused on idempotentselt tabelis `financial_facts`.
-- Tasuta modulaarne Research Brief koos faktide, järelduste ja algallikatega.
+- SEC filingud ja tasuta SEC CompanyFacts: revenue, net income, operating cash flow, tuletatud free cash flow, cash, debt ja shares outstanding.
+- CompanyFactsi perioodid ja YoY võrdlused tabelis `financial_facts`.
+- Tasuta reeglipõhine Research Brief koos faktide, järelduste ja algallikatega.
 - Growth Score, Financial Health Score ja Coverage Score.
 - Versioonitud `company_score_snapshots`, mis säilitavad input-hashi, SEC fact ID-d, perioodid ja komponendid.
-- `/scanner` fundamentaalne edetabel ja sortimine Growth, Health või Coverage järgi.
-- `/watchlist` kasutab olemasolevaid `portfolio_positions.status = 'watch'` kirjeid ning pakub olemasolevate skooride põhjal uurimisideid.
-- `/portfolio` positsioonid, teesid, P/L ja turuväärtus.
-- `/daily` snapshot-võrdlused ja alerts.
+- `/scanner` fundamentaalne edetabel ja sortimine Growthi, Healthi või Coverage'i järgi.
+- `/watchlist` kasutab `portfolio_positions.status = 'watch'` kirjeid ja pakub olemasolevate skooride põhjal uurimisideid.
+- `/portfolio` positsioonid, P/L ja turuväärtus; olemasoleva positsiooni tees suunatakse Thesis Builderisse.
+- `/daily` snapshot-võrdlused ja alert'id.
+- `/thesis/[positionId]` struktureeritud, versioonitud Thesis Builder koos 12 kuu kontrollpunkti ja skooritõenditega.
+- Watchlisti score-change alert võrdleb järjestikuseid sama mudeliversiooni snapshot'e, säilitab idempotentse alert'i ning näitab muutunud komponente nii Watchlistis kui Daily Changes vaates.
 
-Viimati kontrollitud päris tulemused:
+Viimati kontrollitud päris skoorid:
 
 | Ticker | Growth | Health | Coverage |
 |---|---:|---:|---:|
@@ -64,111 +54,103 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Tehtud verstapostid
 
-- **Tükk 1:** idempotentne price/news/SEC/earnings ajalugu.
-- **Tükk 2:** Daily Changes võrdleb päris snapshot-ajalugu ja loob idempotentseid alert'e.
-- **Tükk 3:** portfelli turuväärtus, unrealized P/L ning võitja/kaotaja.
-- **Tükk 4:** analüütikute konsensus ja hinnasihid.
-- **Tükk 5:** turu scanner kogutud movers/earnings/SEC/news andmetega.
+- Idempotentne price/news/SEC/earnings ajalugu.
+- Daily Changes võrdleb päris snapshot-ajalugu ja loob idempotentseid alert'e.
+- Portfelli turuväärtus, unrealized P/L ning võitja/kaotaja.
+- Analüütikute konsensus ja hinnasihid.
+- Turu scanner kogutud movers/earnings/SEC/news andmetega.
 - Tasuta reeglipõhine Research Brief ja modulaarne signal engine.
 - SEC CompanyFacts finantsajalugu ja võrreldavate perioodide YoY.
 - Growth, Financial Health ja Coverage Score koos versioonitud ajalooga.
 - Watchlist ja olemasolevatel skooridel põhinev idee-avastus.
+- Thesis Builder V1:
+  - väljad `business`, `why now`, `moat`, `mispricing`, `catalyst`, `invalidation`, ajahorisont ja 12 kuu kontrollpunkt;
+  - staatused `draft`, `researching`, `ready`, `rejected`;
+  - Growthi ja Financial Healthi kolm suurima kaalutud mõjuga põhjust;
+  - „5-minute defense” ja versiooniajalugu;
+  - teesi versiooniga seotud point-in-time score snapshot;
+  - identne kordussalvestus ei loo duplikaatversiooni;
+  - `ready` nõuab invalidation-tingimust, 12 kuu kontrollpunkti ja kinnitust, et kontrollpunkt on mõõdetav.
+- Watchlisti score-change alert:
+  - võrdleb ainult kahte järjestikust sama mudeliversiooni snapshot'i;
+  - oluline muutus on vähemalt 10 punkti Growthis/Healthis või oluline komponendi seisundimuutus;
+  - kuvab vana ja uue skoori, mudeliversiooni, snapshot'i ID-d ja muutunud komponendid;
+  - salvestab ühe dedupe-võtmega alert'i snapshotipaari kohta;
+  - mudeliversiooni vahetus kuvatakse `needs review` seisuna ega tekita eksitavat score-alert'i;
+  - positiivne, negatiivne, segatud ja ebaoluline muutus kasutavad sõnastust `new catalyst`, `new risk`, `needs review` või `no major changes`.
 
 ## Praegune fookus
 
-**Thesis Builder – esimene versioon pole veel alustatud.**
+**`/scanner` eelseadistus „Leia järgmine RKLB”.**
 
-Eesmärk on muuta Watchlisti idee struktureeritud, tõenditega seotud ja ümberlükatavaks teesiks. Uusi andmeallikaid selleks ei lisata.
-
-Thesis Builder on enne laia “järgmise RKLB” automaatotsingut teadlikult esimene: süsteem oskab juba näidata, milline ettevõte paistab andmete järgi huvitav, kuid peab järgmisena aitama vastata, miks seda ettevõtet võiks omada ja mis muudaks selle mõtte valeks.
+Eesmärk on kasutada olemasolevat kogutud universumit ja leida 0–5 läbipaistvalt põhjendatud uurimiskandidaati. See ei ole RKLB sektorikoopia, ostusoovitus ega üks udune tõenäosusnumber. Päeval, mil piisavalt tugevaid kandidaate pole, kuvatakse null tulemust.
 
 ## Roadmap
 
 ### NOW – järgmine arendustükk
 
-Watchlisti tickeri **Thesis Card**:
+`/scanner` eelseadistus **„Leia järgmine RKLB”**:
 
-- kasutaja väljad: `business`, `why now`, `moat`, `mispricing`, `catalyst`, `invalidation`, ajahorisont;
-- eraldi väli **“Mis peab järgmise 12 kuu jooksul juhtuma?”**;
-- staatus: `draft`, `researching`, `ready`, `rejected`;
-- automaatselt seotud olemasolevad Growth/Health/Coverage tõendid;
-- iga Growth/Health skoori kolm kõige olulisemat positiivset või negatiivset põhjust, näiteks “Health 36, sest …”;
-- teesi versiooniajalugu;
-- detailvaade “5-minute defense”.
-
-Valmiskriteeriumid:
-
-- teesi saab Watchlistist luua, muuta ja versioonida;
-- kasutaja näeb, millised väited on tõendatud ja millised on tema oletused;
-- invalidation on kohustuslik enne staatust `ready`;
-- 12 kuu kontrollpunkt on mõõdetav ega korda lihtsalt pikaajalist teesi;
-- skoori number on seotud komponentide ja kolme peamise põhjusega;
-- korduv salvestamine ei tekita duplikaatversioone;
-- päris UI ja DB test on tehtud ning ajutised read koristatud.
+- kasuta ainult olemasolevat kogutud universumit ja olemasolevaid SEC/Yahoo/application andmeid;
+- tagasta 0–5 uurimiskandidaati, mitte kohustuslik esikolmik;
+- iga kandidaat näitab, miks ta valimisse jõudis, kas kasv on erakordne, kui hea on andmekate, milline on finantsiline runway, lähenev katalüsaator, peamine risk ja mis on teadmata;
+- moat ja mispricing jäävad investori tõendatavateks küsimusteks;
+- iga kriteerium saab eraldi staatuse `supported`, `uncertain` või `missing`;
+- kandidaadikaardilt saab valida `Lisa Watchlisti` või `Alusta teesi`;
+- üks läbipaistmatu „RKLB tõenäosuse” koondskoor on keelatud;
+- lisa päris UI ja DB/runtime kontroll ning eemalda ajutised testread.
 
 ### NEXT
 
-- Thesis Evidence Engine: olemasolevad SEC/uudise/earnings/score signaalid teesi poolt ja vastu.
-- Watchlisti alert, kui Growth või Health muutub oluliselt; alert peab näitama muutunud komponente, mudeliversiooni ja võrreldud snapshot'e.
-- **“Leia järgmine RKLB” Discovery v1** olemasoleva kogutud universumi põhjal: tagasta 3–5 uurimiskandidaati, mitte ostusoovitust.
 - Otsuse hetke snapshot: hind, skoorid, tees, eeldused ja allikad.
-- Ülevaatuse kuupäev ja “mis muutus pärast eelmist ülevaatust?”.
-- Bear/base/bull stsenaarium kasutaja enda eeldustega ning eraldi 12 kuu kontrollpunktiga.
-
-Discovery v1 otsib mustrit, mitte RKLB sektorit:
-
-1. väike või varajase faasi ettevõte, kasutades läbipaistvat market cap'i vahemikku;
-2. erakordne kasv koos piisava Coverage Score'iga;
-3. finantsiline runway ja riskid, ilma et kahjumlik varajane ettevõte automaatselt välja kukuks;
-4. nähtav lähenev katalüsaator olemasolevatest earnings/SEC/news andmetest;
-5. hinnastuse või analüütikute vaate vihje, selgelt nõrga abisignaalina;
-6. kasutaja kinnitatavad küsimused: konkurentsieelis, mispricing ja “miks just praegu?”.
-
-Tulemus näitab iga kriteeriumi eraldi staatust `supported`, `uncertain` või `missing`. Üht läbipaistmatut “RKLB tõenäosuse” numbrit ei looda.
-
-Esimene UX võib olla `/scanner` eelseadistus **“Leia järgmine RKLB”**: kuupäevaga 3–5 kandidaadikaarti, igaühel “miks nimekirjas”, “mis on puudu”, peamine risk ning tegevused `Lisa Watchlisti` ja `Alusta teesi`. Nii muutub avastamine otse Thesis Builderi sisendiks.
+- Aus point-in-time score backtest / walk-forward valideerimine.
+- Fikseeritud horisondid 6 kuud, 1 aasta ja 3 aastat; mitte ideaalne tagantjärele tipuhind.
+- Mõõdikud: mediaantootlus, hit rate, ületootlus benchmark'i suhtes, max drawdown ja valimi suurus; tulemused mudeliversiooni ja Coverage vahemiku kaupa.
+- Enne backtesti tuleb fikseerida universum, benchmark ja otsuse hetke andmete säilitamise reegel.
+- Thesis Evidence Engine: olemasolevad SEC/uudise/earnings/score signaalid teesi poolt ja vastu.
+- Ülevaatuse kuupäev ja „mis muutus pärast eelmist ülevaatust?”.
 
 ### LATER
 
-- Fikseeritud horisondi tulemuste ülevaade (6 kuud / 1 aasta / 3 aastat), mitte ideaalne tagantjärele tipuhind.
-- **Score backtest / walk-forward valideerimine:** kas Growth 90+ ettevõtted edestavad universumit või benchmark'i ning kas Health 90+ lisab väärtust võrreldes ainult revenue growth filtriga.
-- Backtesti mõõdikud: mediaantootlus, hit rate, ületootlus benchmark'i suhtes, max drawdown ja valimi suurus; tulemused mudeliversiooni ja Coverage vahemiku kaupa.
-- Sector-relative ranking: software vs software, semiconductor vs semiconductor jne; eeldab usaldusväärset sektoriklassifikatsiooni ja piisavat valimit.
-- **Nasdaqi uute noteeringute radar:** tuvasta uued tickerid, kogu olemasolevad SEC/Yahoo andmed ning kuva iga päev kuni 3–5 kõige paremini põhjendatud uurimiskandidaati koos puuduvate andmete hoiatusega.
+- Sector-relative ranking; eeldab usaldusväärset sektoriklassifikatsiooni ja piisavat valimit.
+- Nasdaqi uute noteeringute radar; vajab eraldi tasuta ja kontrollitavat listing-feed'i ning idempotentset universumi ajalugu (`first_seen_at`, `last_seen_at`, listing status).
 - Teesi eelduste täitumise analüüs: hea protsess vs õnnelik tulemus.
 - Valuation Score alles pärast läbipaistva valuation-mudeli ja piisava coverage'i valmimist.
 - Vajadusel keskne PostgreSQL, kui kahe arvuti dump/restore muutub liiga tülikaks.
 
-Backtest peab olema point-in-time: kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte ja siis kehtinud score-versiooni. Praegune score-snapshot ajalugu võimaldab ausat prospektiivset mõõtmist alustada nüüd; retrospektiivset tulemust ei tohi konstrueerida tänaste/restated SEC faktidega. See väldib look-ahead ja survivorship bias'i.
+Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte ja siis kehtinud score-versiooni. Retrospektiivset tulemust ei tohi konstrueerida tänaste või restated SEC faktidega. Nii väldime look-ahead ja survivorship bias'i.
 
-Nasdaqi uute noteeringute automaatne tuvastamine vajab tulevikus tasuta ja kontrollitavat noteeringute nimekirja. See on võimalik erand uute andmeallikate pausile, kuid seda ei rakendata enne Thesis Builderit ja eraldi allikaotsust.
+### Teadlikult mitte praegu
 
-### TEADLIKULT MITTE PRAEGU
-
-- Uued välised andmeallikad.
-- Tasuline AI või tasuline market-data API.
-- Läbipaistmatu “järgmise RKLB tõenäosus 1–10” koondskoor.
+- Tasuline AI või massiline AI-analüüs.
+- Options-moodul.
+- Uus analüütikute konsensuse moodul.
+- Kogu turu täismahus scanner.
+- Läbipaistmatu „järgmise RKLB tõenäosus 1–10” koondskoor.
 - Automaatne ostu- või müügisoovitus.
-- Perfect-hindsight “müü täpselt ajaloolises tipus” kui otsuse kvaliteedi mõõdik.
+- Perfect-hindsight müügiaja optimeerimine.
 
-## Olulised tehnilised/tooteotsused
+## Olulised tehnilised ja tooteotsused
 
 - Company detail on DB-first; aeglased live-värskendused toimuvad võimalusel taustal.
 - FCF on tuletatud kui OCF miinus capex ning peab olema sellisena märgitud.
 - Score-versioon muutub alati, kui valem või kaalud sisuliselt muutuvad.
 - Growth/Health sortimisel tulevad vähemalt 70 Coverage read enne madala kattega ridu.
 - Watchlist kasutab `portfolio_positions.status = 'watch'`, kogust 0 ja ostuhinda 0.
-- “Leia järgmine RKLB” on põhjendustega kandidaadisõel, mitte tulevase tootluse ennustus ega ostusignaal.
-- Skoori oluline muutus võrreldakse sama mudeliversiooni snapshot'idega; versioonivahetus kuvatakse eraldi ega tekitata eksitavat alert'i.
+- Thesis Builder ei esita moat'i, mispricing'ut ega „miks praegu?” välja automaatse faktina; need on kasutaja tõendatavad hüpoteesid.
+- Teesi muutmine loob uue versiooni ainult siis, kui sisu või seotud score snapshot muutus.
+- Teesi score snapshot'i viide valideeritakse sama ettevõtte vastu; skeemis pole teadlikult hilise tabeliloomise tõttu init-taseme FK-d.
+- Score-alert võrdleb ainult järjestikuseid sama mudeliversiooni snapshot'e. Praegune lävi on 10 punkti või komponendi oluline seisundimuutus; see vajab päris ajaloo kasvades kalibreerimist.
+- Score-alerti payload säilitab võrreldud snapshot'id, skoorid ja komponendid; dedupe-võti on seotud ettevõtte, positsiooni ja snapshotipaariga.
 - Git on koodi tõeallikas; `.env` ja PostgreSQL volume on masinapõhised.
 
 ## Avatud sõltuvused ja otsused
 
-- Mis piir loetakse Growth/Health “oluliseks muutuseks”: esialgne kandidaat on vähemalt 10 punkti või komponendi staatuse oluline muutus, kuid see tuleb päris ajaloo peal kalibreerida.
-- Mis benchmark'i backtest kasutab: lai turg, vastav sektor või mõlemad.
-- Sector-relative ranking vajab ettevõtete usaldusväärset sektorivälja; praegu ei tohi puuduvat sektorit oletada.
-- Uute Nasdaqi tickerite radar vajab eraldi tasuta listing-feed'i otsust ja idempotentset universumi ajalugu (`first_seen_at`, `last_seen_at`, listing status).
-- Moat ja mispricing ei ole praegustest SEC faktidest automaatselt tõestatavad; need jäävad Thesis Builderis kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
+- Score-alerti 10 punkti lävi vajab ajaloolise valimi kasvades kalibreerimist.
+- Backtesti benchmark: lai turg, vastav sektor või mõlemad.
+- Sector-relative ranking vajab usaldusväärset sektorivälja; puuduvat sektorit ei tohi oletada.
+- Uute Nasdaqi tickerite radar vajab tasuta listing-feed'i otsust.
+- Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
 
 ## Käivitamine uues arvutis
 
@@ -178,29 +160,27 @@ cd stock-discovery
 git pull origin main
 ```
 
-`.env` ei pea arvutite vahel saatma. Turvalisem on kummaski arvutis luua eraldi lokaalne fail:
+`.env` ei tule GitHubist ega liigu setup-skriptiga teisest arvutist. Turvalisem on kummaski arvutis luua eraldi lokaalne fail:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup-local-env.ps1
 ```
 
-Skript küsib SEC User-Agenti, genereerib uue juhusliku `CRON_SECRET` väärtuse ega väljasta saladust terminali. Soovi korral võib `.env` luua ka käsitsi `.env.example` põhjal. Vajalikud on vähemalt:
+Skript küsib SEC User-Agenti, genereerib uue juhusliku `CRON_SECRET` väärtuse ega kirjuta olemasolevat `.env` faili üle. Vajalikud on vähemalt:
 
 - `CRON_SECRET`;
 - korrektne kontaktiga `SEC_USER_AGENT`.
 
-`CRON_SECRET` ei pea kodu- ja tööarvutis sama olema, kui kummagi masina kohalik scheduler kasutab sama masina `.env` faili. `SEC_USER_AGENT` ei ole salajane võti ning selle võib mõlemas masinas samaks sisestada. `FMP_API_KEY` on valikuline.
+`CRON_SECRET` ei pea kodu- ja tööarvutis sama olema. `SEC_USER_AGENT` ei ole salajane võti ja võib mõlemas masinas sama olla. `FMP_API_KEY` on valikuline.
 
-GitHub ei sisalda ka kohalikku Dockeri `db_data` volume'it. Ilma varukoopiata käivitub tööarvutis sama kood uue tühja PostgreSQL andmebaasiga. Avalikud turu- ja SEC andmed saab uuesti koguda, kuid portfell, Watchlist, teesid ja score-ajalugu vajavad täpse seisundi säilitamiseks dump'i.
-
-Loo praeguses arvutis binaarne varukoopia (ära commit'i seda reposse):
+GitHub ei sisalda kohalikku Dockeri `db_data` volume'it. Sama portfelli, Watchlisti, teese ja score-ajalugu vajavad DB dump'i, mida ei tohi reposse commit'ida:
 
 ```bash
 docker compose exec -T db pg_dump -U discovery -d discovery -Fc -f /tmp/stock-discovery.dump
 docker compose cp db:/tmp/stock-discovery.dump ./stock-discovery.dump
 ```
 
-Vii `stock-discovery.dump` tööarvutisse turvalise kanali kaudu. Pärast konteinerite käivitamist taasta see:
+Taastamine teises arvutis:
 
 ```bash
 docker compose cp ./stock-discovery.dump db:/tmp/stock-discovery.dump
@@ -209,15 +189,15 @@ docker compose exec -T db pg_restore -U discovery -d discovery --clean --if-exis
 
 `*.dump` ja `*.backup` on `.gitignore` failis, sest varukoopia võib sisaldada isiklikke portfelliandmeid ja investeerimisteese.
 
-### Kahe arvuti tööreegel
+Kahe arvuti tööreegel:
 
-- Enne arvuti vahetamist: lõpeta koodimuudatused, uuenda seda master-dokumenti, commit'i ja pushi.
-- Teises arvutis: `git pull` enne töö alustamist.
-- Kummalgi arvutil on oma `.env`; neid ei pea edasi-tagasi kopeerima.
-- Kui vajad sama portfelli/Watchlisti/ajalugu, ekspordi aktiivsest arvutist värske DB dump ja taasta see teises.
-- Ära muuda samaaegselt mõlemas lokaalses DB-s portfelli või teese. Vali ühe sessiooni jaoks üks andmebaas tõeallikaks, muidu tekivad lahknevad ajalood.
+- enne arvuti vahetamist lõpeta koodimuudatused, uuenda master-dokumenti, commit'i ja pushi;
+- teises arvutis tee `git pull` enne töö alustamist;
+- kummalgi arvutil on oma `.env`;
+- sama andmebaasiseisu vajadusel ekspordi aktiivsest arvutist värske dump ja taasta see teises;
+- ära muuda samaaegselt mõlemas lokaalses DB-s portfelli või teese.
 
-Seejärel:
+Käivita:
 
 ```bash
 docker compose up --build -d
@@ -233,65 +213,55 @@ npm run typecheck
 npm run build
 ```
 
-Host-arvutis Node'i puudumisel käivita need `app` konteineris.
-
-## Järgmine soovitatud tootesuund: Thesis Builder
-
-Ära lisa praegu uusi väliseid andmeallikaid. Kasuta olemasolevaid SEC, hinna, uudiste, analyst- ja portfolio andmeid ning kasutaja enda sisestatud põhjendusi.
-
-Iga Watchlisti idee peaks saama struktureeritud teesi:
-
-1. **The business** – mida ettevõte müüb, kellele ja miks klient seda vajab?
-2. **Growth proof** – millised olemasolevad finantsfaktid tõestavad kasvu?
-3. **Why this company** – kasutaja kirjeldatud moat või konkurentsieelis.
-4. **Why now** – konkreetne lähenev katalüsaator, mitte ainult pikaajaline lugu.
-5. **Mispricing** – mida kasutaja arvab, et turg praegu alahindab?
-6. **Risks and invalidation** – milline mõõdetav sündmus muudab teesi valeks?
-7. **Valuation scenarios** – bear/base/bull eeldused, mitte tagantjärele ideaalne tipuhind.
-8. **5-minute defense** – lühike vaade küsimusele „Kas ma suudan seda investeeringut viie minutiga tõendite abil kaitsta?”
-
-### Soovitatud esimene tükk
-
-Loo Watchlisti tickerile Thesis Card, mis sisaldab:
-
-- kasutaja sisestatud `why now`, `mispricing`, `moat`, `invalidation` ja ajahorisonti;
-- automaatselt lisatud olemasolevaid Growth/Health/Coverage skoori tõendeid;
-- uusi SEC/uudise/earnings signaale teesi poolt ja vastu;
-- staatust `draft`, `researching`, `ready`, `rejected`;
-- teesi versiooniajalugu, et vältida hindsight bias'i.
-
-Ära loo kohe uut „RKLB võimalus 1–10” koondskoori. Esmalt tee põhjendused, eeldused ja puuduvad vastused nähtavaks. Investor peab saama aru, miks tulemus tekkis.
-
 ## Testimise põhimõtted
 
-- Ära raporteeri funktsiooni valmis enne päris UI ja DB kontrolli.
+- Ära raporteeri funktsiooni valmis enne päris runtime'i ja DB kontrolli.
 - Kordusjooks ei tohi tekitada duplikaate.
-- Puuduv tickeri hind või SEC andmestik ei tohi lehte crash'ida.
+- Puuduv tickeri hind või SEC andmestik ei tohi lehte katki teha.
 - Ajutised integratsioonitesti read tuleb pärast kontrolli kustutada.
 - Production build kirjutab dev-serveri `.next` kataloogi üle; pärast buildi taaskäivita `app` konteiner.
 
 ## Viimane testitud seis
 
-- `npm run lint`: läbib.
+- `npm run lint`: läbib ilma hoiatusteta.
 - `npm run typecheck`: läbib.
-- `npm run build`: läbib.
-- AAPL detail: Growth 89, Health 86, Coverage 100, 8 trace-allikat.
-- RKLB detail: Growth 69, Health 36, Coverage 100.
-- TSM madala coverage'i tulemus ei tõuse täiskattega Health tulemustest ettepoole.
-- Watchlisti lisamine/eemaldamine kontrollitud päris server action'i ja DB reaga.
-- Score snapshot kordusjooks on idempotentne.
-- `scripts/setup-local-env.ps1`: loob nõutud võtmetega lokaalse faili, genereerib 256-bitise juhusliku saladuse ja kordusjooks ei kirjuta olemasolevat faili üle.
-- Viimane pushitud master-dokument enne käesolevaid roadmap'i täiendusi: `eaacbac`.
+- `npm run build`: läbib; uus dünaamiline route `/thesis/[positionId]` on buildis.
+- `docker compose up --build -d`: app, db ja scheduler töötavad; db on healthy.
+- `/watchlist`, `/company/AAPL`, `/thesis/[positionId]`: HTTP 200.
+- AAPL company detail näitab Growthi ja Financial Healthi kolme peamist põhjust.
+- Thesis Builderi server action: draft lõi versiooni 1; identne kordussalvestus jättis versioonide arvuks 1.
+- Vigane `ready` blokeeriti mõõdetava invalidation-tingimuse veaga.
+- Täielik `ready` lõi versiooni 2; ainult üks versioon jäi current ning mõlemad versioonid säilitasid point-in-time score snapshot'i.
+- Puuduva SEC-andmestikuga ajutine ticker renderdas viisakalt „SEC perioode pole piisavalt”.
+- Kõik kaks ajutist QA-positsiooni, nende teesiversioonid ja ajutine ettevõte eemaldati; järelkontroll andis 0 rida.
+- In-app automaatbrauser ei saanud testvaadet selle sessiooni aknas attach'ida; sama kasutajavoog kontrolliti päris HTML form POST-i, server action'i, HTTP-vastuste ja PostgreSQL-i kaudu.
+- Score-alerti sünteetiline sama versiooni test: Growth 75 → 55, Health 70 → 72 ja Revenue komponent 80 → 30 andsid `new risk` alert'i snapshot'ide #16 → #17 vahel.
+- Watchlisti ja Daily kordusjooks jätsid score-alertide arvuks 1.
+- Uuem `qa-score-v2` snapshot kuvati `needs review` mudeliversiooni-vahetusena ning ei loonud teist alert'i.
+- Score-alerti Watchlisti detail kontrolliti päris brauseris; Daily Changes kuvas sama score-põhjuse.
+- Production build läbis app-konteineris; pärast buildi taaskäivitati app ning `/watchlist` ja `/daily` vastasid 200.
+- Ajutine SCOREQA positsioon, ettevõte, alert ja snapshotid eemaldati; nelja järelkontrolli tulemus oli 0.
 
 ## Sessioonilogi
 
-### 2026-08-11
+### 2026-08-11 – Thesis Builder V1
 
-- Koondati ja pushiti SEC finantsid, Research Brief, signal engine, scanner, Growth/Health/Coverage skoorid ning Watchlist.
-- Lisati versioonitud score-snapshotid ja auditivaade.
-- Lepiti kokku, et uusi andmeallikaid praegu ei lisata.
-- RKLB 2023 kogemuse põhjal valiti järgmiseks põhisuunaks Thesis Builder ja “5-minute defense”.
-- Muudeti see fail elavaks master-dokumendiks ning lisati `AGENTS.md` uuendamiskohustus.
-- Lisati masinapõhine `.env` setup ja kahe arvuti töövoog.
-- Täpsustati tootetee: Thesis Builder koos 12 kuu kontrollpunkti ja skoori põhjustega, seejärel Watchlisti score-alertid ning läbipaistev “Leia järgmine RKLB” kandidaadisõel.
-- Lisati tulevikuplaani point-in-time backtest, sector-relative ranking ja uute Nasdaqi noteeringute 3–5 kandidaadi radar; uue listing-feed'i lisamine jäeti teadlikult hilisemaks otsuseks.
+- Laiendati `investment_theses` skeem struktureeritud väljade, staatuse, versiooni, content-hashi ja score snapshot'i viitega.
+- Lisati versioonitud teesi andmekiht ja duplikaatversioone vältiv salvestus.
+- Lisati `/thesis/[positionId]`, 12 kuu kontrollpunkt, „5-minute defense” ja versiooniajalugu.
+- Lisati Growthi ja Financial Healthi kolm suurima kaalutud mõjuga põhjust Thesis Builderisse ja company detaili.
+- Watchlistist saab alustada või muuta teesi; olemasoleva portfellipositsiooni tees suunatakse samasse Builderisse.
+- Eristati automaatsed SEC-põhised tõendid kasutaja moat'i, mispricing'u ja „miks praegu?” hüpoteesidest.
+- Kontrolliti build, runtime, server action'id, DB-versioonid, idempotentsus, `ready` valideerimine ja puuduva andmestiku empty state.
+- Järgmine fookus viidi Watchlisti score-change alert'ile; sellele järgneb „Leia järgmine RKLB” eelseadistus.
+
+### 2026-08-11 – Watchlisti score-change alert
+
+- Lisati score snapshot'ide sama mudeliversiooni võrdlus ja 10 punkti olulisuse lävi.
+- Lisati komponendi seisundimuutuse tuvastus ning suuna klassifikatsioon `new catalyst`, `new risk`, `needs review` või `no major changes`.
+- Laiendati `alerts` tabelit struktureeritud JSON payloadi ja positsiooni ajaloo indeksiga.
+- Lisati snapshotipaaril põhinev dedupe-võti; Watchlisti ja Daily kordusjooks ei loonud duplikaati.
+- Lisati Watchlisti avatav score-muutuse detail ja Daily Changes põhjendus.
+- Mudeliversiooni vahetus on nähtav, kuid seda ei esitata võrreldava skoorimuutusena.
+- Kontrolliti lint, typecheck, production build, päris brauser, HTTP, PostgreSQL, idempotentsus ja testandmete cleanup.
+- Järgmine fookus viidi `/scanner` eelseadistusele „Leia järgmine RKLB”.

@@ -26,6 +26,35 @@ export interface CompanyScores {
   coverage: CompanyScore;
 }
 
+export interface ScoreReason {
+  componentId: string;
+  label: string;
+  direction: 'positive' | 'negative' | 'neutral';
+  detail: string;
+  componentScore: number;
+  weight: number;
+  weightedInfluence: number;
+}
+
+export function getTopScoreReasons(score: CompanyScore | null, limit = 3): ScoreReason[] {
+  if (!score || score.kind === 'coverage' || limit <= 0) return [];
+  return score.components
+    .map((component) => {
+      const weightedInfluence = Math.round(((component.score - 50) * component.weight / 100) * 10) / 10;
+      return {
+        componentId: component.id,
+        label: component.label,
+        direction: component.score >= 65 ? 'positive' as const : component.score < 40 ? 'negative' as const : 'neutral' as const,
+        detail: component.detail,
+        componentScore: component.score,
+        weight: component.weight,
+        weightedInfluence,
+      };
+    })
+    .sort((a, b) => Math.abs(b.weightedInfluence) - Math.abs(a.weightedInfluence) || b.weight - a.weight)
+    .slice(0, limit);
+}
+
 function clamp(value: number): number {
   return Math.max(0, Math.min(100, value));
 }
