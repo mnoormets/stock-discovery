@@ -38,6 +38,14 @@ Näitab, kui suur osa mudeli kaalutud sisenditest oli arvutatav. Madala Coverage
 
 Iga Growth/Health skoor näitab kolme suurima kaalutud mõjuga põhjust. Score snapshot säilitab kasutatud faktid, komponendid, mudeliversiooni ja arvutamise aja.
 
+## Sector-relative ranking
+
+Plokk **Compared with similar companies** võrdleb ettevõtte Growth, Financial Health ja Coverage skoori sama industry või sector grupi mediaani ning percentile'iga. Võrdluses kasutatakse ainult sama score-versiooni ettevõtteid, millel on kõik kolm skoori olemas. Market cap saab eraldi percentile'i.
+
+Industry gruppi eelistatakse, kui selles on vähemalt viis võrreldavat ettevõtet; muidu kasutatakse piisava suurusega sector gruppi. Kui sector/industry puudub, näitab rakendus `Sector / industry unknown`. Kui võrreldavaid ettevõtteid on alla viie, näitab rakendus `Not enough comparable companies` ega kuva eksitavat percentile'i või mediaani.
+
+See aitab vältida näiteks AAPL-i ja RKLB otse võrdlemist täiesti erineva äriprofiiliga universumis. Sector-relative väärtus kirjeldab ainult ettevõtte kohta olemasolevat fakti oma grupi suhtes. See ei mõõda moat'i, valuation'it ega tulevast tootlust ning ei ole ostu- ega müügisoovitus.
+
 ## Watchlist
 
 Watchlist on uurimisnimekiri. Watchlisti kirje kogus ja keskmine ostuhind on null ning seda ei arvestata portfelli turuväärtusse.
@@ -63,6 +71,8 @@ Kaasamise baasreeglid:
 - vähemalt üks katalüsaator: earnings 45 päeva jooksul, SEC sündmus 30 päeva jooksul või uudis 14 päeva jooksul.
 
 Iga kriteerium kuvatakse eraldi olekuga `supported`, `uncertain` või `missing`. Kandidaadikaart näitab põhjuseid, runway'd, riske, puuduvaid andmeid ja küsimusi, mida investor peab moat'i ning mispricing'u kohta ise tõendama.
+
+Kandidaadikaardi **Compared with similar companies** plokk näitab sama otsusehetke Growth/Health/Coverage võrdlust sobiva industry või sector grupiga. Need väärtused salvestatakse uue discovery snapshotiga ja ajaloolisi run'e tänase grupiloogikaga ümber ei kirjutata.
 
 Rakendus ei arvuta „RKLB tõenäosuse” koondskoori. Kui ükski ettevõte filtreid ei läbi, kuvatakse null kandidaati.
 
@@ -120,6 +130,8 @@ Staatused on `draft`, `researching`, `ready` ja `rejected`. `ready` nõuab inval
 
 Iga sisuline muudatus loob uue versiooni. Identne kordussalvestus versiooni ei lisa. Versiooniga säilib otsuse hetke score snapshot, et hiljem oleks näha, mida sel ajal tegelikult teati.
 
+Thesis Builderi **Sector-relative evidence** plokk esitab ainult grupi, mediaanid, percentile'id ja võrreldavate arvu. See ei täida automaatselt moat'i, mispricing'u ega teesi välju.
+
 ## Portfell
 
 Portfelli positsioon sisaldab tickerit, kogust, keskmist ostuhinda, staatust ja märkmeid. Rakendus arvutab viimase kogutud hinna põhjal turuväärtuse ja realiseerimata P/L-i.
@@ -149,7 +161,7 @@ Sõnastus `needs review`, `new catalyst`, `new risk` ja `no major changes` kirje
 - Free cash flow on rakenduses tuletatud kui operating cash flow miinus capital expenditure.
 - Uudise märksõna on signaal, mitte uudise sisuline faktikontroll.
 - Moat ja mispricing vajavad investori enda algallikaid.
-- Rakendus ei sisalda veel ausat backtesti, sector-relative ranking'ut ega IPO/Nasdaq uute noteeringute radarit.
+- Rakendus ei sisalda veel IPO/Nasdaq uute noteeringute radarit ega ajaloolist turu universumi rekonstrueerimist enne salvestatud discovery run'e.
 
 ## Kahe arvuti kasutamine
 

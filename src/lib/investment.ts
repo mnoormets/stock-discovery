@@ -11,6 +11,9 @@ export interface CompanyQuote {
   volume: number | null;
   currency: string | null;
   earningsAt: string | null;
+  sector: string | null;
+  industry: string | null;
+  classificationSource: string | null;
 }
 
 export interface NewsItem {

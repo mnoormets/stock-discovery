@@ -121,7 +121,7 @@ async function fetchCompanyResearchUncached(ticker: string): Promise<CompanyRese
     withTimeout(yahooFinance.quote(ticker), QUOTE_TIMEOUT_MS),
     fetchYahooNews(ticker),
     fetchSecFilings(ticker),
-    fetchAnalystView(ticker),
+    fetchCompanyContext(ticker),
   ]);
   if (quoteResult.status === 'rejected') {
     console.warn(`Ettevõtte ${ticker} turuandmete päring ebaõnnestus:`, quoteResult.reason);
@@ -134,7 +134,8 @@ async function fetchCompanyResearchUncached(ticker: string): Promise<CompanyRese
   const warnings: string[] = [];
   const news = newsResult.status === 'fulfilled' ? newsResult.value : [];
   const secFilings = secResult.status === 'fulfilled' ? secResult.value : [];
-  const analystView = analystResult.status === 'fulfilled' ? analystResult.value : null;
+  const context = analystResult.status === 'fulfilled' ? analystResult.value : null;
+  const analystView = context?.analystView || null;
   if (newsResult.status === 'rejected') warnings.push('Uudiste allikas ei vastanud.');
   if (analystResult.status === 'rejected') warnings.push('Analüütikute andmeallikas ei vastanud.');
   if (!process.env.SEC_USER_AGENT) warnings.push('SEC andmed pole seadistatud.');
@@ -156,6 +157,9 @@ async function fetchCompanyResearchUncached(ticker: string): Promise<CompanyRese
         quote.earningsTimestampStart,
         quote.earningsTimestampEnd,
       ),
+      sector: context?.sector || null,
+      industry: context?.industry || null,
+      classificationSource: context?.sector || context?.industry ? 'yahoo' : null,
     },
     analystView,
     news,
@@ -164,30 +168,38 @@ async function fetchCompanyResearchUncached(ticker: string): Promise<CompanyRese
   };
 }
 
-async function fetchAnalystView(ticker: string): Promise<AnalystView | null> {
+async function fetchCompanyContext(ticker: string): Promise<{
+  analystView: AnalystView | null;
+  sector: string | null;
+  industry: string | null;
+}> {
   const summary: any = await withTimeout(
-    yahooFinance.quoteSummary(ticker, { modules: ['financialData'] }),
+    yahooFinance.quoteSummary(ticker, { modules: ['financialData', 'assetProfile'] }),
     QUOTE_TIMEOUT_MS,
   );
   const data = summary?.financialData;
-  if (!data) return null;
+  const profile = summary?.assetProfile;
 
-  const rawRecommendationKey = typeof data.recommendationKey === 'string'
+  const rawRecommendationKey = typeof data?.recommendationKey === 'string'
     ? data.recommendationKey.trim().toLowerCase()
     : '';
-  const analystCount = asNumber(data.numberOfAnalystOpinions);
+  const analystCount = asNumber(data?.numberOfAnalystOpinions);
 
   const analystView: AnalystView = {
-    targetMeanPrice: asNumber(data.targetMeanPrice),
-    targetHighPrice: asNumber(data.targetHighPrice),
-    targetLowPrice: asNumber(data.targetLowPrice),
-    recommendationMean: asNumber(data.recommendationMean),
+    targetMeanPrice: asNumber(data?.targetMeanPrice),
+    targetHighPrice: asNumber(data?.targetHighPrice),
+    targetLowPrice: asNumber(data?.targetLowPrice),
+    recommendationMean: asNumber(data?.recommendationMean),
     recommendationKey: rawRecommendationKey && rawRecommendationKey !== 'none'
       ? rawRecommendationKey
       : null,
     numberOfAnalystOpinions: analystCount != null && analystCount > 0 ? analystCount : null,
   };
-  return Object.values(analystView).some((value) => value != null) ? analystView : null;
+  return {
+    analystView: Object.values(analystView).some((value) => value != null) ? analystView : null,
+    sector: typeof profile?.sector === 'string' && profile.sector.trim() ? profile.sector.trim() : null,
+    industry: typeof profile?.industry === 'string' && profile.industry.trim() ? profile.industry.trim() : null,
+  };
 }
 
 export async function fetchCompanyResearch(rawTicker: string): Promise<CompanyResearch | null> {

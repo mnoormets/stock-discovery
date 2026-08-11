@@ -3,6 +3,7 @@ import { getAllStoredCompanyFinancials, type CompanyFinancialSummary } from './c
 import { calculateCompanyScores, getTopScoreReasons, type CompanyScore } from './company-scores';
 import { listPositions } from './portfolio';
 import { saveCompanyScoreSnapshots } from './score-tracking';
+import { getSectorRelativeStatsMap, type SectorRelativeStats } from './sector-relative';
 import {
   recordDiscoveryRun,
   type DiscoveryDecisionInput,
@@ -36,6 +37,7 @@ export interface RklbCandidate {
   unknowns: string[];
   proofQuestions: string[];
   catalystAt: string | null;
+  sectorRelative: SectorRelativeStats;
 }
 
 export interface RklbDiscoveryResult {
@@ -92,6 +94,7 @@ interface EvaluatedCompany {
   unknowns: string[];
   proofQuestions: string[];
   exclusionReasons: string[];
+  sectorRelative: SectorRelativeStats;
 }
 
 const MAX_KNOWN_MARKET_CAP = 75_000_000_000;
@@ -309,19 +312,36 @@ function decisionInput(item: EvaluatedCompany, included: boolean, rank: number |
     reasons: included ? item.reasons : [],
     criteria: item.criteria,
     proofQuestions: item.proofQuestions,
+    sector: item.sectorRelative.sector,
+    industry: item.sectorRelative.industry,
+    sectorGroupType: item.sectorRelative.groupType,
+    sectorGrowthPercentile: item.sectorRelative.growth.percentile,
+    sectorHealthPercentile: item.sectorRelative.health.percentile,
+    sectorCoveragePercentile: item.sectorRelative.coverage.percentile,
+    sectorMarketCapPercentile: item.sectorRelative.marketCap.percentile,
+    sectorComparableCount: item.sectorRelative.status === 'unknown' ? null : item.sectorRelative.comparableCount,
+    sectorMedianGrowth: item.sectorRelative.growth.median,
+    sectorMedianHealth: item.sectorRelative.health.median,
+    sectorMedianCoverage: item.sectorRelative.coverage.median,
   };
 }
 
 export async function getRklbDiscoveryCandidates(): Promise<RklbDiscoveryResult> {
   const financials = await getAllStoredCompanyFinancials();
   await saveCompanyScoreSnapshots(financials);
-  const [evidenceByTicker, positions] = await Promise.all([marketEvidence(), listPositions()]);
+  const [evidenceByTicker, positions, sectorRelativeByTicker] = await Promise.all([
+    marketEvidence(),
+    listPositions(),
+    getSectorRelativeStatsMap(financials.map((financial) => financial.ticker)),
+  ]);
   const positionByTicker = new Map(positions.filter((position) => position.status !== 'closed').map((position) => [position.ticker, position.id]));
   const evaluated: EvaluatedCompany[] = [];
 
   for (const financial of financials) {
     const evidence = evidenceByTicker.get(financial.ticker);
     if (!evidence) continue;
+    const sectorRelative = sectorRelativeByTicker.get(financial.ticker);
+    if (!sectorRelative) continue;
     const scores = calculateCompanyScores(financial);
     const growth = scores.growth;
     const catalyst = catalystCriterion(evidence);
@@ -358,6 +378,7 @@ export async function getRklbDiscoveryCandidates(): Promise<RklbDiscoveryResult>
         'Mis peab järgmise 12 kuu jooksul mõõdetavalt juhtuma?',
       ],
       exclusionReasons: exclusions,
+      sectorRelative,
     });
   }
 
@@ -392,6 +413,7 @@ export async function getRklbDiscoveryCandidates(): Promise<RklbDiscoveryResult>
     unknowns: item.unknowns,
     proofQuestions: item.proofQuestions,
     catalystAt: item.catalyst.catalystAt,
+    sectorRelative: item.sectorRelative,
   }));
 
   return {
