@@ -6,6 +6,7 @@ import {
   OUTCOME_HORIZONS,
   refreshCandidateOutcomes,
   type OutcomeHorizon,
+  type RunProvenanceUsage,
 } from './discovery-validation';
 
 export interface BacktestHorizonStats {
@@ -62,6 +63,7 @@ export interface BacktestDashboard {
   benchmarkSymbol: string;
   totalRuns: number;
   hasMeasuredOutcomes: boolean;
+  provenance: RunProvenanceUsage[];
   horizons: BacktestHorizonStats[];
   runs: BacktestRun[];
 }
@@ -109,8 +111,14 @@ export async function collectDefaultBenchmarkPrice(): Promise<boolean> {
 export async function getBacktestDashboard(): Promise<BacktestDashboard> {
   await ensureSchema();
   await refreshCandidateOutcomes();
-  const [countRows, runRows, outcomeRows] = await Promise.all([
+  const [countRows, provenanceRows, runRows, outcomeRows] = await Promise.all([
     pool.query(`SELECT count(*)::int AS total FROM discovery_runs`),
+    pool.query(
+      `SELECT model_version, run_type, count(*)::int AS runs,
+              COALESCE(sum(included_count), 0)::int AS candidates
+       FROM discovery_runs GROUP BY model_version, run_type
+       ORDER BY model_version DESC, run_type`,
+    ),
     pool.query(
       `SELECT id, run_at, model_version, evaluated_count, included_count
        FROM discovery_runs ORDER BY run_at DESC, id DESC LIMIT 20`,
@@ -220,6 +228,12 @@ export async function getBacktestDashboard(): Promise<BacktestDashboard> {
     benchmarkSymbol: DEFAULT_BENCHMARK_SYMBOL,
     totalRuns,
     hasMeasuredOutcomes: horizons.some((horizon) => horizon.measuredCount > 0),
+    provenance: provenanceRows.rows.map((row) => ({
+      modelVersion: String(row.model_version),
+      runType: String(row.run_type),
+      runs: Number(row.runs),
+      candidates: Number(row.candidates),
+    })),
     horizons,
     runs,
   };

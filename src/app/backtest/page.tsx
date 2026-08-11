@@ -78,6 +78,7 @@ export default async function BacktestPage() {
       <section className="section">
         <div className="sectionHeading"><div><p className="eyebrow">BENCHMARK · {dashboard.benchmarkSymbol}</p><h2>Tulemused horisondi kaupa</h2></div><span className="muted">{dashboard.totalRuns} salvestatud jooksu</span></div>
         <div className="backtestGrid">{dashboard.horizons.map((stats) => <HorizonCard stats={stats} key={stats.horizon} />)}</div>
+        <p className="muted provenanceNote">Koondnäitajad sisaldavad kõiki salvestatud jooksu: {dashboard.provenance.map((item) => `${item.modelVersion} · ${item.runType} ${item.runs} jooksu / ${item.candidates} kandidaati`).join('; ') || 'jooksu pole'}. Käsitsi avatud scanneri jooks (`rklb`) salvestub samuti ja läheb neisse koondnäitajatesse; eri mudeliversioone ei tohi lugeda ühe seeriana.</p>
       </section>
       <section className="section">
         <div className="sectionHeading"><div><p className="eyebrow">SAVED DECISIONS ONLY</p><h2>Run-level detail</h2></div><Link className="button secondary" href="/validation">Ava Validation</Link></div>

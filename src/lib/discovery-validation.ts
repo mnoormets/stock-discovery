@@ -124,9 +124,20 @@ export interface HorizonValidationStats {
   worst: { ticker: string; returnPercent: number } | null;
 }
 
+// Koondstatistika loeb kõiki salvestatud jooksu, sh käsitsi avatud scanneri
+// jooksu. Provenance peab olema nähtav, et v1/v2 ja canonical/manual tulemusi ei
+// loetaks ühe seeriana.
+export interface RunProvenanceUsage {
+  modelVersion: string;
+  runType: string;
+  runs: number;
+  candidates: number;
+}
+
 export interface ValidationDashboard {
   totalRuns: number;
   totalCandidates: number;
+  provenance: RunProvenanceUsage[];
   horizons: HorizonValidationStats[];
   runs: ValidationRun[];
 }
@@ -473,8 +484,14 @@ function jsonArray<T>(value: T[] | string | null): T[] {
 export async function getValidationDashboard(): Promise<ValidationDashboard> {
   await ensureSchema();
   await refreshCandidateOutcomes();
-  const [counts, outcomeRows, runRows] = await Promise.all([
+  const [counts, provenanceRows, outcomeRows, runRows] = await Promise.all([
     pool.query(`SELECT count(*)::int AS runs, COALESCE(sum(included_count), 0)::int AS candidates FROM discovery_runs`),
+    pool.query(
+      `SELECT model_version, run_type, count(*)::int AS runs,
+              COALESCE(sum(included_count), 0)::int AS candidates
+       FROM discovery_runs GROUP BY model_version, run_type
+       ORDER BY model_version DESC, run_type`,
+    ),
     pool.query(
       `SELECT o.horizon, o.status, o.return_percent, d.ticker
        FROM candidate_outcomes o
@@ -620,6 +637,12 @@ export async function getValidationDashboard(): Promise<ValidationDashboard> {
   return {
     totalRuns: Number(counts.rows[0]?.runs || 0),
     totalCandidates: Number(counts.rows[0]?.candidates || 0),
+    provenance: provenanceRows.rows.map((row) => ({
+      modelVersion: String(row.model_version),
+      runType: String(row.run_type),
+      runs: Number(row.runs),
+      candidates: Number(row.candidates),
+    })),
     horizons,
     runs,
   };
