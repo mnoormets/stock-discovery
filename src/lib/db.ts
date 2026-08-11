@@ -1,6 +1,6 @@
 import { Pool, type PoolClient } from 'pg';
 import { createHash } from 'node:crypto';
-import type { Candidate } from './types';
+import type { Candidate, Fundamentals } from './types';
 import type { SecSuspension } from './sec';
 import type { CompanyResearch } from './investment';
 
@@ -536,12 +536,60 @@ export async function ensureSchema(): Promise<void> {
       observed_price NUMERIC,
       return_percent NUMERIC,
       measured_at TIMESTAMPTZ,
+      benchmark_symbol TEXT NOT NULL DEFAULT 'SPY',
+      benchmark_status TEXT NOT NULL DEFAULT 'pending',
+      benchmark_start_at TIMESTAMPTZ,
+      benchmark_end_at TIMESTAMPTZ,
+      benchmark_price_start NUMERIC,
+      benchmark_price_end NUMERIC,
+      benchmark_return_percent NUMERIC,
+      excess_return_percent NUMERIC,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       UNIQUE (decision_id, horizon)
     );
+    ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_symbol TEXT NOT NULL DEFAULT 'SPY';
+    ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_status TEXT NOT NULL DEFAULT 'pending';
+    ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_start_at TIMESTAMPTZ;
+    ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_end_at TIMESTAMPTZ;
+    ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_price_start NUMERIC;
+    ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_price_end NUMERIC;
+    ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_return_percent NUMERIC;
+    ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS excess_return_percent NUMERIC;
     CREATE INDEX IF NOT EXISTS idx_candidate_outcomes_status_target
       ON candidate_outcomes (status, target_at);
   `);
+}
+
+// Salvestab ühe olemasoleva Yahoo/FMP hinnakihi instrumendi (nt SPY benchmark).
+// See ei lisa uut andmeallikat ega käivita discovery skoorimist.
+export async function saveFundamentalsSnapshot(fundamental: Fundamentals): Promise<void> {
+  if (fundamental.price == null && fundamental.marketCap == null && fundamental.volume == null) return;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const companyId = await upsertCompany(client, {
+      ticker: fundamental.ticker,
+      name: fundamental.name || null,
+      exchange: null,
+      quoteType: fundamental.isFund ? 'ETF' : null,
+      currency: fundamental.currency || null,
+      source: fundamental.source || 'collection',
+    });
+    await insertPriceSnapshot(client, companyId, {
+      price: fundamental.price ?? null,
+      previousClose: null,
+      marketCap: fundamental.marketCap ?? null,
+      volume: fundamental.volume ?? null,
+      currency: fundamental.currency || null,
+      source: fundamental.source || 'collection',
+    });
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export type DailyAlertKind = 'needs review' | 'no major changes' | 'new catalyst' | 'new risk';
