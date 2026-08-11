@@ -18,7 +18,7 @@ export default function GuidePage() {
         <article className="card guideStep" key={number}><span>{number}</span><div><h2>{title}</h2><p>{detail}</p><Link href={href}>Ava vaade →</Link></div></article>
       ))}</section>
       <section className="card section"><h2>Neli reeglit</h2><ol className="guideRules"><li>Kõrge skoor tähendab „uuri lähemalt”, mitte „osta”.</li><li>Kontrolli Coverage Score’i ja algallikaid enne järeldust.</li><li>Moat, mispricing ja „miks praegu?” on kasutaja tõendatavad hüpoteesid.</li><li>`ready` tees vajab mõõdetavat invalidation-tingimust ja 12 kuu kontrollpunkti.</li></ol></section>
-      <section className="card section"><h2>Mida rakendus veel ei tee?</h2><p>Aus point-in-time backtest, sector-relative ranking ja IPO/Nasdaq uute noteeringute radar on järgmised eraldi etapid. Puuduvat infot ei tohi seni oletada.</p><p className="muted">Täielik kasutajajuhend asub repos failis <code>docs/USER_GUIDE.md</code>.</p></section>
+      <section className="card section"><h2>Mida rakendus veel ei tee?</h2><p>IPO/Nasdaq uute noteeringute radar ja salvestatud discovery-ajaloost varasem turu rekonstrueerimine on eraldi tulevased etapid. Puuduvat sector/industry infot ei oletata ning alla viie võrreldava ettevõtte korral percentile&apos;i ei näidata.</p><p className="muted">Täielik kasutajajuhend asub repos failis <code>docs/USER_GUIDE.md</code>.</p></section>
     </main>
   );
 }

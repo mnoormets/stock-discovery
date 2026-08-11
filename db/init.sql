@@ -41,6 +41,10 @@ CREATE TABLE IF NOT EXISTS companies (
   currency      TEXT,
   source        TEXT,
   sec_cik       TEXT,
+  sector        TEXT,
+  industry      TEXT,
+  classification_source TEXT,
+  classification_updated_at TIMESTAMPTZ,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -128,6 +132,10 @@ CREATE TABLE IF NOT EXISTS investment_theses (
   is_current    BOOLEAN NOT NULL DEFAULT true,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS sector TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS industry TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS classification_source TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS classification_updated_at TIMESTAMPTZ;
 ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS business TEXT;
 ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS why_now TEXT;
 ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS moat TEXT;
@@ -263,10 +271,32 @@ CREATE TABLE IF NOT EXISTS discovery_decisions (
   reasons             JSONB NOT NULL DEFAULT '[]'::jsonb,
   criteria            JSONB NOT NULL DEFAULT '[]'::jsonb,
   proof_questions     JSONB NOT NULL DEFAULT '[]'::jsonb,
+  sector              TEXT,
+  industry            TEXT,
+  sector_group_type   TEXT,
+  sector_growth_percentile NUMERIC,
+  sector_health_percentile NUMERIC,
+  sector_coverage_percentile NUMERIC,
+  sector_market_cap_percentile NUMERIC,
+  sector_comparable_count INTEGER,
+  sector_median_growth NUMERIC,
+  sector_median_health NUMERIC,
+  sector_median_coverage NUMERIC,
   payload              JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (run_id, ticker)
 );
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector TEXT;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS industry TEXT;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_group_type TEXT;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_growth_percentile NUMERIC;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_health_percentile NUMERIC;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_coverage_percentile NUMERIC;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_market_cap_percentile NUMERIC;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_comparable_count INTEGER;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_growth NUMERIC;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_health NUMERIC;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_coverage NUMERIC;
 CREATE INDEX IF NOT EXISTS idx_discovery_decisions_ticker_time
   ON discovery_decisions (ticker, run_id DESC);
 CREATE INDEX IF NOT EXISTS idx_discovery_decisions_included

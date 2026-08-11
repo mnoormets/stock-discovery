@@ -167,6 +167,15 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .candidateNumbers span { display: grid; gap: 3px; min-width: 82px; padding: 9px; border-radius: 9px; background: #162235; color: var(--muted); font-size: 10px; text-transform: uppercase; }
 .candidateNumbers strong { color: var(--text); font-size: 22px; }
 .candidateMarketMeta { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: 12px; }
+.sectorRelative { display: grid; gap: 12px; padding: 16px; background: #101a29; }
+.sectorRelative h3, .sectorRelative p { margin: 0; }
+.sectorRelativeTop { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+.sectorRelativeTop > span { color: var(--accent); font-size: 11px; font-weight: 800; }
+.sectorIdentity { font-size: 13px; }
+.sectorMetricGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.sectorMetricGrid > div { display: grid; gap: 5px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; }
+.sectorMetricGrid span, .sectorSource { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.sectorInterpretation { display: grid; gap: 5px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
 .criteriaGrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .criterion { display: grid; align-content: start; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: #101a29; }
 .criterion > span { width: fit-content; padding: 3px 7px; border: 1px solid currentColor; border-radius: 999px; font-size: 9px; font-weight: 900; text-transform: uppercase; }
@@ -320,7 +329,7 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 
 @media (max-width: 760px) {
   .pageStack { padding-top: 28px; }
-  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence { grid-template-columns: 1fr; }
+  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid { grid-template-columns: 1fr; }
   .rklbCandidateTop { display: grid; }
   .validationDecisionTop, .validationRun > summary { align-items: flex-start; flex-direction: column; }
   .collectBox { grid-template-columns: 1fr; align-items: stretch; }

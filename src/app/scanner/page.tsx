@@ -3,6 +3,7 @@ import { getScannerData } from '@/lib/scanner';
 import type { ScannerMover, ScannerScoreRow, ScannerScoreSort } from '@/lib/scanner';
 import { getRklbDiscoveryCandidates, type RklbCandidate, type RklbDiscoveryResult } from '@/lib/rklb-discovery';
 import { addDiscoveryWatchlistAction, startDiscoveryThesisAction } from './actions';
+import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +81,7 @@ function CandidateCard({ candidate }: { candidate: RklbCandidate }) {
         <div className="candidateNumbers"><span>Growth <strong>{candidate.growthScore}</strong></span><span>Health <strong>{candidate.healthScore ?? '—'}</strong></span><span>Coverage <strong>{candidate.coverageScore}</strong></span></div>
       </div>
       <div className="candidateMarketMeta"><span>Hind: {candidate.price == null ? 'puudub' : compactMoney(candidate.price, candidate.currency || 'USD')}</span><span>Market cap: {compactMoney(candidate.marketCap, candidate.currency || 'USD')}</span><span>Snapshot: {candidate.scoreVersion || 'versioon puudub'} · #{candidate.scoreSnapshotId || '—'}</span></div>
+      <SectorRelativeEvidence stats={candidate.sectorRelative} />
       <div className="criteriaGrid">{candidate.criteria.map((criterion) => (
         <div className={`criterion ${criterion.status}`} key={criterion.id}><span>{criterion.status}</span><strong>{criterion.label}</strong><p>{criterion.detail}</p></div>
       ))}</div>

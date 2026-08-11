@@ -24,16 +24,28 @@ async function upsertCompany(
     quoteType: string | null;
     currency: string | null;
     source: string;
+    sector?: string | null;
+    industry?: string | null;
+    classificationSource?: string | null;
   },
 ): Promise<number> {
   const { rows } = await client.query(
-    `INSERT INTO companies (ticker, name, exchange, quote_type, currency, source)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO companies
+       (ticker, name, exchange, quote_type, currency, source, sector, industry,
+        classification_source, classification_updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
+             CASE WHEN $7::text IS NOT NULL OR $8::text IS NOT NULL THEN now() ELSE NULL END)
      ON CONFLICT (ticker) DO UPDATE SET
        name = COALESCE(EXCLUDED.name, companies.name),
        exchange = COALESCE(EXCLUDED.exchange, companies.exchange),
        quote_type = COALESCE(EXCLUDED.quote_type, companies.quote_type),
        currency = COALESCE(EXCLUDED.currency, companies.currency),
+       sector = COALESCE(EXCLUDED.sector, companies.sector),
+       industry = COALESCE(EXCLUDED.industry, companies.industry),
+       classification_source = COALESCE(EXCLUDED.classification_source, companies.classification_source),
+       classification_updated_at = CASE
+         WHEN EXCLUDED.sector IS NOT NULL OR EXCLUDED.industry IS NOT NULL THEN now()
+         ELSE companies.classification_updated_at END,
        source = EXCLUDED.source,
        updated_at = now()
      RETURNING id`,
@@ -44,6 +56,9 @@ async function upsertCompany(
       company.quoteType,
       company.currency,
       company.source,
+      company.sector || null,
+      company.industry || null,
+      company.classificationSource || null,
     ],
   );
   return Number(rows[0].id);
@@ -104,6 +119,9 @@ export async function saveCompanyResearch(research: CompanyResearch): Promise<vo
       quoteType: quote.quoteType,
       currency: quote.currency,
       source: 'yahoo',
+      sector: quote.sector,
+      industry: quote.industry,
+      classificationSource: quote.classificationSource,
     });
 
     await insertPriceSnapshot(client, companyId, {
@@ -282,6 +300,10 @@ export async function ensureSchema(): Promise<void> {
       quote_type TEXT,
       currency TEXT,
       source TEXT,
+      sector TEXT,
+      industry TEXT,
+      classification_source TEXT,
+      classification_updated_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
@@ -426,6 +448,10 @@ export async function ensureSchema(): Promise<void> {
       is_current BOOLEAN NOT NULL DEFAULT true,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    ALTER TABLE companies ADD COLUMN IF NOT EXISTS sector TEXT;
+    ALTER TABLE companies ADD COLUMN IF NOT EXISTS industry TEXT;
+    ALTER TABLE companies ADD COLUMN IF NOT EXISTS classification_source TEXT;
+    ALTER TABLE companies ADD COLUMN IF NOT EXISTS classification_updated_at TIMESTAMPTZ;
     ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS business TEXT;
     ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS why_now TEXT;
     ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS moat TEXT;
@@ -518,10 +544,32 @@ export async function ensureSchema(): Promise<void> {
       reasons JSONB NOT NULL DEFAULT '[]'::jsonb,
       criteria JSONB NOT NULL DEFAULT '[]'::jsonb,
       proof_questions JSONB NOT NULL DEFAULT '[]'::jsonb,
+      sector TEXT,
+      industry TEXT,
+      sector_group_type TEXT,
+      sector_growth_percentile NUMERIC,
+      sector_health_percentile NUMERIC,
+      sector_coverage_percentile NUMERIC,
+      sector_market_cap_percentile NUMERIC,
+      sector_comparable_count INTEGER,
+      sector_median_growth NUMERIC,
+      sector_median_health NUMERIC,
+      sector_median_coverage NUMERIC,
       payload JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       UNIQUE (run_id, ticker)
     );
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS industry TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_group_type TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_growth_percentile NUMERIC;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_health_percentile NUMERIC;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_coverage_percentile NUMERIC;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_market_cap_percentile NUMERIC;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_comparable_count INTEGER;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_growth NUMERIC;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_health NUMERIC;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_coverage NUMERIC;
     CREATE INDEX IF NOT EXISTS idx_discovery_decisions_ticker_time
       ON discovery_decisions (ticker, run_id DESC);
     CREATE INDEX IF NOT EXISTS idx_discovery_decisions_included

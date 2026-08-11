@@ -36,6 +36,17 @@ export interface DiscoveryDecisionInput {
   reasons: string[];
   criteria: DiscoveryCriterion[];
   proofQuestions: string[];
+  sector: string | null;
+  industry: string | null;
+  sectorGroupType: 'sector' | 'industry' | null;
+  sectorGrowthPercentile: number | null;
+  sectorHealthPercentile: number | null;
+  sectorCoveragePercentile: number | null;
+  sectorMarketCapPercentile: number | null;
+  sectorComparableCount: number | null;
+  sectorMedianGrowth: number | null;
+  sectorMedianHealth: number | null;
+  sectorMedianCoverage: number | null;
 }
 
 export interface DiscoveryRunRecord {
@@ -200,11 +211,17 @@ export async function recordDiscoveryRun(
              market_cap, volume, price_snapshot_id, score_snapshot_id, scoring_version,
              runway_status, runway_detail, catalyst_status, catalyst_type,
              catalyst_source_id, catalyst_url, catalyst_at, catalyst_detail,
-             risks, unknowns, reasons, criteria, proof_questions, payload)
+             risks, unknowns, reasons, criteria, proof_questions,
+             sector, industry, sector_group_type,
+             sector_growth_percentile, sector_health_percentile,
+             sector_coverage_percentile, sector_market_cap_percentile,
+             sector_comparable_count, sector_median_growth,
+             sector_median_health, sector_median_coverage, payload)
            VALUES
             ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,
              $17,$18,$19,$20,$21,$22,$23,$24,$25::jsonb,$26::jsonb,$27::jsonb,
-             $28::jsonb,$29::jsonb,$30::jsonb)
+             $28::jsonb,$29::jsonb,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,
+             $41::jsonb)
            RETURNING id`,
           [
             runId, decision.companyId, decision.ticker, decision.included, decision.candidateRank,
@@ -214,7 +231,13 @@ export async function recordDiscoveryRun(
             decision.runwayStatus, decision.runwayDetail, decision.catalystStatus, decision.catalystType,
             decision.catalystSourceId, decision.catalystUrl, decision.catalystAt, decision.catalystDetail,
             JSON.stringify(decision.risks), JSON.stringify(decision.unknowns), JSON.stringify(decision.reasons),
-            JSON.stringify(decision.criteria), JSON.stringify(decision.proofQuestions), JSON.stringify(decision),
+            JSON.stringify(decision.criteria), JSON.stringify(decision.proofQuestions),
+            decision.sector, decision.industry, decision.sectorGroupType,
+            decision.sectorGrowthPercentile, decision.sectorHealthPercentile,
+            decision.sectorCoveragePercentile, decision.sectorMarketCapPercentile,
+            decision.sectorComparableCount, decision.sectorMedianGrowth,
+            decision.sectorMedianHealth, decision.sectorMedianCoverage,
+            JSON.stringify(decision),
           ],
         );
         if (decision.included) {
@@ -493,6 +516,17 @@ export async function getValidationDashboard(): Promise<ValidationDashboard> {
         reasons: jsonArray<string>(decision.reasons),
         criteria: jsonArray<DiscoveryCriterion>(decision.criteria),
         proofQuestions: jsonArray<string>(decision.proof_questions),
+        sector: decision.sector || null,
+        industry: decision.industry || null,
+        sectorGroupType: decision.sector_group_type || null,
+        sectorGrowthPercentile: decision.sector_growth_percentile == null ? null : Number(decision.sector_growth_percentile),
+        sectorHealthPercentile: decision.sector_health_percentile == null ? null : Number(decision.sector_health_percentile),
+        sectorCoveragePercentile: decision.sector_coverage_percentile == null ? null : Number(decision.sector_coverage_percentile),
+        sectorMarketCapPercentile: decision.sector_market_cap_percentile == null ? null : Number(decision.sector_market_cap_percentile),
+        sectorComparableCount: decision.sector_comparable_count == null ? null : Number(decision.sector_comparable_count),
+        sectorMedianGrowth: decision.sector_median_growth == null ? null : Number(decision.sector_median_growth),
+        sectorMedianHealth: decision.sector_median_health == null ? null : Number(decision.sector_median_health),
+        sectorMedianCoverage: decision.sector_median_coverage == null ? null : Number(decision.sector_median_coverage),
         outcomes: jsonArray<Record<string, unknown>>(decision.outcomes).map((outcome) => ({
           horizon: outcome.horizon as OutcomeHorizon,
           status: outcome.status as ValidationOutcome['status'],

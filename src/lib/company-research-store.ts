@@ -9,6 +9,10 @@ let schemaPromise: Promise<void> | null = null;
 export function ensureResearchSchema(): Promise<void> {
   if (!schemaPromise) {
     schemaPromise = pool.query(`
+      ALTER TABLE companies ADD COLUMN IF NOT EXISTS sector TEXT;
+      ALTER TABLE companies ADD COLUMN IF NOT EXISTS industry TEXT;
+      ALTER TABLE companies ADD COLUMN IF NOT EXISTS classification_source TEXT;
+      ALTER TABLE companies ADD COLUMN IF NOT EXISTS classification_updated_at TIMESTAMPTZ;
       CREATE TABLE IF NOT EXISTS analyst_targets (
         id BIGSERIAL PRIMARY KEY,
         company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
@@ -57,7 +61,8 @@ export async function getStoredCompanyResearch(rawTicker: string): Promise<Compa
   await ensureResearchSchema();
 
   const companyResult = await pool.query(
-    `SELECT id, ticker, name, exchange, quote_type, currency
+    `SELECT id, ticker, name, exchange, quote_type, currency,
+            sector, industry, classification_source
      FROM companies WHERE ticker = $1`,
     [ticker],
   );
@@ -118,6 +123,9 @@ export async function getStoredCompanyResearch(rawTicker: string): Promise<Compa
       volume: numberOrNull(price?.volume),
       currency: price?.currency || company.currency || null,
       earningsAt: earnings?.event_at ? new Date(earnings.event_at).toISOString() : null,
+      sector: company.sector || null,
+      industry: company.industry || null,
+      classificationSource: company.classification_source || null,
     },
     analystView: analyst ? {
       targetMeanPrice: numberOrNull(analyst.target_mean_price),
@@ -155,7 +163,8 @@ export async function getCompanyResearchDbFirst(rawTicker: string): Promise<Comp
     const stored = await getStoredCompanyResearch(ticker);
     if (stored) {
       const refreshedAt = stored.refreshedAt ? new Date(stored.refreshedAt).getTime() : 0;
-      const needsEnrichment = !stored.analystView || stored.news.length === 0;
+      const needsEnrichment = !stored.analystView || stored.news.length === 0
+        || (!stored.quote.sector && !stored.quote.industry);
       if (needsEnrichment || Date.now() - refreshedAt >= DB_REFRESH_MS) {
         void fetchCompanyResearch(ticker).catch((error) => {
           console.error(`Ettevõtte ${ticker} taustavärskendus ebaõnnestus:`, error);
