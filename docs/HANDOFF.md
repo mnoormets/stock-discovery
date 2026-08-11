@@ -121,9 +121,11 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**Forward validation'i ja SPY benchmark'i valimi kogumine.**
+**Forward validation'i, SPY benchmark'i ja discovery persistence'i valimi kogumine.**
 
 Point-in-time discovery snapshot, Validation ja Backtest V1 on valmis. Süsteem peab nüüd koguma päris 3k/6k outcome'e ning SPY hinnasnapshote, enne kui väikese valimi põhjal saab teha protsessi kohta sisulisemaid järeldusi.
+
+Praegu loob discovery run'i ainult `/scanner?preset=rklb` avamine. Kell 08:00 scheduler käivitab `/api/collect`, mis kogub turuandmed ja SPY ning värskendab outcome'e, kuid ei salvesta automaatselt uut discovery otsusesnapshot'i. Regulaarse ja võrreldava ajaloo jaoks on järgmine väike tehniline töö päevase canonical discovery run'i lisamine collect-töö lõppu.
 
 ## Roadmap
 
@@ -131,17 +133,27 @@ Point-in-time discovery snapshot, Validation ja Backtest V1 on valmis. Süsteem 
 
 Päris forward-valimi kasvatamine ja Backtest V1 kvaliteedi jälgimine:
 
+- lisa `/api/collect` lõppu üks idempotentne päevane discovery run pärast turu- ja SPY andmete salvestamist; discovery vea korral säilita collection'i tulemus ning logi/raporteeri discovery eraldi staatusena;
+- kasuta forward-valimi tõeallikana üht canonical DB-d; kodu- ja tööarvuti eraldi PostgreSQL volume'ite tulemusi ei tohi vaikimisi üheks looks pidada;
 - kontrolli, et päevane kogumine salvestab SPY hinnasnapshotid järjepidevalt;
 - lase 1n/2n/1k/3k/6k outcome'idel päriselt täituda;
 - jälgi eraldi kandidaatide, mõõdetud outcome'ide ja benchmark'iga outcome'ide valimi suurust;
+- kasuta rakendust 1-2 nädalat päris töövoona: lisa põhjendatud ideed Watchlisti ja kirjuta vähemalt paar tegelikku, mõõdetava 12 kuu kontrollpunktiga teesi;
 - ära tee väikese 1n/2n valimi põhjal strateegiajäreldusi;
-- järgmine analüütiline laiendus on max drawdown ning jaotus mudeliversiooni/Coverage vahemiku järgi, mitte mineviku ümbervalimine.
+- vaata pärast vähemalt viit ja eelistatult kümmet eri otsusekuupäeva, kas sama ticker püsib valimis ning kas süsteem leidis midagi, mida tasub päriselt uurida;
+- järgmine analüütiline laiendus on discovery frequency/persistence; max drawdown ja jaotus mudeliversiooni/Coverage vahemiku järgi tulevad alles piisava outcome-valimi järel.
 
 ### NEXT
 
 - Fikseeritud horisondid 6 kuud, 1 aasta ja 3 aastat; mitte ideaalne tagantjärele tipuhind.
 - Mõõdikud: mediaantootlus, hit rate, ületootlus benchmark'i suhtes, max drawdown ja valimi suurus; tulemused mudeliversiooni ja Coverage vahemiku kaupa.
 - Enne backtesti tuleb fikseerida universum, benchmark ja otsuse hetke andmete säilitamise reegel.
+- Discovery frequency/persistence:
+  - mitu eri canonical otsusepäeva viimase 5/10/20 päeva jooksul ticker kaasati;
+  - praegune järjestikuste kaasatud päevade streak;
+  - esimene ja viimane kaasamise kuupäev ning rank'i muutus;
+  - erista `evaluated but excluded` päev päevast, mil tickerit universumis üldse ei hinnatud;
+  - näita, kas püsimine tuli sama vana evidence'i jätkumisest või uutest/muutunud snapshot'idest.
 - Thesis Evidence Engine: olemasolevad SEC/uudise/earnings/score signaalid teesi poolt ja vastu.
 - Ülevaatuse kuupäev ja „mis muutus pärast eelmist ülevaatust?”.
 
@@ -180,6 +192,9 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Discovery katalüsaatori aknad on praegu earnings 45 päeva, SEC sündmus 30 päeva ja uudis 14 päeva; neid tuleb ajaloolise valideerimise käigus kalibreerida.
 - Aus backtest algab alles pärast idempotentse discovery run'i ja tickeritaseme otsusesnapshot'i salvestamist.
 - Discovery run'i idempotentsusvõti on `mudeliversioon + Tallinna otsusekuupäev + kogu otsusesisendi räsi`; see hoiab kordusjooksu stabiilsena, kuid lubab uue faktiseisu samal päeval eraldi salvestada.
+- Automaatne canonical jooks peab kasutama eristatavat `run_type = 'rklb_daily'` väärtust; käsitsi scanneri avamised jäävad auditi jaoks `rklb` jooksudeks, kuid frequency arvestusse lähevad ainult canonical päevajooksud.
+- Discovery frequency ei loe tooreid leheavamisi. Ühe Tallinna kuupäeva ja mudeliversiooni kohta peab olema üks canonical päevane vaatlus, et korduv käsitsi refresh ei kasvataks streak'i.
+- Frequency on persistence-signaal, mitte kvaliteedi- ega ostuskoor. Viis päeva sama muutumatu evidence'iga peab olema eristatav viiest päevast, mille jooksul lisandus teesi toetavat uut infot.
 - Outcome baseline on otsusehetke hind. Horisondi vaatlusaken on sihtaeg kuni sihtaeg + 7 päeva; juba `measured` tulemust ei muudeta ka siis, kui ajalukku lisatakse hiljem varasem hinnasnapshot.
 - Validationi keskmised, mediaanid ja hit rate arvutatakse iga horisondi jaoks eraldi.
 - Backtest V1 fikseeritud benchmark on `SPY`. Benchmark'i hind kogutakse sama olemasoleva Yahoo/FMP hinnakihiga; uut välist allikat ega võtit ei lisatud.
@@ -198,6 +213,8 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Backtesti benchmark: lai turg, vastav sektor või mõlemad.
 - 2026-08-11 auditi alguses oli sector ja industry olemas 0/24 ettevõttel. Pärast päris AAPL DB-first taustavärskendust oli olemasoleva Yahoo provider'i katvus 1/24; klassifikatsiooni ei backfillita väljamõeldud väärtustega.
 - Uute Nasdaqi tickerite radar vajab tasuta listing-feed'i otsust.
+- Canonical forward-validation DB tuleb valida. Soovitus on hoida koduarvuti DB päris ajaloo tõeallikana ja kasutada tööarvuti DB-d arendustestideks või liigutada canonical dump'i teadlikult, mitte koguda kahte lahknevat “päris” ajalugu.
+- Koduarvuti peab kell 08:00 töötama või päevane collect/discovery tuleb hiljem käsitsi käivitada; praegune scheduler ei taasesita magamise ajal vahele jäänud cron-tööd.
 - Sector-relative valimi katvus kasvab ainult siis, kui olemasolev provider tagastab ettevõtte kohta sector/industry väärtuse; väikese grupi korral percentile teadlikult puudub.
 - Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
 
@@ -276,6 +293,8 @@ npm run build
 - `npm run typecheck`: läbib.
 - `npm run build`: läbib; uus dünaamiline route `/thesis/[positionId]` on buildis.
 - `docker compose up --build -d`: app, db ja scheduler töötavad; db on healthy.
+- Pärast tööarvuti commit'i `1454157` koduarvutisse fast-forward pullimist vastasid `/scanner?preset=rklb`, `/validation`, `/backtest`, `/guide` ja `/company/AAPL` HTTP 200; app, db ja scheduler töötasid ning db oli healthy.
+- Koduarvuti päris DB audit pärast pulli: 27 ettevõtet, 68 hinnasnapshot'i, 1 discovery run (3 hinnatud, 0 kaasatud), 0 candidate outcome'i, 0 Watchlisti positsiooni ja 0 teesi. See kinnitab, et järgmine faas on päris kasutus ja forward-ajaloo kogumine, mitte uute analüüsimoodulite lisamine.
 - `/watchlist`, `/company/AAPL`, `/thesis/[positionId]`: HTTP 200.
 - AAPL company detail näitab Growthi ja Financial Healthi kolme peamist põhjust.
 - Thesis Builderi server action: draft lõi versiooni 1; identne kordussalvestus jättis versioonide arvuks 1.
@@ -379,3 +398,11 @@ npm run build
 - SECTORQA kontrollides kuvati unknown-state, neljase grupi `Not enough comparable companies`, viiese grupi mediaanid/percentile'id ning scanneri ja Thesis Builderi plokid. Snapshotis oli `QA Systems | Growth percentile 50 | count 5 | median 89`.
 - Kõik kümme SECTORQA ettevõtet, üks Watchlisti positsioon, üks discovery run, 1200 finantsfakti, hinnad, earnings ja score snapshotid eemaldati. Seitse järelkontrolli andsid 0.
 - `npm run lint`, `npm run typecheck` ja app-konteineri `npm run build` läbisid. Pärast restarti vastasid `/scanner?preset=rklb`, `/company/AAPL`, `/validation` ja `/backtest` 200.
+
+### 2026-08-11 - Koduarvuti handoff-audit ja järgmine kasutusfaas
+
+- Pulliti tööarvuti `main` fast-forward commit'ini `1454157` ning kontrolliti koduarvuti Dockeri runtime'i ja uusi vaateid.
+- Kinnitati, et scheduler käivitab iga päev `/api/collect`, kuid discovery run tekib praegu ainult RKLB scanneri avamisel.
+- Päris DB-s oli üks null kandidaadiga discovery run ning puudusid Watchlisti ideed, teesid ja candidate outcome'id.
+- Planeeriti järgmise 1-2 nädala põhifookuseks regulaarne canonical discovery ajalugu, päris Watchlist/Thesis kasutus ja validation'i täitumine.
+- Lisati järgmise väikese arendusena automaatne päevane discovery snapshot ning pärast vähemalt 5-10 päevast valimit discovery frequency/persistence: included-days, streak, first/last seen, rank trend ja muutunud vs sama evidence.
