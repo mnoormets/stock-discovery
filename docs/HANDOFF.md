@@ -127,12 +127,16 @@ Point-in-time discovery snapshot, Validation ja Backtest V1 on valmis. Süsteem 
 
 Praegu loob discovery run'i ainult `/scanner?preset=rklb` avamine. Kell 08:00 scheduler käivitab `/api/collect`, mis kogub turuandmed ja SPY ning värskendab outcome'e, kuid ei salvesta automaatselt uut discovery otsusesnapshot'i. Regulaarse ja võrreldava ajaloo jaoks on järgmine väike tehniline töö päevase canonical discovery run'i lisamine collect-töö lõppu.
 
+Koduarvuti auditis oli hinnainfo 27 ettevõttel, kuid SEC CompanyFacts ja skoor ainult kolmel. Discovery saab hinnata ainult `financial_facts` katvusega ettevõtteid, seega tuleb enne frequency järeldusi automatiseerida olemasoleva SEC allika järkjärguline enrichment. See on pipeline'i katvuse parandamine, mitte uue andmeallika lisamine.
+
 ## Roadmap
 
 ### NOW - järgmine arendustükk
 
 Päris forward-valimi kasvatamine ja Backtest V1 kvaliteedi jälgimine:
 
+- lisa päevasesse collect-töösse piiratud SEC CompanyFactsi enrichment-järjekord: eelista puuduva või aegunud finantsajalooga juba kogutud ettevõtteid, töötle tickereid ükshaaval ning ühe tickeri viga ei tohi kogu collection'it nurjata;
+- kuva/logi iga päev vähemalt `financialUniverse`, `enriched`, `failed` ja discovery `evaluatedCount`, et valimi katvus oleks nähtav;
 - lisa `/api/collect` lõppu üks idempotentne päevane discovery run pärast turu- ja SPY andmete salvestamist; discovery vea korral säilita collection'i tulemus ning logi/raporteeri discovery eraldi staatusena;
 - kasuta forward-valimi tõeallikana üht canonical DB-d; kodu- ja tööarvuti eraldi PostgreSQL volume'ite tulemusi ei tohi vaikimisi üheks looks pidada;
 - kontrolli, et päevane kogumine salvestab SPY hinnasnapshotid järjepidevalt;
@@ -141,6 +145,7 @@ Päris forward-valimi kasvatamine ja Backtest V1 kvaliteedi jälgimine:
 - kasuta rakendust 1-2 nädalat päris töövoona: lisa põhjendatud ideed Watchlisti ja kirjuta vähemalt paar tegelikku, mõõdetava 12 kuu kontrollpunktiga teesi;
 - ära tee väikese 1n/2n valimi põhjal strateegiajäreldusi;
 - vaata pärast vähemalt viit ja eelistatult kümmet eri otsusekuupäeva, kas sama ticker püsib valimis ning kas süsteem leidis midagi, mida tasub päriselt uurida;
+- ära tõlgenda frequency't enne, kui vähemalt 20 ettevõttel või vähemalt 70%-l canonical kogutud universumist on arvutatav SEC/score katvus; UI peab näitama iga päeva evaluated-universumi suurust;
 - järgmine analüütiline laiendus on discovery frequency/persistence; max drawdown ja jaotus mudeliversiooni/Coverage vahemiku järgi tulevad alles piisava outcome-valimi järel.
 
 ### NEXT
@@ -215,6 +220,7 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Uute Nasdaqi tickerite radar vajab tasuta listing-feed'i otsust.
 - Canonical forward-validation DB tuleb valida. Soovitus on hoida koduarvuti DB päris ajaloo tõeallikana ja kasutada tööarvuti DB-d arendustestideks või liigutada canonical dump'i teadlikult, mitte koguda kahte lahknevat “päris” ajalugu.
 - Koduarvuti peab kell 08:00 töötama või päevane collect/discovery tuleb hiljem käsitsi käivitada; praegune scheduler ei taasesita magamise ajal vahele jäänud cron-tööd.
+- SEC enrichment'i päevane batch-size tuleb valida nii, et olemasoleva SEC User-Agentiga päringud oleksid viisakad ja collection jõuaks lõpuni; algväärtus tuleb päris runtime'i põhjal kalibreerida, mitte teha korraga piiramatut masspäringut.
 - Sector-relative valimi katvus kasvab ainult siis, kui olemasolev provider tagastab ettevõtte kohta sector/industry väärtuse; väikese grupi korral percentile teadlikult puudub.
 - Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
 
@@ -294,7 +300,7 @@ npm run build
 - `npm run build`: läbib; uus dünaamiline route `/thesis/[positionId]` on buildis.
 - `docker compose up --build -d`: app, db ja scheduler töötavad; db on healthy.
 - Pärast tööarvuti commit'i `1454157` koduarvutisse fast-forward pullimist vastasid `/scanner?preset=rklb`, `/validation`, `/backtest`, `/guide` ja `/company/AAPL` HTTP 200; app, db ja scheduler töötasid ning db oli healthy.
-- Koduarvuti päris DB audit pärast pulli: 27 ettevõtet, 68 hinnasnapshot'i, 1 discovery run (3 hinnatud, 0 kaasatud), 0 candidate outcome'i, 0 Watchlisti positsiooni ja 0 teesi. See kinnitab, et järgmine faas on päris kasutus ja forward-ajaloo kogumine, mitte uute analüüsimoodulite lisamine.
+- Koduarvuti päris DB audit pärast pulli: 27 ettevõtet ja 68 hinnasnapshot'i, kuid ainult 3 ettevõtet SEC finantsfaktide/skooridega ning 1 sector/industry klassifikatsiooniga; 1 discovery run (3 hinnatud, 0 kaasatud), 0 candidate outcome'i, 0 Watchlisti positsiooni ja 0 teesi. See kinnitab, et järgmine faas on katvuse kasvatamine, päris kasutus ja forward-ajaloo kogumine, mitte uute analüüsimoodulite lisamine.
 - `/watchlist`, `/company/AAPL`, `/thesis/[positionId]`: HTTP 200.
 - AAPL company detail näitab Growthi ja Financial Healthi kolme peamist põhjust.
 - Thesis Builderi server action: draft lõi versiooni 1; identne kordussalvestus jättis versioonide arvuks 1.
@@ -403,6 +409,7 @@ npm run build
 
 - Pulliti tööarvuti `main` fast-forward commit'ini `1454157` ning kontrolliti koduarvuti Dockeri runtime'i ja uusi vaateid.
 - Kinnitati, et scheduler käivitab iga päev `/api/collect`, kuid discovery run tekib praegu ainult RKLB scanneri avamisel.
-- Päris DB-s oli üks null kandidaadiga discovery run ning puudusid Watchlisti ideed, teesid ja candidate outcome'id.
+- Päris DB-s oli üks null kandidaadiga discovery run ning puudusid Watchlisti ideed, teesid ja candidate outcome'id; 27 hinnaga ettevõttest oli SEC/score katvus ainult kolmel.
+- Lisati enne canonical discovery automatiseerimist vajalikuks tööks olemasoleva SEC CompanyFactsi allika piiratud ja veakindel enrichment-järjekord.
 - Planeeriti järgmise 1-2 nädala põhifookuseks regulaarne canonical discovery ajalugu, päris Watchlist/Thesis kasutus ja validation'i täitumine.
 - Lisati järgmise väikese arendusena automaatne päevane discovery snapshot ning pärast vähemalt 5-10 päevast valimit discovery frequency/persistence: included-days, streak, first/last seen, rank trend ja muutunud vs sama evidence.
