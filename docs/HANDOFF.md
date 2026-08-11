@@ -131,20 +131,32 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**Forward validation'i, SPY benchmark'i ja discovery persistence'i valimi kogumine.**
+**Ühe canonical ajaloo loomine ning päevakogumise töökindlus.**
 
-Point-in-time discovery snapshot, Validation, Backtest V1, päevane SEC enrichment ja canonical `rklb_daily` jooks on valmis. Süsteem peab nüüd kasvatama finantsuniversumi katvust ning koguma päris 3k/6k outcome'e ja SPY hinnasnapshote, enne kui väikese valimi põhjal saab teha protsessi kohta sisulisemaid järeldusi.
+Point-in-time discovery snapshot, Validation, Backtest V1, päevane SEC enrichment ja canonical `rklb_daily` jooks on valmis. Koduarvuti kell 08:00 töötamise eeldus ei sobi päris kasutusviisiga ning kodu- ja tööarvuti Docker volume'id on eraldi andmebaasid. Enne frequency-signaali ehitamist tuleb valida üks jagatud PostgreSQL-i tõeallikas, muuta collector arvutitest sõltumatuks ning lisada töö lukustus, jooksude audit ja automaattestid. Seejärel saab süsteem kasvatada päris forward-valimit ilma kaheks lahkneva ajaloota.
 
 ## Roadmap
 
 ### NOW - järgmine arendustükk
 
-Päris forward-valimi kasvatamine ja Backtest V1 kvaliteedi jälgimine:
+Collection reliability ja canonical cloud-history:
+
+- lisa DB-põhine `collection_runs` ledger ning PostgreSQL advisory lock või lease, et sama päeva kattuvad worker'id ei teeks paralleelset collecti;
+- säilita job'i algus, lõpp, staatus, provider'ite loendurid ja piiratud veainfo, et ebaõnnestumine oleks UI-st või DB-st jälgitav;
+- lisa automaattestid vähemalt scoring'u, päevase idempotentsuse, discovery canonical run'i, enrichment-budget'i ja outcome'ide muutumatuse jaoks;
+- koonda hajutatud runtime `CREATE TABLE` / `ALTER TABLE` loogika versioonitud migratsioonide üheks tõeallikaks;
+- planeeri Next.js 14 EOL tõttu kontrollitud üleminek toetatud ja turvaparandustega versioonile koos regressioonitestidega;
+- eelista tasuta keskseks DB-ks Neon PostgreSQL-i ja arvutitest sõltumatuks scheduleriks GitHub Actionsit, mis käivitab collector CLI-d otse DB vastu; ära avalikusta selleks kogu Next.js rakendust;
+- pärast keskse DB kontrolli suuna mõlema arvuti lokaalne app sama `DATABASE_URL` vastu; lokaalsed Docker DB-d jäävad arendus-/taastekeskkonnaks;
+- tee olemasoleva kodu-DB ajaloo ühekordne kontrollitud dump/restore keskseks algseisuks;
+- enne UI avalikku deploy'd lisa autentimine ja autoriseerimine portfelli, Watchlisti, Thesis Builderi ning kirjutavate server action'ite/API-de ette.
+
+Pärast keskse kogumise käivitamist jätkub päris forward-valimi kasvatamine ja Backtest V1 kvaliteedi jälgimine:
 
 - jälgi päevase `/api/collect` vastusest `financialUniverse`, `coveredAfter`, `enriched`, `failed`, `dailyRemaining` ja discovery `evaluatedCount` väärtusi;
 - lase kuni viiesel SEC enrichment-batch'il kasvatada skooritavat universumit vähemalt 20 ettevõtte või 70% katvuseni;
 - kontrolli, et iga Tallinna päeva kohta tekib maksimaalselt üks `rklb_daily` run ning käsitsi refresh ei muuda canonical snapshot'i;
-- kasuta forward-valimi tõeallikana üht canonical DB-d; kodu- ja tööarvuti eraldi PostgreSQL volume'ite tulemusi ei tohi vaikimisi üheks looks pidada;
+- kasuta forward-valimi tõeallikana ainult keskset canonical DB-d; kodu- ja tööarvuti eraldi PostgreSQL volume'ite tulemusi ei tohi vaikimisi üheks looks pidada;
 - kontrolli, et päevane kogumine salvestab SPY hinnasnapshotid järjepidevalt;
 - lase 1n/2n/1k/3k/6k outcome'idel päriselt täituda;
 - jälgi eraldi kandidaatide, mõõdetud outcome'ide ja benchmark'iga outcome'ide valimi suurust;
@@ -156,24 +168,24 @@ Päris forward-valimi kasvatamine ja Backtest V1 kvaliteedi jälgimine:
 
 ### NEXT
 
-- Fikseeritud horisondid 6 kuud, 1 aasta ja 3 aastat; mitte ideaalne tagantjärele tipuhind.
-- Mõõdikud: mediaantootlus, hit rate, ületootlus benchmark'i suhtes, max drawdown ja valimi suurus; tulemused mudeliversiooni ja Coverage vahemiku kaupa.
-- Enne backtesti tuleb fikseerida universum, benchmark ja otsuse hetke andmete säilitamise reegel.
-- Discovery frequency/persistence:
+- Discovery frequency/persistence alles pärast vähemalt 5 ja eelistatult 10 edukat canonical päevajooksu ning vähemalt 20 ettevõtte või 70% SEC/score katvust:
   - mitu eri canonical otsusepäeva viimase 5/10/20 päeva jooksul ticker kaasati;
   - praegune järjestikuste kaasatud päevade streak;
   - esimene ja viimane kaasamise kuupäev ning rank'i muutus;
   - erista `evaluated but excluded` päev päevast, mil tickerit universumis üldse ei hinnatud;
   - näita, kas püsimine tuli sama vana evidence'i jätkumisest või uutest/muutunud snapshot'idest.
+- Fikseeritud horisondid 6 kuud, 1 aasta ja 3 aastat; mitte ideaalne tagantjärele tipuhind.
+- Mõõdikud: mediaantootlus, hit rate, ületootlus benchmark'i suhtes, max drawdown ja valimi suurus; tulemused mudeliversiooni ja Coverage vahemiku kaupa.
+- Enne backtesti tuleb fikseerida universum, benchmark ja otsuse hetke andmete säilitamise reegel.
 - Thesis Evidence Engine: olemasolevad SEC/uudise/earnings/score signaalid teesi poolt ja vastu.
 - Ülevaatuse kuupäev ja „mis muutus pärast eelmist ülevaatust?”.
 
 ### LATER
 
-- Nasdaqi uute noteeringute radar; vajab eraldi tasuta ja kontrollitavat listing-feed'i ning idempotentset universumi ajalugu (`first_seen_at`, `last_seen_at`, listing status).
+- Nasdaqi uute noteeringute radar ametliku võtmeta Nasdaq Trader symbol directory põhjal; vajab idempotentset universumi ajalugu (`first_seen_at`, `last_seen_at`, listing status), test issue/ETF filtreid ning uute tickerite enrichment'i olemasoleva SEC/Yahoo kihiga.
 - Teesi eelduste täitumise analüüs: hea protsess vs õnnelik tulemus.
 - Valuation Score alles pärast läbipaistva valuation-mudeli ja piisava coverage'i valmimist.
-- Vajadusel keskne PostgreSQL, kui kahe arvuti dump/restore muutub liiga tülikaks.
+- Avalik web-deploy alles pärast kasutaja autentimist ja kirjutusõiguste piiramist.
 
 Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte ja siis kehtinud score-versiooni. Retrospektiivset tulemust ei tohi konstrueerida tänaste või restated SEC faktidega. Nii väldime look-ahead ja survivorship bias'i.
 
@@ -217,15 +229,20 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Industry gruppi eelistatakse, kui sellel on vähemalt viis võrreldavat ettevõtet; vastasel juhul kasutatakse piisavat sector gruppi. Kui kumbki pole piisav, kuvatakse ainult grupi nimi ja count, mitte percentile.
 - Sector-relative väärtused fikseeritakse ainult uue discovery decision'i INSERT-i ajal; varasemate run'ide read jäävad muutmata.
 - Git on koodi tõeallikas; `.env` ja PostgreSQL volume on masinapõhised.
+- Kodu- ja tööarvuti PostgreSQL volume'id ei sünkroniseeru Gitiga. Päris forward-validation vajab üht keskset DB-d; tööarvutit ei kasutata vaikimisi isikliku scheduleri ega canonical DB hostina.
+- Uusi API-võtmeid ei otsita jagatud võtmete saitidelt ega lisata ainult andmehulga pärast. Kõigepealt dokumenteeritakse konkreetne andmelünk, olemasoleva provider'i katvus ja uus allikas; võti luuakse ainult provider'i ametlikul lehel ning hoitakse `.env`/GitHub Secretsis.
+- Collector peab olema käivitatav UI-st sõltumatu job'ina. Avalik `/api/collect` endpoint ei ole canonical scheduler'i eeltingimus.
 
 ## Avatud sõltuvused ja otsused
 
 - Score-alerti 10 punkti lävi vajab ajaloolise valimi kasvades kalibreerimist.
 - Backtesti benchmark: lai turg, vastav sektor või mõlemad.
 - 2026-08-11 auditi alguses oli sector ja industry olemas 0/24 ettevõttel. Pärast päris AAPL DB-first taustavärskendust oli olemasoleva Yahoo provider'i katvus 1/24; klassifikatsiooni ei backfillita väljamõeldud väärtustega.
-- Uute Nasdaqi tickerite radar vajab tasuta listing-feed'i otsust.
-- Canonical forward-validation DB tuleb valida. Soovitus on hoida koduarvuti DB päris ajaloo tõeallikana ja kasutada tööarvuti DB-d arendustestideks või liigutada canonical dump'i teadlikult, mitte koguda kahte lahknevat “päris” ajalugu.
-- Koduarvuti peab kell 08:00 töötama või päevane collect/discovery tuleb hiljem käsitsi käivitada; praegune scheduler ei taasesita magamise ajal vahele jäänud cron-tööd.
+- Uute Nasdaqi tickerite radari eelistatud tasuta feed on ametlik Nasdaq Trader `nasdaqlisted.txt`; enne ehitamist tuleb fikseerida noteeringu lisandumise/muutumise reeglid ja ETF/test issue filtrid.
+- Canonical forward-validation DB otsus vajab kasutaja tasuta Neon projekti ja GitHub Actions secret'ite seadistamist. Soovitus: Neon Free + scheduled GitHub Actions collector, mitte tööarvuti lokaalne DB.
+- Koduarvuti scheduler ei ole sobiv canonical lahendus, sest arvuti on öösel ja kell 08:00 väljas. Ajutine fallback võib käivitada päeva esimese collecti app'i käivitumisel, kuid see ei lahenda kahe arvuti ajaloo lahknemist.
+- Kiiraudit leidis, et repo ei sisalda automaattestide komplekti, skeemi loomine/muutmine on hajutatud `db/init.sql` ja runtime teekide vahel ning rakendusel puudub kasutaja autentimine. Need on enne avalikku deploy'd P0/P1 töö, mitte uue research-provider'i lisamise põhjus.
+- Next.js 14 haru ei ole enam aktiivselt toetatud; versiooniuuendus tuleb teha eraldi kontrollitud tööna, mitte segada seda collection reliability muudatustega.
 - SEC enrichment'i algne päevane batch-size on päris runtime'is kontrollitud väärtusega 5; seda võib muuta ainult logide, kestuse ja katvuse põhjal, mitte eesmärgiga teha korraga piiramatut masspäringut.
 - Sector-relative valimi katvus kasvab ainult siis, kui olemasolev provider tagastab ettevõtte kohta sector/industry väärtuse; väikese grupi korral percentile teadlikult puudub.
 - Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
@@ -434,3 +451,13 @@ npm run build
 - API ja manuaalse collect-nupu staatus näitavad SEC katvust, päevast eelarvet ning daily discovery loendureid.
 - Päris kordusjooksud kasvatasid SEC/score katvuse 3 ettevõttelt 13-le; DB-s oli täpselt üks daily run ja 8 muutumatut decision-rida.
 - Kontrolliti lint, typecheck, production build, Docker runtime, API auth, päris SEC/Yahoo kogumine, DB read ja kordusjooksu idempotentsus.
+
+### 2026-08-11 - Kahe arvuti canonical-history ja tasuta scheduler'i otsus
+
+- Kinnitati, et Git sünkroniseerib koodi, kuid kodu- ja tööarvuti Docker PostgreSQL volume'id sisaldavad eri andmeid.
+- Kell 08:00 koduarvutis töötav cron tunnistati kasutusmustriga mittesobivaks; tööarvutit ei valitud isikliku süsteemi püsihostiks.
+- Soovituslikuks tasuta arhitektuuriks valiti üks Neon PostgreSQL canonical DB ning GitHub Actionsis ajastatud UI-st sõltumatu collector; mõlemad lokaalsed app'id loevad sama DB-d.
+- Discovery frequency/persistence jäi järgmiseks analüütiliseks funktsiooniks, kuid alles pärast 5-10 päris canonical jooksu ja piisavat SEC/score katvust.
+- IPO/Nasdaq radar jäeti hilisemaks ning selle eelistatud sisendiks valiti ametlik võtmeta Nasdaq Trader symbol directory, mitte juhuslik uus API.
+- Kiiraudit tõi enne avalikku deploy'd esile autentimise puudumise, automaattestide puudumise, hajutatud skeemimuudatused, collection job'i luku/ledgeri puudumise ja Next.js 14 EOL staatuse.
+- Uute API-võtmete kogumise asemel otsustati esmalt teha provider-gap/coverage audit; jagatud või mitteametlikke võtmeid ei kasutata.
