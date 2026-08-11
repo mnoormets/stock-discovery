@@ -18,6 +18,7 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 - Thesis Builder loob Watchlisti ideest struktureeritud ja versioonitud teesi, seob selle otsuse hetke skoorisnapshotiga ning näitab Growthi ja Financial Healthi kolme peamist põhjust.
 - Watchlist ja Daily Changes võrdlevad järjestikuseid sama mudeliversiooni score-snapshot'e ning näitavad olulise muutuse korral skoorid, muutunud komponendid ja täpsed snapshot'i viited.
 - Skänneri „Leia järgmine RKLB” preset annab olemasolevast universumist 0-5 läbipaistvalt põhjendatud uurimiskandidaati, ilma koondskoori või ostusoovituseta.
+- Catalyst Evidence V2: catalyst ei ole kaasamisfilter, vaid struktureeritud tõend, mis näitab sündmuse materiality't, suunda, allika kvaliteeti, uudsust, thesis-relevance'i ja mandaadi sobivust eraldi. Planeeritud earnings-kuupäev ega uudise pealkiri ei kvalifitseeru tõendiks.
 - Iga RKLB discovery jooks salvestab muutumatu otsusehetke universumi, kaasatud ja välistatud tickerid, põhjused, skoorid, hinna, market cap'i, runway-kirjelduse, katalüsaatori, riskid ja teadmata info.
 - Päevane `/api/collect` kasvatab olemasoleva SEC CompanyFactsi allika katvust maksimaalselt viie ettevõtte kaupa ning salvestab ühe idempotentse `rklb_daily` canonical discovery run'i Tallinna kalendripäeva kohta.
 - `/validation` mõõdab kaasatud kandidaatide tegelikku hinnamuutust eraldi 1 nädala, 2 nädala, 1 kuu, 3 kuu ja 6 kuu horisondil ning näitab keskmist, mediaani, võitjaid, kaotajaid, parimat ja halvimat tulemust.
@@ -84,10 +85,11 @@ Yahoo Finance, ApeWisdom ja Tradestie ei vaja selles prototüübis API-võtit, k
 npm run lint
 npm run typecheck
 npm run qa:data-quality
+npm run qa:catalyst
 npm run build
 ```
 
-`npm run check` käivitab kõik neli järjest.
+`npm run check` käivitab kõik viis järjest.
 
 ## Praegused piirid
 
@@ -96,6 +98,8 @@ npm run build
 - SEC CompanyFacts ei ühtlusta kõigi emitentide XBRL tage täielikult; puuduv näitaja kuvatakse tühja olekuna. Free cash flow on rakenduses tuletatud kui operating cash flow miinus capital expenditure.
 - Growth Score kaalub revenue, net income’i, operating cash flow ja free cash flow aastamuutusi. Financial Health kaalub rahavoogude kvaliteeti, cash/debt suhet, kasumlikkust ja aktsiate arvu muutust. Mõlemad on uurimisfiltrid, mitte investeerimissoovitused.
 - Data Freshness + Period Alignment on eraldi kvalitatiivne integrity-kiht, mitte skoor: V1 loeb üle 550 päeva vana fakti stale sisendiks, kuni 120-päevast perioodivahet joondatuks ja üle 730-päevast vahet halvasti võrreldavaks. Need läved on läbipaistvad heuristikad ja vajavad päris näidete põhjal kalibreerimist.
+- Catalyst evidence läved (revenue 25%/5%, kasumi-rahavoo 20%, mandaadi 25%/10% ja 25 mld / 3 mld market cap) on läbipaistvad heuristikad, mis kalibreeriti olemasoleva research cohort'i päris SEC faktide järgi. Nõrk catalyst langetab järjestust, ei välista ettevõtet.
+- Catalyst evidence ei erista ettevõtte IR-teadet omaette allikana: olemasolevate allikatega ei saa seda uudise pealkirjast eristada, mistõttu `primary_ir` katvus puudub ja see kuvatakse teadmata infona.
 - Coverage Score on Growth ja Financial Health mudelite kaalutud sisendikatte keskmine. Growth/Health edetabelites kuvatakse vähemalt 70 coverage ettevõtted enne madalama kattega tulemusi, et üksiku komponendi kõrge skoor ei oleks eksitav.
 - Score-mudeli versioon on salvestatud iga snapshotiga. Valemi muutmisel tuleb versiooni tõsta, et eri valemitega tulemusi ei võrreldaks vaikimisi sama ajaloona.
 - Rakendus ei sisalda optsioonianalüüsi, ajaloolist ümbervalikut ega automaatset kauplemist.

@@ -1,7 +1,15 @@
 # Catalyst Evidence V2 — disain
 
 Kuupäev: 2026-08-12
-Staatus: **disain, koodi ei ole muudetud.** Ükski olemasolev filter, score, skeem ega provider selle dokumendi põhjal veel ei muutu.
+Staatus: **ehitatud 2026-08-12.** Catalyst ei ole enam hard gate; `catalyst_events` + `catalyst_assessments` ja `catalyst-evidence-v2` hinnangukiht on tootes, discovery mudeliversioon on `rklb-discovery-v2`. Growth, Financial Health, Coverage ja `data-quality-v1` loogika jäid muutmata.
+
+Kolm täpsustust, mis lisandusid ehitamise käigus ja mida disain ei kirjeldanud:
+
+- **Sama tier'i sees otsustab tõendi liik, mitte kuupäev.** Ilma selleta valis süsteem PLUG-i ja ACHR-i tugevaimaks tõendiks värske uudise pealkirja ja varjas ettevõtte enda 10-Q nõrga sisu. Prioriteet on `earnings_disclosed` > `company_release` > `sec_filing` > `news_headline` > `earnings_scheduled`.
+- **Materiality drivereid loetakse ainult värsketest ja joondatud sisenditest** (`data-quality-v1` stale-lipp + 120 päeva alignment). Nii ei tee ARR 2011. aasta revenue-fakt kunstlikult „materiaalset” muutust ning BW jääb materiaalseks, sest tema aegunud sisend on debt, mitte materiality driver.
+- **Rahavoo/kasumi muutus loeb materiaalseks ainult positiivse taseme juures.** PLUG-i OCF +17,9% ja FCF +32,8% on endiselt sügavalt negatiivsed; protsentuaalne paranemine ei tohi kvalifitseeruda.
+
+Kalibreeritud läved on koodis (`src/lib/catalyst-evidence.ts`): revenue major 25%, minor 5%, kasumi/rahavoo minor 20%, dilution-vastutõend 5%, mandaadi fit 25% ja partial 10% kuni 25 mld market cap'i, varajane mastaap 3 mld.
 
 Alus: [`FUNNEL_AUDIT.md`](FUNNEL_AUDIT.md) read-only audit, [`RESEARCH_SPRINT_2026-08-11.md`](RESEARCH_SPRINT_2026-08-11.md) viie ettevõtte manual cohort (API, BW, CAKE, HIMS, ACHR) ning 2026-08-11 valminud `data-quality-v1` kiht. Uusi andmeallikaid ei eeldata.
 
@@ -143,16 +151,18 @@ Kaheksa kaitset, kõik olemasoleva andmestiku põhjal:
 
 ## 8. Valideerimine olemasoleva cohort'iga
 
-Cohort annab loomuliku märgistatud testhulga, ilma uut andmestikku kogumata. Reeglid loetakse kalibreerituks, kui V2 annab need kuus tulemust:
+Cohort annab loomuliku märgistatud testhulga, ilma uut andmestikku kogumata. Reeglid loetakse kalibreerituks, kui V2 annab need kuus tulemust. **Kõik kuus reprodutseeriti 2026-08-12 päris DB peal** (`discovery_decisions` run #15 ja canonical run #17):
 
-| Ticker | Oodatav evidence tier | Miks |
+| Ticker | Oodatav evidence tier | Päris tulemus 2026-08-12 |
 |---|---|---|
-| API | `material_new_evidence`, improving | Q1 2026: revenue +13,5%, kuues järjestikune GAAP-kasumlik kvartal, ADS buyback |
-| BW | `material_new_evidence`, mixed | Q2 backlog/Base Electron kvantifitseeritud, kuid FCF negatiivne ja dilution suur |
-| CAKE | `material_new_evidence`, improving, mandate `not_relevant` | päris positiivne sündmus, vale mandaadi jaoks |
-| HIMS | `material_new_evidence`, mixed | +38,2% revenue koos margin 73% → 65% ja omandatud kasvuga |
-| ACHR | `weak_or_unconfirmed`, relevance `adjacent` | sündmus on päris, commercial economics kvantifitseerimata |
-| PLUG | `weak_or_unconfirmed` | false-positive stress-test: pealkiri ei tohi kvalifitseeruda |
+| API | `material_new_evidence`, improving | ✅ major / improving / decisive / mandaat partial |
+| BW | `material_new_evidence`, mixed | ✅ major (OCF pööre) / mixed / decisive / mandaat fits |
+| CAKE | `material_new_evidence`, improving, mandate `not_relevant` | ✅ minor / improving / supporting / mandaat not_relevant |
+| HIMS | `material_new_evidence`, mixed | ✅ major / mixed / decisive / mandaat fits |
+| ACHR | `weak_or_unconfirmed`, relevance `adjacent` | ✅ unquantified / deteriorating / adjacent |
+| PLUG | `weak_or_unconfirmed` | ✅ unquantified / mixed / adjacent / mandaat not_relevant |
+
+Lisaks katab `npm run qa:catalyst` 11 deterministlikku juhtu, sh Form 144 administratiivne vorm, ainult planeeritud kuupäev, kogumislünk, sündmuse puudumine, aegunud seotud periood, sama perioodi kordusavaldus ja „värske pealkiri ei tohi varjata nõrka aruannet”.
 
 ## 9. Teadlikult välja jäetud
 
@@ -162,7 +172,15 @@ Cohort annab loomuliku märgistatud testhulga, ilma uut andmestikku kogumata. Re
 - Ajalooliste `discovery_decisions` ridade backfill või ümberkirjutamine.
 - Igasugune muudatus `scores-v1`, Coverage'i, Growthi või Financial Healthi valemites.
 
-## 10. Avatud küsimused enne ehitamist
+## 10. Avatud küsimused (osa lahendatud ehitamisel)
+
+- **Lahendatud:** `thesis_relevance` annab praegu reegel (`assessed_by = 'rule'`) mandaaditaseme küsimuse põhjal; skeem lubab kasutaja hinnangut eraldi reana, kuid UI-d selleks veel ei ole.
+- **Lahendatud:** `linked_fact_ids` seos tuleb `financial_facts.accession_number` grupist, mitte pealkirja sõnesobitusest. Tuletatud kombineeritud accession'eid (`A+B`) ei kasutata ankruna.
+- **Lahendatud:** 45/30/14 päeva aknad ei mõjuta enam kaasamist. Kogumisaknad on nüüd 90 päeva SEC filing'utele ja 30 päeva uudistele; earnings-kuupäev on ainult `scheduled_window` ja kogumislünga kontroll.
+- **Endiselt lahtine:** `primary_ir` katvus puudub, sest IR-teadet ei saa olemasolevate allikatega eristada uudise pealkirjast. Iga ettevõtte `unknowns` ütleb selle välja.
+- **Endiselt lahtine:** `mandate_relevance` reeglistik on praegu RKLB preset'i sees; teise preset'i lisandumisel tuleb see eraldi versioonitud objektiks tõsta.
+
+### Algsed küsimused enne ehitamist
 
 - Kes annab `thesis_relevance` väärtuse enne teesi olemasolu: mandaaditaseme reegel, kasutaja või mõlemad kihina?
 - Kuidas tuvastada IR-teadet ilma uue provider'ita? Praegu on ainus tee `news_items` pealkiri + `sec_events` filing; see piirab `primary_ir` katvust ja see piirang tuleb ausalt kuvada.

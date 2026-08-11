@@ -344,12 +344,30 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .compactDataQuality { padding: 14px; }
 .compactDataQuality .dataQualitySummary { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .dataQualityReadyWarning { border-color: #75602e; background: rgba(240,191,91,.08); }
+.catalystEvidence { display: grid; gap: 12px; border-left: 3px solid #6b5f8d; padding: 16px; }
+.catalystTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.catalystTop h3 { margin: 3px 0 0; }
+.catalystBadge { border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+.catalystBadge.material_new_evidence { color: var(--green); border-color: #2f7049; }
+.catalystBadge.weak_or_unconfirmed { color: var(--amber); border-color: #75602e; }
+.catalystBadge.scheduled_only { color: var(--muted); }
+.catalystBadge.collection_gap { color: var(--red); border-color: #7a3939; border-style: dashed; }
+.catalystBadge.none_recorded { color: var(--muted); border-style: dashed; }
+.catalystDimensions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.catalystDimensions span { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 11px; }
+.catalystDimensions strong { display: block; margin-top: 3px; color: var(--text); font-size: 12px; }
+.catalystEvent { margin: 0; font-size: 13px; }
+.catalystReasons, .catalystCounter, .catalystUnknowns ul { margin: 0; padding-left: 20px; display: grid; gap: 5px; font-size: 12px; }
+.catalystCounter { padding: 11px 14px 11px 31px; border: 1px solid #75602e; border-radius: 9px; background: rgba(240,191,91,.06); }
+.catalystUnknowns summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+.catalystUnknowns[open] ul { margin-top: 8px; }
+.catalystNote { margin: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 760px) {
   .pageStack { padding-top: 28px; }
-  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary { grid-template-columns: 1fr; }
-  .dataQualityTop { flex-direction: column; }
+  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions { grid-template-columns: 1fr; }
+  .dataQualityTop, .catalystTop { flex-direction: column; }
   .dataQualityBadges { justify-content: flex-start; }
   .rklbCandidateTop { display: grid; }
   .validationDecisionTop, .validationRun > summary { align-items: flex-start; flex-direction: column; }

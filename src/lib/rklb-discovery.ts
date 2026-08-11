@@ -5,6 +5,8 @@ import { listPositions } from './portfolio';
 import { saveCompanyScoreSnapshots } from './score-tracking';
 import { getSectorRelativeStatsMap, type SectorRelativeStats } from './sector-relative';
 import { calculateDataQuality, type DataQualitySummary } from './data-quality';
+import { getCatalystEvidenceMap } from './catalyst-events';
+import type { CatalystEvidence } from './catalyst-evidence';
 import {
   recordDiscoveryRun,
   type DiscoveryDecisionInput,
@@ -41,6 +43,7 @@ export interface RklbCandidate {
   catalystAt: string | null;
   sectorRelative: SectorRelativeStats;
   dataQuality: DataQualitySummary;
+  catalystEvidence: CatalystEvidence;
 }
 
 export interface RklbDiscoveryResult {
@@ -64,27 +67,8 @@ interface MarketEvidence {
   marketCap: number | null;
   volume: number | null;
   priceSnapshotId: number | null;
-  earningsId: string | null;
-  earningsAt: string | null;
-  secId: string | null;
-  secForm: string | null;
-  secUrl: string | null;
-  secAt: string | null;
-  newsId: string | null;
-  newsTitle: string | null;
-  newsUrl: string | null;
-  newsAt: string | null;
   scoreVersion: string | null;
   scoreSnapshotId: number | null;
-}
-
-interface CatalystResult {
-  criterion: DiscoveryCriterion;
-  catalystAt: string | null;
-  gate: boolean;
-  type: 'earnings' | 'sec' | 'news' | null;
-  sourceId: string | null;
-  url: string | null;
 }
 
 interface EvaluatedCompany {
@@ -94,7 +78,7 @@ interface EvaluatedCompany {
   health: CompanyScore | null;
   coverage: number;
   criteria: DiscoveryCriterion[];
-  catalyst: CatalystResult;
+  catalystEvidence: CatalystEvidence;
   reasons: string[];
   risks: string[];
   unknowns: string[];
@@ -114,20 +98,12 @@ const RULES = [
   'Growth vähemalt 65.',
   'Coverage vähemalt 70.',
   'Teadaolev market cap kuni 75 miljardit.',
-  'Vähemalt üks katalüsaator: earnings 45 päeva jooksul, SEC sündmus 30 päeva jooksul või uudis 14 päeva jooksul.',
+  'Catalyst ei ole kaasamise eeltingimus: catalyst evidence mõjutab ainult järjestust ja nähtavat tõendit.',
+  'Catalyst evidence tier: material_new_evidence > weak_or_unconfirmed > scheduled_only / collection_gap > none_recorded.',
+  'Materiaalne uus tõend nõuab primaarallikat, kvantifitseeritud muutust, teadaolevat suunda ja uut infot; pealkiri ega planeeritud kuupäev ei kvalifitseeru.',
   'RKLB ise on võrdlusnäidis ja jäetakse tulemustest välja.',
   'Maksimaalselt viis kõrgeima reeglipõhise järjestusega kandidaati.',
 ];
-
-function daysFromNow(value: string | null): number | null {
-  if (!value) return null;
-  return Math.ceil((new Date(value).getTime() - Date.now()) / 86_400_000);
-}
-
-function daysAgo(value: string | null): number | null {
-  if (!value) return null;
-  return Math.floor((Date.now() - new Date(value).getTime()) / 86_400_000);
-}
 
 function formatBillions(value: number): string {
   if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toLocaleString('et-EE', { maximumFractionDigits: 1 })} mld`;
@@ -171,32 +147,20 @@ function runwayCriterion(score: CompanyScore | null): DiscoveryCriterion {
   };
 }
 
-function catalystCriterion(evidence: MarketEvidence): CatalystResult {
-  const earningsDays = daysFromNow(evidence.earningsAt);
-  if (earningsDays != null && earningsDays >= 0 && earningsDays <= 45) {
-    return {
-      criterion: { id: 'catalyst', label: 'Lähenev katalüsaator', status: 'supported', detail: `Earnings ${earningsDays === 0 ? 'täna' : `${earningsDays} päeva pärast`}.` },
-      catalystAt: evidence.earningsAt, gate: true, type: 'earnings', sourceId: evidence.earningsId, url: null,
-    };
-  }
-  const secDays = daysAgo(evidence.secAt);
-  if (secDays != null && secDays >= 0 && secDays <= 30) {
-    return {
-      criterion: { id: 'catalyst', label: 'Lähenev katalüsaator', status: 'supported', detail: `Uus SEC ${evidence.secForm || 'filing'} ${secDays === 0 ? 'täna' : `${secDays} päeva tagasi`}; mõju vajab lugemist.` },
-      catalystAt: evidence.secAt, gate: true, type: 'sec', sourceId: evidence.secId, url: evidence.secUrl,
-    };
-  }
-  const newsDays = daysAgo(evidence.newsAt);
-  if (newsDays != null && newsDays >= 0 && newsDays <= 14) {
-    return {
-      criterion: { id: 'catalyst', label: 'Lähenev katalüsaator', status: 'uncertain', detail: `Hiljutine uudis: ${evidence.newsTitle || 'pealkiri puudub'}.` },
-      catalystAt: evidence.newsAt, gate: true, type: 'news', sourceId: evidence.newsId, url: evidence.newsUrl,
-    };
-  }
-  return {
-    criterion: { id: 'catalyst', label: 'Lähenev katalüsaator', status: 'missing', detail: '45 päeva earnings’it, 30 päeva SEC sündmust ega 14 päeva uudist ei leitud.' },
-    catalystAt: null, gate: false, type: null, sourceId: null, url: null,
-  };
+// Catalyst ei ole enam hard gate. Kriteerium kuvab ainult tõendi tugevuse:
+// supported = materiaalne uus tõend, uncertain = nõrk või ainult planeeritud
+// kuupäev, missing = kogumislünk või salvestatud sündmuse puudumine.
+function catalystCriterion(evidence: CatalystEvidence): DiscoveryCriterion {
+  return { id: 'catalyst', label: 'Catalyst evidence', status: evidence.criterionStatus, detail: evidence.detail };
+}
+
+function legacyCatalystType(evidence: CatalystEvidence): string | null {
+  const kind = evidence.strongest?.event.kind;
+  if (!kind) return null;
+  if (kind === 'earnings_scheduled') return 'earnings';
+  if (kind === 'news_headline') return 'news';
+  if (kind === 'company_release') return 'ir';
+  return 'sec';
 }
 
 function buildRisks(financials: CompanyFinancialSummary, health: CompanyScore | null, evidence: MarketEvidence, coverage: number): string[] {
@@ -214,8 +178,14 @@ function buildRisks(financials: CompanyFinancialSummary, health: CompanyScore | 
   return risks.length ? risks : ['Praegused reeglid ei leidnud tugevat üksikriski; algallikad vajavad siiski kontrolli.'];
 }
 
-function buildUnknowns(financials: CompanyFinancialSummary, evidence: MarketEvidence, growth: CompanyScore | null, health: CompanyScore | null): string[] {
-  const unknowns: string[] = [];
+function buildUnknowns(
+  financials: CompanyFinancialSummary,
+  evidence: MarketEvidence,
+  growth: CompanyScore | null,
+  health: CompanyScore | null,
+  catalystUnknowns: string[] = [],
+): string[] {
+  const unknowns: string[] = [...catalystUnknowns];
   if (evidence.marketCap == null) unknowns.push('Market cap puudub.');
   if (evidence.volume == null) unknowns.push('Kauplemismaht puudub.');
   if (!growth) unknowns.push('Growth skoor puudub.');
@@ -230,10 +200,6 @@ async function marketEvidence(): Promise<Map<string, MarketEvidence>> {
   const result = await pool.query(`
     SELECT c.id AS company_id, c.ticker, c.name,
       price.id AS price_snapshot_id, price.price, price.currency, price.market_cap, price.volume,
-      earnings.id AS earnings_id, earnings.event_at AS earnings_at,
-      sec.id AS sec_id, sec.form_type AS sec_form, sec.url AS sec_url, sec.discovered_at AS sec_at,
-      news.id AS news_id, news.title AS news_title, news.url AS news_url,
-      COALESCE(news.published_at, news.discovered_at) AS news_at,
       score.scoring_version, score.id AS score_snapshot_id
     FROM companies c
     LEFT JOIN LATERAL (
@@ -241,21 +207,6 @@ async function marketEvidence(): Promise<Map<string, MarketEvidence>> {
       FROM price_snapshots p WHERE p.company_id = c.id
       ORDER BY p.captured_at DESC, p.id DESC LIMIT 1
     ) price ON true
-    LEFT JOIN LATERAL (
-      SELECT e.id, e.event_at FROM earnings_events e
-      WHERE e.company_id = c.id AND e.event_at >= now() AND e.event_at <= now() + interval '45 days'
-      ORDER BY e.event_at ASC LIMIT 1
-    ) earnings ON true
-    LEFT JOIN LATERAL (
-      SELECT s.id, s.form_type, s.url, s.discovered_at FROM sec_events s
-      WHERE s.company_id = c.id AND s.discovered_at >= now() - interval '30 days'
-      ORDER BY s.discovered_at DESC, s.id DESC LIMIT 1
-    ) sec ON true
-    LEFT JOIN LATERAL (
-      SELECT n.id, n.title, n.url, n.published_at, n.discovered_at FROM news_items n
-      WHERE n.company_id = c.id AND COALESCE(n.published_at, n.discovered_at) >= now() - interval '14 days'
-      ORDER BY COALESCE(n.published_at, n.discovered_at) DESC, n.id DESC LIMIT 1
-    ) news ON true
     LEFT JOIN LATERAL (
       SELECT s.id, s.scoring_version FROM company_score_snapshots s
       WHERE s.company_id = c.id ORDER BY s.calculated_at DESC, s.id DESC LIMIT 1
@@ -267,21 +218,18 @@ async function marketEvidence(): Promise<Map<string, MarketEvidence>> {
     marketCap: row.market_cap == null ? null : Number(row.market_cap),
     volume: row.volume == null ? null : Number(row.volume),
     priceSnapshotId: row.price_snapshot_id == null ? null : Number(row.price_snapshot_id),
-    earningsId: row.earnings_id == null ? null : String(row.earnings_id),
-    earningsAt: row.earnings_at ? new Date(row.earnings_at).toISOString() : null,
-    secId: row.sec_id == null ? null : String(row.sec_id), secForm: row.sec_form || null,
-    secUrl: row.sec_url || null, secAt: row.sec_at ? new Date(row.sec_at).toISOString() : null,
-    newsId: row.news_id == null ? null : String(row.news_id), newsTitle: row.news_title || null,
-    newsUrl: row.news_url || null, newsAt: row.news_at ? new Date(row.news_at).toISOString() : null,
     scoreVersion: row.scoring_version || null,
     scoreSnapshotId: row.score_snapshot_id == null ? null : Number(row.score_snapshot_id),
   }]));
 }
 
+// Järjestus jääb leksikograafiline ja koondskoorita. Catalyst evidence tier on
+// üks aste, mitte kaalutud punkt ega kaasamisfilter.
 function candidateOrder(a: EvaluatedCompany, b: EvaluatedCompany): number {
   const supportedA = a.criteria.filter((criterion) => criterion.status === 'supported').length;
   const supportedB = b.criteria.filter((criterion) => criterion.status === 'supported').length;
   return supportedB - supportedA
+    || b.catalystEvidence.tier - a.catalystEvidence.tier
     || (b.growth?.score ?? -1) - (a.growth?.score ?? -1)
     || b.coverage - a.coverage
     || (b.health?.score ?? -1) - (a.health?.score ?? -1)
@@ -308,12 +256,27 @@ function decisionInput(item: EvaluatedCompany, included: boolean, rank: number |
     scoringVersion: item.evidence.scoreVersion,
     runwayStatus: runway.status,
     runwayDetail: runway.detail,
-    catalystStatus: item.catalyst.criterion.status,
-    catalystType: item.catalyst.type,
-    catalystSourceId: item.catalyst.sourceId,
-    catalystUrl: item.catalyst.url,
-    catalystAt: item.catalyst.catalystAt,
-    catalystDetail: item.catalyst.criterion.detail,
+    catalystStatus: item.catalystEvidence.criterionStatus,
+    catalystType: legacyCatalystType(item.catalystEvidence),
+    catalystSourceId: item.catalystEvidence.strongest?.event.sourceRef ?? null,
+    catalystUrl: item.catalystEvidence.strongest?.event.url ?? null,
+    catalystAt: item.catalystEvidence.strongest?.event.occurredAt ?? null,
+    catalystDetail: item.catalystEvidence.detail,
+    catalystAssessmentVersion: item.catalystEvidence.version,
+    catalystEvidenceStatus: item.catalystEvidence.status,
+    catalystEvidenceTier: item.catalystEvidence.tier,
+    catalystEventKind: item.catalystEvidence.strongest?.event.kind ?? null,
+    catalystSourceKind: item.catalystEvidence.strongest?.assessment.sourceQuality ?? null,
+    catalystMateriality: item.catalystEvidence.strongest?.assessment.materiality ?? null,
+    catalystMaterialityRatio: item.catalystEvidence.strongest?.assessment.materialityRatio ?? null,
+    catalystDirection: item.catalystEvidence.strongest?.assessment.direction ?? null,
+    catalystNovelty: item.catalystEvidence.strongest?.assessment.novelty ?? null,
+    catalystThesisRelevance: item.catalystEvidence.strongest?.assessment.thesisRelevance ?? null,
+    catalystMandateRelevance: item.catalystEvidence.strongest?.assessment.mandateRelevance ?? null,
+    catalystEvidenceFreshness: item.catalystEvidence.strongest?.assessment.evidenceFreshness ?? null,
+    catalystEventId: item.catalystEvidence.strongest?.event.id ?? null,
+    catalystLinkedPeriodEnd: item.catalystEvidence.strongest?.event.linkedPeriodEnd ?? null,
+    catalystNextScheduledAt: item.catalystEvidence.nextScheduledAt,
     risks: item.risks,
     unknowns: item.unknowns,
     reasons: included ? item.reasons : [],
@@ -344,22 +307,38 @@ export async function getRklbDiscoveryCandidates(
     getSectorRelativeStatsMap(financials.map((financial) => financial.ticker)),
   ]);
   const positionByTicker = new Map(positions.filter((position) => position.status !== 'closed').map((position) => [position.ticker, position.id]));
+  const runAt = new Date();
+  const scored = financials.flatMap((financial) => {
+    const evidence = evidenceByTicker.get(financial.ticker);
+    const sectorRelative = sectorRelativeByTicker.get(financial.ticker);
+    if (!evidence || !sectorRelative) return [];
+    return [{
+      financial,
+      evidence,
+      sectorRelative,
+      scores: calculateCompanyScores(financial),
+      dataQuality: calculateDataQuality(financial, runAt),
+    }];
+  });
+  const catalystByTicker = await getCatalystEvidenceMap(scored.map((item) => ({
+    companyId: item.evidence.companyId,
+    ticker: item.evidence.ticker,
+    financials: item.financial,
+    dataQuality: item.dataQuality,
+    marketCap: item.evidence.marketCap,
+  })), runAt);
   const evaluated: EvaluatedCompany[] = [];
 
-  for (const financial of financials) {
-    const evidence = evidenceByTicker.get(financial.ticker);
-    if (!evidence) continue;
-    const sectorRelative = sectorRelativeByTicker.get(financial.ticker);
-    if (!sectorRelative) continue;
-    const scores = calculateCompanyScores(financial);
+  for (const { financial, evidence, sectorRelative, scores, dataQuality } of scored) {
     const growth = scores.growth;
-    const catalyst = catalystCriterion(evidence);
+    const catalystEvidence = catalystByTicker.get(financial.ticker);
+    if (!catalystEvidence) continue;
     const criteria = [
       scaleCriterion(evidence),
       scoreCriterion('growth', 'Erakordne kasv', growth?.score ?? null, 80),
       scoreCriterion('coverage', 'Andmekate', scores.coverage.score, 80),
       runwayCriterion(scores.financialHealth),
-      catalyst.criterion,
+      catalystCriterion(catalystEvidence),
     ];
     const exclusions: string[] = [];
     if (financial.ticker === 'RKLB') exclusions.push('RKLB on võrdlusnäidis, mitte kandidaat.');
@@ -369,18 +348,17 @@ export async function getRklbDiscoveryCandidates(
     if (evidence.marketCap != null && evidence.marketCap > MAX_KNOWN_MARKET_CAP) {
       exclusions.push(`Market cap ${formatBillions(evidence.marketCap)} ületab 75 miljardi piiri.`);
     }
-    if (!catalyst.gate) exclusions.push('Nõutud ajavahemikus ei leitud katalüsaatorit.');
     const topGrowthReasons = getTopScoreReasons(growth, 2);
     evaluated.push({
       financials: financial, evidence, growth, health: scores.financialHealth,
-      coverage: scores.coverage.score, criteria, catalyst,
+      coverage: scores.coverage.score, criteria, catalystEvidence,
       reasons: growth ? [
         `Growth ${growth.score}/100 ja Coverage ${scores.coverage.score}/100 läbivad baasfiltri.`,
         ...topGrowthReasons.map((reason) => `${reason.label}: ${reason.detail}.`),
-        catalyst.criterion.detail,
+        catalystEvidence.detail,
       ] : [],
       risks: buildRisks(financial, scores.financialHealth, evidence, scores.coverage.score),
-      unknowns: buildUnknowns(financial, evidence, growth, scores.financialHealth),
+      unknowns: buildUnknowns(financial, evidence, growth, scores.financialHealth, catalystEvidence.unknowns),
       proofQuestions: [
         'Mis on ettevõtte kaitstav konkurentsieelis ja milline algallikas seda tõendab?',
         'Mida turg praegu valesti hinnastab ning milline vastupidine seletus on võimalik?',
@@ -388,7 +366,7 @@ export async function getRklbDiscoveryCandidates(
       ],
       exclusionReasons: exclusions,
       sectorRelative,
-      dataQuality: calculateDataQuality(financial),
+      dataQuality,
     });
   }
 
@@ -402,7 +380,6 @@ export async function getRklbDiscoveryCandidates(
     const rank = selectedRank.get(item.evidence.ticker) ?? null;
     return decisionInput(item, rank != null, rank);
   });
-  const runAt = new Date();
   const run = await recordDiscoveryRun(RULES, decisions, runAt, options.runType || 'rklb');
   const candidates: RklbCandidate[] = selected.map((item) => ({
     ticker: item.evidence.ticker,
@@ -422,9 +399,10 @@ export async function getRklbDiscoveryCandidates(
     risks: item.risks,
     unknowns: item.unknowns,
     proofQuestions: item.proofQuestions,
-    catalystAt: item.catalyst.catalystAt,
+    catalystAt: item.catalystEvidence.strongest?.event.occurredAt ?? null,
     sectorRelative: item.sectorRelative,
     dataQuality: item.dataQuality,
+    catalystEvidence: item.catalystEvidence,
   }));
 
   return {
