@@ -131,9 +131,11 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**42 tickeri funnel-auditi järel päris manual research sprint.**
+**Catalyst/Freshness hüpoteesiauditi järel päris manual research sprint.**
 
 `docs/FUNNEL_AUDIT.md` read-only audit näitas, et suurim vahetu bottleneck ei ole scheduler ega cloud DB, vaid radari sisenduniversumi ja otsustusfunneli tõendamata kvaliteet. Viimases püsivas snapshot'is oli 42 tickerit, neist 10-l SEC/score andmed, canonical jooks hindas radari seest viit ja kaasas null. Enne infra- või filtriarendust tuleb viia läbi päris research cohort: API, BW, CAKE, HIMS ja ACHR; vähemalt kolm teesi peavad jõudma ausa `draft`/`researching`/`rejected` otsuseni.
+
+Järelaudit näitas, et catalyst hard gate'i eemaldamisel läbiks tänaste salvestatud score'idega muud baasfiltrid BW, CAKE, API, HR ja PLUG. Esimesed kolm on võimalikud research false-negative'id, HR/PLUG näitavad, et gate blokeerib ka küsitavaid nimesid ega erista nende kvaliteeti. Coverage on praegu completeness/presence: 60 olemasolevast core metricust kaks olid üle kahe aasta vanad, sh BW Coverage 100 juures 2021 debt. Manual research tuleb teha esimesena; seejärel on soovituslik esimene integrity-kiht eraldi Freshness + Period Alignment ning alles siis catalyst'i muutmine hard gate'ist evidence field'iks.
 
 ## Roadmap
 
@@ -256,6 +258,9 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Viimase snapshot'i 42 tickerist oli 31-l hind/market cap, 10-l SEC/score, 0-l sector/industry ning ainult kahel persisted `quote_type`; universumi kvaliteeti ei saa hinnata ainult toore ticker-count'i järgi.
 - Coverage Score mõõdab praegu komponendi olemasolu, mitte sisendi värskust. Audit leidis ARR revenue 2011/2010, BW debt 2021 ja PLUG debt 2024 segatuna uuemate 2026 faktidega; neid skoore ei tohi käsitleda võrdselt värske ja joondatud CAKE evidence'iga.
 - Praeguse auditi põhjal on catalyst hard gate tõenäoliselt liiga karm; `BW` ja `CAKE` välistati ainult katalüsaatori puudumise tõttu. Koodi ei muudeta enne manual research sprinti.
+- Catalyst counterfactual: immutable run oleks hard gate'ita lisanud BW ja CAKE; tänaste post-enrichment score'idega läbivad muud baasfiltrid BW, CAKE, API, HR ja PLUG, kuid ühelgi neist pole stored catalyst'it.
+- Freshnessi range 2 aasta piir leidis 60 olemasolevast core metricust kaks vana sisendit: ARR revenue 2011 ja BW debt 2021. PLUG debt 2024 ei ületa veel kaht aastat, kuid jääb ettevõtte uusimast score-sisendist 675 päeva maha.
+- Coverage, Freshness ja Period Alignment peavad jääma eraldi mõisteteks: completeness ei tohi vaikimisi tähendada, et kõik score-komponendid on värsked ja samast aruandeperioodist.
 - SEC enrichment'i algne päevane batch-size on päris runtime'is kontrollitud väärtusega 5; seda võib muuta ainult logide, kestuse ja katvuse põhjal, mitte eesmärgiga teha korraga piiramatut masspäringut.
 - Sector-relative valimi katvus kasvab ainult siis, kui olemasolev provider tagastab ettevõtte kohta sector/industry väärtuse; väikese grupi korral percentile teadlikult puudub.
 - Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
@@ -484,3 +489,13 @@ npm run build
 - Leiti, et Coverage ei kontrolli recency/period alignment'i: ARR revenue pärines 2011-st, BW debt 2021-st ja PLUG debt 2024-st, kuigi teised score-sisendid olid uuemad.
 - Valiti manual research cohort API, BW, CAKE, HIMS ja ACHR ning koostati API, BW ja ACHR ausad thesis seed'id failis `docs/FUNNEL_AUDIT.md`.
 - Järgmine soovitus on manual research sprint; filter-, score-, API-, UI- ja infraarendus jäävad seniks ootele.
+
+### 2026-08-11 - Catalyst counterfactual + Freshness read-only audit
+
+- Simuleeriti SQL-is catalyst hard gate'i eemaldamist ilma scannerit või DB andmeid muutmata.
+- Immutable canonical run'is oleks lisandunud BW ja CAKE; post-enrichment hetkeseisus läbivad muud baasfiltrid BW, CAKE, API, HR ja PLUG.
+- Praeguses snapshot'is pole ühelgi viiest base-eligible nimel catalyst'it; event-window on olemas ainult ARR-il ja ACHR-il, mis ei läbi või ei saa fundamentaalfiltreid.
+- Auditeeriti kümne scored radari ettevõtte 60 olemasolevat core metricut. Üle kahe aasta vanad olid ARR revenue (2011) ja BW debt (2021); BW sai sellest hoolimata Coverage 100.
+- PLUG debt oli range kahe aasta piiri sees, kuid 675 päeva ettevõtte uusimast score-sisendist maas, mis kinnitas eraldi Period Alignment vajadust.
+- Järjekord jäi: esmalt manual research sprint ja inimese false-negative/rejection labels, seejärel Freshness/Period Alignment integrity layer, alles pärast seda catalyst hard gate'i võimalik muutmine evidence field'iks.
+- Koodi, UI-d, score-valemeid, filtreid, väliseid API-sid ega DB andmeid ei muudetud.
