@@ -131,15 +131,24 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**Ühe canonical ajaloo loomine ning päevakogumise töökindlus.**
+**42 tickeri funnel-auditi järel päris manual research sprint.**
 
-Point-in-time discovery snapshot, Validation, Backtest V1, päevane SEC enrichment ja canonical `rklb_daily` jooks on valmis. Koduarvuti kell 08:00 töötamise eeldus ei sobi päris kasutusviisiga ning kodu- ja tööarvuti Docker volume'id on eraldi andmebaasid. Enne frequency-signaali ehitamist tuleb valida üks jagatud PostgreSQL-i tõeallikas, muuta collector arvutitest sõltumatuks ning lisada töö lukustus, jooksude audit ja automaattestid. Seejärel saab süsteem kasvatada päris forward-valimit ilma kaheks lahkneva ajaloota.
+`docs/FUNNEL_AUDIT.md` read-only audit näitas, et suurim vahetu bottleneck ei ole scheduler ega cloud DB, vaid radari sisenduniversumi ja otsustusfunneli tõendamata kvaliteet. Viimases püsivas snapshot'is oli 42 tickerit, neist 10-l SEC/score andmed, canonical jooks hindas radari seest viit ja kaasas null. Enne infra- või filtriarendust tuleb viia läbi päris research cohort: API, BW, CAKE, HIMS ja ACHR; vähemalt kolm teesi peavad jõudma ausa `draft`/`researching`/`rejected` otsuseni.
 
 ## Roadmap
 
 ### NOW - järgmine arendustükk
 
-Collection reliability ja canonical cloud-history:
+Manual research sprint olemasoleva funnel'i falsifitseerimiseks:
+
+- kontrolli primaarallikatest API, BW, CAKE, HIMS ja ACHR business, current financials, dilution, moat, catalyst ning valuation/mispricing evidence;
+- kasuta `docs/FUNNEL_AUDIT.md` kolme thesis seed'i ainult algmustandina; teadmata väited peavad jääma hüpoteesiks;
+- salvesta vähemalt üks `researching`, üks põhjendatud `rejected` ja võimaluse korral üks nõuded läbiv `ready` tees;
+- dokumenteeri, kas kandidaat lagunes universumi müra, SEC-andmekvaliteedi, katalüsaatori gate'i, valuation'i või kvalitatiivse business evidence'i tõttu;
+- ära muuda enne seda score-valemit, filtreid, universumit, API-sid, UI-d ega cloud-infrastruktuuri;
+- pärast sprinti otsusta tõendite põhjal: kui nimed olid sisuliselt nõrgad, muuda universe/funnel; kui head nimed blokeerusid mehaaniliselt, kalibreeri gate'e; kui cohort on usutav, alusta canonical infrastruktuuriga.
+
+Auditi järel ootel collection reliability ja canonical cloud-history:
 
 - lisa DB-põhine `collection_runs` ledger ning PostgreSQL advisory lock või lease, et sama päeva kattuvad worker'id ei teeks paralleelset collecti;
 - säilita job'i algus, lõpp, staatus, provider'ite loendurid ja piiratud veainfo, et ebaõnnestumine oleks UI-st või DB-st jälgitav;
@@ -243,6 +252,10 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Koduarvuti scheduler ei ole sobiv canonical lahendus, sest arvuti on öösel ja kell 08:00 väljas. Ajutine fallback võib käivitada päeva esimese collecti app'i käivitumisel, kuid see ei lahenda kahe arvuti ajaloo lahknemist.
 - Kiiraudit leidis, et repo ei sisalda automaattestide komplekti, skeemi loomine/muutmine on hajutatud `db/init.sql` ja runtime teekide vahel ning rakendusel puudub kasutaja autentimine. Need on enne avalikku deploy'd P0/P1 töö, mitte uue research-provider'i lisamise põhjus.
 - Next.js 14 haru ei ole enam aktiivselt toetatud; versiooniuuendus tuleb teha eraldi kontrollitud tööna, mitte segada seda collection reliability muudatustega.
+- Funnel-auditi püsiv snapshot oli 42 rida, kuigi varasem collect-loendur näitas 43; puuduvat 43. rida ei rekonstrueeritud ega fabritseeritud.
+- Viimase snapshot'i 42 tickerist oli 31-l hind/market cap, 10-l SEC/score, 0-l sector/industry ning ainult kahel persisted `quote_type`; universumi kvaliteeti ei saa hinnata ainult toore ticker-count'i järgi.
+- Coverage Score mõõdab praegu komponendi olemasolu, mitte sisendi värskust. Audit leidis ARR revenue 2011/2010, BW debt 2021 ja PLUG debt 2024 segatuna uuemate 2026 faktidega; neid skoore ei tohi käsitleda võrdselt värske ja joondatud CAKE evidence'iga.
+- Praeguse auditi põhjal on catalyst hard gate tõenäoliselt liiga karm; `BW` ja `CAKE` välistati ainult katalüsaatori puudumise tõttu. Koodi ei muudeta enne manual research sprinti.
 - SEC enrichment'i algne päevane batch-size on päris runtime'is kontrollitud väärtusega 5; seda võib muuta ainult logide, kestuse ja katvuse põhjal, mitte eesmärgiga teha korraga piiramatut masspäringut.
 - Sector-relative valimi katvus kasvab ainult siis, kui olemasolev provider tagastab ettevõtte kohta sector/industry väärtuse; väikese grupi korral percentile teadlikult puudub.
 - Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
@@ -461,3 +474,13 @@ npm run build
 - IPO/Nasdaq radar jäeti hilisemaks ning selle eelistatud sisendiks valiti ametlik võtmeta Nasdaq Trader symbol directory, mitte juhuslik uus API.
 - Kiiraudit tõi enne avalikku deploy'd esile autentimise puudumise, automaattestide puudumise, hajutatud skeemimuudatused, collection job'i luku/ledgeri puudumise ja Next.js 14 EOL staatuse.
 - Uute API-võtmete kogumise asemel otsustati esmalt teha provider-gap/coverage audit; jagatud või mitteametlikke võtmeid ei kasutata.
+
+### 2026-08-11 - 42 tickeri read-only funnel audit
+
+- Auditeeriti viimast persisted radar snapshot'i, latest stored hindu, SEC fact'e, score snapshot'e ja viimast canonical `rklb_daily` run'i ilma collector'i, välise refresh'i või DB kirjutuseta.
+- Varasema 43 asemel oli tõeallikaks olevas snapshot'is 42 tickerit; audit ei fabritseerinud puuduvat rida.
+- 42-st oli hind ja market cap 31-l, SEC/score 10-l, sector/industry 0-l ja persisted instrument type ainult kahel; canonical jooks hindas radari seest viit ning kaasas null.
+- Catalyst põhjustas nelja hinnatud radari tickeri välistamise; BW ja CAKE jäid välja ainult selle gate'i tõttu.
+- Leiti, et Coverage ei kontrolli recency/period alignment'i: ARR revenue pärines 2011-st, BW debt 2021-st ja PLUG debt 2024-st, kuigi teised score-sisendid olid uuemad.
+- Valiti manual research cohort API, BW, CAKE, HIMS ja ACHR ning koostati API, BW ja ACHR ausad thesis seed'id failis `docs/FUNNEL_AUDIT.md`.
+- Järgmine soovitus on manual research sprint; filter-, score-, API-, UI- ja infraarendus jäävad seniks ootele.
