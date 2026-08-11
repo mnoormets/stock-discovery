@@ -51,6 +51,19 @@ Coverage 100 võib seega olla samal ajal Alignment `poor`. Näiteks BW cash on 2
 
 Thesis Builder kuvab alignment/freshness probleemi korral `ready` staatuse juures soft warning'u. See ei blokeeri salvestamist, sest lõpliku tõendi piisavuse otsustab kasutaja.
 
+## Catalyst evidence
+
+Kandidaadikaardil on eraldi **Catalyst evidence** plokk. Catalyst ei otsusta enam, kas ettevõte üldse nimekirja pääseb — see näitab, kui tugev on sündmuse tõend, ja mõjutab ainult järjestust.
+
+- **Materiality** — kas sündmus muutis numbrit, millel on ettevõtte mastaabis kaalu. `quantified_major` tähendab suurt mõõdetud muutust või kasumi/rahavoo pööret, `quantified_minor` järkjärgulist muutust, `unquantified` seda, et avaldus ei kandnud mõõdetavat pööret, ja `unknown` seda, et värskeid võrreldavaid sisendeid ei olnud.
+- **Suund** — `improving`, `deteriorating`, `mixed` või `unknown`; tuletatud ainult avalduse enda faktidest, mitte hinnast ega tähelepanust.
+- **Allikas** — `primary_sec` on SEC-i avaldus, `secondary_news` on uudise pealkiri. Pealkiri ei tõsta tõendit kunagi materiaalseks.
+- **Uudsus** — `new_information` tähendab, et avaldus tõi ettevõtte uusima majandusperioodi. Sama perioodi kordusavaldus on `repeat_of_prior_event`.
+- **Thesis-relevance** — kas tõend puudutab avatud küsimust otsustavalt, toetavalt, ainult kõrvalt või üldse mitte.
+- **Mandaat** — eraldi hinnang, kas sündmus sobib „järgmise RKLB” varajase asümmeetria mandaadiga. Hea ettevõtte päris sündmus võib olla `not_relevant`.
+
+Plokk näitab alati ka vastutõendeid (dilution, negatiivne rahavoog, aegunud sisendid), et sündmus ei jääks kunagi ilma oma teise poole. Planeeritud earnings-kuupäev ütleb ainult, millal järgmist tõendit vaadata — see ei ole katalüsaator. Kui earnings-kuupäev on möödas, aga uut avaldust ei ole kogutud, näitab rakendus `collection gap` olekut: see on kogumislünk, mitte tõend, et ettevõttel sündmusi ei olnud.
+
 ## Sector-relative ranking
 
 Plokk **Compared with similar companies** võrdleb ettevõtte Growth, Financial Health ja Coverage skoori sama industry või sector grupi mediaani ning percentile'iga. Võrdluses kasutatakse ainult sama score-versiooni ettevõtteid, millel on kõik kolm skoori olemas. Market cap saab eraldi percentile'i.

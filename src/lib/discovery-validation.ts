@@ -2,7 +2,10 @@ import { createHash } from 'crypto';
 import { ensureSchema, pool } from './db';
 import type { DiscoveryCriterion } from './rklb-discovery';
 
-export const DISCOVERY_MODEL_VERSION = 'rklb-discovery-v1';
+// Kaasamisreegel muutus Catalyst Evidence V2-ga: catalyst ei ole enam hard
+// gate. Versioon tõuseb, et frequency/persistence ei võrdleks v1 ja v2 run'e
+// ühe loona.
+export const DISCOVERY_MODEL_VERSION = 'rklb-discovery-v2';
 export const DEFAULT_BENCHMARK_SYMBOL = 'SPY';
 export const OUTCOME_HORIZONS = ['1w', '2w', '1m', '3m', '6m'] as const;
 export type OutcomeHorizon = (typeof OUTCOME_HORIZONS)[number];
@@ -32,6 +35,21 @@ export interface DiscoveryDecisionInput {
   catalystUrl: string | null;
   catalystAt: string | null;
   catalystDetail: string;
+  catalystAssessmentVersion: string | null;
+  catalystEvidenceStatus: string | null;
+  catalystEvidenceTier: number | null;
+  catalystEventKind: string | null;
+  catalystSourceKind: string | null;
+  catalystMateriality: string | null;
+  catalystMaterialityRatio: number | null;
+  catalystDirection: string | null;
+  catalystNovelty: string | null;
+  catalystThesisRelevance: string | null;
+  catalystMandateRelevance: string | null;
+  catalystEvidenceFreshness: string | null;
+  catalystEventId: number | null;
+  catalystLinkedPeriodEnd: string | null;
+  catalystNextScheduledAt: string | null;
   risks: string[];
   unknowns: string[];
   reasons: string[];
@@ -234,12 +252,18 @@ export async function recordDiscoveryRun(
              sector_growth_percentile, sector_health_percentile,
              sector_coverage_percentile, sector_market_cap_percentile,
              sector_comparable_count, sector_median_growth,
-             sector_median_health, sector_median_coverage, payload)
+             sector_median_health, sector_median_coverage, payload,
+             catalyst_assessment_version, catalyst_evidence_status, catalyst_evidence_tier,
+             catalyst_event_kind, catalyst_source_kind, catalyst_materiality,
+             catalyst_materiality_ratio, catalyst_direction, catalyst_novelty,
+             catalyst_thesis_relevance, catalyst_mandate_relevance,
+             catalyst_evidence_freshness, catalyst_event_id,
+             catalyst_linked_period_end, catalyst_next_scheduled_at)
            VALUES
             ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,
              $17,$18,$19,$20,$21,$22,$23,$24,$25::jsonb,$26::jsonb,$27::jsonb,
              $28::jsonb,$29::jsonb,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,
-             $41::jsonb)
+             $41::jsonb,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56)
            RETURNING id`,
           [
             runId, decision.companyId, decision.ticker, decision.included, decision.candidateRank,
@@ -256,6 +280,14 @@ export async function recordDiscoveryRun(
             decision.sectorComparableCount, decision.sectorMedianGrowth,
             decision.sectorMedianHealth, decision.sectorMedianCoverage,
             JSON.stringify(decision),
+            decision.catalystAssessmentVersion, decision.catalystEvidenceStatus,
+            decision.catalystEvidenceTier, decision.catalystEventKind,
+            decision.catalystSourceKind, decision.catalystMateriality,
+            decision.catalystMaterialityRatio, decision.catalystDirection,
+            decision.catalystNovelty, decision.catalystThesisRelevance,
+            decision.catalystMandateRelevance, decision.catalystEvidenceFreshness,
+            decision.catalystEventId, decision.catalystLinkedPeriodEnd,
+            decision.catalystNextScheduledAt,
           ],
         );
         if (decision.included) {
@@ -536,6 +568,21 @@ export async function getValidationDashboard(): Promise<ValidationDashboard> {
         catalystUrl: decision.catalyst_url || null,
         catalystAt: decision.catalyst_at ? new Date(decision.catalyst_at).toISOString() : null,
         catalystDetail: decision.catalyst_detail,
+        catalystAssessmentVersion: decision.catalyst_assessment_version || null,
+        catalystEvidenceStatus: decision.catalyst_evidence_status || null,
+        catalystEvidenceTier: decision.catalyst_evidence_tier == null ? null : Number(decision.catalyst_evidence_tier),
+        catalystEventKind: decision.catalyst_event_kind || null,
+        catalystSourceKind: decision.catalyst_source_kind || null,
+        catalystMateriality: decision.catalyst_materiality || null,
+        catalystMaterialityRatio: decision.catalyst_materiality_ratio == null ? null : Number(decision.catalyst_materiality_ratio),
+        catalystDirection: decision.catalyst_direction || null,
+        catalystNovelty: decision.catalyst_novelty || null,
+        catalystThesisRelevance: decision.catalyst_thesis_relevance || null,
+        catalystMandateRelevance: decision.catalyst_mandate_relevance || null,
+        catalystEvidenceFreshness: decision.catalyst_evidence_freshness || null,
+        catalystEventId: decision.catalyst_event_id == null ? null : Number(decision.catalyst_event_id),
+        catalystLinkedPeriodEnd: decision.catalyst_linked_period_end ? String(decision.catalyst_linked_period_end).slice(0, 10) : null,
+        catalystNextScheduledAt: decision.catalyst_next_scheduled_at ? new Date(decision.catalyst_next_scheduled_at).toISOString() : null,
         risks: jsonArray<string>(decision.risks),
         unknowns: jsonArray<string>(decision.unknowns),
         reasons: jsonArray<string>(decision.reasons),

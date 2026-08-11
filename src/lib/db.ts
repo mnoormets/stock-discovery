@@ -570,6 +570,21 @@ export async function ensureSchema(): Promise<void> {
     ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_growth NUMERIC;
     ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_health NUMERIC;
     ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_coverage NUMERIC;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_assessment_version TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_evidence_status TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_evidence_tier INTEGER;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_event_kind TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_source_kind TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_materiality TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_materiality_ratio NUMERIC;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_direction TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_novelty TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_thesis_relevance TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_mandate_relevance TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_evidence_freshness TEXT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_event_id BIGINT;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_linked_period_end DATE;
+    ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_next_scheduled_at TIMESTAMPTZ;
     CREATE INDEX IF NOT EXISTS idx_discovery_decisions_ticker_time
       ON discovery_decisions (ticker, run_id DESC);
     CREATE INDEX IF NOT EXISTS idx_discovery_decisions_included
@@ -605,6 +620,53 @@ export async function ensureSchema(): Promise<void> {
     ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS excess_return_percent NUMERIC;
     CREATE INDEX IF NOT EXISTS idx_candidate_outcomes_status_target
       ON candidate_outcomes (status, target_at);
+    CREATE TABLE IF NOT EXISTS catalyst_events (
+      id BIGSERIAL PRIMARY KEY,
+      company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      event_kind TEXT NOT NULL,
+      source_kind TEXT NOT NULL,
+      source_ref TEXT NOT NULL,
+      occurred_at TIMESTAMPTZ,
+      headline TEXT,
+      url TEXT,
+      accession_number TEXT,
+      form_type TEXT,
+      linked_fact_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+      linked_period_end DATE,
+      linked_period_kind TEXT,
+      first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (company_id, event_kind, source_ref)
+    );
+    CREATE INDEX IF NOT EXISTS idx_catalyst_events_company_time
+      ON catalyst_events (company_id, occurred_at DESC, id DESC);
+    CREATE TABLE IF NOT EXISTS catalyst_assessments (
+      id BIGSERIAL PRIMARY KEY,
+      catalyst_event_id BIGINT NOT NULL REFERENCES catalyst_events(id) ON DELETE CASCADE,
+      assessment_version TEXT NOT NULL,
+      materiality TEXT NOT NULL,
+      materiality_basis TEXT,
+      materiality_ratio NUMERIC,
+      direction TEXT NOT NULL,
+      direction_basis TEXT,
+      novelty TEXT NOT NULL,
+      novelty_basis TEXT,
+      prior_event_id BIGINT REFERENCES catalyst_events(id) ON DELETE SET NULL,
+      source_quality TEXT NOT NULL,
+      thesis_relevance TEXT NOT NULL,
+      relevance_target TEXT,
+      mandate_relevance TEXT NOT NULL,
+      mandate_basis TEXT,
+      evidence_freshness TEXT NOT NULL,
+      evidence_status TEXT NOT NULL,
+      assessed_by TEXT NOT NULL DEFAULT 'rule',
+      assessed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      notes TEXT,
+      input_hash TEXT NOT NULL,
+      UNIQUE (catalyst_event_id, assessment_version, assessed_by, input_hash)
+    );
+    CREATE INDEX IF NOT EXISTS idx_catalyst_assessments_event
+      ON catalyst_assessments (catalyst_event_id, assessed_at DESC, id DESC);
   `);
 }
 

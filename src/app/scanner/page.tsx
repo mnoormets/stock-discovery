@@ -5,6 +5,7 @@ import { getRklbDiscoveryCandidates, type RklbCandidate, type RklbDiscoveryResul
 import { addDiscoveryWatchlistAction, startDiscoveryThesisAction } from './actions';
 import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
 import DataQualityEvidence from '@/components/DataQualityEvidence';
+import CatalystEvidence from '@/components/CatalystEvidence';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,6 +83,7 @@ function CandidateCard({ candidate }: { candidate: RklbCandidate }) {
         <div className="candidateNumbers"><span>Growth <strong>{candidate.growthScore}</strong></span><span>Health <strong>{candidate.healthScore ?? '—'}</strong></span><span>Coverage <strong>{candidate.coverageScore}</strong></span></div>
       </div>
       <div className="candidateMarketMeta"><span>Hind: {candidate.price == null ? 'puudub' : compactMoney(candidate.price, candidate.currency || 'USD')}</span><span>Market cap: {compactMoney(candidate.marketCap, candidate.currency || 'USD')}</span><span>Snapshot: {candidate.scoreVersion || 'versioon puudub'} · #{candidate.scoreSnapshotId || '—'}</span></div>
+      <CatalystEvidence evidence={candidate.catalystEvidence} title="Kandidaadi catalyst evidence" />
       <DataQualityEvidence summary={candidate.dataQuality} title="Kandidaadi andmekvaliteet" compact />
       <SectorRelativeEvidence stats={candidate.sectorRelative} />
       <div className="criteriaGrid">{candidate.criteria.map((criterion) => (
