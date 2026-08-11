@@ -226,6 +226,24 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .outcomeBadge small { color: var(--muted); font-weight: 800; text-transform: uppercase; }
 .outcomeBadge strong { font-size: 11px; }
 .outcomeBadge.measured { border-color: #34618d; }
+.backtestGrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.backtestHorizon { display: grid; gap: 13px; padding: 15px; }
+.backtestMetrics { display: grid; gap: 7px; margin: 0; }
+.backtestMetrics > div { display: flex; justify-content: space-between; gap: 8px; }
+.backtestMetrics dt { color: var(--muted); font-size: 10px; }
+.backtestMetrics dd { margin: 0; font-size: 11px; font-weight: 800; text-align: right; }
+.backtestRuns { display: grid; gap: 12px; }
+.backtestCandidate { display: grid; gap: 14px; padding: 16px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; background: rgba(9,14,20,.45); }
+.backtestOutcomeTable { padding: 0; }
+.backtestOutcomeTable table { min-width: 720px; }
+.backtestEvidence { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.backtestEvidence section { padding: 12px; border-radius: 9px; background: #101a29; }
+.backtestEvidence h4 { margin: 0 0 7px; }
+.backtestEvidence ul { display: grid; gap: 5px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 11px; }
+.antiCheat { display: grid; gap: 10px; border-left: 3px solid var(--amber); }
+.antiCheat h3 { margin: 0; }
+.antiCheat ul { display: grid; gap: 7px; margin: 0; padding-left: 20px; color: var(--muted); }
+.backtestEmpty { border-color: #6d4c2a; }
 .scannerTable { padding: 4px 12px; }
 .eventGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
 .eventCard { display: grid; gap: 6px; }
@@ -302,7 +320,7 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 
 @media (max-width: 760px) {
   .pageStack { padding-top: 28px; }
-  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid { grid-template-columns: 1fr; }
+  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence { grid-template-columns: 1fr; }
   .rklbCandidateTop { display: grid; }
   .validationDecisionTop, .validationRun > summary { align-items: flex-start; flex-direction: column; }
   .collectBox { grid-template-columns: 1fr; align-items: stretch; }

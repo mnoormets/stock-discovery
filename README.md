@@ -19,6 +19,7 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 - Skänneri „Leia järgmine RKLB” preset annab olemasolevast universumist 0-5 läbipaistvalt põhjendatud uurimiskandidaati, ilma koondskoori või ostusoovituseta.
 - Iga RKLB discovery jooks salvestab muutumatu otsusehetke universumi, kaasatud ja välistatud tickerid, põhjused, skoorid, hinna, market cap'i, runway-kirjelduse, katalüsaatori, riskid ja teadmata info.
 - `/validation` mõõdab kaasatud kandidaatide tegelikku hinnamuutust eraldi 1 nädala, 2 nädala, 1 kuu, 3 kuu ja 6 kuu horisondil ning näitab keskmist, mediaani, võitjaid, kaotajaid, parimat ja halvimat tulemust.
+- `/backtest` loeb ainult salvestatud point-in-time discovery run'e ja outcome'e, võrdleb mõõdetud kandidaate SPY benchmark'iga ning kuvab excess return'i ainult siis, kui mõlemad hinnad on päriselt olemas.
 - Rakenduses ja failis `docs/USER_GUIDE.md` on uue kasutaja töövoogu selgitav kasutusjuhend.
 - Portfelli CRUD: ticker, kogus, keskmine ostuhind, tees, ajahorisont, staatus ja märkmed.
 - Teesi muutmise ajalugu PostgreSQL-is.
@@ -88,7 +89,8 @@ npm run build
 - Growth Score kaalub revenue, net income’i, operating cash flow ja free cash flow aastamuutusi. Financial Health kaalub rahavoogude kvaliteeti, cash/debt suhet, kasumlikkust ja aktsiate arvu muutust. Mõlemad on uurimisfiltrid, mitte investeerimissoovitused.
 - Coverage Score on Growth ja Financial Health mudelite kaalutud sisendikatte keskmine. Growth/Health edetabelites kuvatakse vähemalt 70 coverage ettevõtted enne madalama kattega tulemusi, et üksiku komponendi kõrge skoor ei oleks eksitav.
 - Score-mudeli versioon on salvestatud iga snapshotiga. Valemi muutmisel tuleb versiooni tõsta, et eri valemitega tulemusi ei võrreldaks vaikimisi sama ajaloona.
-- Rakendus ei sisalda optsioonianalüüsi, backtesti ega automaatset kauplemist.
+- Rakendus ei sisalda optsioonianalüüsi, ajaloolist ümbervalikut ega automaatset kauplemist.
 - Validation on forward outcome tracking, mitte täielik ajalooline backtest: see kogub tulemusi alates salvestatud discovery jooksudest ega rekonstrueeri minevikku tänaste andmetega.
+- Backtest V1 on salvestatud forward outcome'ide aus koondvaade, mitte tõend strateegia toimivuse ega tulevase tootluse kohta.
 - Research Brief kasutab läbipaistvaid kohalikke reegleid ja rakendusse kogutud allikaid; see ei asenda algdokumentide kontrollimist ega investeerimisnõustamist.
 - Redditi skoor on uurimisnimekirja signaal, mitte tootluse prognoos.

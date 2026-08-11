@@ -3,6 +3,7 @@ import { ensureSchema, pool } from './db';
 import type { DiscoveryCriterion } from './rklb-discovery';
 
 export const DISCOVERY_MODEL_VERSION = 'rklb-discovery-v1';
+export const DEFAULT_BENCHMARK_SYMBOL = 'SPY';
 export const OUTCOME_HORIZONS = ['1w', '2w', '1m', '3m', '6m'] as const;
 export type OutcomeHorizon = (typeof OUTCOME_HORIZONS)[number];
 
@@ -50,6 +51,12 @@ export interface ValidationOutcome {
   observedAt: string | null;
   observedPrice: number | null;
   returnPercent: number | null;
+  benchmarkSymbol: string;
+  benchmarkStatus: 'pending' | 'measured' | 'missing';
+  benchmarkPriceStart: number | null;
+  benchmarkPriceEnd: number | null;
+  benchmarkReturnPercent: number | null;
+  excessReturnPercent: number | null;
 }
 
 export interface ValidationDecision extends DiscoveryDecisionInput {
@@ -174,6 +181,17 @@ export async function recordDiscoveryRun(
       runId = Number(existing.rows[0].id);
     }
     if (created) {
+      const benchmarkStartResult = await client.query(
+        `SELECT p.price, p.captured_at
+         FROM price_snapshots p
+         JOIN companies c ON c.id = p.company_id
+         WHERE c.ticker = $1 AND p.price IS NOT NULL
+           AND p.captured_at <= $2
+           AND p.captured_at >= $2::timestamptz - interval '7 days'
+         ORDER BY p.captured_at DESC, p.id DESC LIMIT 1`,
+        [DEFAULT_BENCHMARK_SYMBOL, runAt.toISOString()],
+      );
+      const benchmarkStart = benchmarkStartResult.rows[0] || null;
       for (const decision of decisions) {
         const decisionResult = await client.query(
           `INSERT INTO discovery_decisions
@@ -203,9 +221,18 @@ export async function recordDiscoveryRun(
           const decisionId = Number(decisionResult.rows[0].id);
           for (const horizon of OUTCOME_HORIZONS) {
             await client.query(
-              `INSERT INTO candidate_outcomes (decision_id, horizon, target_at)
-               VALUES ($1, $2, $3)`,
-              [decisionId, horizon, horizonTarget(runAt, horizon).toISOString()],
+              `INSERT INTO candidate_outcomes
+                (decision_id, horizon, target_at, benchmark_symbol,
+                 benchmark_start_at, benchmark_price_start)
+               VALUES ($1, $2, $3, $4, $5, $6)`,
+              [
+                decisionId,
+                horizon,
+                horizonTarget(runAt, horizon).toISOString(),
+                DEFAULT_BENCHMARK_SYMBOL,
+                benchmarkStart?.captured_at ? new Date(benchmarkStart.captured_at).toISOString() : null,
+                benchmarkStart?.price == null ? null : Number(benchmarkStart.price),
+              ],
             );
           }
         }
@@ -268,6 +295,81 @@ export async function refreshCandidateOutcomes(now = new Date()): Promise<number
         `UPDATE candidate_outcomes SET status = 'missing', measured_at = $2
          WHERE id = $1 AND status <> 'measured'`,
         [outcomeId, now.toISOString()],
+      );
+      changed += result.rowCount || 0;
+    }
+  }
+
+  // Anti-cheat: benchmark seotakse ainult salvestatud run'i aja ja outcome'i
+  // fikseeritud sihtajaga. Tänast scannerit ei käivitata mineviku jaoks uuesti.
+  // Mõõdetud benchmark'i ega excess return'i ei kirjutata hilisema backfilliga ümber.
+  const benchmarkDue = await pool.query(
+    `SELECT o.id, o.target_at, o.return_percent, o.benchmark_symbol,
+            o.benchmark_price_start, o.benchmark_start_at, r.run_at
+     FROM candidate_outcomes o
+     JOIN discovery_decisions d ON d.id = o.decision_id
+     JOIN discovery_runs r ON r.id = d.run_id
+     WHERE o.status = 'measured'
+       AND o.benchmark_status <> 'measured'
+       AND o.target_at <= $1
+     ORDER BY o.target_at, o.id`,
+    [now.toISOString()],
+  );
+  for (const row of benchmarkDue.rows) {
+    const symbol = row.benchmark_symbol || DEFAULT_BENCHMARK_SYMBOL;
+    let startPrice = row.benchmark_price_start == null ? null : Number(row.benchmark_price_start);
+    let startAt = row.benchmark_start_at ? new Date(row.benchmark_start_at).toISOString() : null;
+    if (startPrice == null || startPrice <= 0) {
+      const start = await pool.query(
+        `SELECT p.price, p.captured_at
+         FROM price_snapshots p
+         JOIN companies c ON c.id = p.company_id
+         WHERE c.ticker = $1 AND p.price IS NOT NULL
+           AND p.captured_at <= $2
+           AND p.captured_at >= $2::timestamptz - interval '7 days'
+         ORDER BY p.captured_at DESC, p.id DESC LIMIT 1`,
+        [symbol, new Date(row.run_at).toISOString()],
+      );
+      if (start.rowCount) {
+        startPrice = Number(start.rows[0].price);
+        startAt = new Date(start.rows[0].captured_at).toISOString();
+      }
+    }
+    const end = await pool.query(
+      `SELECT p.price, p.captured_at
+       FROM price_snapshots p
+       JOIN companies c ON c.id = p.company_id
+       WHERE c.ticker = $1 AND p.price IS NOT NULL
+         AND p.captured_at >= $2
+         AND p.captured_at < $2::timestamptz + interval '7 days'
+       ORDER BY p.captured_at ASC, p.id ASC LIMIT 1`,
+      [symbol, new Date(row.target_at).toISOString()],
+    );
+    if (startPrice != null && startPrice > 0 && end.rowCount) {
+      const endPrice = Number(end.rows[0].price);
+      const benchmarkReturn = ((endPrice - startPrice) / startPrice) * 100;
+      const candidateReturn = Number(row.return_percent);
+      const result = await pool.query(
+        `UPDATE candidate_outcomes
+         SET benchmark_status = 'measured', benchmark_start_at = $2,
+             benchmark_end_at = $3, benchmark_price_start = $4,
+             benchmark_price_end = $5, benchmark_return_percent = $6,
+             excess_return_percent = $7
+         WHERE id = $1 AND benchmark_status <> 'measured'`,
+        [
+          Number(row.id), startAt, new Date(end.rows[0].captured_at).toISOString(),
+          startPrice, endPrice, benchmarkReturn, candidateReturn - benchmarkReturn,
+        ],
+      );
+      changed += result.rowCount || 0;
+    } else if (now.getTime() >= new Date(row.target_at).getTime() + 7 * 86_400_000) {
+      const result = await pool.query(
+        `UPDATE candidate_outcomes
+         SET benchmark_status = 'missing',
+             benchmark_start_at = COALESCE(benchmark_start_at, $2),
+             benchmark_price_start = COALESCE(benchmark_price_start, $3)
+         WHERE id = $1 AND benchmark_status <> 'measured'`,
+        [Number(row.id), startAt, startPrice],
       );
       changed += result.rowCount || 0;
     }
@@ -338,7 +440,12 @@ export async function getValidationDashboard(): Promise<ValidationDashboard> {
         COALESCE(json_agg(json_build_object(
           'horizon', o.horizon, 'status', o.status, 'targetAt', o.target_at,
           'observedAt', o.observed_at, 'observedPrice', o.observed_price,
-          'returnPercent', o.return_percent
+          'returnPercent', o.return_percent, 'benchmarkSymbol', o.benchmark_symbol,
+          'benchmarkStatus', o.benchmark_status,
+          'benchmarkPriceStart', o.benchmark_price_start,
+          'benchmarkPriceEnd', o.benchmark_price_end,
+          'benchmarkReturnPercent', o.benchmark_return_percent,
+          'excessReturnPercent', o.excess_return_percent
         ) ORDER BY CASE o.horizon WHEN '1w' THEN 1 WHEN '2w' THEN 2 WHEN '1m' THEN 3 WHEN '3m' THEN 4 ELSE 5 END)
         FILTER (WHERE o.id IS NOT NULL), '[]'::json) AS outcomes
        FROM discovery_decisions d
@@ -393,6 +500,12 @@ export async function getValidationDashboard(): Promise<ValidationDashboard> {
           observedAt: outcome.observedAt ? new Date(outcome.observedAt as string).toISOString() : null,
           observedPrice: outcome.observedPrice == null ? null : Number(outcome.observedPrice),
           returnPercent: outcome.returnPercent == null ? null : Number(outcome.returnPercent),
+          benchmarkSymbol: String(outcome.benchmarkSymbol || DEFAULT_BENCHMARK_SYMBOL),
+          benchmarkStatus: (outcome.benchmarkStatus || 'pending') as ValidationOutcome['benchmarkStatus'],
+          benchmarkPriceStart: outcome.benchmarkPriceStart == null ? null : Number(outcome.benchmarkPriceStart),
+          benchmarkPriceEnd: outcome.benchmarkPriceEnd == null ? null : Number(outcome.benchmarkPriceEnd),
+          benchmarkReturnPercent: outcome.benchmarkReturnPercent == null ? null : Number(outcome.benchmarkReturnPercent),
+          excessReturnPercent: outcome.excessReturnPercent == null ? null : Number(outcome.excessReturnPercent),
         })),
       })),
     });

@@ -282,9 +282,25 @@ CREATE TABLE IF NOT EXISTS candidate_outcomes (
   observed_price   NUMERIC,
   return_percent   NUMERIC,
   measured_at      TIMESTAMPTZ,
+  benchmark_symbol TEXT NOT NULL DEFAULT 'SPY',
+  benchmark_status TEXT NOT NULL DEFAULT 'pending',
+  benchmark_start_at TIMESTAMPTZ,
+  benchmark_end_at TIMESTAMPTZ,
+  benchmark_price_start NUMERIC,
+  benchmark_price_end NUMERIC,
+  benchmark_return_percent NUMERIC,
+  excess_return_percent NUMERIC,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (decision_id, horizon)
 );
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_symbol TEXT NOT NULL DEFAULT 'SPY';
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_status TEXT NOT NULL DEFAULT 'pending';
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_start_at TIMESTAMPTZ;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_end_at TIMESTAMPTZ;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_price_start NUMERIC;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_price_end NUMERIC;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_return_percent NUMERIC;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS excess_return_percent NUMERIC;
 CREATE INDEX IF NOT EXISTS idx_candidate_outcomes_status_target
   ON candidate_outcomes (status, target_at);
 

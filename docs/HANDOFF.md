@@ -44,6 +44,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - `/scanner?preset=rklb` kuvab olemasolevast universumist 0-5 läbipaistvalt põhjendatud uurimiskandidaati koos kriteeriumide, riskide, teadmata info ning Watchlisti/Thesis tegevustega.
 - Iga RKLB discovery käivitus salvestab `discovery_runs` ja `discovery_decisions` tabelitesse muutumatu point-in-time otsuse koos kogu vaadeldud universumi ning kaasamise/välistamise põhjustega.
 - `/validation` värskendab `candidate_outcomes` tulemusi 1n, 2n, 1k, 3k ja 6k horisondil ning kuvab iga horisondi statistika ja jooksude auditivaate.
+- `/backtest` kasutab ainult salvestatud discovery run'e ja outcome'e, võrdleb kandidaadi tootlust fikseeritud SPY benchmark'iga ning näitab puuduva benchmark'i korral excess return'i `unknown` olekuna.
 - `/guide` ja `docs/USER_GUIDE.md` selgitavad uuele kasutajale kogu rakenduse soovitatud töövoogu.
 
 Viimati kontrollitud päris skoorid:
@@ -100,25 +101,33 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
   - outcome'id värskendatakse nii kaitstud päevase `/api/collect` töö lõpus kui `/validation` avamisel;
   - `/validation` näitab horisondipõhist statistikat ja täielikku otsuselogi;
   - runway kuude arvu ei oletata; säilitatakse Financial Healthi ning cash/debt komponendi tegelik kirjeldus.
+- Point-in-time Backtest V1:
+  - `candidate_outcomes` säilitab benchmark'i sümboli, staatuse, algus- ja lõpphinna, benchmark return'i ning excess return'i;
+  - vaikimisi benchmark on fikseeritud `SPY`, mille hind kogutakse olemasoleva Yahoo/FMP hinnakihi kaudu ilma uue API või võtmeta;
+  - benchmark'i algushind peab olema salvestatud run'i ajal või eelneva seitsme päeva jooksul; lõpphind tuleb outcome'i fikseeritud sihtaja seitsmepäevasest aknast;
+  - puuduva algus- või lõpphinna korral jäävad benchmark return ja excess return `NULL`/`unknown`, mitte 0;
+  - candidate return, benchmark return ja excess return lukustuvad pärast edukat mõõtmist;
+  - `/backtest` kuvab iga horisondi jooksud, kandidaadid, mõõdetud tulemused, keskmise, mediaani, hit rate'i, benchmark'i võitmise määra, keskmise excess return'i ning parima/halvima kandidaadi;
+  - run-level detail näitab ainult salvestatud included kandidaate, excluded arvu, otsusehetke skoore, põhjuseid, riske ja teadmata infot;
+  - Backtest V1 ei käivita ajalooliste kuupäevade jaoks tänast scannerit ega tee prediction'it.
 
 ## Praegune fookus
 
-**Forward validation'i valimi kogumine enne ausat ajaloolist backtesti.**
+**Forward validation'i ja SPY benchmark'i valimi kogumine.**
 
-Point-in-time discovery otsusesnapshot ja forward outcome tracking on valmis. Süsteem peab nüüd päris jooksude valimit koguma; järgmine backtesti etapp võib kasutada ainult neid salvestatud otsuseid või eraldi ausalt rekonstrueeritud point-in-time andmestikku.
+Point-in-time discovery snapshot, Validation ja Backtest V1 on valmis. Süsteem peab nüüd koguma päris 3k/6k outcome'e ning SPY hinnasnapshote, enne kui väikese valimi põhjal saab teha protsessi kohta sisulisemaid järeldusi.
 
 ## Roadmap
 
 ### NOW - järgmine arendustükk
 
-Aus point-in-time backtest / walk-forward valideerimine:
+Päris forward-valimi kasvatamine ja Backtest V1 kvaliteedi jälgimine:
 
-- fikseeri benchmark ja universum enne arvutamist;
-- kasuta ainult otsuse kuupäevaks teada olnud fakte ning siis kehtinud mudeliversiooni;
-- eralda forward validation'i tulemused retrospektiivsest backtestist;
-- lisa benchmark'i suhteline tootlus, max drawdown ja valimi suurus;
-- jaota tulemused mudeliversiooni ja Coverage vahemiku järgi;
-- ära kasuta tänaseid restated SEC fakte varasema otsuse sisendina.
+- kontrolli, et päevane kogumine salvestab SPY hinnasnapshotid järjepidevalt;
+- lase 1n/2n/1k/3k/6k outcome'idel päriselt täituda;
+- jälgi eraldi kandidaatide, mõõdetud outcome'ide ja benchmark'iga outcome'ide valimi suurust;
+- ära tee väikese 1n/2n valimi põhjal strateegiajäreldusi;
+- järgmine analüütiline laiendus on max drawdown ning jaotus mudeliversiooni/Coverage vahemiku järgi, mitte mineviku ümbervalimine.
 
 ### NEXT
 
@@ -166,6 +175,10 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Discovery run'i idempotentsusvõti on `mudeliversioon + Tallinna otsusekuupäev + kogu otsusesisendi räsi`; see hoiab kordusjooksu stabiilsena, kuid lubab uue faktiseisu samal päeval eraldi salvestada.
 - Outcome baseline on otsusehetke hind. Horisondi vaatlusaken on sihtaeg kuni sihtaeg + 7 päeva; juba `measured` tulemust ei muudeta ka siis, kui ajalukku lisatakse hiljem varasem hinnasnapshot.
 - Validationi keskmised, mediaanid ja hit rate arvutatakse iga horisondi jaoks eraldi.
+- Backtest V1 fikseeritud benchmark on `SPY`. Benchmark'i hind kogutakse sama olemasoleva Yahoo/FMP hinnakihiga; uut välist allikat ega võtit ei lisatud.
+- Benchmark'i alguspunkt on viimane salvestatud SPY hind run'i ajal või kuni seitse päeva enne run'i. Lõpp-punkt on esimene SPY hind outcome'i sihtajal või järgneva seitsme päeva jooksul.
+- Excess return arvutatakse ainult siis, kui candidate ja benchmark return on mõlemad teada. `NULL` ei teisendata 0%-ks.
+- Backtesti päringud loevad ainult salvestatud otsuseid; `getRklbDiscoveryCandidates` ega tänane kaasamisloogika ei osale ajaloolise statistika arvutamises.
 - Git on koodi tõeallikas; `.env` ja PostgreSQL volume on masinapõhised.
 
 ## Avatud sõltuvused ja otsused
@@ -327,3 +340,20 @@ npm run build
 - Kontrolliti pärast lõplikku restarti `/scanner?preset=rklb` 200, `/validation` 200 ja saladuseta `/api/collect` 401.
 - Kõik VALQA integratsioonitesti andmed eemaldati.
 - Järgmine fookus on aus point-in-time backtest / walk-forward valideerimine ja benchmark'i fikseerimine.
+
+### 2026-08-11 - Point-in-time Backtest V1
+
+- Laiendati `candidate_outcomes` benchmark'i sümboli, staatuse, algus-/lõpphinna, benchmark return'i ja excess return'i väljadega.
+- Fikseeriti V1 benchmark'iks `SPY`; päevane `/api/collect` kogub selle hinna olemasoleva Yahoo/FMP kihi kaudu enne outcome'ide värskendamist.
+- Lisati point-in-time benchmark'i algus- ja lõppaknad ning mõõdetud candidate/benchmark outcome'ide muutumatus.
+- Lisati `/backtest` horisondistatistika, aus empty state, run-level detail ja nähtavad anti-cheat reeglid.
+- Puuduv benchmark jätab excess return'i `unknown`; nulli ei fabritseerita.
+- `BACKTESTQA1` andis candidate +10%, SPY +4% ja excess +6%; `BACKTESTQA2` andis candidate -5%, SPY +3% ja excess -8%.
+- `BACKTESTQA3` candidate +2% mõõdeti, kuid puuduva SPY algushinna tõttu jäid benchmark ja excess `NULL`/`unknown`.
+- Hiljem lisatud varasemad candidate ja SPY backfill-hinnad ei muutnud mõõdetud väärtusi.
+- `/backtest` kontrolliti päris brauseris koos horisondistatistika, run-detaili, skooride, põhjenduste, riskide ja `SPY unknown` olekuga.
+- Kaks BACKTESTQA run'i, kolm QA-ettevõtet, decision'id, outcome'id, QA hinnad, test-SPY ja ajutised SQL-failid eemaldati; DB järelkontrollid andsid 0.
+- Lõplik `npm run lint`, `npm run typecheck` ja app-konteineri `npm run build` läbisid; build sisaldas dünaamilist `/backtest` route'i.
+- Pärast buildi taaskäivitati app. `/scanner?preset=rklb`, `/validation` ja `/backtest` vastasid 200; saladuseta `/api/collect` vastas 401.
+- Kaitstud päevakogumise päris runtime-test vastas 200 ja `benchmarkCaptured: true`; SPY hinnasnapshot salvestus olemasoleva hinnakihi kaudu ning outcome-värskendusi polnud vaja (`outcomeUpdates: 0`).
+- Järgmine fookus on päris 3k/6k forward-valimi ning SPY hinnasnapshot'ide järjepidev kogumine.

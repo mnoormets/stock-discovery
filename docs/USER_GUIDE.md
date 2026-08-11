@@ -82,6 +82,26 @@ Horisondi tulemuseks võetakse esimene hinnasnapshot sihtajal või järgneva sei
 
 Runway väli ei väida kuude arvu, sest praegune andmestik ei arvuta rahapõletuse põhjal usaldusväärset runway'd. Kuvatakse Financial Healthi ja cash/debt komponendi tegelik olemasolev tõend.
 
+## Validation ja Backtest
+
+**Validation** vastab küsimusele: „Mida iga salvestatud discovery run otsuse hetkel nägi ja mis juhtus iga kandidaadiga hiljem?” See on detailne otsuselogi, kus näeb ka välja jäetud tickereid ja välistamise põhjuseid.
+
+**Backtest V1** vastab küsimusele: „Kuidas kõik seni mõõdetud discovery candidate outcome'id horisondi kaupa kokku võtavad ja kuidas need võrdlesid SPY-ga?” Backtest ei käivita tänast skännerit vanade kuupäevade peal ega vali minevikku ümber.
+
+Backtesti põhireeglid:
+
+- kasutatakse ainult varem salvestatud `discovery_runs`, `discovery_decisions` ja `candidate_outcomes` andmeid;
+- candidate return on kandidaadi otsusehetke hinna ja fikseeritud horisondi lõpphinna muutus;
+- benchmark return kasutab SPY run'i-eelset salvestatud algushinda ja sama horisondi lõpphinda;
+- excess return = candidate return miinus benchmark return;
+- puuduva SPY algus- või lõpphinna korral jäävad benchmark ja excess `unknown`, mitte 0%;
+- juba mõõdetud candidate ja benchmark outcome'e hilisema backfilliga ümber ei kirjutata;
+- null kandidaati on korrektne tulemus.
+
+1 nädala ja 2 nädala tulemused võivad olla väga mürased: neid mõjutavad turu üldine liikumine, üksikud uudised, madal likviidsus ja juhuslik ajastus. 3 kuu ja 6 kuu tulemused annavad teesi ning katalüsaatorite avaldumiseks rohkem aega ja on seetõttu protsessi hindamisel üldiselt informatiivsemad. Pikem horisont ei tee väikest valimit automaatselt usaldusväärseks; alati vaata ka kandidaatide ja benchmark'iga mõõdetud ridade arvu.
+
+Validation ega Backtest ei ole prediction, hinnasiht ega ostu- või müügisoovitus. Need mõõdavad ainult varem salvestatud discovery candidate outcome'e.
+
 ## Thesis Builder
 
 Thesis Builderi väljad:
