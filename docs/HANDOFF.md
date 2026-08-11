@@ -237,6 +237,9 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 ## Olulised tehnilised ja tooteotsused
 
 - Company detail on DB-first; aeglased live-värskendused toimuvad võimalusel taustal.
+- **Write-on-read on teadlik, kuid dokumenteeritud risk.** Mitu GET-vaadet kirjutavad andmebaasi: `/company/[ticker]` ja `/thesis/[positionId]` käivitavad üle kuue tunni vanuse andmestiku korral taustal SEC CompanyFactsi värskenduse (kirjutab `companies` ja `financial_facts`) ning salvestavad score-snapshot'i; `/scanner`, `/watchlist` ja `/daily` salvestavad score-snapshot'e; `/scanner?preset=rklb` salvestab terve `rklb` discovery run'i, `discovery_decisions` read, `candidate_outcomes` read, `catalyst_events` ja `catalyst_assessments`; `/validation` ja `/backtest` käivitavad `refreshCandidateOutcomes()`. Lehe avamine ei tohi kunagi olla ainus põhjus, miks andmestik või valim muutub.
+- Käsitsi sirvimine võib muuta sisendit, mille järgmine canonical `rklb_daily` run salvestab, kuid ei saa juba salvestatud canonical snapshot'i ümber kirjutada; hilisem sisendimuutus märgitakse `inputChangedAfterCanonicalSnapshot` väljaga.
+- Käsitsi `rklb` jooksud salvestavad päris `candidate_outcomes` read ja lähevad seetõttu `/validation` ning `/backtest` koondnäitajatesse. Neid ei tohi lugeda canonical forward-valimiks; UI kuvab nüüd mudeliversiooni ja run type'i jaotust.
 - FCF on tuletatud kui OCF miinus capex ning peab olema sellisena märgitud.
 - Score-versioon muutub alati, kui valem või kaalud sisuliselt muutuvad.
 - `data-quality-v1` on eraldi kvalitatiivne integrity-kiht: see ei muuda `scores-v1` punkte, Coverage tähendust, järjestust ega kaasamisfiltreid.
@@ -302,6 +305,9 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - SEC enrichment'i algne päevane batch-size on päris runtime'is kontrollitud väärtusega 5; seda võib muuta ainult logide, kestuse ja katvuse põhjal, mitte eesmärgiga teha korraga piiramatut masspäringut.
 - Sector-relative valimi katvus kasvab ainult siis, kui olemasolev provider tagastab ettevõtte kohta sector/industry väärtuse; väikese grupi korral percentile teadlikult puudub.
 - Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
+- **Andmete provenance on hetkel ainult tuletatav, mitte salvestatud.** `financial_facts` ei säilita, milline voog rea kirjutas: sama `saveFacts` funktsiooni kasutavad nii päevane collector kui company detaili taustavärskendus ja `companies.source` jääb esimese kirjutaja väärtuseks. Praegused kaudsed tunnused on ainult heuristikad: `financial_enrichment_status` rea puudumine tähendab, et collector pole seda tickerit kunagi proovinud (2026-08-12 seisuga AAPL, TSM, RKLB ja ACHR), ning `max(financial_facts.updated_at)` hilisem kui `last_success_at` tähendab, et faktid on hiljem mõne teise voo poolt üle kirjutatud (BW ja PLUG). Tulevane otsus: lisada `financial_facts` (või eraldi ingest-ledger'isse) `source_flow` väli `collector` / `company_view` / `thesis_view` eristusega. Migratsiooni selle auditiga teadlikult ei tehtud.
+- Canonical `rklb_daily` universum ei ole collectori logi põhjal üksi taastuv: kui inimene avas enne päevast collecti mõne company detaili, sisaldab canonical snapshot ka selle sirvimise käigus rikastatud fakte. See on „as known at the time” mõttes korrektne, kuid seda ei tohi esitada puhta automaatse kogumise tulemusena.
+- Skeemi loomine on jagatud `db/init.sql` ja runtime `ensureSchema()` vahel: `catalyst_events`, `catalyst_assessments` ja `discovery_decisions` catalyst-veerud tekivad ainult runtime'is. See töötab nii puhta init'i kui olemasoleva DB upgrade'i korral, kuid versioonitud migratsioonide koondamine jääb endiselt lahtiseks tööks.
 
 ## Käivitamine uues arvutis
 
@@ -410,6 +416,9 @@ npm run build
 - `catalyst_events` 160 rida 19 ettevõtte kohta, `catalyst_assessments` 200 rida; kaks täiendavat scanner-jooksu ei lisanud ühtegi hinnangut ega tekitanud ühtegi duplikaatset `(company_id, event_kind, source_ref)` võtit.
 - `/validation` kuvab salvestatud otsuste catalyst evidence staatuse badge'ina (65 `material_new_evidence`, 20 `weak_or_unconfirmed` viimaste run'ide lõikes).
 - Pärast production build'i taaskäivitati app. `/`, `/scanner`, `/scanner?preset=rklb`, `/watchlist`, `/daily`, `/portfolio`, `/validation`, `/backtest`, `/guide`, `/company/BW`, `/company/PLUG` ja `/thesis/13` vastasid 200; saladuseta `/api/collect` 401; app, db (healthy) ja scheduler töötasid.
+- Hardening audit 2026-08-12 leidis päris tõendi write-on-read riskist: eelmise sessiooni smoke test ise kirjutas BW ja PLUG SEC faktid uuesti (`financial_facts.updated_at` 21:53 vs collectori `last_success_at` 15:28-15:30), sest company detaili kuuetunnine cache oli aegunud.
+- Auditi hetkel oli 205 `candidate_outcomes` reast 180 pärit käsitsi avatud `rklb` jooksudest ja ainult 25 canonical `rklb_daily` jooksust; jaotus mudeliversioonide kaupa oli v1 `rklb` 6 jooksu / 16 kandidaati, v1 `rklb_daily` 1 / 0, v2 `rklb` 4 / 20 ja v2 `rklb_daily` 1 / 5. `/validation` ja `/backtest` kuvavad selle jaotuse nüüd koondnäitajate juures.
+- Migration sanity kontrolliti päris andmebaasidel: puhtale `schema_audit` DB-le rakendatud `db/init.sql` andis 19 tabelit, runtime `ensureSchema()` lisas `catalyst_events` ja `catalyst_assessments` (21 tabelit) ning kõik 15 uut catalyst-veergu `discovery_decisions`-is (kokku 21 catalyst-prefiksiga veergu). Olemasolev töötav DB andis sama tulemuse. Ajutine `schema_audit` andmebaas kustutati.
 - CAKE 81/81/100 lükati konkreetse „järgmise RKLB” mandaadi jaoks tagasi; see on päris tõend, et high score tähendab „uuri”, mitte „osta”.
 - Koduarvuti päris DB audit pärast pulli: 27 ettevõtet ja 68 hinnasnapshot'i, kuid ainult 3 ettevõtet SEC finantsfaktide/skooridega ning 1 sector/industry klassifikatsiooniga; 1 discovery run (3 hinnatud, 0 kaasatud), 0 candidate outcome'i, 0 Watchlisti positsiooni ja 0 teesi. See kinnitab, et järgmine faas on katvuse kasvatamine, päris kasutus ja forward-ajaloo kogumine, mitte uute analüüsimoodulite lisamine.
 - Daily pipeline'i päris kordustest: esimene puhas collect skännis 200 rida, salvestas 43 radarikandidaati, SPY hinna ja 5/5 SEC enrichment'i; katvus kasvas 3 → 8 ning `rklb_daily` run #3 salvestas 8 decision-rida.
@@ -444,6 +453,16 @@ npm run build
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-08-12 - Catalyst Evidence V2 hardening audit
+
+- Auditeeriti kõik read route'id: `/company/[ticker]`, `/thesis/[positionId]`, `/scanner`, `/scanner?preset=rklb`, `/watchlist`, `/daily`, `/validation` ja `/backtest` kirjutavad andmebaasi. Kõik kirjutused on olemasolev teadlik disain, kuid neid ei olnud dokumenteeritud ega UI-s nähtavad.
+- Company detaili lisati nähtav hoiatus „Company detail may enrich local SEC data when opened.” koos selgitusega, et see võib muuta järgmise discovery jooksu sisendit.
+- `/validation` ja `/backtest` koondnäitajad kuvavad nüüd mudeliversiooni ja run type'i jaotust ning ütlevad, et v1/v2 ja canonical/manual jooksu ei tohi lugeda ühe frequency-seeriana. Per-run `model_version` oli juba varem nähtav.
+- CAKE off-mandate juhtumile lisati kandidaadikaardil eraldi hoiatus „Off-mandate evidence”; see ei ole gate ja ei muuda kaasamist.
+- Provenance risk dokumenteeriti: `financial_facts` ei salvesta kirjutanud voogu; praegu on ainult heuristikad. Migratsiooni ei tehtud, tulevane otsus on `source_flow` väli.
+- Migration sanity kontrolliti puhtal DB-l (`db/init.sql` + runtime `ensureSchema()`), olemasoleval DB-l ja pärast Docker restarti; catalyst-tabelid ja -veerud tekkisid mõlemal teel.
+- Catalyst hindamise põhireegleid ei muudetud; bugi ei leitud. Score'e, Data Freshness loogikat ega discovery kaasamisreegleid ei puudutatud.
 
 ### 2026-08-12 - Catalyst Evidence V2 ehitatud
 

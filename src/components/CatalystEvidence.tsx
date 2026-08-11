@@ -38,6 +38,13 @@ export default function CatalystEvidence({
           <ul className="catalystReasons">{evidence.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
         </>
       ) : <p className="muted">{evidence.reasons[0] || 'Salvestatud sündmusi ei ole.'}</p>}
+      {assessment?.mandateRelevance === 'not_relevant' && (
+        <p className="catalystOffMandate">
+          <strong>Off-mandate evidence:</strong> hea ettevõte ja päris sündmus, kuid see ei ole tugev sobivus
+          selle preset’i varajase asümmeetria mandaadiga. {assessment.mandateBasis} See ei ole välistus ega
+          kvaliteedihinnang — kandidaat jääb nimekirja, kuid teda ei tohi lugeda tugevaks „RKLB-laadseks” leiuks.
+        </p>
+      )}
       {evidence.counterEvidence.length > 0 && (
         <ul className="catalystCounter">{evidence.counterEvidence.map((item) => <li key={item}>{item}</li>)}</ul>
       )}

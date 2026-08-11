@@ -219,6 +219,12 @@ export default async function CompanyPage({ params }: { params: { ticker: string
           <div><p className="eyebrow">SEC COMPANYFACTS · TASUTA AMETLIK ALLIKAS</p><h2>Finantsnäitajad</h2></div>
           {financials?.cik && <span className="muted">CIK {Number(financials.cik)}</span>}
         </div>
+        <p className="muted writeOnReadNote">
+          <strong>Company detail may enrich local SEC data when opened.</strong> Selle vaate avamine võib käivitada
+          taustal SEC CompanyFactsi värskenduse ja salvestada uue score-snapshot’i. Seetõttu võib käsitsi sirvimine
+          muuta sisendit, mille järgmine discovery jooks salvestab; juba salvestatud canonical päevajooksu see ümber
+          ei kirjuta.
+        </p>
         {!financials || Object.keys(financials.metrics).length === 0 ? (
           <div className="empty card">SEC CompanyFactsi finantsandmed puuduvad.</div>
         ) : (
