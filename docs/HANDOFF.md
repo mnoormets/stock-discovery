@@ -43,6 +43,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Watchlisti score-change alert võrdleb järjestikuseid sama mudeliversiooni snapshot'e, säilitab idempotentse alert'i ning näitab muutunud komponente nii Watchlistis kui Daily Changes vaates.
 - `/scanner?preset=rklb` kuvab olemasolevast universumist 0-5 läbipaistvalt põhjendatud uurimiskandidaati koos kriteeriumide, riskide, teadmata info ning Watchlisti/Thesis tegevustega.
 - Iga RKLB discovery käivitus salvestab `discovery_runs` ja `discovery_decisions` tabelitesse muutumatu point-in-time otsuse koos kogu vaadeldud universumi ning kaasamise/välistamise põhjustega.
+- Päevane `/api/collect` töötleb Tallinna kalendripäeva kohta kuni viis puuduva või aegunud SEC CompanyFactsi katvusega ettevõtet, säilitab `financial_enrichment_status` retry/auditi ning loob ühe `rklb_daily` canonical discovery run'i.
 - `/validation` värskendab `candidate_outcomes` tulemusi 1n, 2n, 1k, 3k ja 6k horisondil ning kuvab iga horisondi statistika ja jooksude auditivaate.
 - `/backtest` kasutab ainult salvestatud discovery run'e ja outcome'e, võrdleb kandidaadi tootlust fikseeritud SPY benchmark'iga ning näitab puuduva benchmark'i korral excess return'i `unknown` olekuna.
 - Sector-relative Ranking V1 kasutab olemasoleva Yahoo `assetProfile` sector/industry välju, võrdleb sama score-versiooni ettevõtteid eelistatult industry ja vajadusel sector grupis ning kuvab percentile'id ainult vähemalt viie täieliku võrreldava ettevõtte korral.
@@ -118,16 +119,21 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
   - alla viie täieliku võrreldava ettevõtte korral kuvatakse `Not enough comparable companies` ja percentile/mediaan jääb `NULL`;
   - scanneri kandidaat, company detail ja Thesis Builder kuvavad sama faktiploki; Thesis Builder ei kirjuta selle põhjal teesi;
   - uued `discovery_decisions` read säilitavad otsusehetke sector-relative väärtused, kuid ajaloolisi otsuseid ei backfillita ega kirjutata ümber.
+- Daily SEC enrichment + canonical discovery:
+  - aktiivne universum on viimase 30 päeva hinnasnapshotiga ettevõtted, välja arvatud teadaolevad ETF-id ja SPY;
+  - puuduva või üle seitsme päeva aegunud CompanyFactsi ajalooga ettevõtteid töödeldakse järjestikku kuni viis Tallinna päeva kohta;
+  - ühe tickeri `error` või `unavailable` ei nurja collection'it; transient error proovib järgmisel päeval ja unavailable kõige varem 30 päeva pärast;
+  - `financial_enrichment_status` säilitab viimase katse/õnnestumise, staatuse, vealoenduri ja piiratud veakirjelduse;
+  - suurem kui 2 MB SEC CompanyFactsi vastus ei lähe Next fetch-cache'i; püsiv cache on PostgreSQL;
+  - `rklb_daily` run-key on mudeliversioon + run type + Tallinna kuupäev, seega korduscollect ei loo teist canonical snapshot'i;
+  - kui hilisem sama päeva collect muudab sisendit, säilib esimene canonical snapshot ja API märgib `inputChangedAfterCanonicalSnapshot`;
+  - käsitsi scanneri `rklb` run'id jäävad eraldi auditiks ega kuulu tulevase frequency arvestusse.
 
 ## Praegune fookus
 
 **Forward validation'i, SPY benchmark'i ja discovery persistence'i valimi kogumine.**
 
-Point-in-time discovery snapshot, Validation ja Backtest V1 on valmis. Süsteem peab nüüd koguma päris 3k/6k outcome'e ning SPY hinnasnapshote, enne kui väikese valimi põhjal saab teha protsessi kohta sisulisemaid järeldusi.
-
-Praegu loob discovery run'i ainult `/scanner?preset=rklb` avamine. Kell 08:00 scheduler käivitab `/api/collect`, mis kogub turuandmed ja SPY ning värskendab outcome'e, kuid ei salvesta automaatselt uut discovery otsusesnapshot'i. Regulaarse ja võrreldava ajaloo jaoks on järgmine väike tehniline töö päevase canonical discovery run'i lisamine collect-töö lõppu.
-
-Koduarvuti auditis oli hinnainfo 27 ettevõttel, kuid SEC CompanyFacts ja skoor ainult kolmel. Discovery saab hinnata ainult `financial_facts` katvusega ettevõtteid, seega tuleb enne frequency järeldusi automatiseerida olemasoleva SEC allika järkjärguline enrichment. See on pipeline'i katvuse parandamine, mitte uue andmeallika lisamine.
+Point-in-time discovery snapshot, Validation, Backtest V1, päevane SEC enrichment ja canonical `rklb_daily` jooks on valmis. Süsteem peab nüüd kasvatama finantsuniversumi katvust ning koguma päris 3k/6k outcome'e ja SPY hinnasnapshote, enne kui väikese valimi põhjal saab teha protsessi kohta sisulisemaid järeldusi.
 
 ## Roadmap
 
@@ -135,9 +141,9 @@ Koduarvuti auditis oli hinnainfo 27 ettevõttel, kuid SEC CompanyFacts ja skoor 
 
 Päris forward-valimi kasvatamine ja Backtest V1 kvaliteedi jälgimine:
 
-- lisa päevasesse collect-töösse piiratud SEC CompanyFactsi enrichment-järjekord: eelista puuduva või aegunud finantsajalooga juba kogutud ettevõtteid, töötle tickereid ükshaaval ning ühe tickeri viga ei tohi kogu collection'it nurjata;
-- kuva/logi iga päev vähemalt `financialUniverse`, `enriched`, `failed` ja discovery `evaluatedCount`, et valimi katvus oleks nähtav;
-- lisa `/api/collect` lõppu üks idempotentne päevane discovery run pärast turu- ja SPY andmete salvestamist; discovery vea korral säilita collection'i tulemus ning logi/raporteeri discovery eraldi staatusena;
+- jälgi päevase `/api/collect` vastusest `financialUniverse`, `coveredAfter`, `enriched`, `failed`, `dailyRemaining` ja discovery `evaluatedCount` väärtusi;
+- lase kuni viiesel SEC enrichment-batch'il kasvatada skooritavat universumit vähemalt 20 ettevõtte või 70% katvuseni;
+- kontrolli, et iga Tallinna päeva kohta tekib maksimaalselt üks `rklb_daily` run ning käsitsi refresh ei muuda canonical snapshot'i;
 - kasuta forward-valimi tõeallikana üht canonical DB-d; kodu- ja tööarvuti eraldi PostgreSQL volume'ite tulemusi ei tohi vaikimisi üheks looks pidada;
 - kontrolli, et päevane kogumine salvestab SPY hinnasnapshotid järjepidevalt;
 - lase 1n/2n/1k/3k/6k outcome'idel päriselt täituda;
@@ -220,7 +226,7 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Uute Nasdaqi tickerite radar vajab tasuta listing-feed'i otsust.
 - Canonical forward-validation DB tuleb valida. Soovitus on hoida koduarvuti DB päris ajaloo tõeallikana ja kasutada tööarvuti DB-d arendustestideks või liigutada canonical dump'i teadlikult, mitte koguda kahte lahknevat “päris” ajalugu.
 - Koduarvuti peab kell 08:00 töötama või päevane collect/discovery tuleb hiljem käsitsi käivitada; praegune scheduler ei taasesita magamise ajal vahele jäänud cron-tööd.
-- SEC enrichment'i päevane batch-size tuleb valida nii, et olemasoleva SEC User-Agentiga päringud oleksid viisakad ja collection jõuaks lõpuni; algväärtus tuleb päris runtime'i põhjal kalibreerida, mitte teha korraga piiramatut masspäringut.
+- SEC enrichment'i algne päevane batch-size on päris runtime'is kontrollitud väärtusega 5; seda võib muuta ainult logide, kestuse ja katvuse põhjal, mitte eesmärgiga teha korraga piiramatut masspäringut.
 - Sector-relative valimi katvus kasvab ainult siis, kui olemasolev provider tagastab ettevõtte kohta sector/industry väärtuse; väikese grupi korral percentile teadlikult puudub.
 - Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
 
@@ -301,6 +307,10 @@ npm run build
 - `docker compose up --build -d`: app, db ja scheduler töötavad; db on healthy.
 - Pärast tööarvuti commit'i `1454157` koduarvutisse fast-forward pullimist vastasid `/scanner?preset=rklb`, `/validation`, `/backtest`, `/guide` ja `/company/AAPL` HTTP 200; app, db ja scheduler töötasid ning db oli healthy.
 - Koduarvuti päris DB audit pärast pulli: 27 ettevõtet ja 68 hinnasnapshot'i, kuid ainult 3 ettevõtet SEC finantsfaktide/skooridega ning 1 sector/industry klassifikatsiooniga; 1 discovery run (3 hinnatud, 0 kaasatud), 0 candidate outcome'i, 0 Watchlisti positsiooni ja 0 teesi. See kinnitab, et järgmine faas on katvuse kasvatamine, päris kasutus ja forward-ajaloo kogumine, mitte uute analüüsimoodulite lisamine.
+- Daily pipeline'i päris kordustest: esimene puhas collect skännis 200 rida, salvestas 43 radarikandidaati, SPY hinna ja 5/5 SEC enrichment'i; katvus kasvas 3 → 8 ning `rklb_daily` run #3 salvestas 8 decision-rida.
+- Sama päeva teine collect rikastas veel testimise käigus viis päris ettevõtet (katvus 8 → 13), kuid taaskasutas run #3 ja märkis muutunud hilisema sisendi. Pärast päevase eelarve karmistamist tegi järgmine kordus 0 SEC katset, jättis katvuse 13/41 ja canonical run'ide arvu üheks.
+- Enrichment staatused: 10 päris success-rida, 0 unavailable, 0 failed; testitud tickerid ARR, BW, CAKE, DJT, FRMI, API, HIMS, HR, IQ ja PLUG. Need on kasulikud pärisandmed, mitte sünteetilised QA read.
+- Lõplik runtime pärast restarti: `/`, `/scanner`, `/validation`, `/backtest` ja `/guide` HTTP 200; saladuseta `/api/collect` 401. Viimases collect-logis puudusid runtime- ja SEC 2 MB cache-vead.
 - `/watchlist`, `/company/AAPL`, `/thesis/[positionId]`: HTTP 200.
 - AAPL company detail näitab Growthi ja Financial Healthi kolme peamist põhjust.
 - Thesis Builderi server action: draft lõi versiooni 1; identne kordussalvestus jättis versioonide arvuks 1.
@@ -413,3 +423,14 @@ npm run build
 - Lisati enne canonical discovery automatiseerimist vajalikuks tööks olemasoleva SEC CompanyFactsi allika piiratud ja veakindel enrichment-järjekord.
 - Planeeriti järgmise 1-2 nädala põhifookuseks regulaarne canonical discovery ajalugu, päris Watchlist/Thesis kasutus ja validation'i täitumine.
 - Lisati järgmise väikese arendusena automaatne päevane discovery snapshot ning pärast vähemalt 5-10 päevast valimit discovery frequency/persistence: included-days, streak, first/last seen, rank trend ja muutunud vs sama evidence.
+
+### 2026-08-11 - Daily SEC enrichment + canonical discovery
+
+- Lisati olemasoleva SEC CompanyFactsi allika veakindel enrichment-järjekord ja `financial_enrichment_status` audit/retry tabel.
+- Päevane eelarve on maksimaalselt viis katset Tallinna kalendripäeva kohta; sama päeva korduscollect uut batch'i ei käivita.
+- `/api/collect` ootab live-hindade DB-salvestuse ära, kuid logib selle vea ega nurja ülejäänud kogumist.
+- Collect salvestab pärast SPY ja enrichment'i ühe `rklb_daily` canonical run'i; käsitsi `rklb` run'id jäävad eraldi.
+- Sama päeva muutunud sisend ei kirjuta canonical snapshot'i üle ning API näitab salvestatud universe/count väärtusi koos `inputChangedAfterCanonicalSnapshot` lipuga.
+- API ja manuaalse collect-nupu staatus näitavad SEC katvust, päevast eelarvet ning daily discovery loendureid.
+- Päris kordusjooksud kasvatasid SEC/score katvuse 3 ettevõttelt 13-le; DB-s oli täpselt üks daily run ja 8 muutumatut decision-rida.
+- Kontrolliti lint, typecheck, production build, Docker runtime, API auth, päris SEC/Yahoo kogumine, DB read ja kordusjooksu idempotentsus.

@@ -47,6 +47,23 @@ export interface CompanyFinancialSummary {
   metrics: Partial<Record<FinancialMetric, FinancialMetricSummary>>;
 }
 
+export interface FinancialEnrichmentResult {
+  status: 'completed' | 'disabled';
+  financialUniverse: number;
+  coveredBefore: number;
+  coveredAfter: number;
+  attempted: number;
+  enriched: number;
+  unavailable: number;
+  failed: number;
+  dailyLimit: number;
+  attemptedTodayBefore: number;
+  dailyRemaining: number;
+  attemptedTickers: string[];
+  unavailableTickers: string[];
+  failedTickers: string[];
+}
+
 type MetricDefinition = {
   metric: FinancialMetric;
   taxonomy: 'us-gaap' | 'dei';
@@ -75,6 +92,8 @@ type SecCompanyFacts = {
 
 const SEC_TIMEOUT_MS = 10_000;
 const CACHE_MS = 6 * 60 * 60_000;
+export const DAILY_FINANCIAL_ENRICHMENT_LIMIT = 5;
+const ENRICHMENT_DELAY_MS = 175;
 const ALLOWED_FORMS = new Set(['10-Q', '10-K', '20-F', '40-F']);
 const financialCache = new Map<string, { expires: number; value: CompanyFinancialSummary | null }>();
 const financialRefreshes = new Map<string, Promise<CompanyFinancialSummary | null>>();
@@ -141,6 +160,17 @@ export function ensureFinancialSchema(): Promise<void> {
       );
       CREATE INDEX IF NOT EXISTS idx_financial_facts_company_metric_period
         ON financial_facts (company_id, metric, period_end DESC, filed_at DESC);
+      CREATE TABLE IF NOT EXISTS financial_enrichment_status (
+        company_id BIGINT PRIMARY KEY REFERENCES companies(id) ON DELETE CASCADE,
+        status TEXT NOT NULL,
+        last_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        last_success_at TIMESTAMPTZ,
+        consecutive_failures INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_financial_enrichment_retry
+        ON financial_enrichment_status (status, last_attempt_at);
     `).then(() => undefined).catch((error) => {
       schemaPromise = null;
       throw error;
@@ -295,7 +325,9 @@ async function fetchCompanyFacts(ticker: string): Promise<{ identity: { cik: str
   const response = await fetch(`https://data.sec.gov/api/xbrl/companyfacts/CIK${identity.cik}.json`, {
     headers: { 'User-Agent': userAgent, Accept: 'application/json' },
     signal: AbortSignal.timeout(SEC_TIMEOUT_MS),
-    next: { revalidate: 21_600 },
+    // CompanyFactsi vastus võib ületada Next.js 2 MB fetch-cache piiri.
+    // Püsiv cache ja retry-ajalugu on meil PostgreSQL-is, seega ära dubleeri seda siin.
+    cache: 'no-store',
   });
   if (!response.ok) throw new Error(`SEC CompanyFacts vastas ${response.status}.`);
   return { identity, facts: await response.json() };
@@ -455,6 +487,183 @@ export async function getAllStoredCompanyFinancials(): Promise<CompanyFinancialS
     rows[0].name || null,
     rows,
   ));
+}
+
+async function financialUniverseCoverage(): Promise<{ universe: number; covered: number }> {
+  const result = await pool.query(
+    `SELECT count(*)::int AS universe,
+            count(*) FILTER (
+              WHERE EXISTS (SELECT 1 FROM financial_facts f WHERE f.company_id = c.id)
+            )::int AS covered
+     FROM companies c
+     WHERE c.ticker <> 'SPY'
+       AND c.quote_type IS DISTINCT FROM 'ETF'
+       AND EXISTS (
+         SELECT 1 FROM price_snapshots p
+         WHERE p.company_id = c.id AND p.captured_at >= now() - interval '30 days'
+       )`,
+  );
+  return {
+    universe: Number(result.rows[0]?.universe || 0),
+    covered: Number(result.rows[0]?.covered || 0),
+  };
+}
+
+async function financialEnrichmentQueue(limit: number): Promise<Array<{ companyId: number; ticker: string }>> {
+  const result = await pool.query(
+    `SELECT c.id AS company_id, c.ticker
+     FROM companies c
+     JOIN LATERAL (
+       SELECT max(p.captured_at) AS latest_price_at
+       FROM price_snapshots p WHERE p.company_id = c.id
+     ) prices ON true
+     LEFT JOIN LATERAL (
+       SELECT max(f.updated_at) AS facts_updated_at
+       FROM financial_facts f WHERE f.company_id = c.id
+     ) facts ON true
+     LEFT JOIN financial_enrichment_status enrichment ON enrichment.company_id = c.id
+     WHERE c.ticker <> 'SPY'
+       AND c.quote_type IS DISTINCT FROM 'ETF'
+       AND prices.latest_price_at >= now() - interval '30 days'
+       AND (
+         (
+           facts.facts_updated_at IS NULL
+           AND (
+             enrichment.last_attempt_at IS NULL
+             OR (enrichment.status = 'error' AND enrichment.last_attempt_at < now() - interval '1 day')
+             OR (enrichment.status = 'unavailable' AND enrichment.last_attempt_at < now() - interval '30 days')
+           )
+         )
+         OR (
+           facts.facts_updated_at < now() - interval '7 days'
+           AND (enrichment.last_attempt_at IS NULL OR enrichment.last_attempt_at < now() - interval '1 day')
+         )
+       )
+     ORDER BY (facts.facts_updated_at IS NULL) DESC,
+              (enrichment.last_attempt_at IS NULL) DESC,
+              enrichment.last_attempt_at ASC NULLS FIRST,
+              prices.latest_price_at DESC,
+              c.ticker
+     LIMIT $1`,
+    [limit],
+  );
+  return result.rows.map((row) => ({ companyId: Number(row.company_id), ticker: String(row.ticker) }));
+}
+
+async function enrichmentAttemptsToday(): Promise<number> {
+  const result = await pool.query(
+    `SELECT count(*)::int AS attempts
+     FROM financial_enrichment_status
+     WHERE last_attempt_at >= (
+       date_trunc('day', now() AT TIME ZONE 'Europe/Tallinn') AT TIME ZONE 'Europe/Tallinn'
+     )`,
+  );
+  return Number(result.rows[0]?.attempts || 0);
+}
+
+async function saveEnrichmentAttempt(
+  companyId: number,
+  status: 'success' | 'unavailable' | 'error',
+  error: string | null,
+): Promise<void> {
+  await pool.query(
+    `INSERT INTO financial_enrichment_status
+       (company_id, status, last_attempt_at, last_success_at, consecutive_failures, last_error)
+     VALUES ($1, $2, now(), CASE WHEN $2 = 'success' THEN now() ELSE NULL END,
+             CASE WHEN $2 = 'error' THEN 1 ELSE 0 END, $3)
+     ON CONFLICT (company_id) DO UPDATE SET
+       status = EXCLUDED.status,
+       last_attempt_at = now(),
+       last_success_at = CASE
+         WHEN EXCLUDED.status = 'success' THEN now()
+         ELSE financial_enrichment_status.last_success_at
+       END,
+       consecutive_failures = CASE
+         WHEN EXCLUDED.status = 'error' THEN financial_enrichment_status.consecutive_failures + 1
+         ELSE 0
+       END,
+       last_error = EXCLUDED.last_error,
+       updated_at = now()`,
+    [companyId, status, error?.slice(0, 500) || null],
+  );
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+export async function enrichStoredCompanyFinancials(
+  limit = DAILY_FINANCIAL_ENRICHMENT_LIMIT,
+): Promise<FinancialEnrichmentResult> {
+  await ensureFinancialSchema();
+  const safeLimit = Math.max(1, Math.min(20, Math.trunc(limit) || DAILY_FINANCIAL_ENRICHMENT_LIMIT));
+  const before = await financialUniverseCoverage();
+  if (!process.env.SEC_USER_AGENT) {
+    return {
+      status: 'disabled',
+      financialUniverse: before.universe,
+      coveredBefore: before.covered,
+      coveredAfter: before.covered,
+      attempted: 0,
+      enriched: 0,
+      unavailable: 0,
+      failed: 0,
+      dailyLimit: safeLimit,
+      attemptedTodayBefore: 0,
+      dailyRemaining: safeLimit,
+      attemptedTickers: [],
+      unavailableTickers: [],
+      failedTickers: [],
+    };
+  }
+
+  const attemptedTodayBefore = await enrichmentAttemptsToday();
+  const availableToday = Math.max(0, safeLimit - attemptedTodayBefore);
+  const queue = availableToday > 0 ? await financialEnrichmentQueue(availableToday) : [];
+  const attemptedTickers: string[] = [];
+  const unavailableTickers: string[] = [];
+  const failedTickers: string[] = [];
+  let enriched = 0;
+
+  for (const [index, item] of queue.entries()) {
+    attemptedTickers.push(item.ticker);
+    try {
+      const summary = await refreshCompanyFinancials(item.ticker);
+      if (summary) {
+        enriched += 1;
+        await saveEnrichmentAttempt(item.companyId, 'success', null);
+      } else {
+        unavailableTickers.push(item.ticker);
+        await saveEnrichmentAttempt(item.companyId, 'unavailable', 'SEC CompanyFacts ei andnud skooritavat finantsajalugu.');
+      }
+    } catch (error) {
+      failedTickers.push(item.ticker);
+      const message = (error as Error).message || 'Tundmatu SEC enrichment viga.';
+      console.error(`Ettevõtte ${item.ticker} päevane SEC enrichment ebaõnnestus:`, message);
+      await saveEnrichmentAttempt(item.companyId, 'error', message).catch((statusError) => {
+        console.error(`Ettevõtte ${item.ticker} enrichment staatuse salvestamine ebaõnnestus:`, statusError);
+      });
+    }
+    if (index < queue.length - 1) await wait(ENRICHMENT_DELAY_MS);
+  }
+
+  const after = await financialUniverseCoverage();
+  return {
+    status: 'completed',
+    financialUniverse: after.universe,
+    coveredBefore: before.covered,
+    coveredAfter: after.covered,
+    attempted: attemptedTickers.length,
+    enriched,
+    unavailable: unavailableTickers.length,
+    failed: failedTickers.length,
+    dailyLimit: safeLimit,
+    attemptedTodayBefore,
+    dailyRemaining: Math.max(0, safeLimit - attemptedTodayBefore - attemptedTickers.length),
+    attemptedTickers,
+    unavailableTickers,
+    failedTickers,
+  };
 }
 
 async function refreshCompanyFinancialsUncached(rawTicker: string): Promise<CompanyFinancialSummary | null> {

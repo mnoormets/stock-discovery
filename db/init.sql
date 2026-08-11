@@ -208,6 +208,18 @@ CREATE TABLE IF NOT EXISTS financial_facts (
 CREATE INDEX IF NOT EXISTS idx_financial_facts_company_metric_period
   ON financial_facts (company_id, metric, period_end DESC, filed_at DESC);
 
+CREATE TABLE IF NOT EXISTS financial_enrichment_status (
+  company_id            BIGINT PRIMARY KEY REFERENCES companies(id) ON DELETE CASCADE,
+  status                TEXT NOT NULL,
+  last_attempt_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_success_at       TIMESTAMPTZ,
+  consecutive_failures  INTEGER NOT NULL DEFAULT 0,
+  last_error            TEXT,
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_financial_enrichment_retry
+  ON financial_enrichment_status (status, last_attempt_at);
+
 CREATE TABLE IF NOT EXISTS company_score_snapshots (
   id               BIGSERIAL PRIMARY KEY,
   company_id       BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,

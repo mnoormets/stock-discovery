@@ -7,6 +7,7 @@ import { getSectorRelativeStatsMap, type SectorRelativeStats } from './sector-re
 import {
   recordDiscoveryRun,
   type DiscoveryDecisionInput,
+  type DiscoveryRunType,
 } from './discovery-validation';
 
 export type DiscoveryCriterionStatus = 'supported' | 'uncertain' | 'missing';
@@ -43,10 +44,13 @@ export interface RklbCandidate {
 export interface RklbDiscoveryResult {
   candidates: RklbCandidate[];
   evaluatedCompanies: number;
+  recordedEvaluatedCompanies: number;
+  recordedCandidateCount: number;
   generatedAt: string;
   rules: string[];
   runId: number;
   runReused: boolean;
+  inputChangedAfterCanonicalSnapshot: boolean;
 }
 
 interface MarketEvidence {
@@ -326,7 +330,9 @@ function decisionInput(item: EvaluatedCompany, included: boolean, rank: number |
   };
 }
 
-export async function getRklbDiscoveryCandidates(): Promise<RklbDiscoveryResult> {
+export async function getRklbDiscoveryCandidates(
+  options: { runType?: DiscoveryRunType } = {},
+): Promise<RklbDiscoveryResult> {
   const financials = await getAllStoredCompanyFinancials();
   await saveCompanyScoreSnapshots(financials);
   const [evidenceByTicker, positions, sectorRelativeByTicker] = await Promise.all([
@@ -393,7 +399,7 @@ export async function getRklbDiscoveryCandidates(): Promise<RklbDiscoveryResult>
     return decisionInput(item, rank != null, rank);
   });
   const runAt = new Date();
-  const run = await recordDiscoveryRun(RULES, decisions, runAt);
+  const run = await recordDiscoveryRun(RULES, decisions, runAt, options.runType || 'rklb');
   const candidates: RklbCandidate[] = selected.map((item) => ({
     ticker: item.evidence.ticker,
     name: item.evidence.name || item.financials.companyName,
@@ -419,9 +425,12 @@ export async function getRklbDiscoveryCandidates(): Promise<RklbDiscoveryResult>
   return {
     candidates,
     evaluatedCompanies: evaluated.length,
+    recordedEvaluatedCompanies: run.evaluatedCount,
+    recordedCandidateCount: run.includedCount,
     generatedAt: runAt.toISOString(),
     rules: RULES,
     runId: run.runId,
     runReused: !run.created,
+    inputChangedAfterCanonicalSnapshot: run.inputChangedAfterCanonicalSnapshot,
   };
 }
