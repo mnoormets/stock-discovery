@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getScannerData } from '@/lib/scanner';
 import type { ScannerMover, ScannerScoreRow, ScannerScoreSort } from '@/lib/scanner';
+import { getRklbDiscoveryCandidates, type RklbCandidate, type RklbDiscoveryResult } from '@/lib/rklb-discovery';
+import { addDiscoveryWatchlistAction, startDiscoveryThesisAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,11 +67,62 @@ function ScoreTable({ rows }: { rows: ScannerScoreRow[] }) {
   );
 }
 
-export default async function ScannerPage({ searchParams }: { searchParams?: { sort?: string } }) {
+function compactMoney(value: number | null, currency = 'USD'): string {
+  if (value == null) return 'No data available yet';
+  return new Intl.NumberFormat('et-EE', { style: 'currency', currency, notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
+function CandidateCard({ candidate }: { candidate: RklbCandidate }) {
+  return (
+    <article className="card rklbCandidate">
+      <div className="rklbCandidateTop">
+        <div><p className="eyebrow">RESEARCH CANDIDATE · NOT A BUY SIGNAL</p><Link className="ticker heroTicker" href={`/company/${encodeURIComponent(candidate.ticker)}`}>{candidate.ticker}</Link><p>{candidate.name || 'Ettevõtte nimi puudub'}</p></div>
+        <div className="candidateNumbers"><span>Growth <strong>{candidate.growthScore}</strong></span><span>Health <strong>{candidate.healthScore ?? '—'}</strong></span><span>Coverage <strong>{candidate.coverageScore}</strong></span></div>
+      </div>
+      <div className="candidateMarketMeta"><span>Hind: {candidate.price == null ? 'puudub' : compactMoney(candidate.price, candidate.currency || 'USD')}</span><span>Market cap: {compactMoney(candidate.marketCap, candidate.currency || 'USD')}</span><span>Snapshot: {candidate.scoreVersion || 'versioon puudub'} · #{candidate.scoreSnapshotId || '—'}</span></div>
+      <div className="criteriaGrid">{candidate.criteria.map((criterion) => (
+        <div className={`criterion ${criterion.status}`} key={criterion.id}><span>{criterion.status}</span><strong>{criterion.label}</strong><p>{criterion.detail}</p></div>
+      ))}</div>
+      <div className="candidateEvidenceGrid">
+        <section><h3>Miks valimisse jõudis?</h3><ul>{candidate.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></section>
+        <section><h3>Peamised riskid</h3><ul>{candidate.risks.map((risk) => <li key={risk}>{risk}</li>)}</ul></section>
+        <section><h3>Mis on teadmata?</h3><ul>{candidate.unknowns.map((unknown) => <li key={unknown}>{unknown}</li>)}</ul></section>
+      </div>
+      <details className="proofQuestions"><summary>Mida peab investor ise tõendama?</summary><ol>{candidate.proofQuestions.map((question) => <li key={question}>{question}</li>)}</ol></details>
+      <div className="candidateActions">
+        {candidate.positionId ? <><span className="reviewLabel no-major-changes">jälgimisel</span><Link className="button secondary" href={`/thesis/${candidate.positionId}`}>Alusta / muuda teesi</Link></> : <>
+          <form action={addDiscoveryWatchlistAction}><input type="hidden" name="ticker" value={candidate.ticker} /><button className="secondary" type="submit">Lisa Watchlisti</button></form>
+          <form action={startDiscoveryThesisAction}><input type="hidden" name="ticker" value={candidate.ticker} /><button className="primary" type="submit">Alusta teesi</button></form>
+        </>}
+      </div>
+    </article>
+  );
+}
+
+function RklbDiscovery({ result }: { result: RklbDiscoveryResult }) {
+  return (
+    <section className="section rklbDiscovery">
+      <div className="sectionHeading"><div><p className="eyebrow">TRANSPARENT PRESET · EXISTING DATA ONLY</p><h2>Leia järgmine RKLB</h2></div><span className="muted">{result.candidates.length} kandidaati · {result.evaluatedCompanies} hinnatud</span></div>
+      <p className="lead">See otsib RKLB-laadset varajase kasvu mustrit, mitte sama sektorit. Tulemus on uurimisnimekiri, mitte ostusoovitus ega tulevase tootluse prognoos.</p>
+      <details className="card discoveryRules"><summary>Vaata kaasamisreegleid</summary><ul>{result.rules.map((rule) => <li key={rule}>{rule}</li>)}</ul><p className="muted">Järjestus: toetatud kriteeriumide arv, Growth, Coverage, Health ja ticker. Koondskoori ei arvutata.</p></details>
+      {result.candidates.length === 0 ? <div className="empty card"><strong>Täna ei leitud ühtegi piisavalt põhjendatud kandidaati.</strong><p>See on korrektne tulemus. Rakendus ei täida nimekirja nõrkade ettevõtetega lihtsalt selleks, et näidata kolme nime.</p></div> : <div className="rklbCandidateList">{result.candidates.map((candidate) => <CandidateCard candidate={candidate} key={candidate.ticker} />)}</div>}
+      <p className="muted">Run #{result.runId} · {result.runReused ? 'sama päeva identne sisend, varasem snapshot taaskasutatud' : 'uus muutumatu otsusesnapshot'} · genereeritud {dateTime(result.generatedAt)}. <Link href="/validation">Vaata valideerimist</Link>. Moat ja mispricing ei ole automaatselt tõendatud.</p>
+    </section>
+  );
+}
+
+export default async function ScannerPage({ searchParams }: { searchParams?: { sort?: string; preset?: string; message?: string; error?: string } }) {
   const scoreSort: ScannerScoreSort = searchParams?.sort === 'health' ? 'health' : searchParams?.sort === 'coverage' ? 'coverage' : 'growth';
+  const rklbPreset = searchParams?.preset === 'rklb';
   let data = null;
+  let rklbResult: RklbDiscoveryResult | null = null;
   let dbError = '';
-  try { data = await getScannerData(scoreSort); }
+  try {
+    [data, rklbResult] = await Promise.all([
+      getScannerData(scoreSort),
+      rklbPreset ? getRklbDiscoveryCandidates() : Promise.resolve(null),
+    ]);
+  }
   catch (error) { dbError = (error as Error).message; }
 
   if (!data) {
@@ -87,9 +140,15 @@ export default async function ScannerPage({ searchParams }: { searchParams?: { s
         <p className="eyebrow">COLLECTED MARKET DATA</p>
         <h1>Turu skänner</h1>
         <p className="lead">Viimaste salvestatud turuandmete ülevaade. Liikumine võrdleb ettevõtte kahte viimast hinnasnapshot’i.</p>
+        <div className="scannerPresets"><Link className={!rklbPreset ? 'active' : ''} href="/scanner">Turu ülevaade</Link><Link className={rklbPreset ? 'active' : ''} href="/scanner?preset=rklb">🚀 Leia järgmine RKLB</Link></div>
       </section>
 
-      <section className="section">
+      {searchParams?.message && <div className="notice success">{searchParams.message}</div>}
+      {searchParams?.error && <div className="notice danger">{searchParams.error}</div>}
+
+      {rklbPreset && rklbResult && <RklbDiscovery result={rklbResult} />}
+
+      {!rklbPreset && <><section className="section">
         <div className="sectionHeading"><div><p className="eyebrow">TODAY</p><h2>Suurimad hinnaliikumised</h2></div></div>
         <div className="scannerColumns">
           <div className="section"><h3 className="positive">Top gainers</h3><MoversTable rows={data.gainers} emptyText="Tänaseid tõusjaid pole veel piisavalt salvestatud." /></div>
@@ -131,7 +190,7 @@ export default async function ScannerPage({ searchParams }: { searchParams?: { s
             <article key={item.id}><div><Link className="ticker" href={`/company/${encodeURIComponent(item.ticker)}`}>{item.ticker}</Link> · <a href={item.url} target="_blank" rel="noreferrer">{item.title}</a></div><small>{item.publisher || 'Allikas teadmata'} · {dateTime(item.publishedAt)}</small></article>
           ))}</div>}
         </section>
-      </div>
+      </div></>}
     </main>
   );
 }

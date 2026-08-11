@@ -41,6 +41,10 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - `/daily` snapshot-võrdlused ja alert'id.
 - `/thesis/[positionId]` struktureeritud, versioonitud Thesis Builder koos 12 kuu kontrollpunkti ja skooritõenditega.
 - Watchlisti score-change alert võrdleb järjestikuseid sama mudeliversiooni snapshot'e, säilitab idempotentse alert'i ning näitab muutunud komponente nii Watchlistis kui Daily Changes vaates.
+- `/scanner?preset=rklb` kuvab olemasolevast universumist 0-5 läbipaistvalt põhjendatud uurimiskandidaati koos kriteeriumide, riskide, teadmata info ning Watchlisti/Thesis tegevustega.
+- Iga RKLB discovery käivitus salvestab `discovery_runs` ja `discovery_decisions` tabelitesse muutumatu point-in-time otsuse koos kogu vaadeldud universumi ning kaasamise/välistamise põhjustega.
+- `/validation` värskendab `candidate_outcomes` tulemusi 1n, 2n, 1k, 3k ja 6k horisondil ning kuvab iga horisondi statistika ja jooksude auditivaate.
+- `/guide` ja `docs/USER_GUIDE.md` selgitavad uuele kasutajale kogu rakenduse soovitatud töövoogu.
 
 Viimati kontrollitud päris skoorid:
 
@@ -78,32 +82,46 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
   - salvestab ühe dedupe-võtmega alert'i snapshotipaari kohta;
   - mudeliversiooni vahetus kuvatakse `needs review` seisuna ega tekita eksitavat score-alert'i;
   - positiivne, negatiivne, segatud ja ebaoluline muutus kasutavad sõnastust `new catalyst`, `new risk`, `needs review` või `no major changes`.
+- „Leia järgmine RKLB” V1:
+  - kasutab ainult olemasolevaid SEC, score, hinna/market cap'i, earnings'i, SEC sündmuse ja uudise andmeid;
+  - baasfiltrid on Growth vähemalt 65, Coverage vähemalt 70, teadaolev market cap kuni 75 miljardit ja vähemalt üks ajaliselt piiratud katalüsaator;
+  - RKLB ise jäetakse võrdlusnäidisena välja;
+  - iga kriteerium kuvatakse eraldi `supported`, `uncertain` või `missing` olekuna;
+  - järjestus on leksikograafiline: toetatud kriteeriumide arv, Growth, Coverage, Health ja ticker; koondskoori ei ole;
+  - null kandidaati on korrektne tulemus;
+  - kandidaadi saab lisada Watchlisti või suunata kohe Thesis Builderisse.
+- Uue kasutaja juhend rakenduses ja Markdown-dokumendina.
+- Discovery Decision Snapshot + Validation Framework:
+  - `discovery_runs` säilitab Tallinna otsusekuupäeva, jooksuaja, mudeliversiooni, sisendräsi, reeglid ja kogu vaadeldud universumi;
+  - `discovery_decisions` säilitab iga tickeri kaasamise või välistamise, täpsed põhjused, skoorid, hinna/market cap'i/volume'i, snapshot ID-d, runway, katalüsaatori, riskid ja teadmata info;
+  - sama mudeli, Tallinna kuupäeva ja identse sisendi kordus taaskasutab varasemat run'i; muutunud sisend loob samal päeval uue run'i;
+  - iga kaasatud kandidaat saab viis `candidate_outcomes` rida horisontidele 1n, 2n, 1k, 3k ja 6k;
+  - tulemus kasutab esimest hinda sihtajal või järgneva seitsme päeva jooksul ning mõõdetud rida ei kirjutata hiljem ümber;
+  - outcome'id värskendatakse nii kaitstud päevase `/api/collect` töö lõpus kui `/validation` avamisel;
+  - `/validation` näitab horisondipõhist statistikat ja täielikku otsuselogi;
+  - runway kuude arvu ei oletata; säilitatakse Financial Healthi ning cash/debt komponendi tegelik kirjeldus.
 
 ## Praegune fookus
 
-**`/scanner` eelseadistus „Leia järgmine RKLB”.**
+**Forward validation'i valimi kogumine enne ausat ajaloolist backtesti.**
 
-Eesmärk on kasutada olemasolevat kogutud universumit ja leida 0–5 läbipaistvalt põhjendatud uurimiskandidaati. See ei ole RKLB sektorikoopia, ostusoovitus ega üks udune tõenäosusnumber. Päeval, mil piisavalt tugevaid kandidaate pole, kuvatakse null tulemust.
+Point-in-time discovery otsusesnapshot ja forward outcome tracking on valmis. Süsteem peab nüüd päris jooksude valimit koguma; järgmine backtesti etapp võib kasutada ainult neid salvestatud otsuseid või eraldi ausalt rekonstrueeritud point-in-time andmestikku.
 
 ## Roadmap
 
-### NOW – järgmine arendustükk
+### NOW - järgmine arendustükk
 
-`/scanner` eelseadistus **„Leia järgmine RKLB”**:
+Aus point-in-time backtest / walk-forward valideerimine:
 
-- kasuta ainult olemasolevat kogutud universumit ja olemasolevaid SEC/Yahoo/application andmeid;
-- tagasta 0–5 uurimiskandidaati, mitte kohustuslik esikolmik;
-- iga kandidaat näitab, miks ta valimisse jõudis, kas kasv on erakordne, kui hea on andmekate, milline on finantsiline runway, lähenev katalüsaator, peamine risk ja mis on teadmata;
-- moat ja mispricing jäävad investori tõendatavateks küsimusteks;
-- iga kriteerium saab eraldi staatuse `supported`, `uncertain` või `missing`;
-- kandidaadikaardilt saab valida `Lisa Watchlisti` või `Alusta teesi`;
-- üks läbipaistmatu „RKLB tõenäosuse” koondskoor on keelatud;
-- lisa päris UI ja DB/runtime kontroll ning eemalda ajutised testread.
+- fikseeri benchmark ja universum enne arvutamist;
+- kasuta ainult otsuse kuupäevaks teada olnud fakte ning siis kehtinud mudeliversiooni;
+- eralda forward validation'i tulemused retrospektiivsest backtestist;
+- lisa benchmark'i suhteline tootlus, max drawdown ja valimi suurus;
+- jaota tulemused mudeliversiooni ja Coverage vahemiku järgi;
+- ära kasuta tänaseid restated SEC fakte varasema otsuse sisendina.
 
 ### NEXT
 
-- Otsuse hetke snapshot: hind, skoorid, tees, eeldused ja allikad.
-- Aus point-in-time score backtest / walk-forward valideerimine.
 - Fikseeritud horisondid 6 kuud, 1 aasta ja 3 aastat; mitte ideaalne tagantjärele tipuhind.
 - Mõõdikud: mediaantootlus, hit rate, ületootlus benchmark'i suhtes, max drawdown ja valimi suurus; tulemused mudeliversiooni ja Coverage vahemiku kaupa.
 - Enne backtesti tuleb fikseerida universum, benchmark ja otsuse hetke andmete säilitamise reegel.
@@ -142,6 +160,12 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Teesi score snapshot'i viide valideeritakse sama ettevõtte vastu; skeemis pole teadlikult hilise tabeliloomise tõttu init-taseme FK-d.
 - Score-alert võrdleb ainult järjestikuseid sama mudeliversiooni snapshot'e. Praegune lävi on 10 punkti või komponendi oluline seisundimuutus; see vajab päris ajaloo kasvades kalibreerimist.
 - Score-alerti payload säilitab võrreldud snapshot'id, skoorid ja komponendid; dedupe-võti on seotud ettevõtte, positsiooni ja snapshotipaariga.
+- „Leia järgmine RKLB” ei kasuta koondskoori. Kaasamine toimub nähtavate baasfiltritega ja järjestus eraldi tõendite tugevuse järgi.
+- Discovery katalüsaatori aknad on praegu earnings 45 päeva, SEC sündmus 30 päeva ja uudis 14 päeva; neid tuleb ajaloolise valideerimise käigus kalibreerida.
+- Aus backtest algab alles pärast idempotentse discovery run'i ja tickeritaseme otsusesnapshot'i salvestamist.
+- Discovery run'i idempotentsusvõti on `mudeliversioon + Tallinna otsusekuupäev + kogu otsusesisendi räsi`; see hoiab kordusjooksu stabiilsena, kuid lubab uue faktiseisu samal päeval eraldi salvestada.
+- Outcome baseline on otsusehetke hind. Horisondi vaatlusaken on sihtaeg kuni sihtaeg + 7 päeva; juba `measured` tulemust ei muudeta ka siis, kui ajalukku lisatakse hiljem varasem hinnasnapshot.
+- Validationi keskmised, mediaanid ja hit rate arvutatakse iga horisondi jaoks eraldi.
 - Git on koodi tõeallikas; `.env` ja PostgreSQL volume on masinapõhised.
 
 ## Avatud sõltuvused ja otsused
@@ -150,6 +174,7 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Backtesti benchmark: lai turg, vastav sektor või mõlemad.
 - Sector-relative ranking vajab usaldusväärset sektorivälja; puuduvat sektorit ei tohi oletada.
 - Uute Nasdaqi tickerite radar vajab tasuta listing-feed'i otsust.
+- Sector-relative ranking jääb blokeerituks seni, kuni sektoriväli on kontrollitav ja point-in-time kujul säilitatav.
 - Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
 
 ## Käivitamine uues arvutis
@@ -241,6 +266,18 @@ npm run build
 - Score-alerti Watchlisti detail kontrolliti päris brauseris; Daily Changes kuvas sama score-põhjuse.
 - Production build läbis app-konteineris; pärast buildi taaskäivitati app ning `/watchlist` ja `/daily` vastasid 200.
 - Ajutine SCOREQA positsioon, ettevõte, alert ja snapshotid eemaldati; nelja järelkontrolli tulemus oli 0.
+- „Leia järgmine RKLB” pärisandmetega empty state näitas null kandidaati ega täitnud nimekirja kunstlikult.
+- Sünteetiline CANDQA läbis baasfiltrid tulemusega Growth 100, Health 90 ja Coverage 100; kaart näitas market cap'i, katalüsaatoruudist, dilution-riski, teadmata infot ja score snapshot'i #37.
+- `Lisa Watchlisti` lõi täpselt ühe positsiooni; eraldi `Alusta teesi` kontroll lõi positsiooni ja avas `/thesis/7`.
+- `/guide` renderdas viis soovitatud töövoosammu ning navigeerimislingi.
+- CANDQA positsioon, ettevõte, 12 finantsfakti, hind, uudis ja score snapshot eemaldati; kuus järelkontrolli andsid 0.
+- Discovery pärisjooks salvestas ühe run'i, 2 vaadeldud tickerit ja 0 kandidaati; identne kordus jättis run'ide arvuks 1.
+- Ajutine VALQA kandidaat salvestus rank #1-na koos viie pending outcome'iga. Testhinnad andsid 1n +10%, 2n -10%, 1k +20%, 3k -20% ja 6k +50%.
+- Hiljem lisatud varasemad VALQA backfill-hinnad ei kirjutanud ühtegi viiest mõõdetud tulemusest ümber.
+- `/validation` ja `/scanner?preset=rklb` kontrolliti päris brauseris; navigeerimine, tühi statistika, run-meta ning AAPL/RKLB välistamise põhjused renderdusid korrektselt.
+- VALQA ettevõte, 240 kloonitud finantsfakti, hinnad, earnings, score snapshot, discovery run ja outcomes eemaldati; järelkontroll andis ettevõtte ja decision'i arvuks 0.
+- Lõplik `npm run lint`, `npm run typecheck` ja app-konteineri `npm run build` läbisid; build sisaldas dünaamilist `/validation` route'i.
+- Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
 
@@ -265,3 +302,28 @@ npm run build
 - Mudeliversiooni vahetus on nähtav, kuid seda ei esitata võrreldava skoorimuutusena.
 - Kontrolliti lint, typecheck, production build, päris brauser, HTTP, PostgreSQL, idempotentsus ja testandmete cleanup.
 - Järgmine fookus viidi `/scanner` eelseadistusele „Leia järgmine RKLB”.
+
+### 2026-08-11 - „Leia järgmine RKLB” V1 ja kasutajajuhend
+
+- Lisati läbipaistev `/scanner?preset=rklb` ilma koondskoorita.
+- Lisati Growth, Coverage, ettevõtte mastaabi, runway ja katalüsaatori eraldi kriteeriumid.
+- Kandidaat näitab valikupõhjuseid, peamisi riske, puuduvaid andmeid ja investori enda tõendamisküsimusi.
+- Lisati tegevused `Lisa Watchlisti` ja `Alusta teesi`; olemasolev aktiivne või watch-positsioon taaskasutatakse.
+- Null kandidaati on teadlikult korrektne tulemus.
+- Lisati rakenduse `/guide`, navigatsioonilink ja põhjalik `docs/USER_GUIDE.md`.
+- Kontrolliti päris brauseris kandidaadikaarti, Watchlisti lisamist, Thesis Builderisse suunamist, kasutajajuhendit ja empty state'i.
+- Kõik CANDQA integratsioonitesti andmed eemaldati.
+- Järgmine fookus viidi point-in-time discovery otsusesnapshotile, mis on ausa backtesti eeltingimus.
+
+### 2026-08-11 - Discovery Decision Snapshot + Validation Framework
+
+- Lisati muutumatud `discovery_runs`, tickeritaseme `discovery_decisions` ja viie horisondiga `candidate_outcomes`.
+- RKLB scanner salvestab nüüd kõik vaadeldud tickerid koos kaasamise või välistamise põhjusega, mitte ainult lõplikud kandidaadid.
+- Lisati mudeliversiooni, Tallinna otsusekuupäeva ja sisendräsi põhine idempotentsus.
+- Lisati hilisemate tegelike hinnatulemuste mõõtmine 1n, 2n, 1k, 3k ja 6k horisondil; hind leitakse seitsmepäevasest vaatlusaknast.
+- Outcome-värskendus käivitub päevase kaitstud `/api/collect` töö lõpus ning ka `/validation` avamisel.
+- Lisati `/validation` horisondipõhise keskmise, mediaani, võitjate/kaotajate, parima/halvima kandidaadi ning täieliku run-auditiga.
+- Kontrolliti lint, typecheck, päris runtime, PostgreSQL-i read, identne kordusjooks, viis tootlust, backfill-muutumatus ja päris brauseri UI.
+- Kontrolliti pärast lõplikku restarti `/scanner?preset=rklb` 200, `/validation` 200 ja saladuseta `/api/collect` 401.
+- Kõik VALQA integratsioonitesti andmed eemaldati.
+- Järgmine fookus on aus point-in-time backtest / walk-forward valideerimine ja benchmark'i fikseerimine.

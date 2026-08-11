@@ -215,6 +215,79 @@ CREATE TABLE IF NOT EXISTS company_score_snapshots (
 CREATE INDEX IF NOT EXISTS idx_company_scores_company_time
   ON company_score_snapshots (company_id, calculated_at DESC, id DESC);
 
+CREATE TABLE IF NOT EXISTS discovery_runs (
+  id               BIGSERIAL PRIMARY KEY,
+  run_type         TEXT NOT NULL DEFAULT 'rklb',
+  decision_date    DATE NOT NULL,
+  run_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  model_version    TEXT NOT NULL,
+  input_hash       TEXT NOT NULL,
+  run_key          TEXT NOT NULL UNIQUE,
+  rules            JSONB NOT NULL,
+  universe         JSONB NOT NULL,
+  evaluated_count  INTEGER NOT NULL,
+  included_count   INTEGER NOT NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_discovery_runs_time
+  ON discovery_runs (run_at DESC, id DESC);
+
+CREATE TABLE IF NOT EXISTS discovery_decisions (
+  id                  BIGSERIAL PRIMARY KEY,
+  run_id              BIGINT NOT NULL REFERENCES discovery_runs(id) ON DELETE CASCADE,
+  company_id          BIGINT REFERENCES companies(id) ON DELETE SET NULL,
+  ticker              TEXT NOT NULL,
+  included            BOOLEAN NOT NULL,
+  candidate_rank      INTEGER,
+  exclusion_reasons   JSONB NOT NULL DEFAULT '[]'::jsonb,
+  growth_score        INTEGER,
+  health_score        INTEGER,
+  coverage_score      INTEGER NOT NULL,
+  decision_price      NUMERIC,
+  currency            TEXT,
+  market_cap          BIGINT,
+  volume              BIGINT,
+  price_snapshot_id   BIGINT,
+  score_snapshot_id   BIGINT,
+  scoring_version     TEXT,
+  runway_status       TEXT NOT NULL,
+  runway_detail       TEXT NOT NULL,
+  catalyst_status     TEXT NOT NULL,
+  catalyst_type       TEXT,
+  catalyst_source_id  TEXT,
+  catalyst_url        TEXT,
+  catalyst_at         TIMESTAMPTZ,
+  catalyst_detail     TEXT NOT NULL,
+  risks               JSONB NOT NULL DEFAULT '[]'::jsonb,
+  unknowns            JSONB NOT NULL DEFAULT '[]'::jsonb,
+  reasons             JSONB NOT NULL DEFAULT '[]'::jsonb,
+  criteria            JSONB NOT NULL DEFAULT '[]'::jsonb,
+  proof_questions     JSONB NOT NULL DEFAULT '[]'::jsonb,
+  payload              JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (run_id, ticker)
+);
+CREATE INDEX IF NOT EXISTS idx_discovery_decisions_ticker_time
+  ON discovery_decisions (ticker, run_id DESC);
+CREATE INDEX IF NOT EXISTS idx_discovery_decisions_included
+  ON discovery_decisions (included, run_id DESC);
+
+CREATE TABLE IF NOT EXISTS candidate_outcomes (
+  id               BIGSERIAL PRIMARY KEY,
+  decision_id      BIGINT NOT NULL REFERENCES discovery_decisions(id) ON DELETE CASCADE,
+  horizon          TEXT NOT NULL,
+  target_at        TIMESTAMPTZ NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'pending',
+  observed_at      TIMESTAMPTZ,
+  observed_price   NUMERIC,
+  return_percent   NUMERIC,
+  measured_at      TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (decision_id, horizon)
+);
+CREATE INDEX IF NOT EXISTS idx_candidate_outcomes_status_target
+  ON candidate_outcomes (status, target_at);
+
 CREATE TABLE IF NOT EXISTS analyst_targets (
   id                    BIGSERIAL PRIMARY KEY,
   company_id            BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
