@@ -80,6 +80,8 @@ Rakendus ei arvuta „RKLB tõenäosuse” koondskoori. Kui ükski ettevõte fil
 
 Iga „Leia järgmine RKLB” avamine salvestab otsusesnapshoti. Sama päeva täiesti identne sisend taaskasutab varasemat run'i; muutunud faktid loovad uue run'i. Snapshot sisaldab kõiki vaadeldud tickereid, mitte ainult lõplikke kandidaate.
 
+Kell 08:00 päevane `/api/collect` kasvatab lisaks SEC finantskatvust kuni viie ettevõtte kaupa ning loob ühe `rklb_daily` canonical snapshot'i Tallinna päeva kohta. Sama päeva korduscollect ei loo teist canonical run'i ega ületa päevast SEC eelarvet. Scanneri käsitsi avamised jäävad eraldi auditi-run'ideks ega hakka tulevast frequency streak'i kunstlikult kasvatama.
+
 Leht **Validation** näitab:
 
 - millal ja millise mudeliversiooniga discovery käivitati;

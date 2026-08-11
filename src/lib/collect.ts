@@ -92,8 +92,11 @@ export async function runCollection() {
   // 7) Salvesta päevane snapshot.
   await saveSnapshot(captureDate, candidates);
 
-  // Live-tabelite kirjutamine ei tohi kogumise vastust blokeerida ega nurjata.
-  void saveCollectedCompanies(candidates).catch((error) => {
+  // Salvesta enne päevast enrichment/discovery faasi, kuid ära nurja kogu
+  // collection'it, kui lokaalne live-tabelite kirjutus ebaõnnestub.
+  let liveDataSaved = true;
+  await saveCollectedCompanies(candidates).catch((error) => {
+    liveDataSaved = false;
     console.error('Kogutud ettevõtete live-andmete salvestamine ebaõnnestus:', error);
   });
 
@@ -103,6 +106,7 @@ export async function runCollection() {
     candidates: candidates.length,
     secSuspensionsTracked: secNames.size,
     flagged: candidates.filter((c) => c.warnings.length > 0).length,
+    liveDataSaved,
     top: candidates.slice(0, TOP_N),
   };
 }

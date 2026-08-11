@@ -24,7 +24,15 @@ export default function CollectButton() {
       const data = await res.json();
       setSecret('');
       if (res.ok && data.ok) {
-        setStatus(`Valmis: skännitud ${data.scanned}, kandidaate ${data.candidates}.`);
+        const enrichment = data.financialEnrichment;
+        const enrichmentText = enrichment
+          ? ` SEC katvus ${enrichment.coveredAfter}/${enrichment.financialUniverse} (+${Math.max(0, enrichment.coveredAfter - enrichment.coveredBefore)}).`
+          : ' SEC enrichment ebaõnnestus.';
+        const discovery = data.dailyDiscovery;
+        const discoveryText = discovery?.ok
+          ? ` Daily discovery: ${discovery.evaluatedCount} hinnatud, ${discovery.candidateCount} kandidaati${discovery.reused ? ` (tänane run taaskasutatud${discovery.inputChangedAfterCanonicalSnapshot ? '; hilisem sisend muutus' : ''})` : ''}.`
+          : ' Daily discovery ebaõnnestus.';
+        setStatus(`Valmis: skännitud ${data.scanned}, radarikandidaate ${data.candidates}.${enrichmentText}${discoveryText}`);
         router.refresh();
       } else {
         setStatus(res.status === 401 ? 'Vale või puuduv CRON_SECRET.' : `Viga: ${data.error}`);

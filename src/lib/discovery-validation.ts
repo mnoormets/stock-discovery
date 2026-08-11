@@ -6,6 +6,7 @@ export const DISCOVERY_MODEL_VERSION = 'rklb-discovery-v1';
 export const DEFAULT_BENCHMARK_SYMBOL = 'SPY';
 export const OUTCOME_HORIZONS = ['1w', '2w', '1m', '3m', '6m'] as const;
 export type OutcomeHorizon = (typeof OUTCOME_HORIZONS)[number];
+export type DiscoveryRunType = 'rklb' | 'rklb_daily';
 
 export interface DiscoveryDecisionInput {
   companyId: number;
@@ -53,6 +54,9 @@ export interface DiscoveryRunRecord {
   runId: number;
   created: boolean;
   decisionDate: string;
+  evaluatedCount: number;
+  includedCount: number;
+  inputChangedAfterCanonicalSnapshot: boolean;
 }
 
 export interface ValidationOutcome {
@@ -157,11 +161,14 @@ export async function recordDiscoveryRun(
   rules: string[],
   decisions: DiscoveryDecisionInput[],
   runAt = new Date(),
+  runType: DiscoveryRunType = 'rklb',
 ): Promise<DiscoveryRunRecord> {
   await ensureSchema();
   const decisionDate = tallinnDate(runAt);
   const hash = inputHash(rules, decisions);
-  const runKey = `${DISCOVERY_MODEL_VERSION}:${decisionDate}:${hash}`;
+  const runKey = runType === 'rklb_daily'
+    ? `${DISCOVERY_MODEL_VERSION}:${runType}:${decisionDate}`
+    : `${DISCOVERY_MODEL_VERSION}:${decisionDate}:${hash}`;
   const universe = decisions.map((decision) => decision.ticker).sort();
   const includedCount = decisions.filter((decision) => decision.included).length;
   const client = await pool.connect();
@@ -170,10 +177,11 @@ export async function recordDiscoveryRun(
     const inserted = await client.query(
       `INSERT INTO discovery_runs
         (run_type, decision_date, run_at, model_version, input_hash, run_key, rules, universe, evaluated_count, included_count)
-       VALUES ('rklb', $1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8, $9)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10)
        ON CONFLICT (run_key) DO NOTHING
        RETURNING id`,
       [
+        runType,
         decisionDate,
         runAt.toISOString(),
         DISCOVERY_MODEL_VERSION,
@@ -187,9 +195,19 @@ export async function recordDiscoveryRun(
     );
     const created = Boolean(inserted.rowCount);
     let runId = created ? Number(inserted.rows[0].id) : 0;
+    let recordedEvaluatedCount = decisions.length;
+    let recordedIncludedCount = includedCount;
+    let recordedInputHash = hash;
     if (!created) {
-      const existing = await client.query('SELECT id FROM discovery_runs WHERE run_key = $1', [runKey]);
+      const existing = await client.query(
+        `SELECT id, evaluated_count, included_count, input_hash
+         FROM discovery_runs WHERE run_key = $1`,
+        [runKey],
+      );
       runId = Number(existing.rows[0].id);
+      recordedEvaluatedCount = Number(existing.rows[0].evaluated_count);
+      recordedIncludedCount = Number(existing.rows[0].included_count);
+      recordedInputHash = String(existing.rows[0].input_hash);
     }
     if (created) {
       const benchmarkStartResult = await client.query(
@@ -262,7 +280,14 @@ export async function recordDiscoveryRun(
       }
     }
     await client.query('COMMIT');
-    return { runId, created, decisionDate };
+    return {
+      runId,
+      created,
+      decisionDate,
+      evaluatedCount: recordedEvaluatedCount,
+      includedCount: recordedIncludedCount,
+      inputChangedAfterCanonicalSnapshot: !created && recordedInputHash !== hash,
+    };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;

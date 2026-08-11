@@ -18,6 +18,7 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 - Watchlist ja Daily Changes võrdlevad järjestikuseid sama mudeliversiooni score-snapshot'e ning näitavad olulise muutuse korral skoorid, muutunud komponendid ja täpsed snapshot'i viited.
 - Skänneri „Leia järgmine RKLB” preset annab olemasolevast universumist 0-5 läbipaistvalt põhjendatud uurimiskandidaati, ilma koondskoori või ostusoovituseta.
 - Iga RKLB discovery jooks salvestab muutumatu otsusehetke universumi, kaasatud ja välistatud tickerid, põhjused, skoorid, hinna, market cap'i, runway-kirjelduse, katalüsaatori, riskid ja teadmata info.
+- Päevane `/api/collect` kasvatab olemasoleva SEC CompanyFactsi allika katvust maksimaalselt viie ettevõtte kaupa ning salvestab ühe idempotentse `rklb_daily` canonical discovery run'i Tallinna kalendripäeva kohta.
 - `/validation` mõõdab kaasatud kandidaatide tegelikku hinnamuutust eraldi 1 nädala, 2 nädala, 1 kuu, 3 kuu ja 6 kuu horisondil ning näitab keskmist, mediaani, võitjaid, kaotajaid, parimat ja halvimat tulemust.
 - `/backtest` loeb ainult salvestatud point-in-time discovery run'e ja outcome'e, võrdleb mõõdetud kandidaate SPY benchmark'iga ning kuvab excess return'i ainult siis, kui mõlemad hinnad on päriselt olemas.
 - Sector-relative Ranking võrdleb Growth, Financial Health, Coverage ja market cap'i olemasoleva Yahoo sector/industry grupi sees; alla viie võrreldava ettevõtte korral percentile'i ei kuvata.
@@ -62,6 +63,8 @@ curl -X POST http://localhost:3005/api/collect \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
 
+Üks edukas päevatöö salvestab radariettevõtete hinnad, SPY benchmark'i, kuni viis puuduva või aegunud SEC CompanyFactsi katvusega ettevõtet, canonical discovery snapshot'i ning valminud candidate outcome'id. Enrichment- või discovery alamfaasi viga logitakse ja tagastatakse eraldi staatusena; see ei muuda juba õnnestunud põhikogumist ebaõnnestunuks.
+
 ## Keskkonnamuutujad
 
 | Muutuja | Vajalik | Kasutus |
@@ -93,6 +96,7 @@ npm run build
 - Rakendus ei sisalda optsioonianalüüsi, ajaloolist ümbervalikut ega automaatset kauplemist.
 - Validation on forward outcome tracking, mitte täielik ajalooline backtest: see kogub tulemusi alates salvestatud discovery jooksudest ega rekonstrueeri minevikku tänaste andmetega.
 - Backtest V1 on salvestatud forward outcome'ide aus koondvaade, mitte tõend strateegia toimivuse ega tulevase tootluse kohta.
+- SEC enrichment'i päevane eelarve on vaikimisi viis katset Tallinna kalendripäeva kohta. `unavailable` tickerit proovitakse uuesti kõige varem 30 päeva ja transient `error` tickerit järgmisel päeval.
 - Sector-relative ranking kasutab ainult salvestatud klassifikatsiooni ja sama score-versiooni täielikke võrreldavaid ettevõtteid. Puuduv sector/industry või alla viie liikmega grupp jääb unknown/insufficient olekusse.
 - Research Brief kasutab läbipaistvaid kohalikke reegleid ja rakendusse kogutud allikaid; see ei asenda algdokumentide kontrollimist ega investeerimisnõustamist.
 - Redditi skoor on uurimisnimekirja signaal, mitte tootluse prognoos.
