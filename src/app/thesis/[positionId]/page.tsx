@@ -7,6 +7,8 @@ import { getTrackedCompanyScores } from '@/lib/score-tracking';
 import { getThesisWorkspace, type ThesisStatus, type ThesisVersion } from '@/lib/thesis';
 import { getSectorRelativeStats } from '@/lib/sector-relative';
 import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
+import DataQualityEvidence from '@/components/DataQualityEvidence';
+import { calculateDataQuality, hasDataQualityWarning } from '@/lib/data-quality';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +81,8 @@ export default async function ThesisPage({
 
   const financials = await getCompanyFinancialsDbFirst(workspace.ticker).catch(() => null);
   const scores = calculateCompanyScores(financials);
+  const dataQuality = calculateDataQuality(financials);
+  const dataQualityWarning = hasDataQualityWarning(dataQuality);
   const tracked = await getTrackedCompanyScores(workspace.ticker, financials).catch(() => ({ current: null, previous: null, history: [] }));
   const sectorRelative = await getSectorRelativeStats(workspace.ticker).catch(() => null);
   const thesis = workspace.current || emptyThesis;
@@ -103,6 +107,7 @@ export default async function ThesisPage({
           <EvidenceCard title="Financial Health Score" score={scores.financialHealth} />
           <article className="card thesisEvidenceCard"><div className="thesisEvidenceTop"><div><span className="evidenceType">ANDMEKATE</span><h3>Coverage Score</h3></div><strong>{scores.coverage.score}<small>/100</small></strong></div><p>{scores.coverage.label}. Madal coverage tähendab, et tugevat üksikkomponenti ei tohi käsitleda täieliku pildina.</p></article>
         </div>
+        <DataQualityEvidence summary={dataQuality} title="Data quality warnings" />
         <SectorRelativeEvidence stats={sectorRelative} title="Sector-relative evidence" showInterpretation />
       </section>
 
@@ -126,6 +131,9 @@ export default async function ThesisPage({
             <label><span>Ajahorisont</span><input name="timeHorizon" defaultValue={thesis.timeHorizon} maxLength={200} placeholder="Näiteks 3–5 aastat" /></label>
             <label><span>Staatus</span><select name="status" defaultValue={thesis.status}><option value="draft">Draft</option><option value="researching">Researching</option><option value="ready">Ready</option><option value="rejected">Rejected</option></select></label>
           </div>
+          {dataQualityWarning && <div className="notice dataQualityReadyWarning"><strong>Soft warning enne Ready staatust:</strong> {dataQuality.metrics.length === 0
+            ? 'Score-sisendeid ei ole, seega freshness’i ega perioodide joondust ei saa tõendada. Ready staatus peaks tuginema kontrollitud algallikale.'
+            : 'Osa score-sisendeid on aegunud, teadmata perioodiga või ei ole ajaliselt võrreldavad. Kontrolli algallikate perioode enne teesi ready staatusesse viimist.'} See ei blokeeri salvestamist.</div>}
           <button className="primary" type="submit">Salvesta teesi versioon</button>
         </form>
       </section>

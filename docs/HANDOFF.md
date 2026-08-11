@@ -34,6 +34,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - CompanyFactsi perioodid ja YoY võrdlused tabelis `financial_facts`.
 - Tasuta reeglipõhine Research Brief koos faktide, järelduste ja algallikatega.
 - Growth Score, Financial Health Score ja Coverage Score.
+- Data Freshness + Period Alignment V1 kuvab score'is kasutatud SEC põhimõõdikute perioodid, vanuse, fact-viited ja eraldi kvalitatiivsed staatused; skoorivalemeid ega filtreid see ei muuda.
 - Versioonitud `company_score_snapshots`, mis säilitavad input-hashi, SEC fact ID-d, perioodid ja komponendid.
 - `/scanner` fundamentaalne edetabel ja sortimine Growthi, Healthi või Coverage'i järgi.
 - `/watchlist` kasutab `portfolio_positions.status = 'watch'` kirjeid ja pakub olemasolevate skooride põhjal uurimisideid.
@@ -69,6 +70,14 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 - Tasuta reeglipõhine Research Brief ja modulaarne signal engine.
 - SEC CompanyFacts finantsajalugu ja võrreldavate perioodide YoY.
 - Growth, Financial Health ja Coverage Score koos versioonitud ajalooga.
+- Data Freshness + Period Alignment V1:
+  - ettevõtte tasemel eraldi `data-quality-v1` arvutus olemasolevate score'i põhimõõdikute põhjal;
+  - iga mõõdik näitab väärtust, economic period end'i, period kind'i, vanust, fact ID-d, accession number'it ja SEC algallikat;
+  - kokkuvõte näitab uusimat/vanimat perioodi, vanimat mõõdikut, mediaanvanust, stale/unknown arvu ja perioodivahet;
+  - Freshness olekud on `fresh`, `mixed`, `stale`, `unknown`; Alignment olekud `good`, `warning`, `poor`, `unknown`;
+  - company detail ja Thesis Builder kuvavad täielikku evidence-tabelit, RKLB kandidaadikaart kompaktset hoiatust;
+  - Thesis Builderi `ready` valik saab mitteblokeeriva soft warning'u;
+  - Coverage, Growth, Financial Health, catalyst gate, RKLB filtrid, universum ja välised provider'id jäid muutmata.
 - Watchlist ja olemasolevatel skooridel põhinev idee-avastus.
 - Thesis Builder V1:
   - väljad `business`, `why now`, `moat`, `mispricing`, `catalyst`, `invalidation`, ajahorisont ja 12 kuu kontrollpunkt;
@@ -131,25 +140,22 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**Manual research sprint on tehtud; järgmine soovituslik integrity-töö on Data Freshness + Period Alignment.**
+**Data Freshness + Period Alignment V1 on tehtud; järgmine otsus peab põhinema selle päris warning'ute kasutamisel research'is.**
 
 `docs/FUNNEL_AUDIT.md` read-only audit näitas, et suurim vahetu bottleneck ei ole scheduler ega cloud DB, vaid radari sisenduniversumi ja otsustusfunneli tõendamata kvaliteet. Selle järel tehtud [`docs/RESEARCH_SPRINT_2026-08-11.md`](RESEARCH_SPRINT_2026-08-11.md) manual cohort andis päris Thesis Builderi otsused: API `ready`, BW ja HIMS `researching`, CAKE ja ACHR `rejected`. `ready` tähendab kaitstavat ning falsifitseeritavat teesi, mitte ostusoovitust.
 
-Sprint kinnitas kaks hüpoteesi. Catalyst hard gate tekitas research false negative'e: BW-l oli päris Q2/backlog/Base Electron catalyst ning CAKE-l earnings/comparable-sales/unit-opening evidence, kuigi collector märkis catalyst'i puuduvaks. Coverage on endiselt completeness/presence: BW 100 koos 2021 debt'iga moonutas Healthi ning HIMS näitas orgaanilise ja omandatud kasvu period/alignment probleemi. Järgmine soovituslik töö on eraldi Freshness + Period Alignment; pärast seda tuleb catalyst muuta hard gate'ist structured evidence field'iks.
+Sprint kinnitas kaks hüpoteesi. Catalyst hard gate tekitas research false negative'e: BW-l oli päris Q2/backlog/Base Electron catalyst ning CAKE-l earnings/comparable-sales/unit-opening evidence, kuigi collector märkis catalyst'i puuduvaks. Coverage on endiselt completeness/presence; uus kiht teeb BW 100 Coverage + 2021 debt vastuolu nüüd nähtavaks. Järgmine samm ei ole uus provider: kasuta warning'uid järgmises manual research otsuses ja otsusta seejärel eraldi, kas catalyst hard gate muuta structured evidence field'iks.
 
 ## Roadmap
 
-### NOW - järgmine arendustükk
+### NOW - järgmine töö
 
-Data Freshness + Period Alignment integrity layer enne funnel'i recall'i laiendamist:
+Kasuta Data Freshness + Period Alignment V1 päris research-kihina enne järgmise valemi või filtri muutmist:
 
-- jäta praegune Coverage Score completeness/presence mõõdikuks; ära muuda selle tähendust vaikimisi;
-- lisa eraldi freshness iga score-inputi economic period'i jaoks ning näita stale sisendit selgelt;
-- vali flow- ja balance-sheet mõõdikutele eraldi värskusaknad;
-- arvuta ettevõtte reporting anchor ja hoiata, kui cash/debt või muud samas komponendis kasutatud faktid pärinevad eri majandusperioodidest;
-- säilita fact ID, period, filed date ja score-version point-in-time snapshot'is;
-- ära muuda veel score-punkte automaatselt enne, kui stale/alignment reeglid on eraldi auditeeritud;
-- pärast integrity-kihti muuda catalyst hard gate structured evidence field'iks: materiality, suund, allikas, uudsus ja thesis-relevance;
+- kontrolli API, BW, CAKE, HIMS ja ACHR olemasolevad teesiotsused uue evidence-ploki kõrval üle;
+- dokumenteeri, kas warning muutis inimese tõlgendust või ainult kinnitas juba teadaolevat riski;
+- kalibreeri 550 päeva stale-, 120 päeva good-alignment- ja 730 päeva poor-alignment piire ainult päris näidete põhjal;
+- otsusta pärast seda eraldi, kas catalyst hard gate muuta structured evidence field'iks: materiality, suund, allikas, uudsus ja thesis-relevance;
 - jätka viie päris teesi 12 kuu checkpoint'ide jälgimist; ära kustuta neid integration-test andmetena.
 
 Auditi järel ootel collection reliability ja canonical cloud-history:
@@ -217,6 +223,11 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Company detail on DB-first; aeglased live-värskendused toimuvad võimalusel taustal.
 - FCF on tuletatud kui OCF miinus capex ning peab olema sellisena märgitud.
 - Score-versioon muutub alati, kui valem või kaalud sisuliselt muutuvad.
+- `data-quality-v1` on eraldi kvalitatiivne integrity-kiht: see ei muuda `scores-v1` punkte, Coverage tähendust, järjestust ega kaasamisfiltreid.
+- Freshness V1 stale-piir on 550 päeva. Alignment on `good`, kui vähemalt kaks teadaolevat sisendit mahuvad 120 päeva sisse ja flow-period-kind'id pole läbisegi; üle 730 päeva span on `poor`; puuduva võrdlusbaasi korral on olek `unknown`.
+- Puuduv metric mõjutab Coverage'it, mitte Alignment'i unknown-period loendurit. Unknown period tähendab olemasolevat sisendit, mille majandusperioodi ei saa tuvastada.
+- Perioodivahet näidatakse ainult vähemalt kahe teadaoleva perioodi korral. Ühe sisendi puhul on span `unknown`, mitte 0 päeva, sest üksik fakt ei tõenda joondust.
+- Annual, quarter ja YTD flow-sisendite segamine tekitab Alignment `warning` oleku ka sama period-end korral, sest nende väärtused ei kirjelda sama perioodipikkust.
 - Growth/Health sortimisel tulevad vähemalt 70 Coverage read enne madala kattega ridu.
 - Watchlist kasutab `portfolio_positions.status = 'watch'`, kogust 0 ja ostuhinda 0.
 - Thesis Builder ei esita moat'i, mispricing'ut ega „miks praegu?” välja automaatse faktina; need on kasutaja tõendatavad hüpoteesid.
@@ -263,6 +274,8 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Catalyst counterfactual: immutable run oleks hard gate'ita lisanud BW ja CAKE; tänaste post-enrichment score'idega läbivad muud baasfiltrid BW, CAKE, API, HR ja PLUG, kuid ühelgi neist pole stored catalyst'it.
 - Freshnessi range 2 aasta piir leidis 60 olemasolevast core metricust kaks vana sisendit: ARR revenue 2011 ja BW debt 2021. PLUG debt 2024 ei ületa veel kaht aastat, kuid jääb ettevõtte uusimast score-sisendist 675 päeva maha.
 - Coverage, Freshness ja Period Alignment peavad jääma eraldi mõisteteks: completeness ei tohi vaikimisi tähendada, et kõik score-komponendid on värsked ja samast aruandeperioodist.
+- Data-quality V1 läved on läbipaistvad heuristikad, mitte tõestatud investeerimisvalem. Need vajavad järgmise manual research cohort'i järel kalibreerimist.
+- V1 arvutab kvaliteedi praeguse ettevõtte financial summary põhjal. Ajaloolise Thesis/Validation vaate jaoks eraldi muutumatu data-quality snapshot'i püsiv salvestamine on teadlikult lahendamata järgmine traceability-otsus; olemasolevaid score snapshot'e ei backfillitud ega kirjutatud ümber.
 - SEC enrichment'i algne päevane batch-size on päris runtime'is kontrollitud väärtusega 5; seda võib muuta ainult logide, kestuse ja katvuse põhjal, mitte eesmärgiga teha korraga piiramatut masspäringut.
 - Sector-relative valimi katvus kasvab ainult siis, kui olemasolev provider tagastab ettevõtte kohta sector/industry väärtuse; väikese grupi korral percentile teadlikult puudub.
 - Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
@@ -325,8 +338,11 @@ Kvaliteedikontroll:
 ```bash
 npm run lint
 npm run typecheck
+npm run qa:data-quality
 npm run build
 ```
+
+`npm run check` käivitab sama järjekorra ühe käsuga.
 
 ## Testimise põhimõtted
 
@@ -340,7 +356,9 @@ npm run build
 
 - `npm run lint`: läbib ilma hoiatusteta.
 - `npm run typecheck`: läbib.
-- `npm run build`: läbib; uus dünaamiline route `/thesis/[positionId]` on buildis.
+- `npm run qa:data-quality`: 7/7 deterministlikku juhtu läbib: sama periood, mitme aasta vanune fakt, cash 2026 + debt 2021, unknown period, high Coverage + poor alignment, puuduv metric ja ühe teadaoleva perioodi `unknown` span.
+- `npm run check` käivitab lint, typecheck, data-quality QA ja build'i ühe käsuga.
+- `npm run build`: läbib; dünaamilised `/company/[ticker]`, `/scanner` ja `/thesis/[positionId]` route'id on buildis.
 - `docker compose up --build -d`: app, db ja scheduler töötavad; db on healthy.
 - Pärast tööarvuti commit'i `1454157` koduarvutisse fast-forward pullimist vastasid `/scanner?preset=rklb`, `/validation`, `/backtest`, `/guide` ja `/company/AAPL` HTTP 200; app, db ja scheduler töötasid ning db oli healthy.
 - Manual research sprint kontrolliti päris in-app brauseris: `/portfolio`, viis `/thesis/[positionId]` vaadet ja `/watchlist` renderdusid töötavas rakenduses.
@@ -348,6 +366,17 @@ npm run build
 - PostgreSQL-is säilis iga viie tickeri esialgne draft ja sisuline lõppversioon. Current staatused: API `ready`, BW/HIMS `researching`, CAKE/ACHR `rejected`; API, BW, CAKE, HIMS ja lõplik ACHR teesiotsus on seotud point-in-time score snapshot'iga.
 - ACHR Thesis Builderi avamine rikastas olemasoleva SEC CompanyFactsi allika kaudu 173 fakti ning lõi snapshot'i #111 skooridega Growth 1, Health 30, Coverage 75; rejected-tees salvestati uuesti selle snapshot'i seosega.
 - BW primary-source kontroll kinnitas, et Coverage 100 ei tähenda freshness'it: äpi Health kasutas 2026 cash'i koos 2021 debt'iga. Q2 release näitas samal ajal päris backlog/Base Electron catalyst'it, mida collector ei tuvastanud.
+- Data-quality päris DB/UI kontroll: API `fresh/good`; BW `mixed/poor`; CAKE, HIMS, ACHR, RKLB ja AAPL `fresh/warning`; TSM `fresh/unknown`. Kõik kaheksa company detaili kuvasid eraldi quality-plokki.
+- BW company detail kuvas Coverage 100 kõrval 1769-päevase span'i, stale debt perioodi `2021-09-30` ja algallika; ACHR jäi `fresh`, kuid quarter + YTD segamise tõttu `alignment warning` olekusse.
+- `/scanner?preset=rklb` kuvas ühe päris BW research-kandidaadi kaardil kompaktse andmekvaliteedi hoiatuse. `/thesis/13` kuvas `Data quality warnings` ploki ja mitteblokeeriva Ready soft warning'u.
+- Pärast production build'i taaskäivitati app. `/scanner?preset=rklb`, `/company/AAPL`, `/company/BW`, `/company/ACHR`, `/validation` ja `/backtest` vastasid 200.
+- Data-quality lõppkontroll kaeti kõigi 14 SEC faktidega ettevõtte peale: API/FRMI/IQ `fresh/good`; AAPL, ACHR, CAKE, DJT, HIMS, HR ja RKLB `fresh/warning`; ARR ja BW `mixed/poor`; PLUG `mixed/warning`; TSM `fresh/unknown`. ARR span oli 5500 päeva (2011 revenue), BW 1769 päeva ja PLUG 675 päeva.
+- TSM ühe teadaoleva sisendiga kuvab nüüd Alignment `unknown` kõrval ka span `unknown`, mitte eksitavat 0 päeva.
+- `/scanner?preset=rklb` kuvas 14 hinnatud ettevõttest 5 kandidaati ja igal kaardil kompaktse andmekvaliteedi ploki; BW kaart näitas stale debt'i, 1769-päevast span'i ja quarter+YTD segamist.
+- Thesis Builderi soft warning eristab kahte olukorda: aegunud/joondamata sisendid ja olukorra, kus score-sisendeid pole üldse.
+- Puuduva SEC-andmestikuga ajutine `0700.HK` watch-positsioon renderdas `/thesis` lehe HTTP 200-ga, kuvas `Kvaliteedi hindamiseks pole skoorisisendeid` ja vastava soft warning'u; positsioon kustutati ning järelkontroll andis 0 rida.
+- Lõplik smoke test pärast build'i ja app'i restarti: `/`, `/scanner`, `/scanner?preset=rklb`, `/watchlist`, `/daily`, `/portfolio`, `/validation`, `/backtest`, `/guide`, `/company/AAPL`, `/company/BW`, `/company/TSM`, `/thesis/12` ja `/thesis/13` vastasid 200; saladuseta `/api/collect` 401.
+- Idempotentsus: identse sisendiga kordus-`/scanner?preset=rklb` taaskasutas sama `rklb` run'i; data-quality kiht ei lisandunud discovery input-hashi ega `discovery_decisions` ridadesse. TEST/QA tickerite arv `companies`, `portfolio_positions` ja `discovery_decisions` tabelis oli 0.
 - CAKE 81/81/100 lükati konkreetse „järgmise RKLB” mandaadi jaoks tagasi; see on päris tõend, et high score tähendab „uuri”, mitte „osta”.
 - Koduarvuti päris DB audit pärast pulli: 27 ettevõtet ja 68 hinnasnapshot'i, kuid ainult 3 ettevõtet SEC finantsfaktide/skooridega ning 1 sector/industry klassifikatsiooniga; 1 discovery run (3 hinnatud, 0 kaasatud), 0 candidate outcome'i, 0 Watchlisti positsiooni ja 0 teesi. See kinnitab, et järgmine faas on katvuse kasvatamine, päris kasutus ja forward-ajaloo kogumine, mitte uute analüüsimoodulite lisamine.
 - Daily pipeline'i päris kordustest: esimene puhas collect skännis 200 rida, salvestas 43 radarikandidaati, SPY hinna ja 5/5 SEC enrichment'i; katvus kasvas 3 → 8 ning `rklb_daily` run #3 salvestas 8 decision-rida.
@@ -382,6 +411,28 @@ npm run build
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-08-11 - Data Freshness + Period Alignment V1
+
+- Tehti research-dokumentide source sanity-check: API viitab Agorale, BW Babcock & Wilcoxile, CAKE Cheesecake Factoryle, HIMS Hims & Hersile ja ACHR Archerile; parandusi ega DB teesi automaatmuudatusi polnud vaja.
+- Lisati eraldi `data-quality-v1` arvutuskiht seitsmele score'i põhimõõdikule koos perioodi, period kind'i, fact-vanuse, fact ID, accession number'i ja SEC algallikaga.
+- Lisati ettevõtte kokkuvõte: newest/oldest period, oldest metric, median age, stale/unknown count ja period span; eraldi Freshness ning Alignment kvalitatiivsed olekud.
+- Company detail näitab täielikku evidence-tabelit, RKLB kandidaadikaart kompaktset warning'ut ja Thesis Builder `Data quality warnings` plokki koos mitteblokeeriva Ready soft warning'uga.
+- Growth, Financial Health, Coverage, catalyst hard gate, RKLB filtrid, universum, DB skeem ja välised andmeallikad jäid muutmata.
+- Deterministlik QA läbis 6/6 juhtu. Päris DB ja brauser kinnitasid BW Coverage 100 + `mixed/poor`, API `fresh/good`, ACHR `fresh/warning` ning TSM ühe metricu puhul ausa `alignment unknown` oleku.
+- Päris kaheksa ettevõtte kontrolli staatused: API `fresh/good`; BW `mixed/poor`; CAKE/HIMS/ACHR/RKLB/AAPL `fresh/warning`; TSM `fresh/unknown`.
+- Lint, typecheck ja production build läbisid. App taaskäivitati; scanner, company detail, Thesis Builder, Validation ja Backtest kontrolliti töötavas runtime'is.
+- Ajutisi DB QA-ridu ei loodud; cleanup-päring andis `companies`, `portfolio_positions` ja `discovery_decisions` TEST/QA tickerite arvuks 0.
+
+### 2026-08-11 - Data Freshness + Period Alignment V1 lõpetamine ja kontroll
+
+- Pooleli jäänud muudatused viidi lõpuni ilma uue funktsionaalsuse lisamiseta; roadmapi ei muudetud.
+- README kirjeldab nüüd Data Freshness + Period Alignment kihti, selle 550/120/730 päeva heuristikaid ja `npm run qa:data-quality` käsku.
+- `npm run check` sisaldab nüüd ka data-quality QA-d, et uus deterministlik test ei jääks aggregate gate'ist välja.
+- Parandati perioodivahe ausus: alla kahe teadaoleva perioodi korral on span `unknown`, mitte 0 päeva. QA laienes 6-lt 7 juhule.
+- Thesis Builderi Ready soft warning viidi ühtsesse eestikeelsesse sõnastusse ja eristab tühja sisendihulga aegunud/joondamata sisenditest.
+- Kontrollid läbisid app-konteineris: lint, typecheck, `qa:data-quality` 7/7 ja production build; pärast build'i taaskäivitati app.
+- Päris runtime kontroll kattis 14 ettevõtte detailvaadet, `/scanner?preset=rklb` viie kandidaadi kaarti, `/thesis/12`–`/thesis/16` ning puuduva SEC-andmestiku empty state'i. Ajutine kontrollpositsioon eemaldati.
 
 ### 2026-08-11 - Viie ettevõtte manual research sprint
 

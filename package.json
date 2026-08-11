@@ -6,7 +6,8 @@
     "dev": "node node_modules/next/dist/bin/next dev",
     "lint": "node node_modules/next/dist/bin/next lint",
     "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
-    "check": "npm run lint && npm run typecheck && npm run build",
+    "qa:data-quality": "node scripts/data-quality-qa.cjs",
+    "check": "npm run lint && npm run typecheck && npm run qa:data-quality && npm run build",
     "build": "node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start"
   },

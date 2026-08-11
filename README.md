@@ -13,6 +13,7 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 - Tasuta modulaarse signaalimootoriga Research Brief ettevõtte hinnamuutustest, finantsidest, katalüsaatoritest ja riskidest koos allikaviidetega.
 - Läbipaistvad 0–100 Growth ja Financial Health skoorid koos komponentide, kaalude ja andmekattega; fundamentaalne edetabel on mõlema skoori järgi sorditav.
 - Eraldi Coverage Score ning versioonitud score-snapshotid: iga tulemus säilitab kasutatud SEC fact ID-d, perioodid, komponendid ja input-hashi.
+- Coverage'ist eraldi Data Freshness + Period Alignment plokk näitab iga score-sisendi perioodi, perioodiliiki, vanust, SEC fact ID-d ja algallikat ning eraldi `fresh/mixed/stale/unknown` ja `good/warning/poor/unknown` olekuid; skoore ega filtreid see ei muuda.
 - Watchlist kasutab olemasolevat portfelli `watch` staatust ning aitab Growth, Financial Health ja Coverage skooride järgi uusi uurimisideid leida.
 - Thesis Builder loob Watchlisti ideest struktureeritud ja versioonitud teesi, seob selle otsuse hetke skoorisnapshotiga ning näitab Growthi ja Financial Healthi kolme peamist põhjust.
 - Watchlist ja Daily Changes võrdlevad järjestikuseid sama mudeliversiooni score-snapshot'e ning näitavad olulise muutuse korral skoorid, muutunud komponendid ja täpsed snapshot'i viited.
@@ -82,8 +83,11 @@ Yahoo Finance, ApeWisdom ja Tradestie ei vaja selles prototüübis API-võtit, k
 ```bash
 npm run lint
 npm run typecheck
+npm run qa:data-quality
 npm run build
 ```
+
+`npm run check` käivitab kõik neli järjest.
 
 ## Praegused piirid
 
@@ -91,6 +95,7 @@ npm run build
 - Uudise pealkirja märksõna on ainult ülevaatuse signaal, mitte faktihinnang.
 - SEC CompanyFacts ei ühtlusta kõigi emitentide XBRL tage täielikult; puuduv näitaja kuvatakse tühja olekuna. Free cash flow on rakenduses tuletatud kui operating cash flow miinus capital expenditure.
 - Growth Score kaalub revenue, net income’i, operating cash flow ja free cash flow aastamuutusi. Financial Health kaalub rahavoogude kvaliteeti, cash/debt suhet, kasumlikkust ja aktsiate arvu muutust. Mõlemad on uurimisfiltrid, mitte investeerimissoovitused.
+- Data Freshness + Period Alignment on eraldi kvalitatiivne integrity-kiht, mitte skoor: V1 loeb üle 550 päeva vana fakti stale sisendiks, kuni 120-päevast perioodivahet joondatuks ja üle 730-päevast vahet halvasti võrreldavaks. Need läved on läbipaistvad heuristikad ja vajavad päris näidete põhjal kalibreerimist.
 - Coverage Score on Growth ja Financial Health mudelite kaalutud sisendikatte keskmine. Growth/Health edetabelites kuvatakse vähemalt 70 coverage ettevõtted enne madalama kattega tulemusi, et üksiku komponendi kõrge skoor ei oleks eksitav.
 - Score-mudeli versioon on salvestatud iga snapshotiga. Valemi muutmisel tuleb versiooni tõsta, et eri valemitega tulemusi ei võrreldaks vaikimisi sama ajaloona.
 - Rakendus ei sisalda optsioonianalüüsi, ajaloolist ümbervalikut ega automaatset kauplemist.
