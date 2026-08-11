@@ -131,24 +131,26 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**Catalyst/Freshness hüpoteesiauditi järel päris manual research sprint.**
+**Manual research sprint on tehtud; järgmine soovituslik integrity-töö on Data Freshness + Period Alignment.**
 
-`docs/FUNNEL_AUDIT.md` read-only audit näitas, et suurim vahetu bottleneck ei ole scheduler ega cloud DB, vaid radari sisenduniversumi ja otsustusfunneli tõendamata kvaliteet. Viimases püsivas snapshot'is oli 42 tickerit, neist 10-l SEC/score andmed, canonical jooks hindas radari seest viit ja kaasas null. Enne infra- või filtriarendust tuleb viia läbi päris research cohort: API, BW, CAKE, HIMS ja ACHR; vähemalt kolm teesi peavad jõudma ausa `draft`/`researching`/`rejected` otsuseni.
+`docs/FUNNEL_AUDIT.md` read-only audit näitas, et suurim vahetu bottleneck ei ole scheduler ega cloud DB, vaid radari sisenduniversumi ja otsustusfunneli tõendamata kvaliteet. Selle järel tehtud [`docs/RESEARCH_SPRINT_2026-08-11.md`](RESEARCH_SPRINT_2026-08-11.md) manual cohort andis päris Thesis Builderi otsused: API `ready`, BW ja HIMS `researching`, CAKE ja ACHR `rejected`. `ready` tähendab kaitstavat ning falsifitseeritavat teesi, mitte ostusoovitust.
 
-Järelaudit näitas, et catalyst hard gate'i eemaldamisel läbiks tänaste salvestatud score'idega muud baasfiltrid BW, CAKE, API, HR ja PLUG. Esimesed kolm on võimalikud research false-negative'id, HR/PLUG näitavad, et gate blokeerib ka küsitavaid nimesid ega erista nende kvaliteeti. Coverage on praegu completeness/presence: 60 olemasolevast core metricust kaks olid üle kahe aasta vanad, sh BW Coverage 100 juures 2021 debt. Manual research tuleb teha esimesena; seejärel on soovituslik esimene integrity-kiht eraldi Freshness + Period Alignment ning alles siis catalyst'i muutmine hard gate'ist evidence field'iks.
+Sprint kinnitas kaks hüpoteesi. Catalyst hard gate tekitas research false negative'e: BW-l oli päris Q2/backlog/Base Electron catalyst ning CAKE-l earnings/comparable-sales/unit-opening evidence, kuigi collector märkis catalyst'i puuduvaks. Coverage on endiselt completeness/presence: BW 100 koos 2021 debt'iga moonutas Healthi ning HIMS näitas orgaanilise ja omandatud kasvu period/alignment probleemi. Järgmine soovituslik töö on eraldi Freshness + Period Alignment; pärast seda tuleb catalyst muuta hard gate'ist structured evidence field'iks.
 
 ## Roadmap
 
 ### NOW - järgmine arendustükk
 
-Manual research sprint olemasoleva funnel'i falsifitseerimiseks:
+Data Freshness + Period Alignment integrity layer enne funnel'i recall'i laiendamist:
 
-- kontrolli primaarallikatest API, BW, CAKE, HIMS ja ACHR business, current financials, dilution, moat, catalyst ning valuation/mispricing evidence;
-- kasuta `docs/FUNNEL_AUDIT.md` kolme thesis seed'i ainult algmustandina; teadmata väited peavad jääma hüpoteesiks;
-- salvesta vähemalt üks `researching`, üks põhjendatud `rejected` ja võimaluse korral üks nõuded läbiv `ready` tees;
-- dokumenteeri, kas kandidaat lagunes universumi müra, SEC-andmekvaliteedi, katalüsaatori gate'i, valuation'i või kvalitatiivse business evidence'i tõttu;
-- ära muuda enne seda score-valemit, filtreid, universumit, API-sid, UI-d ega cloud-infrastruktuuri;
-- pärast sprinti otsusta tõendite põhjal: kui nimed olid sisuliselt nõrgad, muuda universe/funnel; kui head nimed blokeerusid mehaaniliselt, kalibreeri gate'e; kui cohort on usutav, alusta canonical infrastruktuuriga.
+- jäta praegune Coverage Score completeness/presence mõõdikuks; ära muuda selle tähendust vaikimisi;
+- lisa eraldi freshness iga score-inputi economic period'i jaoks ning näita stale sisendit selgelt;
+- vali flow- ja balance-sheet mõõdikutele eraldi värskusaknad;
+- arvuta ettevõtte reporting anchor ja hoiata, kui cash/debt või muud samas komponendis kasutatud faktid pärinevad eri majandusperioodidest;
+- säilita fact ID, period, filed date ja score-version point-in-time snapshot'is;
+- ära muuda veel score-punkte automaatselt enne, kui stale/alignment reeglid on eraldi auditeeritud;
+- pärast integrity-kihti muuda catalyst hard gate structured evidence field'iks: materiality, suund, allikas, uudsus ja thesis-relevance;
+- jätka viie päris teesi 12 kuu checkpoint'ide jälgimist; ära kustuta neid integration-test andmetena.
 
 Auditi järel ootel collection reliability ja canonical cloud-history:
 
@@ -341,6 +343,12 @@ npm run build
 - `npm run build`: läbib; uus dünaamiline route `/thesis/[positionId]` on buildis.
 - `docker compose up --build -d`: app, db ja scheduler töötavad; db on healthy.
 - Pärast tööarvuti commit'i `1454157` koduarvutisse fast-forward pullimist vastasid `/scanner?preset=rklb`, `/validation`, `/backtest`, `/guide` ja `/company/AAPL` HTTP 200; app, db ja scheduler töötasid ning db oli healthy.
+- Manual research sprint kontrolliti päris in-app brauseris: `/portfolio`, viis `/thesis/[positionId]` vaadet ja `/watchlist` renderdusid töötavas rakenduses.
+- Watchlisti lisati päris research-kirjetena API, BW, CAKE, HIMS ja ACHR koguse/avg cost'iga 0; need ei kuulu portfelli koguväärtusse ega ole ajutised integration-test read.
+- PostgreSQL-is säilis iga viie tickeri esialgne draft ja sisuline lõppversioon. Current staatused: API `ready`, BW/HIMS `researching`, CAKE/ACHR `rejected`; API, BW, CAKE, HIMS ja lõplik ACHR teesiotsus on seotud point-in-time score snapshot'iga.
+- ACHR Thesis Builderi avamine rikastas olemasoleva SEC CompanyFactsi allika kaudu 173 fakti ning lõi snapshot'i #111 skooridega Growth 1, Health 30, Coverage 75; rejected-tees salvestati uuesti selle snapshot'i seosega.
+- BW primary-source kontroll kinnitas, et Coverage 100 ei tähenda freshness'it: äpi Health kasutas 2026 cash'i koos 2021 debt'iga. Q2 release näitas samal ajal päris backlog/Base Electron catalyst'it, mida collector ei tuvastanud.
+- CAKE 81/81/100 lükati konkreetse „järgmise RKLB” mandaadi jaoks tagasi; see on päris tõend, et high score tähendab „uuri”, mitte „osta”.
 - Koduarvuti päris DB audit pärast pulli: 27 ettevõtet ja 68 hinnasnapshot'i, kuid ainult 3 ettevõtet SEC finantsfaktide/skooridega ning 1 sector/industry klassifikatsiooniga; 1 discovery run (3 hinnatud, 0 kaasatud), 0 candidate outcome'i, 0 Watchlisti positsiooni ja 0 teesi. See kinnitab, et järgmine faas on katvuse kasvatamine, päris kasutus ja forward-ajaloo kogumine, mitte uute analüüsimoodulite lisamine.
 - Daily pipeline'i päris kordustest: esimene puhas collect skännis 200 rida, salvestas 43 radarikandidaati, SPY hinna ja 5/5 SEC enrichment'i; katvus kasvas 3 → 8 ning `rklb_daily` run #3 salvestas 8 decision-rida.
 - Sama päeva teine collect rikastas veel testimise käigus viis päris ettevõtet (katvus 8 → 13), kuid taaskasutas run #3 ja märkis muutunud hilisema sisendi. Pärast päevase eelarve karmistamist tegi järgmine kordus 0 SEC katset, jättis katvuse 13/41 ja canonical run'ide arvu üheks.
@@ -374,6 +382,17 @@ npm run build
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-08-11 - Viie ettevõtte manual research sprint
+
+- Kontrolliti API, BW, CAKE, HIMS ja ACHR olemasolevaid score'e, SEC CompanyFactsi fakte ning ettevõtete SEC/IR primaarallikaid.
+- Loodi viiele tickerile koguseta Watchlisti research-kirjed ja versioonitud Thesis Builderi otsused: API `ready`, BW/HIMS `researching`, CAKE/ACHR `rejected`.
+- Iga tees sisaldab business'i, why now, moat- ja mispricing-hüpoteesi, catalyst'i, riske, invalidation'it ning mõõdetavat 12 kuu kontrollpunkti.
+- API jõudis ready staatusesse kasumlikkuse pöörde, likviidsuse, ADS buyback'i ja conversational AI mõõdetava kombinatsiooni tõttu; see ei ole ostusoovitus.
+- CAKE ja ACHR rejection'id säästsid edasist research-aega eri põhjustel: esimene ei sobinud asümmeetria mandaadiga, teine ei tõendanud commercial economics'it.
+- BW ja CAKE kinnitasid catalyst hard gate'i research false-negative riski. BW ja HIMS kinnitasid Freshness/Period Alignment vajadust.
+- Koodi, UI-d, filtreid, score-valemeid, catalyst-reegleid, Coverage Score'i, universumit, välist API-t ega infrastruktuuri ei muudetud.
+- Detailne allikapõhine tulemus ja järgmine tootesoovitus on failis `docs/RESEARCH_SPRINT_2026-08-11.md`.
 
 ### 2026-08-11 – Thesis Builder V1
 
