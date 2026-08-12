@@ -7,10 +7,21 @@ import { pool } from '../../src/lib/db';
 //      dedupe'i, mis neelaks fixture'i read vaikselt alla ja test mõõdaks
 //      hoopis midagi muud.
 
-export async function insertCompany(ticker: string, name?: string): Promise<number> {
+export interface CompanyOptions {
+  name?: string;
+  // `quote_type = 'ETF'` välistatakse enrichment-universumist
+  // (company-financials.ts:558). Vaikimisi NULL, mis läbib filtri.
+  quoteType?: string | null;
+}
+
+export async function insertCompany(
+  ticker: string,
+  options: CompanyOptions = {},
+): Promise<number> {
   const { rows } = await pool.query(
-    `INSERT INTO companies (ticker, name, source) VALUES ($1, $2, 'test') RETURNING id`,
-    [ticker, name ?? `${ticker} Inc.`],
+    `INSERT INTO companies (ticker, name, source, quote_type)
+     VALUES ($1, $2, 'test', $3) RETURNING id`,
+    [ticker, options.name ?? `${ticker} Inc.`, options.quoteType ?? null],
   );
   return Number(rows[0].id);
 }
