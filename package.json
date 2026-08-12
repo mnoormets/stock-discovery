@@ -10,7 +10,8 @@
     "qa:catalyst": "node scripts/catalyst-evidence-qa.cjs",
     "qa:frequency": "node scripts/discovery-frequency-qa.cjs",
     "qa:valuation": "node scripts/valuation-evidence-qa.cjs",
-    "check": "npm run lint && npm run typecheck && npm run qa:data-quality && npm run qa:catalyst && npm run qa:frequency && npm run qa:valuation && npm run build",
+    "qa:under-recognition": "node scripts/under-recognition-qa.cjs",
+    "check": "npm run lint && npm run typecheck && npm run qa:data-quality && npm run qa:catalyst && npm run qa:frequency && npm run qa:valuation && npm run qa:under-recognition && npm run build",
     "build": "node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start"
   },
