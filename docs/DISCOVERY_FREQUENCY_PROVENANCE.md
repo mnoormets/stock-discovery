@@ -1,7 +1,7 @@
 # Discovery Frequency & Run Provenance — disain
 
 Kuupäev: 2026-08-12
-Staatus: **osaliselt ehitatud 2026-08-12.** Ehitatud: samm 2 (canonical-only aggregation layer, § 5) ja Discovery Frequency V1 (§ 3). `/validation` ja `/backtest` koondstatistika ning `/frequency` kasutavad ainult `run_type = 'rklb_daily'` jooksu; skeemi ei muudetud, migratsiooni ei tehtud, ajaloolisi outcome'e ei puudutatud (Tase 0 päringufilter olemasoleva `run_type` kaudu). **Veel ehitamata (teadlikult):** samm 1 — manual scanner loob endiselt `candidate_outcomes` ridu; step 3 — `counts_for_stats` veergu ei lisatud. Need jäävad eraldi otsuseks; senikaua tugineb korrektsus read-side filtrile.
+Staatus: **sammud 1 ja 2 ehitatud 2026-08-12.** Ehitatud: samm 1 (manual scanner ei loo enam `candidate_outcomes` ridu, § 5.1) + samm 2 (canonical-only aggregation layer, § 5.2) + Discovery Frequency V1 (§ 3). `/validation`, `/backtest` koondstatistika ja `/frequency` kasutavad ainult `run_type = 'rklb_daily'` jooksu; ja alates sammust 1 tekivad outcome-read kirjutamise poolel ainult canonical run'idest. Skeemi ei muudetud, migratsiooni ei tehtud, ajaloolisi outcome'e ei puudutatud ega kustutatud. **Veel ehitamata (teadlikult):** samm 3 — `counts_for_stats` veergu ei lisatud (read-side filter piisab, kuni ilmneb vajadus indekseeritava lipu järele).
 
 Alus: `discovery_runs` / `discovery_decisions` / `candidate_outcomes` olemasolev skeem ([`db/init.sql`](../db/init.sql), runtime `ensureSchema()` [`src/lib/db.ts`](../src/lib/db.ts)), Discovery Decision Snapshot + Validation Framework ja Backtest V1 juba salvestatud ajalugu, ning HANDOFF-i frequency-eeltingimused. Uusi andmeallikaid ega väliseid provider'eid ei eeldata.
 
@@ -81,18 +81,18 @@ Reegel ühe lausega: **kuva kõike, agregeeri ainult canonical'i.**
 
 ## 5. Soovitatud migration path
 
-Kolm sammu, väikseima ajaloolise kahjuga esimesena. **Käesolev dokument ei teosta ühtki neist — need on ehitamisplaan hilisemaks otsuseks.**
+Kolm sammu, väikseima ajaloolise kahjuga esimesena.
 
-1. **Peata manual scannerist outcome-ridade loomine (käitumismuudatus, mitte skeem).**
-   Outcome-ridu (`candidate_outcomes`) luuakse ainult siis, kui run on canonical. Manual scanner võib jätkata `discovery_runs` + `discovery_decisions` salvestamist auditijäljena, aga ei loo enam forward-mõõtmise lubadusi. See peatab suhte 180:25 edasise halvenemise juures allikas.
+1. **[EHITATUD 2026-08-12] Peata manual scannerist outcome-ridade loomine (käitumismuudatus, mitte skeem).**
+   `recordDiscoveryRun` loob `candidate_outcomes` ridu ainult siis, kui `runType === CANONICAL_RUN_TYPE` (`rklb_daily`). Manual scanner (`rklb`) jätkab `discovery_runs` + `discovery_decisions` salvestamist auditijäljena, aga ei loo enam forward-mõõtmise ridu. Ükski olemasolev outcome ei muutunud, ühtki ajaloolist rida ei kustutatud, migratsiooni ega backfilli ei tehtud. Runtime-kontroll kinnitas: manual included-otsus → 1 decision, 0 outcome; canonical → 1 decision, 5 outcome.
 
-2. **Filtreeri kõik koond-/sagedusvaated canonical'ile (päringukiht).**
-   `/validation`, `/backtest` ja tulevane frequency agregeerivad ainult `run_type = 'rklb_daily'` (või § 6 lipp). Tase 0 ei nõua skeemimuudatust — piir jõustatakse olemasoleva `run_type` JOIN-i kaudu.
+2. **[EHITATUD 2026-08-12] Filtreeri kõik koond-/sagedusvaated canonical'ile (päringukiht).**
+   `/validation`, `/backtest` ja `/frequency` agregeerivad ainult `run_type = 'rklb_daily'`. Tase 0 ei nõua skeemimuudatust — piir jõustatakse olemasoleva `run_type` JOIN-i kaudu.
 
-3. **Lisa tuletatud klassifikatsioonilipp indekseeritavaks piiriks (§ 6).**
-   Valikuline robustsuse samm, mis muudab filtri unustamise raskeks.
+3. **[EI EHITATUD] Lisa tuletatud klassifikatsioonilipp indekseeritavaks piiriks (§ 6).**
+   Valikuline robustsuse samm, mis muudab filtri unustamise raskeks. Sammudega 1+2 pole see enam kriitiline, sest saaste on nüüd nii kirjutamise (samm 1) kui lugemise (samm 2) poolel tõkestatud.
 
-Migratsiooni järjekord on tahtlik: samm 1 sulgeb saasteallika, samm 2 parandab olemasoleva statistika korrektsuse ilma andmeid puutumata, samm 3 kõvendab tuleviku vastu.
+Migratsiooni järjekord oli tahtlik: samm 1 sulgeb saasteallika kirjutamise poolel, samm 2 parandab olemasoleva statistika korrektsuse ilma andmeid puutumata, samm 3 (tegemata) kõvendaks tuleviku vastu.
 
 ## 6. `counts_for_stats` ettepanek
 
