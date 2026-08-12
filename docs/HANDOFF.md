@@ -384,6 +384,40 @@ npm run build
 
 `npm run check` käivitab sama järjekorra ühe käsuga.
 
+## Lokaalne päevane collect (CLI)
+
+Lokaalne alternatiiv Dockeri `scheduler` teenusele, mis töötab ainult siis, kui kogu stack on 08:00 Tallinna aja seisuga püsti. CLI kutsub **täpselt sama ahelat nagu `/api/collect`** (`runCollection` → SPY benchmark → SEC enrichment → classification enrichment → canonical discovery → `refreshCandidateOutcomes`) ega dubleeri ärilogikat. Vajab ainult töötavat DB-d (`docker compose up -d db`).
+
+```bash
+npm run collect:status
+```
+
+```bash
+npm run collect:daily -- --dry-run
+```
+
+```bash
+npm run collect:daily
+```
+
+- `collect:status` on **ainult lugev** eligibility-raport (canonical run'id, included otsused ilma outcome'ita, pending/measurable/measured/missing, SPY kate, SEC kate).
+- `--dry-run` on **konservatiivne**: teeb preflight'i ja näitab plaani, kuid **ei kutsu ühtegi kirjutavat funktsiooni** — ridu ei lisata.
+- Kogu job on kaitstud Postgres **advisory lock**'iga (`pg_try_advisory_lock`): teine samaaegne collect lõpetab puhtalt, ilma teist jooksu alustamata.
+- **Idempotentne:** sama Tallinna päeva teine jooks taaskasutab canonical run'i (`runReused`), ei loo teist canonical `discovery_run`'i ega dubleeri `candidate_outcomes` ridu.
+
+Windows Task Scheduler (asenda tee enda omaga):
+
+```bash
+schtasks /Create /TN "StockDiscoveryDailyCollect" /SC DAILY /ST 08:05 /TR "powershell -NoProfile -ExecutionPolicy Bypass -Command cd 'D:\stock-discovery'; npm run collect:daily"
+```
+
+Piirangud, mida tuleb teadvustada:
+
+- **Ei garanteeri igapäevast kadentsi** — kui masin on välja lülitatud, jääb päev vahele. Katkematut järjepidevust annaks ainult alati-püsti keskne DB + pilve-scheduler, mis on **teadlikult skoobist väljas** (Neon ja GitHub Actions ei kuulu praegusesse töösse).
+- Canonical run on **Tallinna kuupäeva** põhine (`run_key = mudeliversioon:rklb_daily:Tallinna kuupäev`).
+- 08:00 Tallinna aja jooks kasutab tõenäoliselt **eelmise USA kauplemispäeva sulgemishinda** — otsusehind on seega eelmine close, mitte jooksva päeva oma.
+- Nädalavahetuse või püha jooks ankurdub **viimasele turupäevale**; kalendripäev loeb frequency-seerias, kuigi turg ei liikunud.
+
 ## Testimise põhimõtted
 
 - Ära raporteeri funktsiooni valmis enne päris runtime'i ja DB kontrolli.

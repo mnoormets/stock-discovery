@@ -11,6 +11,8 @@
     "qa:frequency": "node scripts/discovery-frequency-qa.cjs",
     "qa:valuation": "node scripts/valuation-evidence-qa.cjs",
     "qa:under-recognition": "node scripts/under-recognition-qa.cjs",
+    "collect:daily": "node scripts/collect-daily.cjs",
+    "collect:status": "node scripts/collect-status.cjs",
     "check": "npm run lint && npm run typecheck && npm run qa:data-quality && npm run qa:catalyst && npm run qa:frequency && npm run qa:valuation && npm run qa:under-recognition && npm run build",
     "build": "node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start"
