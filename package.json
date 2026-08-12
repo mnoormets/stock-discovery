@@ -13,6 +13,8 @@
     "qa:under-recognition": "node scripts/under-recognition-qa.cjs",
     "collect:daily": "node scripts/collect-daily.cjs",
     "collect:status": "node scripts/collect-status.cjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "check": "npm run lint && npm run typecheck && npm run qa:data-quality && npm run qa:catalyst && npm run qa:frequency && npm run qa:valuation && npm run qa:under-recognition && npm run build",
     "build": "node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start"
@@ -30,6 +32,7 @@
     "@types/react": "18.3.3",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.35",
-    "typescript": "5.5.3"
+    "typescript": "5.5.3",
+    "vitest": "^4.1.10"
   }
 }
