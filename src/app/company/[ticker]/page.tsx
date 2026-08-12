@@ -10,7 +10,9 @@ import { normalizeTicker } from '@/lib/investment';
 import { getSectorRelativeStats } from '@/lib/sector-relative';
 import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
 import DataQualityEvidence from '@/components/DataQualityEvidence';
+import ValuationEvidence from '@/components/ValuationEvidence';
 import { calculateDataQuality } from '@/lib/data-quality';
+import { buildValuationEvidence } from '@/lib/valuation-evidence';
 
 export const dynamic = 'force-dynamic';
 
@@ -151,6 +153,7 @@ export default async function CompanyPage({ params }: { params: { ticker: string
   });
   const scores = calculateCompanyScores(financials);
   const dataQuality = calculateDataQuality(financials);
+  const valuationEvidence = buildValuationEvidence(financials, quote.marketCap ?? null);
   const trackedScores = await getTrackedCompanyScores(ticker, financials).catch((error) => {
     console.error(`Ettevõtte ${ticker} skooriajalugu ei õnnestunud laadida:`, error);
     return { current: null, previous: null, history: [] };
@@ -248,6 +251,13 @@ export default async function CompanyPage({ params }: { params: { ticker: string
             <p className="muted financialNote">YoY võrdleb sama tüüpi ja sarnase pikkusega perioodi aasta varasemaga. Free cash flow = operating cash flow − capital expenditure; debt võib olla SEC-i komponentidest tuletatud.</p>
           </>
         )}
+      </section>
+
+      <section className="section">
+        <div className="sectionHeading">
+          <div><p className="eyebrow">VALUATION EVIDENCE · NOT A SCORE</p><h2>Mille vastu ma seda hinnastan?</h2></div>
+        </div>
+        <ValuationEvidence evidence={valuationEvidence} />
       </section>
 
       <section className="section">

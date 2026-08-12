@@ -7,6 +7,7 @@ import { getSectorRelativeStatsMap, type SectorRelativeStats } from './sector-re
 import { calculateDataQuality, type DataQualitySummary } from './data-quality';
 import { getCatalystEvidenceMap } from './catalyst-events';
 import type { CatalystEvidence } from './catalyst-evidence';
+import { buildValuationEvidence, type ValuationEvidenceSummary } from './valuation-evidence';
 import {
   recordDiscoveryRun,
   type DiscoveryDecisionInput,
@@ -44,6 +45,7 @@ export interface RklbCandidate {
   sectorRelative: SectorRelativeStats;
   dataQuality: DataQualitySummary;
   catalystEvidence: CatalystEvidence;
+  valuationEvidence: ValuationEvidenceSummary;
 }
 
 export interface RklbDiscoveryResult {
@@ -403,6 +405,7 @@ export async function getRklbDiscoveryCandidates(
     sectorRelative: item.sectorRelative,
     dataQuality: item.dataQuality,
     catalystEvidence: item.catalystEvidence,
+    valuationEvidence: buildValuationEvidence(item.financials, item.evidence.marketCap),
   }));
 
   return {
