@@ -2,6 +2,7 @@ import { ensureSchema, pool, saveFundamentalsSnapshot } from './db';
 import { fetchFmpFundamentals } from './fmp';
 import { fetchFundamentals } from './yahoo';
 import {
+  CANONICAL_RUN_TYPE,
   DEFAULT_BENCHMARK_SYMBOL,
   OUTCOME_HORIZONS,
   refreshCandidateOutcomes,
@@ -62,6 +63,9 @@ export interface BacktestRun {
 export interface BacktestDashboard {
   benchmarkSymbol: string;
   totalRuns: number;
+  // Koondnäitajad põhinevad ainult canonical run'idel; totalRuns jääb kõigi
+  // salvestatud jooksude auditiloenduriks.
+  canonicalRuns: number;
   hasMeasuredOutcomes: boolean;
   provenance: RunProvenanceUsage[];
   horizons: BacktestHorizonStats[];
@@ -111,24 +115,29 @@ export async function collectDefaultBenchmarkPrice(): Promise<boolean> {
 export async function getBacktestDashboard(): Promise<BacktestDashboard> {
   await ensureSchema();
   await refreshCandidateOutcomes();
-  const [countRows, provenanceRows, runRows, outcomeRows] = await Promise.all([
+  const [countRows, canonicalCountRows, provenanceRows, runRows, outcomeRows] = await Promise.all([
     pool.query(`SELECT count(*)::int AS total FROM discovery_runs`),
+    pool.query(`SELECT count(*)::int AS total FROM discovery_runs WHERE run_type = $1`, [CANONICAL_RUN_TYPE]),
     pool.query(
       `SELECT model_version, run_type, count(*)::int AS runs,
               COALESCE(sum(included_count), 0)::int AS candidates
        FROM discovery_runs GROUP BY model_version, run_type
        ORDER BY model_version DESC, run_type`,
     ),
+    // Run-level detail (audit) kuvab kõiki run'e, sh käsitsi scanneri jooksu.
     pool.query(
       `SELECT id, run_at, model_version, evaluated_count, included_count
        FROM discovery_runs ORDER BY run_at DESC, id DESC LIMIT 20`,
     ),
+    // Koondnäitajad loevad ainult canonical run'e (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 4).
     pool.query(
       `SELECT r.id AS run_id, d.ticker, o.horizon, o.status, o.return_percent,
               o.benchmark_status, o.benchmark_return_percent, o.excess_return_percent
        FROM candidate_outcomes o
        JOIN discovery_decisions d ON d.id = o.decision_id AND d.included = true
-       JOIN discovery_runs r ON r.id = d.run_id`,
+       JOIN discovery_runs r ON r.id = d.run_id
+       WHERE r.run_type = $1`,
+      [CANONICAL_RUN_TYPE],
     ),
   ]);
 
@@ -154,6 +163,7 @@ export async function getBacktestDashboard(): Promise<BacktestDashboard> {
       )
     : { rows: [] as Record<string, unknown>[] };
   const totalRuns = Number(countRows.rows[0]?.total || 0);
+  const canonicalRuns = Number(canonicalCountRows.rows[0]?.total || 0);
   const horizons = OUTCOME_HORIZONS.map((horizon): BacktestHorizonStats => {
     const rows = outcomeRows.rows.filter((row) => row.horizon === horizon);
     const measured = rows.filter((row) => row.status === 'measured' && row.return_percent != null);
@@ -169,7 +179,7 @@ export async function getBacktestDashboard(): Promise<BacktestDashboard> {
       .sort((a, b) => b.returnPercent - a.returnPercent);
     return {
       horizon,
-      runCount: totalRuns,
+      runCount: canonicalRuns,
       candidateCount: rows.length,
       measuredCount: measured.length,
       averageReturn: returns.length ? returns.reduce((sum, value) => sum + value, 0) / returns.length : null,
@@ -227,6 +237,7 @@ export async function getBacktestDashboard(): Promise<BacktestDashboard> {
   return {
     benchmarkSymbol: DEFAULT_BENCHMARK_SYMBOL,
     totalRuns,
+    canonicalRuns,
     hasMeasuredOutcomes: horizons.some((horizon) => horizon.measuredCount > 0),
     provenance: provenanceRows.rows.map((row) => ({
       modelVersion: String(row.model_version),

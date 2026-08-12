@@ -383,3 +383,10 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .watchAdd form { flex-direction: column; }
   .thesisBuilderLink { align-items: flex-start; flex-direction: column; }
 }
+
+/* Discovery Frequency V1 timeline */
+.frequencyTimeline { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.frequencyCell { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 5px; border: 1px solid var(--border); background: #101a29; font-size: 12px; line-height: 1; }
+.frequencyCell.included { color: var(--green); border-color: #285d40; background: #10251a; }
+.frequencyCell.excluded { color: var(--amber); border-color: #69562a; }
+.frequencyCell.absent { color: var(--muted); opacity: .6; }
