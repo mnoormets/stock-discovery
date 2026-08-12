@@ -8,7 +8,10 @@ import { getThesisWorkspace, type ThesisStatus, type ThesisVersion } from '@/lib
 import { getSectorRelativeStats } from '@/lib/sector-relative';
 import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
 import DataQualityEvidence from '@/components/DataQualityEvidence';
+import ValuationEvidence from '@/components/ValuationEvidence';
 import { calculateDataQuality, hasDataQualityWarning } from '@/lib/data-quality';
+import { buildValuationEvidence } from '@/lib/valuation-evidence';
+import { getCompanyResearchDbFirst } from '@/lib/company-research-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,9 +83,13 @@ export default async function ThesisPage({
   if (!workspace) notFound();
 
   const financials = await getCompanyFinancialsDbFirst(workspace.ticker).catch(() => null);
+  const marketCap = await getCompanyResearchDbFirst(workspace.ticker)
+    .then((research) => research?.quote.marketCap ?? null)
+    .catch(() => null);
   const scores = calculateCompanyScores(financials);
   const dataQuality = calculateDataQuality(financials);
   const dataQualityWarning = hasDataQualityWarning(dataQuality);
+  const valuationEvidence = buildValuationEvidence(financials, marketCap);
   const tracked = await getTrackedCompanyScores(workspace.ticker, financials).catch(() => ({ current: null, previous: null, history: [] }));
   const sectorRelative = await getSectorRelativeStats(workspace.ticker).catch(() => null);
   const thesis = workspace.current || emptyThesis;
@@ -108,6 +115,7 @@ export default async function ThesisPage({
           <article className="card thesisEvidenceCard"><div className="thesisEvidenceTop"><div><span className="evidenceType">ANDMEKATE</span><h3>Coverage Score</h3></div><strong>{scores.coverage.score}<small>/100</small></strong></div><p>{scores.coverage.label}. Madal coverage tähendab, et tugevat üksikkomponenti ei tohi käsitleda täieliku pildina.</p></article>
         </div>
         <DataQualityEvidence summary={dataQuality} title="Data quality warnings" />
+        <ValuationEvidence evidence={valuationEvidence} title="Valuation evidence" />
         <SectorRelativeEvidence stats={sectorRelative} title="Sector-relative evidence" showInterpretation />
       </section>
 

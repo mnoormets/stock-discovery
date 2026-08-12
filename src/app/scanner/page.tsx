@@ -6,6 +6,7 @@ import { addDiscoveryWatchlistAction, startDiscoveryThesisAction } from './actio
 import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
 import DataQualityEvidence from '@/components/DataQualityEvidence';
 import CatalystEvidence from '@/components/CatalystEvidence';
+import ValuationEvidence from '@/components/ValuationEvidence';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,6 +86,7 @@ function CandidateCard({ candidate }: { candidate: RklbCandidate }) {
       <div className="candidateMarketMeta"><span>Hind: {candidate.price == null ? 'puudub' : compactMoney(candidate.price, candidate.currency || 'USD')}</span><span>Market cap: {compactMoney(candidate.marketCap, candidate.currency || 'USD')}</span><span>Snapshot: {candidate.scoreVersion || 'versioon puudub'} · #{candidate.scoreSnapshotId || '—'}</span></div>
       <CatalystEvidence evidence={candidate.catalystEvidence} title="Kandidaadi catalyst evidence" />
       <DataQualityEvidence summary={candidate.dataQuality} title="Kandidaadi andmekvaliteet" compact />
+      <ValuationEvidence evidence={candidate.valuationEvidence} title="Kandidaadi valuation evidence" compact />
       <SectorRelativeEvidence stats={candidate.sectorRelative} />
       <div className="criteriaGrid">{candidate.criteria.map((criterion) => (
         <div className={`criterion ${criterion.status}`} key={criterion.id}><span>{criterion.status}</span><strong>{criterion.label}</strong><p>{criterion.detail}</p></div>

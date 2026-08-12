@@ -365,12 +365,39 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .catalystOffMandate { margin: 0; padding: 11px 14px; border: 1px solid #75602e; border-radius: 9px; background: rgba(240,191,91,.06); font-size: 12px; }
 .writeOnReadNote { margin: 0 0 4px; padding: 10px 13px; border: 1px dashed var(--border); border-radius: 9px; font-size: 12px; }
 .provenanceNote { margin: 6px 0 0; font-size: 12px; }
+
+/* Valuation Evidence V1 — evidence layer, mitte skoor */
+.valuationEvidence { display: grid; gap: 12px; border-left: 3px solid #5f7d8d; padding: 16px; }
+.valuationTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.valuationTop h3 { margin: 3px 0 0; }
+.valuationQuestion { margin: 0; font-size: 12px; }
+.valuationBadge { border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+.valuationBadge.computable { color: var(--green); border-color: #2f7049; }
+.valuationBadge.not_meaningful { color: var(--amber); border-color: #75602e; }
+.valuationBadge.insufficient_data { color: var(--muted); border-style: dashed; }
+.valuationBadge.unknown { color: var(--muted); border-style: dashed; }
+.valuationConfidence { border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; font-style: normal; white-space: nowrap; }
+.valuationConfidence.high { color: var(--green); border-color: #2f7049; }
+.valuationConfidence.medium { color: var(--amber); border-color: #75602e; }
+.valuationConfidence.low { color: var(--red); border-color: #7a3939; }
+.valuationConfidence.unknown { color: var(--muted); }
+.valuationTable small, .valuationTable td > * { display: block; }
+.valuationTable small { margin-top: 3px; color: var(--muted); }
+.valuationTable td strong small { display: inline-block; margin: 4px 0 0; }
+.valuationSource { margin-top: 6px; }
+.valuationSource:first-child { margin-top: 0; }
+.valuationDimensions { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.valuationDimensions span { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 11px; }
+.valuationDimensions strong { display: block; margin-top: 3px; color: var(--text); font-size: 13px; }
+.valuationDimensions em { display: inline-block; margin-top: 5px; }
+.compactValuation { padding: 14px; }
+.valuationNote { margin: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 760px) {
   .pageStack { padding-top: 28px; }
-  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions { grid-template-columns: 1fr; }
-  .dataQualityTop, .catalystTop { flex-direction: column; }
+  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions { grid-template-columns: 1fr; }
+  .dataQualityTop, .catalystTop, .valuationTop { flex-direction: column; }
   .dataQualityBadges { justify-content: flex-start; }
   .rklbCandidateTop { display: grid; }
   .validationDecisionTop, .validationRun > summary { align-items: flex-start; flex-direction: column; }
