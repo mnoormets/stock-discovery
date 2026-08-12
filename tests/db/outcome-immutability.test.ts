@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { pool } from '../../src/lib/db';
 import {
+  DEFAULT_BENCHMARK_SYMBOL,
   recordDiscoveryRun,
   refreshCandidateOutcomes,
 } from '../../src/lib/discovery-validation';
@@ -45,12 +46,25 @@ async function seedCanonicalRun(
 async function outcomeByHorizon(horizon: string) {
   const { rows } = await pool.query(
     `SELECT id, horizon, status, target_at, observed_at, observed_price,
-            return_percent, measured_at, benchmark_status
+            return_percent, measured_at, benchmark_symbol, benchmark_status,
+            benchmark_start_at, benchmark_end_at, benchmark_price_start,
+            benchmark_price_end, benchmark_return_percent, excess_return_percent
      FROM candidate_outcomes WHERE horizon = $1`,
     [horizon],
   );
   expect(rows).toHaveLength(1);
   return rows[0];
+}
+
+// Benchmark'i algushind korjatakse juba run'i salvestamisel
+// (discovery-validation.ts:259-269), seega SPY read peavad eksisteerima ENNE
+// `seedCanonicalRun`-i, kui tahame realistlikku teed.
+async function seedBenchmarkPrices(entries: Array<[number, string]>): Promise<number> {
+  const spyId = await insertCompany(DEFAULT_BENCHMARK_SYMBOL);
+  for (const [price, capturedAt] of entries) {
+    await insertPriceSnapshot(spyId, price, capturedAt, 'test-benchmark');
+  }
+  return spyId;
 }
 
 function iso(value: unknown): string {
@@ -103,6 +117,42 @@ describe('C1 — mõõdetud outcome\'i ei kirjutata kunagi üle', () => {
   });
 });
 
+describe('C2 — mõõdetud benchmark\'i ei kirjutata üle', () => {
+  it('hilisem, soodsam SPY hind ei muuda mõõdetud benchmark\'i ega excess return\'i', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    // SPY algushind peab olema olemas enne run'i salvestamist.
+    const spyId = await seedBenchmarkPrices([[500, '2026-03-10T08:00:00.000Z']]);
+    const { companyId } = await seedCanonicalRun(runAt);
+
+    // Kandidaat: 100 -> 110 = +10%. Benchmark: 500 -> 525 = +5%. Excess = +5.
+    await insertPriceSnapshot(companyId, 110, '2026-03-17T09:00:00.000Z');
+    await insertPriceSnapshot(spyId, 525, '2026-03-17T09:00:00.000Z', 'test-benchmark');
+    await refreshCandidateOutcomes(new Date('2026-03-18T00:00:00.000Z'));
+
+    const measured = await outcomeByHorizon('1w');
+    expect(measured.status).toBe('measured');
+    expect(measured.benchmark_status).toBe('measured');
+    expect(measured.benchmark_symbol).toBe(DEFAULT_BENCHMARK_SYMBOL);
+    expect(Number(measured.benchmark_price_start)).toBe(500);
+    expect(Number(measured.benchmark_price_end)).toBe(525);
+    expect(Number(measured.benchmark_return_percent)).toBe(5);
+    expect(Number(measured.excess_return_percent)).toBe(5);
+
+    // Anti-cheat: hilisem SPY hind samas aknas ei tohi benchmark'i ümber arvutada
+    // (discovery-validation.ts:413-415, kaitse real 468).
+    await insertPriceSnapshot(spyId, 1_000, '2026-03-17T10:00:00.000Z', 'test-benchmark');
+    await refreshCandidateOutcomes(new Date('2026-03-19T00:00:00.000Z'));
+
+    const after = await outcomeByHorizon('1w');
+    expect(after.benchmark_status).toBe('measured');
+    expect(Number(after.benchmark_price_end)).toBe(525);
+    expect(Number(after.benchmark_return_percent)).toBe(5);
+    expect(Number(after.excess_return_percent)).toBe(5);
+    expect(iso(after.benchmark_start_at)).toBe(iso(measured.benchmark_start_at));
+    expect(iso(after.benchmark_end_at)).toBe(iso(measured.benchmark_end_at));
+  });
+});
+
 describe('C3 — enne sihtaega outcome\'i ei puututa', () => {
   it('kõik viis rida jäävad pending ja measured_at jääb null', async () => {
     const runAt = new Date('2026-03-10T09:00:00.000Z');
@@ -148,6 +198,124 @@ describe('C4 — esimene hind sihtajast alates võidab', () => {
     expect(Number(outcome.observed_price)).toBe(105);
     expect(iso(outcome.observed_at)).toBe('2026-03-17T10:00:00.000Z');
     expect(Number(outcome.return_percent)).toBe(5);
+  });
+});
+
+describe('C5 — 7-päevane mõõtmisaken', () => {
+  it('akna väline hind ei mõõda; akna möödudes tuleb status=missing', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const { companyId } = await seedCanonicalRun(runAt);
+
+    // 1w sihtaeg = 2026-03-17T09:00Z, aken on [sihtaeg, sihtaeg + 7 päeva).
+    // See hind on 8 päeva pärast sihtaega ehk aknast väljas.
+    await insertPriceSnapshot(companyId, 130, '2026-03-25T09:00:00.000Z');
+
+    // Aken on veel lahti (now < sihtaeg + 7 päeva) → ei mõõda ega märgi puuduvaks.
+    await refreshCandidateOutcomes(new Date('2026-03-20T09:00:00.000Z'));
+    const stillOpen = await outcomeByHorizon('1w');
+    expect(stillOpen.status).toBe('pending');
+    expect(stillOpen.measured_at).toBeNull();
+
+    // Aken sulgus (rida 403) → missing, mitte measured ja mitte 0% tootlus.
+    await refreshCandidateOutcomes(new Date('2026-03-25T09:00:00.000Z'));
+    const closed = await outcomeByHorizon('1w');
+    expect(closed.status).toBe('missing');
+    expect(closed.measured_at).not.toBeNull();
+    expect(closed.observed_price).toBeNull();
+    expect(closed.return_percent).toBeNull();
+  });
+
+  it('missing EI ole lukustatud olek: hiljem saabunud aknasisene hind mõõdab ära', async () => {
+    // Kaitse on `status <> 'measured'`, mitte `= 'pending'` (read 367, 399).
+    // Seega ainult `measured` on lõplik. See on teadlik: hilinenud hinnaandmed
+    // peavad saama mõõdetud. Test dokumenteerib selle, et keegi ei eeldaks
+    // ekslikult, nagu oleks `missing` samamoodi muutumatu.
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const { companyId } = await seedCanonicalRun(runAt);
+    await insertPriceSnapshot(companyId, 130, '2026-03-25T09:00:00.000Z');
+
+    await refreshCandidateOutcomes(new Date('2026-03-25T09:00:00.000Z'));
+    expect((await outcomeByHorizon('1w')).status).toBe('missing');
+
+    // Hilinenud hind, mis kuulub 1w aknasse [03-17, 03-24).
+    await insertPriceSnapshot(companyId, 120, '2026-03-18T09:00:00.000Z');
+    await refreshCandidateOutcomes(new Date('2026-03-26T09:00:00.000Z'));
+
+    const remeasured = await outcomeByHorizon('1w');
+    expect(remeasured.status).toBe('measured');
+    expect(Number(remeasured.observed_price)).toBe(120);
+    expect(Number(remeasured.return_percent)).toBe(20);
+  });
+});
+
+describe('C6 — kasutamiskõlbmatu baashind', () => {
+  it('null decision_price annab status=unavailable, mitte 0% tootluse', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const { companyId } = await seedCanonicalRun(runAt, { decisionPrice: null });
+
+    // Hind on olemas, aga baasjoon puudub, seega tootlust ei saa arvutada.
+    await insertPriceSnapshot(companyId, 110, '2026-03-17T09:00:00.000Z');
+    await refreshCandidateOutcomes(new Date('2026-03-18T00:00:00.000Z'));
+
+    const outcome = await outcomeByHorizon('1w');
+    expect(outcome.status).toBe('unavailable');
+    expect(outcome.measured_at).not.toBeNull();
+    expect(outcome.observed_price).toBeNull();
+    expect(outcome.return_percent).toBeNull();
+  });
+
+  it('null baashind ei mõjuta veel mittesaabunud horisonte', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    await seedCanonicalRun(runAt, { decisionPrice: null });
+    await refreshCandidateOutcomes(new Date('2026-03-18T00:00:00.000Z'));
+
+    const { rows } = await pool.query(
+      `SELECT status, count(*)::int AS n FROM candidate_outcomes GROUP BY status ORDER BY status`,
+    );
+    // Ainult 1w on saabunud; ülejäänud neli jäävad pending.
+    expect(rows).toEqual([
+      { status: 'pending', n: 4 },
+      { status: 'unavailable', n: 1 },
+    ]);
+  });
+});
+
+describe('C7 — excess return ja puuduv benchmark', () => {
+  it('excess_return_percent = kandidaadi tootlus miinus benchmark\'i tootlus', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const spyId = await seedBenchmarkPrices([[400, '2026-03-10T08:00:00.000Z']]);
+    const { companyId } = await seedCanonicalRun(runAt);
+
+    // Kandidaat: 100 -> 130 = +30%. Benchmark: 400 -> 440 = +10%. Excess = +20.
+    await insertPriceSnapshot(companyId, 130, '2026-03-17T09:00:00.000Z');
+    await insertPriceSnapshot(spyId, 440, '2026-03-17T09:00:00.000Z', 'test-benchmark');
+    await refreshCandidateOutcomes(new Date('2026-03-18T00:00:00.000Z'));
+
+    const outcome = await outcomeByHorizon('1w');
+    expect(Number(outcome.return_percent)).toBe(30);
+    expect(Number(outcome.benchmark_return_percent)).toBe(10);
+    expect(Number(outcome.excess_return_percent)).toBe(20);
+    expect(Number(outcome.excess_return_percent))
+      .toBe(Number(outcome.return_percent) - Number(outcome.benchmark_return_percent));
+  });
+
+  it('puuduv benchmark jätab benchmark- ja excess-välja NULL-iks, mitte nulliks', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    // Ühtki SPY rida ei eksisteeri.
+    const { companyId } = await seedCanonicalRun(runAt);
+    await insertPriceSnapshot(companyId, 110, '2026-03-17T09:00:00.000Z');
+    await refreshCandidateOutcomes(new Date('2026-03-18T00:00:00.000Z'));
+
+    const outcome = await outcomeByHorizon('1w');
+    // Kandidaadi tootlus on mõõdetud...
+    expect(outcome.status).toBe('measured');
+    expect(Number(outcome.return_percent)).toBe(10);
+    // ...aga benchmark jääb teadmata, mitte 0.
+    expect(outcome.benchmark_status).toBe('pending');
+    expect(outcome.benchmark_price_start).toBeNull();
+    expect(outcome.benchmark_price_end).toBeNull();
+    expect(outcome.benchmark_return_percent).toBeNull();
+    expect(outcome.excess_return_percent).toBeNull();
   });
 });
 
