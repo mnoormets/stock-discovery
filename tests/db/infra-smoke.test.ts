@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, inject, it } from 'vitest';
 import { pool } from '../../src/lib/db';
 import { TEST_DB_NAME } from '../setup/test-db-url';
 import { publicTables, resetDb } from '../setup/reset';
@@ -62,16 +62,28 @@ describe('D1 — test-andmebaasi isolatsioon (esimene värav)', () => {
 });
 
 describe('D2 — ensureSchema() tabelikomplekt', () => {
-  it('loob täpselt need 20 tabelit', async () => {
-    const tables = await publicTables();
-    expect(tables).toEqual(ENSURE_SCHEMA_TABLES);
+  // Assertitakse globalSetup'is fikseeritud hetkeseisu (`ensureSchemaTables`),
+  // MITTE jooksvat `pg_tables` vastu. Testibaas on failide vahel jagatud ja
+  // `ensureFinancialSchema()` loob `financial_enrichment_status` enrichment-koodi
+  // esimesel käivitusel — jooksva seisu vastu assertimine muudaks selle testi
+  // failijärjekorrast sõltuvaks.
+  it('loob täpselt need 20 tabelit', () => {
+    expect(inject('ensureSchemaTables')).toEqual(ENSURE_SCHEMA_TABLES);
   });
 
-  it('EI loo financial_enrichment_status — see kuulub company-financials.ts-ile', async () => {
+  it('EI loo financial_enrichment_status — see kuulub company-financials.ts-ile', () => {
     // Tõend kahe skeemiomaniku kohta: tootmisbaasis on 21 tabelit, ensureSchema
     // katab neist 20. See on TOP 9 (versioonitud migratsioonid) mõõdetav alus.
-    const tables = await publicTables();
-    expect(tables).not.toContain('financial_enrichment_status');
+    expect(inject('ensureSchemaTables')).not.toContain('financial_enrichment_status');
+  });
+
+  it('jooksev tabelihulk sisaldab vähemalt ensureSchema komplekti', async () => {
+    // Sanity: hetkeseis ei tohi olla jooksvast suurem. Jooksev võib olla suurem
+    // (mõni teine testifail on enrichment-tabeli loonud) — see on lubatud.
+    const live = await publicTables();
+    for (const table of inject('ensureSchemaTables')) {
+      expect(live).toContain(table);
+    }
   });
 });
 

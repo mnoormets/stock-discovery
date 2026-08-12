@@ -4,8 +4,6 @@ import { pool } from '../../src/lib/db';
 // sest reset.ts imporditakse ainult testifailidest, mis laaditakse pärast
 // guard.ts-i — seega DATABASE_URL on juba test-baasi peal ja Pool cache'itud.
 
-let cachedTables: string[] | null = null;
-
 async function assertTestDatabase(): Promise<string> {
   const { rows } = await pool.query('SELECT current_database() AS db');
   const connected = String(rows[0].db);
@@ -15,13 +13,16 @@ async function assertTestDatabase(): Promise<string> {
   return connected;
 }
 
+// Tabelite hulk MUUTUB jooksu keskel: `ensureFinancialSchema()`
+// (src/lib/company-financials.ts) loob `financial_enrichment_status` alles siis,
+// kui enrichment-kood esimest korda käivitub. Seetõttu ei tohi seda nimekirja
+// cache'ida — cache'itud nimekiri jätaks hiljem tekkinud tabeli truncate'imata
+// ja selle read lekiksid testide vahel.
 export async function publicTables(): Promise<string[]> {
-  if (cachedTables) return cachedTables;
   const { rows } = await pool.query(
     `SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`,
   );
-  cachedTables = rows.map((row) => String(row.tablename));
-  return cachedTables;
+  return rows.map((row) => String(row.tablename));
 }
 
 export async function resetDb(): Promise<void> {
