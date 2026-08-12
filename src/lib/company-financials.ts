@@ -64,12 +64,22 @@ export interface FinancialEnrichmentResult {
   failedTickers: string[];
 }
 
+type ConceptSource = {
+  taxonomy: 'us-gaap' | 'dei';
+  tags: string[];
+};
+
 type MetricDefinition = {
   metric: FinancialMetric;
   taxonomy: 'us-gaap' | 'dei';
   tags: string[];
   unit: 'USD' | 'shares';
   duration: boolean;
+  // Prioriteetjärjestuses varuallikad. Neid kasutatakse AINULT siis, kui
+  // primaarne allikas ei andnud ühtegi punkti (nt foreign private issuer,
+  // kelle CompanyFactsis puudub `dei` sektsioon). Nii jääb olemasolevate
+  // esitajate käitumine muutumatuks ega teki duplikaatridu.
+  fallbacks?: ConceptSource[];
 };
 
 type SecUnit = {
@@ -124,6 +134,11 @@ const DEFINITIONS: MetricDefinition[] = [
   {
     metric: 'shares_outstanding', taxonomy: 'dei', unit: 'shares', duration: false,
     tags: ['EntityCommonStockSharesOutstanding'],
+    // 20-F / foreign private issuer (nt Agora/API) CompanyFacts ei sisalda `dei`
+    // sektsiooni, kuid `us-gaap:CommonStockSharesOutstanding` on olemas õiges
+    // ühikus ja lubatud vormis. NB: `CommonStockSharesIssued` sisaldab treasury
+    // aktsiaid ega kirjelda outstanding'ut — seda teadlikult ei kasutata.
+    fallbacks: [{ taxonomy: 'us-gaap', tags: ['CommonStockSharesOutstanding'] }],
   },
 ];
 
@@ -253,6 +268,23 @@ function extractDefinition(data: SecCompanyFacts, cik: string, definition: Metri
     if (!previous || `${filedAt}:${accession}` > `${previous.filedAt}:${previous.accessionNumber}`) deduped.set(key, point);
   }
   return [...deduped.values()].sort((a, b) => `${b.periodEnd}:${b.filedAt}`.localeCompare(`${a.periodEnd}:${a.filedAt}`)).slice(0, 30);
+}
+
+// Concept alias mapping: proovi primaarset allikat, ja alles selle tühjaks
+// jäädes prioriteetjärjestuses varuallikaid. Tagastab ainult ÜHE allika punktid,
+// seega sama mõõdiku kohta ei teki duplikaatridu.
+function extractMetricPoints(data: SecCompanyFacts, cik: string, definition: MetricDefinition): FinancialPoint[] {
+  const primary = extractDefinition(data, cik, definition);
+  if (primary.length > 0) return primary;
+  for (const fallback of definition.fallbacks || []) {
+    const points = extractDefinition(data, cik, {
+      ...definition,
+      taxonomy: fallback.taxonomy,
+      tags: fallback.tags,
+    });
+    if (points.length > 0) return points;
+  }
+  return [];
 }
 
 function extractInstantTag(data: SecCompanyFacts, cik: string, tags: string[]): FinancialPoint[] {
@@ -672,7 +704,7 @@ async function refreshCompanyFinancialsUncached(rawTicker: string): Promise<Comp
   await ensureFinancialSchema();
   const response = await fetchCompanyFacts(ticker);
   if (!response) return null;
-  const extracted = DEFINITIONS.flatMap((definition) => extractDefinition(response.facts, response.identity.cik, definition));
+  const extracted = DEFINITIONS.flatMap((definition) => extractMetricPoints(response.facts, response.identity.cik, definition));
   const operating = extracted.filter((point) => point.metric === 'operating_cash_flow');
   const capex = extracted.filter((point) => point.metric === 'capital_expenditure');
   const points = [...extracted, ...deriveDebt(response.facts, response.identity.cik), ...deriveFreeCashFlow(operating, capex)];
