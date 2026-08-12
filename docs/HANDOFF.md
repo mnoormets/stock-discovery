@@ -218,6 +218,7 @@ Pärast keskse kogumise käivitamist jätkub päris forward-valimi kasvatamine j
 
 ### LATER
 
+- Under-recognition proxy + Challenger-vs-incumbent tõlgenduskiht — disain: [`docs/UNDER_RECOGNITION_AND_CHALLENGER.md`](UNDER_RECOGNITION_AND_CHALLENGER.md) (ainult disain, mitte implementatsioon). Kaks evidence-vektorit olemasolevate kihtide peal (Growth/Health/Catalyst/Freshness/Frequency), mitte koondskoor; `unknown` lubatud kõikjal, challenger nõuab falsifitseeritavat checkpointi. Ehitamine eeldab vähemalt 5 (eelistatult 10) canonical päevajooksu, sest frequency-trend ja hinnareaktsiooni signaalid vajavad canonical aegrida; vahepealne lubatud samm on ainult point-in-time salvestus ilma järjestust muutmata. EI sisalda themes, strategic investors, insider trading, dividend, smart-money, valuation ega momentum mooduleid.
 - Nasdaqi uute noteeringute radar ametliku võtmeta Nasdaq Trader symbol directory põhjal; vajab idempotentset universumi ajalugu (`first_seen_at`, `last_seen_at`, listing status), test issue/ETF filtreid ning uute tickerite enrichment'i olemasoleva SEC/Yahoo kihiga.
 - Teesi eelduste täitumise analüüs: hea protsess vs õnnelik tulemus.
 - Valuation Score alles pärast läbipaistva valuation-mudeli ja piisava coverage'i valmimist.
