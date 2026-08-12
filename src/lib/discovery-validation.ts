@@ -210,6 +210,11 @@ export async function recordDiscoveryRun(
     : `${DISCOVERY_MODEL_VERSION}:${decisionDate}:${hash}`;
   const universe = decisions.map((decision) => decision.ticker).sort();
   const includedCount = decisions.filter((decision) => decision.included).length;
+  // Discovery Frequency Provenance samm 1 (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 5):
+  // ainult canonical run loob candidate_outcomes forward-mõõtmise ridu. Käsitsi
+  // scanneri (`rklb`) jooks säilitab discovery_runs + discovery_decisions auditi,
+  // aga ei loo outcome-ridu — leheavamine ei tohi tekitada mõõtmislubadust.
+  const createsOutcomes = runType === CANONICAL_RUN_TYPE;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -249,17 +254,21 @@ export async function recordDiscoveryRun(
       recordedInputHash = String(existing.rows[0].input_hash);
     }
     if (created) {
-      const benchmarkStartResult = await client.query(
-        `SELECT p.price, p.captured_at
-         FROM price_snapshots p
-         JOIN companies c ON c.id = p.company_id
-         WHERE c.ticker = $1 AND p.price IS NOT NULL
-           AND p.captured_at <= $2
-           AND p.captured_at >= $2::timestamptz - interval '7 days'
-         ORDER BY p.captured_at DESC, p.id DESC LIMIT 1`,
-        [DEFAULT_BENCHMARK_SYMBOL, runAt.toISOString()],
-      );
-      const benchmarkStart = benchmarkStartResult.rows[0] || null;
+      // Benchmark start hind on vajalik ainult outcome-ridade jaoks; manual
+      // run seda ei kogu, sest ta ei loo outcome'e.
+      const benchmarkStartResult = createsOutcomes
+        ? await client.query(
+            `SELECT p.price, p.captured_at
+             FROM price_snapshots p
+             JOIN companies c ON c.id = p.company_id
+             WHERE c.ticker = $1 AND p.price IS NOT NULL
+               AND p.captured_at <= $2
+               AND p.captured_at >= $2::timestamptz - interval '7 days'
+             ORDER BY p.captured_at DESC, p.id DESC LIMIT 1`,
+            [DEFAULT_BENCHMARK_SYMBOL, runAt.toISOString()],
+          )
+        : null;
+      const benchmarkStart = benchmarkStartResult?.rows[0] || null;
       for (const decision of decisions) {
         const decisionResult = await client.query(
           `INSERT INTO discovery_decisions
@@ -311,7 +320,7 @@ export async function recordDiscoveryRun(
             decision.catalystNextScheduledAt,
           ],
         );
-        if (decision.included) {
+        if (createsOutcomes && decision.included) {
           const decisionId = Number(decisionResult.rows[0].id);
           for (const horizon of OUTCOME_HORIZONS) {
             await client.query(
