@@ -22,6 +22,9 @@ import { resetDb } from '../setup/reset';
 // sisend on vahepeal muutunud — ja märgib selle eraldi lipuga.
 
 const CANONICAL = 'rklb_daily';
+// Käsitsi scanneri leheavamine. Erineb canonical'ist ainult run-key kuju poolest,
+// aga see erinevus määrab, kas tekivad forward-mõõtmise read.
+const MANUAL = 'rklb';
 
 async function countRuns(): Promise<number> {
   const { rows } = await pool.query('SELECT count(*)::int AS n FROM discovery_runs');
@@ -162,6 +165,212 @@ describe('A3 — kordusjooks ei loo otsuseid ega outcome\'e', () => {
 
     const { rows } = await pool.query('SELECT horizon FROM candidate_outcomes ORDER BY horizon');
     expect(rows.map((row) => row.horizon).sort()).toEqual([...OUTCOME_HORIZONS].sort());
+  });
+});
+
+describe('A4 — manual rklb run-key sisaldab input-hash\'i', () => {
+  it('muutunud sisend loob samal Tallinna päeval TEISE run\'i', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const aaa = await insertCompany('AAA');
+    const bbb = await insertCompany('BBB');
+
+    const first = await recordDiscoveryRun(
+      ['rule-a'],
+      [makeDecisionInput({ companyId: aaa, ticker: 'AAA' })],
+      runAt,
+      MANUAL,
+    );
+    const second = await recordDiscoveryRun(
+      ['rule-a'],
+      [
+        makeDecisionInput({ companyId: aaa, ticker: 'AAA' }),
+        makeDecisionInput({ companyId: bbb, ticker: 'BBB' }),
+      ],
+      runAt,
+      MANUAL,
+    );
+
+    // Vastupidi canonical'ile (A1): manual võti sisaldab hash'i, seega muutunud
+    // sisend annab uue võtme ja uue run'i samal kuupäeval.
+    expect(first.created).toBe(true);
+    expect(second.created).toBe(true);
+    expect(second.runId).not.toBe(first.runId);
+    expect(first.decisionDate).toBe('2026-03-10');
+    expect(second.decisionDate).toBe('2026-03-10');
+    expect(await countRuns()).toBe(2);
+  });
+
+  it('identne sisend ei loo teist run\'i', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const aaa = await insertCompany('AAA');
+    const decisions = [makeDecisionInput({ companyId: aaa, ticker: 'AAA' })];
+
+    const first = await recordDiscoveryRun(['rule-a'], decisions, runAt, MANUAL);
+    const second = await recordDiscoveryRun(['rule-a'], decisions, runAt, MANUAL);
+
+    expect(first.created).toBe(true);
+    expect(second.created).toBe(false);
+    expect(second.runId).toBe(first.runId);
+    expect(await countRuns()).toBe(1);
+  });
+
+  it('run_key kuju on VERSION:kuupäev:hash, mitte VERSION:runType:kuupäev', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const aaa = await insertCompany('AAA');
+    await recordDiscoveryRun(
+      ['rule-a'],
+      [makeDecisionInput({ companyId: aaa, ticker: 'AAA' })],
+      runAt,
+      MANUAL,
+    );
+
+    const { rows } = await pool.query('SELECT run_key, input_hash FROM discovery_runs');
+    const prefix = `${DISCOVERY_MODEL_VERSION}:2026-03-10:`;
+    expect(rows[0].run_key.startsWith(prefix)).toBe(true);
+    const suffix = String(rows[0].run_key).slice(prefix.length);
+    expect(suffix).toMatch(/^[0-9a-f]{64}$/);
+    // Võtme sabas on täpselt salvestatud input_hash.
+    expect(suffix).toBe(rows[0].input_hash);
+  });
+
+  it('otsuste järjekord ei muuda hash\'i — ümberjärjestus ei loo teist run\'i', async () => {
+    // `inputHash` sorteerib otsused tickeri järgi (discovery-validation.ts:179),
+    // seega kandidaatide loendi ümberjärjestus ei tohi tekitada uut manual run'i.
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const aaa = await insertCompany('AAA');
+    const bbb = await insertCompany('BBB');
+    const a = makeDecisionInput({ companyId: aaa, ticker: 'AAA' });
+    const b = makeDecisionInput({ companyId: bbb, ticker: 'BBB' });
+
+    const first = await recordDiscoveryRun(['rule-a'], [a, b], runAt, MANUAL);
+    const second = await recordDiscoveryRun(['rule-a'], [b, a], runAt, MANUAL);
+
+    expect(first.created).toBe(true);
+    expect(second.created).toBe(false);
+    expect(second.runId).toBe(first.runId);
+    expect(await countRuns()).toBe(1);
+  });
+});
+
+describe('A5 — ainult canonical run loob candidate_outcome\'id', () => {
+  it('manual run säilitab otsuste auditi, aga ei loo outcome-ridu', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const aaa = await insertCompany('AAA');
+
+    await recordDiscoveryRun(
+      ['rule-a'],
+      [makeDecisionInput({ companyId: aaa, ticker: 'AAA', included: true })],
+      runAt,
+      MANUAL,
+    );
+
+    // Leheavamine ei tohi tekitada mõõtmislubadust (discovery-validation.ts:217).
+    expect(await countRuns()).toBe(1);
+    expect(await countDecisions()).toBe(1);
+    expect(await countOutcomes()).toBe(0);
+  });
+
+  it('canonical run samade otsustega loob viis outcome-rida', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const aaa = await insertCompany('AAA');
+
+    await recordDiscoveryRun(
+      ['rule-a'],
+      [makeDecisionInput({ companyId: aaa, ticker: 'AAA', included: true })],
+      runAt,
+      CANONICAL,
+    );
+
+    expect(await countOutcomes()).toBe(OUTCOME_HORIZONS.length);
+  });
+
+  it('manual ja canonical samal päeval: outcome\'id tulevad ainult canonical\'ist', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const aaa = await insertCompany('AAA');
+    const decisions = [makeDecisionInput({ companyId: aaa, ticker: 'AAA', included: true })];
+
+    const manual = await recordDiscoveryRun(['rule-a'], decisions, runAt, MANUAL);
+    const canonical = await recordDiscoveryRun(['rule-a'], decisions, runAt, CANONICAL);
+
+    // Eri võtmekujud → mõlemad luuakse.
+    expect(manual.created).toBe(true);
+    expect(canonical.created).toBe(true);
+    expect(await countRuns()).toBe(2);
+    expect(await countDecisions()).toBe(2);
+    expect(await countOutcomes()).toBe(OUTCOME_HORIZONS.length);
+
+    // Kõik outcome-read kuuluvad canonical run'ile.
+    const { rows } = await pool.query(
+      `SELECT DISTINCT r.run_type
+       FROM candidate_outcomes o
+       JOIN discovery_decisions d ON d.id = o.decision_id
+       JOIN discovery_runs r ON r.id = d.run_id`,
+    );
+    expect(rows.map((row) => row.run_type)).toEqual([CANONICAL]);
+  });
+});
+
+describe('A6 — välistatud otsus ei saa outcome\'e', () => {
+  it('kaks otsust, üks kaasatud: outcome\'id kuuluvad ainult kaasatule', async () => {
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const aaa = await insertCompany('AAA');
+    const bbb = await insertCompany('BBB');
+
+    await recordDiscoveryRun(
+      ['rule-a'],
+      [
+        makeDecisionInput({ companyId: aaa, ticker: 'AAA', included: true, candidateRank: 1 }),
+        makeDecisionInput({
+          companyId: bbb,
+          ticker: 'BBB',
+          included: false,
+          candidateRank: null,
+          exclusionReasons: ['Growth'],
+        }),
+      ],
+      runAt,
+      CANONICAL,
+    );
+
+    expect(await countDecisions()).toBe(2);
+    expect(await countOutcomes()).toBe(OUTCOME_HORIZONS.length);
+
+    const { rows } = await pool.query(
+      `SELECT DISTINCT d.ticker
+       FROM candidate_outcomes o
+       JOIN discovery_decisions d ON d.id = o.decision_id`,
+    );
+    expect(rows.map((row) => row.ticker)).toEqual(['AAA']);
+  });
+
+  it('kõik välistatud: null outcome\'i, aga run ja otsused salvestuvad', async () => {
+    // "Null kandidaati on korrektne tulemus" — canonical snapshot peab ka siis
+    // olemas olema, et see päev oleks frequency arvestuses eristatav.
+    const runAt = new Date('2026-03-10T09:00:00.000Z');
+    const aaa = await insertCompany('AAA');
+    const bbb = await insertCompany('BBB');
+
+    const result = await recordDiscoveryRun(
+      ['rule-a'],
+      [
+        makeDecisionInput({ companyId: aaa, ticker: 'AAA', included: false, candidateRank: null }),
+        makeDecisionInput({ companyId: bbb, ticker: 'BBB', included: false, candidateRank: null }),
+      ],
+      runAt,
+      CANONICAL,
+    );
+
+    expect(result.created).toBe(true);
+    expect(result.evaluatedCount).toBe(2);
+    expect(result.includedCount).toBe(0);
+    expect(await countDecisions()).toBe(2);
+    expect(await countOutcomes()).toBe(0);
+
+    const { rows } = await pool.query(
+      'SELECT evaluated_count, included_count FROM discovery_runs',
+    );
+    expect(rows[0].evaluated_count).toBe(2);
+    expect(rows[0].included_count).toBe(0);
   });
 });
 
