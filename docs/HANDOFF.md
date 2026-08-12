@@ -36,6 +36,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Growth Score, Financial Health Score ja Coverage Score.
 - Data Freshness + Period Alignment V1 kuvab score'is kasutatud SEC põhimõõdikute perioodid, vanuse, fact-viited ja eraldi kvalitatiivsed staatused; skoorivalemeid ega filtreid see ei muuda.
 - Catalyst Evidence V2: catalyst ei ole enam hard gate, vaid struktureeritud tõendikiht (`catalyst_events` + versioonitud `catalyst_assessments`), mis mõjutab ainult järjestust ja nähtavat tõendit.
+- Catalyst evidence ei ole enam ainult scanneris — seda kuvatakse nüüd ka **company detailis** ja **Thesis Builderis** (jagatud `getCatalystEvidenceForTicker`, mis kasutab sama `getCatalystEvidenceMap` pipeline'i; uut DB-skeemi ei lisatud). Company detail ja Thesis Builder võivad nüüd catalyst evidence'i idempotentselt arvutada write-on-read teel. Under-recognition `catalystNovelty` ei ole neil surface'idel enam alati `unknown`.
 - Versioonitud `company_score_snapshots`, mis säilitavad input-hashi, SEC fact ID-d, perioodid ja komponendid.
 - `/scanner` fundamentaalne edetabel ja sortimine Growthi, Healthi või Coverage'i järgi.
 - `/watchlist` kasutab `portfolio_positions.status = 'watch'` kirjeid ja pakub olemasolevate skooride põhjal uurimisideid.

@@ -31,6 +31,7 @@ export default function CatalystEvidence({
           </div>
           <p className="catalystEvent">
             <strong>{strongest?.summary}</strong>
+            {strongest?.event.occurredAt && <> · sündmus {day(strongest.event.occurredAt)}</>}
             {strongest?.event.linkedPeriodEnd && <> · periood {strongest.event.linkedPeriodEnd}</>}
             {strongest?.event.linkedFactIds.length ? <> · {strongest.event.linkedFactIds.length} seotud SEC fakti</> : <> · seotud fakte ei ole</>}
             {strongest?.event.url && <> · <a href={strongest.event.url} target="_blank" rel="noreferrer">algallikas</a></>}

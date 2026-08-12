@@ -5,6 +5,7 @@ import type { DataQualitySummary } from './data-quality';
 import {
   buildCatalystSignals,
   deriveCatalystEvidence,
+  emptyCatalystEvidence,
   type AssessedCatalystEvent,
   type CatalystEventObservation,
   type CatalystEvidence,
@@ -312,6 +313,30 @@ async function persistAssessments(evidence: CatalystEvidence): Promise<void> {
       ],
     );
   }
+}
+
+// Ühe tickeri catalyst evidence otsuskohtade jaoks (company detail, Thesis
+// Builder). Taaskasutab sama pipeline'i mis scanner (`getCatalystEvidenceMap`) —
+// ei kopeeri arvutusloogikat. Unknown-first: kui companies rida või sündmusi
+// pole, tagastab tühja evidence't (none_recorded), mitte oletust.
+export async function getCatalystEvidenceForTicker(
+  ticker: string,
+  financials: CompanyFinancialSummary | null,
+  dataQuality: DataQualitySummary,
+  marketCap: number | null,
+  asOf = new Date(),
+): Promise<CatalystEvidence> {
+  await ensureSchema();
+  const companyResult = await pool.query('SELECT id FROM companies WHERE ticker = $1', [ticker]);
+  if (companyResult.rowCount === 0) {
+    return emptyCatalystEvidence(buildCatalystSignals(financials, dataQuality, marketCap, asOf));
+  }
+  const companyId = Number(companyResult.rows[0].id);
+  const map = await getCatalystEvidenceMap(
+    [{ companyId, ticker, financials, dataQuality, marketCap }],
+    asOf,
+  );
+  return map.get(ticker) ?? emptyCatalystEvidence(buildCatalystSignals(financials, dataQuality, marketCap, asOf));
 }
 
 export async function getCatalystEvidenceMap(
