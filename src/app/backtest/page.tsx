@@ -76,9 +76,9 @@ export default async function BacktestPage() {
     {dashboard && <>
       {!dashboard.hasMeasuredOutcomes && <div className="empty card backtestEmpty"><strong>Backtest vajab mõõdetud discovery outcome’e. Käivita scanner ja oota kuni valitud horisondid täituvad.</strong><p>Null kandidaati ja puuduv benchmark on korrektsed tulemused. Puuduvat excess return’i ei muudeta 0%-ks.</p></div>}
       <section className="section">
-        <div className="sectionHeading"><div><p className="eyebrow">BENCHMARK · {dashboard.benchmarkSymbol}</p><h2>Tulemused horisondi kaupa</h2></div><span className="muted">{dashboard.totalRuns} salvestatud jooksu</span></div>
+        <div className="sectionHeading"><div><p className="eyebrow">BENCHMARK · {dashboard.benchmarkSymbol} · CANONICAL ONLY</p><h2>Tulemused horisondi kaupa</h2></div><span className="muted">{dashboard.canonicalRuns} canonical jooksu ({dashboard.totalRuns} kokku salvestatud)</span></div>
         <div className="backtestGrid">{dashboard.horizons.map((stats) => <HorizonCard stats={stats} key={stats.horizon} />)}</div>
-        <p className="muted provenanceNote">Koondnäitajad sisaldavad kõiki salvestatud jooksu: {dashboard.provenance.map((item) => `${item.modelVersion} · ${item.runType} ${item.runs} jooksu / ${item.candidates} kandidaati`).join('; ') || 'jooksu pole'}. Käsitsi avatud scanneri jooks (`rklb`) salvestub samuti ja läheb neisse koondnäitajatesse; eri mudeliversioone ei tohi lugeda ühe seeriana.</p>
+        <p className="muted provenanceNote"><strong>Koondnäitajad kasutavad ainult canonical (`rklb_daily`) jooksu</strong> (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 4). Käsitsi avatud scanneri jooks (`rklb`) jääb allpool run-level detaili auditiks, aga ei lähe mediaani, hit rate’i ega excess return’i koondnäitajatesse. Kokku salvestatud: {dashboard.provenance.map((item) => `${item.modelVersion} · ${item.runType} ${item.runs} jooksu / ${item.candidates} kandidaati`).join('; ') || 'jooksu pole'}. Eri mudeliversioone ei tohi lugeda ühe seeriana.</p>
       </section>
       <section className="section">
         <div className="sectionHeading"><div><p className="eyebrow">SAVED DECISIONS ONLY</p><h2>Run-level detail</h2></div><Link className="button secondary" href="/validation">Ava Validation</Link></div>

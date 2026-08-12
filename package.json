@@ -8,7 +8,8 @@
     "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
     "qa:data-quality": "node scripts/data-quality-qa.cjs",
     "qa:catalyst": "node scripts/catalyst-evidence-qa.cjs",
-    "check": "npm run lint && npm run typecheck && npm run qa:data-quality && npm run qa:catalyst && npm run build",
+    "qa:frequency": "node scripts/discovery-frequency-qa.cjs",
+    "check": "npm run lint && npm run typecheck && npm run qa:data-quality && npm run qa:catalyst && npm run qa:frequency && npm run build",
     "build": "node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start"
   },

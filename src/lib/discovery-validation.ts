@@ -11,6 +11,12 @@ export const OUTCOME_HORIZONS = ['1w', '2w', '1m', '3m', '6m'] as const;
 export type OutcomeHorizon = (typeof OUTCOME_HORIZONS)[number];
 export type DiscoveryRunType = 'rklb' | 'rklb_daily';
 
+// Canonical-only aggregation boundary (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 4).
+// Ainult ajastatud päevased discovery run'id lähevad koond-/sagedusstatistikasse;
+// käsitsi scanneri (`rklb`) leheavamised jäävad üksiku run'i auditisse, aga ei
+// tohi paisutada mediaani, hit rate'i, benchmark-beat'i ega frequency't.
+export const CANONICAL_RUN_TYPE: DiscoveryRunType = 'rklb_daily';
+
 export interface DiscoveryDecisionInput {
   companyId: number;
   ticker: string;
@@ -137,6 +143,10 @@ export interface RunProvenanceUsage {
 export interface ValidationDashboard {
   totalRuns: number;
   totalCandidates: number;
+  // Horisondistatistika põhineb ainult neil; totalRuns/totalCandidates jäävad
+  // kõigi salvestatud jooksude auditiloenduriks.
+  canonicalRuns: number;
+  canonicalCandidates: number;
   provenance: RunProvenanceUsage[];
   horizons: HorizonValidationStats[];
   runs: ValidationRun[];
@@ -484,19 +494,29 @@ function jsonArray<T>(value: T[] | string | null): T[] {
 export async function getValidationDashboard(): Promise<ValidationDashboard> {
   await ensureSchema();
   await refreshCandidateOutcomes();
-  const [counts, provenanceRows, outcomeRows, runRows] = await Promise.all([
+  const [counts, canonicalCounts, provenanceRows, outcomeRows, runRows] = await Promise.all([
     pool.query(`SELECT count(*)::int AS runs, COALESCE(sum(included_count), 0)::int AS candidates FROM discovery_runs`),
+    pool.query(
+      `SELECT count(*)::int AS runs, COALESCE(sum(included_count), 0)::int AS candidates
+       FROM discovery_runs WHERE run_type = $1`,
+      [CANONICAL_RUN_TYPE],
+    ),
     pool.query(
       `SELECT model_version, run_type, count(*)::int AS runs,
               COALESCE(sum(included_count), 0)::int AS candidates
        FROM discovery_runs GROUP BY model_version, run_type
        ORDER BY model_version DESC, run_type`,
     ),
+    // Koondstatistika loeb ainult canonical run'e (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 4).
     pool.query(
       `SELECT o.horizon, o.status, o.return_percent, d.ticker
        FROM candidate_outcomes o
-       JOIN discovery_decisions d ON d.id = o.decision_id`,
+       JOIN discovery_decisions d ON d.id = o.decision_id
+       JOIN discovery_runs r ON r.id = d.run_id
+       WHERE r.run_type = $1`,
+      [CANONICAL_RUN_TYPE],
     ),
+    // Jooksude ajalugu (audit) kuvab kõiki run'e, sh käsitsi scanneri jooksu.
     pool.query(
       `SELECT id, decision_date, run_at, model_version, evaluated_count, included_count, rules
        FROM discovery_runs ORDER BY run_at DESC, id DESC LIMIT 20`,
@@ -637,6 +657,8 @@ export async function getValidationDashboard(): Promise<ValidationDashboard> {
   return {
     totalRuns: Number(counts.rows[0]?.runs || 0),
     totalCandidates: Number(counts.rows[0]?.candidates || 0),
+    canonicalRuns: Number(canonicalCounts.rows[0]?.runs || 0),
+    canonicalCandidates: Number(canonicalCounts.rows[0]?.candidates || 0),
     provenance: provenanceRows.rows.map((row) => ({
       modelVersion: String(row.model_version),
       runType: String(row.run_type),
