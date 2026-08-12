@@ -54,6 +54,13 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Under-recognition Evidence V0 (`under-recognition-v0`) kuvab company detailis ja Thesis Builderis kompositsioonikihina, kas ettevõte võib olla varajane research-kandidaat (tõend paraneb, aga turg ei pruugi veel hinnastada). See LOEB olemasolevaid signaale (analyst kate, sector-relative market cap percentiil, Catalyst novelty, Growth/Health, Data Freshness + Period Alignment) ega arvuta neid uuesti — ei dubleeri Catalyst ega Valuation kihti. Signaalivektor (analystAttention, marketCapContext, discoveryFrequency, priceReaction, catalystNovelty, improvingFinancials) → üks viiest tekstiolekust: `meaningful` / `attention_only` / `no_attention_gap` / `low_confidence` / `unknown`. **Mitte skoor, mitte number, mitte ranking, mitte buy/sell.** `unknown`-first: puuduvat infot ei asendata oletusega; frequency ja price reaction on V0-s alati `unknown`. Cohort QA vastab § 4.1-le: API meaningful, BW low_confidence, HIMS/CAKE/ACHR no_attention_gap.
 - Valuation Evidence V1 (`valuation-evidence-v1`) kuvab company detailis, Thesis Builderis ja `/scanner?preset=rklb` kandidaadikaardil valuation-ankrud (EV/Sales, P/E, FCF Yield arvutatuna olemasolevatest SEC faktidest + market cap'ist; Peer comparison ja Sum-of-parts alati `unknown`). Iga ankur on üks läbipaistev suhtarv (fakt/fakt) allika, confidence'i (tuletatud Data Freshness + Period Alignment kihist), viimase sisendi ja staatusega — **mitte koondskoor, mitte osta/müü soovitus**. `unknown` on lubatud kõikjal; negatiivse kasumi P/E on `not_meaningful`, negatiivne FCF yield märgitakse raha põletamiseks. Growth, Health, Coverage, Catalyst ja Frequency jäid muutmata.
 - `/guide` ja `docs/USER_GUIDE.md` selgitavad uuele kasutajale kogu rakenduse soovitatud töövoogu.
+- Automaattestide infrastruktuur (Vitest, ainult devDependency) on olemas ja tootmisandmebaasist isoleeritud:
+  - eraldi `discovery_test` andmebaas, mille test-harness ise loob (`globalSetup`) ja jooksu lõpus kustutab; hooldusühendus (CREATE/DROP DATABASE) käib `postgres` baasi kaudu, seega tootmisbaasi `discovery` vastu ei avata testides ühtki ühendust;
+  - skeem luuakse tootmise tõeallikaga `ensureSchema()`, mitte `db/init.sql`-iga;
+  - neljakihiline kaitse: `DATABASE_URL` seatakse enne igat lib-importi (`src/lib/db.ts` loob Pool'i impordi hetkel ja cache'ib selle `globalThis` peale), runtime `SELECT current_database()` kontroll enne igat testifaili, sihtbaasi nimekontroll (peab lõppema `_test`-iga ja ei tohi olla `discovery`) ning `.env` faili testides ei loeta;
+  - kaitse on ka negatiivselt tõestatud: vale baasinimega jooks katkeb enne ühtki `CREATE`/`DROP` käsku;
+  - käivitamine `docker compose run --rm -T app npm test` (hostil ei ole Node'i, seega testid jooksevad konteineris);
+  - kokku 70 testi viies failis, 100% roheline; `npm test` **ei ole veel** `npm run check` ahelas.
 
 Viimati kontrollitud päris skoorid:
 
@@ -181,7 +188,7 @@ Auditi järel ootel collection reliability ja canonical cloud-history:
 
 - lisa DB-põhine `collection_runs` ledger ning PostgreSQL advisory lock või lease, et sama päeva kattuvad worker'id ei teeks paralleelset collecti;
 - säilita job'i algus, lõpp, staatus, provider'ite loendurid ja piiratud veainfo, et ebaõnnestumine oleks UI-st või DB-st jälgitav;
-- lisa automaattestid vähemalt scoring'u, päevase idempotentsuse, discovery canonical run'i, enrichment-budget'i ja outcome'ide muutumatuse jaoks;
+- automaattestide **esimene faas (TOP 5 Core Tests) on tehtud 2026-08-12**. Commit'id: `1046f0e` isoleeritud Vitest testinfrastruktuur, `47aa895` score determinism, `0412148` canonical run idempotency, `286b11d` manual run key ja outcome'ide loomine, `2192e62` outcome'ide mõõtmine ja muutumatus, `b2ff0d6` outcome immutability, `6a9fc8f` score snapshot dedupe. Katvus: testinfrastruktuur/isolatsioon, canonical run idempotency (20 testi), score determinism (24 testi), outcome immutability (13 testi) ja score snapshot dedupe (7 testi) — kokku **70 testi, 100% roheline** (vt [Automated Test Coverage](#automated-test-coverage-2026-08-12)). **Katmata TOP 5 alaosa ja järgmise testislice'i prioriteet:** enrichment-budget (5 ettevõtet Tallinna päeva kohta), `financial_enrichment_status` retry-loogika ja `unavailable` akna loogika;
 - koonda hajutatud runtime `CREATE TABLE` / `ALTER TABLE` loogika versioonitud migratsioonide üheks tõeallikaks;
 - planeeri Next.js 14 EOL tõttu kontrollitud üleminek toetatud ja turvaparandustega versioonile koos regressioonitestidega;
 - eelista tasuta keskseks DB-ks Neon PostgreSQL-i ja arvutitest sõltumatuks scheduleriks GitHub Actionsit, mis käivitab collector CLI-d otse DB vastu; ära avalikusta selleks kogu Next.js rakendust;
@@ -290,6 +297,8 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Kodu- ja tööarvuti PostgreSQL volume'id ei sünkroniseeru Gitiga. Päris forward-validation vajab üht keskset DB-d; tööarvutit ei kasutata vaikimisi isikliku scheduleri ega canonical DB hostina.
 - Uusi API-võtmeid ei otsita jagatud võtmete saitidelt ega lisata ainult andmehulga pärast. Kõigepealt dokumenteeritakse konkreetne andmelünk, olemasoleva provider'i katvus ja uus allikas; võti luuakse ainult provider'i ametlikul lehel ning hoitakse `.env`/GitHub Secretsis.
 - Collector peab olema käivitatav UI-st sõltumatu job'ina. Avalik `/api/collect` endpoint ei ole canonical scheduler'i eeltingimus.
+- `ensureSchema()` (`src/lib/db.ts`) loob 20 tabelit; `financial_enrichment_status` luuakse ainult eraldi `company-financials.ts` kihis ning `financial_facts` on **kahe skeemiomanikuga** (mõlemas failis oma `CREATE TABLE IF NOT EXISTS`). See seis on nüüd karakteriseeriva testiga lukustatud (`tests/db/infra-smoke.test.ts`), seega TOP 9 versioonitud migratsioonidele üleminek on mõõdetav, mitte oletatav: kui tabelikomplekt muutub, peab test muutuma teadlikult.
+- **Arhitektuurireegel: `SCORE_VERSION`-i tõstmine on kohustuslik, kui skoorivalem või kaalud muutuvad.** `SCORE_VERSION` on osa snapshot'i `input_hash` loogikast (`src/lib/score-tracking.ts`), seega valemi muutmine ilma versiooni tõstmata annab sama hash'i ja `ON CONFLICT` tabab olemasolevat rida: `payload` uueneb, aga `growth_score` / `health_score` / `coverage_score` veerud jäävad vanaks, sest need ei ole `SET` nimekirjas. Tulemus on sisemiselt vastuoluline snapshot, kus veerud ja payload räägivad eri skoorist. Karakteriseeriv test `tests/db/score-snapshot.test.ts` dokumenteerib selle tagajärje; päris faktimuutus seda seisu ei tekita, sest `yearOverYearPercent` on tuletatud `input_hash`-i kuuluvatest väärtustest.
 
 ## Avatud sõltuvused ja otsused
 
@@ -425,6 +434,26 @@ Piirangud, mida tuleb teadvustada:
 - Puuduv tickeri hind või SEC andmestik ei tohi lehte katki teha.
 - Ajutised integratsioonitesti read tuleb pärast kontrolli kustutada.
 - Production build kirjutab dev-serveri `.next` kataloogi üle; pärast buildi taaskäivita `app` konteiner.
+
+## Automated Test Coverage (2026-08-12)
+
+Vitest, 70 testi, 5 faili. Käivitamine: `docker compose run --rm -T app npm test`. Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja kustutab; tootmisbaasi `discovery` ei puudutata. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
+
+Testitakse nelja funktsiooni:
+
+- `recordDiscoveryRun` (`src/lib/discovery-validation.ts`) — 20 testi: canonical run-key ignoreerib input-hash'i (üks canonical run Tallinna päeva kohta, hilisem sisendimuutus märgitakse `inputChangedAfterCanonicalSnapshot` lipuga, kordusjooks ei lisa otsuseid ega outcome'e); manual `rklb` run-key sisaldab hash'i, seega muutunud sisend loob samal päeval teise run'i, aga otsuste ümberjärjestus mitte; ainult canonical loob `candidate_outcomes`; välistatud otsus ei saa outcome'e; nullkandidaadi päev salvestub ikka; Tallinna päevapiir neljal DST-juhul (suvi UTC+3, talv UTC+2) — see tõestab, et nihe tuleb tsooniandmetest, mitte koodist.
+- `calculateCompanyScores` (`src/lib/company-scores.ts`) — 24 testi, **DB-vaba** (~40 ms): determinism, mõõdikute järjekorra sõltumatus, `growthRateScore` ja cash/debt piirväärtused, puuduv mõõdik langetab katvust mitte skoori, `null` sisendi dokumenteeritud kuju. `detail` väljadele assertitakse ainult olemasolu, sest `toLocaleString('et-EE')` väljund sõltub keskkonna ICU-st; Coverage detailid on lokaadist sõltumatud ja seega täpselt lukustatud.
+- `refreshCandidateOutcomes` (`src/lib/discovery-validation.ts`) — 13 testi: `measured` on ainus lõplik olek (hilisem soodsam hind ei kirjuta üle, ka benchmark'i mitte); enne sihtaega ei puututa; esimene hind sihtajast alates võidab, mitte parim; 7-päevane aken ja akna järel `missing`; `missing` **ei ole** lukustatud olek (hilinenud aknasisene hind mõõdab ära); puuduv baashind → `unavailable`; excess = kandidaat − benchmark ning puuduv benchmark jääb NULL, mitte 0; horisondi sihtkuupäevad koos kuu-lõpu clamp'iga (31. jaanuar → 28. veebruar, 30. aprill).
+- `saveCompanyScoreSnapshot` (`src/lib/score-tracking.ts`) — 7 testi: sama hash annab ühe rea ja `calculated_at` ei muutu; muutunud `latest.value` või `previousComparable.value` loob uue rea; mõõdikute järjekord ei loo uut snapshot'i; tundmatu ticker viskab erindi, orvu rida ei teki; `ON CONFLICT` uuendab ainult `payload`-i.
+
+Ei testita (teadlikult, selle faasi skoobist väljas):
+
+- HTTP route'id, sh `/api/collect` autoriseerimine ja vastuse kuju;
+- välised provider'id — Yahoo Finance, SEC CompanyFacts, ApeWisdom ja FMP; ühtki võrgupäringut ei tehta;
+- UI ja server action'id;
+- `scripts/collect-daily.cjs` orkestreerimine (kuue sammu järjekord, veataluvus, `--dry-run` konservatiivsus);
+- **advisory lock'i samaaegsus** — testid jooksevad järjestikku ühe ühenduse peal, seega `pg_try_advisory_lock` (session-level, `collect-daily.cjs`) ja `pg_advisory_xact_lock` (`src/lib/db.ts`) tegelikku vastastikust välistamist ei pingutata;
+- enrichment-budget, catalyst evidence V2, data-quality/freshness, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
 
