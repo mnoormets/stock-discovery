@@ -10,9 +10,11 @@ import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
 import DataQualityEvidence from '@/components/DataQualityEvidence';
 import ValuationEvidence from '@/components/ValuationEvidence';
 import UnderRecognitionEvidenceBlock from '@/components/UnderRecognitionEvidence';
+import CatalystEvidence from '@/components/CatalystEvidence';
 import { calculateDataQuality, hasDataQualityWarning } from '@/lib/data-quality';
 import { buildValuationEvidence } from '@/lib/valuation-evidence';
 import { buildUnderRecognitionEvidence } from '@/lib/under-recognition';
+import { getCatalystEvidenceForTicker } from '@/lib/catalyst-events';
 import { getCompanyResearchDbFirst } from '@/lib/company-research-store';
 
 export const dynamic = 'force-dynamic';
@@ -93,10 +95,16 @@ export default async function ThesisPage({
   const valuationEvidence = buildValuationEvidence(financials, marketCap);
   const tracked = await getTrackedCompanyScores(workspace.ticker, financials).catch(() => ({ current: null, previous: null, history: [] }));
   const sectorRelative = await getSectorRelativeStats(workspace.ticker).catch(() => null);
+  const catalystEvidence = await getCatalystEvidenceForTicker(
+    workspace.ticker,
+    financials,
+    dataQuality,
+    marketCap,
+  ).catch(() => null);
   const underRecognition = buildUnderRecognitionEvidence({
     analystOpinions: research?.analystView?.numberOfAnalystOpinions ?? null,
     sectorRelative,
-    catalyst: null, // Thesis Builder ei arvuta catalyst evidence't; jääb unknown
+    catalyst: catalystEvidence,
     growth: scores.growth,
     health: scores.financialHealth,
     dataQuality,
@@ -124,6 +132,7 @@ export default async function ThesisPage({
           <article className="card thesisEvidenceCard"><div className="thesisEvidenceTop"><div><span className="evidenceType">ANDMEKATE</span><h3>Coverage Score</h3></div><strong>{scores.coverage.score}<small>/100</small></strong></div><p>{scores.coverage.label}. Madal coverage tähendab, et tugevat üksikkomponenti ei tohi käsitleda täieliku pildina.</p></article>
         </div>
         <DataQualityEvidence summary={dataQuality} title="Data quality warnings" />
+        {catalystEvidence && <CatalystEvidence evidence={catalystEvidence} title="Catalyst evidence" />}
         <ValuationEvidence evidence={valuationEvidence} title="Valuation evidence" />
         <UnderRecognitionEvidenceBlock evidence={underRecognition} title="Under-recognition evidence" />
         <SectorRelativeEvidence stats={sectorRelative} title="Sector-relative evidence" showInterpretation />
