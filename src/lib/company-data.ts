@@ -168,6 +168,28 @@ async function fetchCompanyResearchUncached(ticker: string): Promise<CompanyRese
   };
 }
 
+// Lean klassifikatsioonipäring collectori enrichment'i jaoks: küsib ainult
+// `assetProfile` mooduli (mitte analyst/financialData), et populeerida
+// companies.sector/industry ilma täit research-päringut tegemata.
+export async function fetchCompanyClassification(rawTicker: string): Promise<{
+  sector: string | null;
+  industry: string | null;
+  source: 'yahoo';
+} | null> {
+  const ticker = normalizeTicker(rawTicker);
+  if (!ticker) return null;
+  const summary: any = await withTimeout(
+    yahooFinance.quoteSummary(ticker, { modules: ['assetProfile'] }),
+    ENRICHMENT_TIMEOUT_MS,
+  );
+  const profile = summary?.assetProfile;
+  return {
+    sector: typeof profile?.sector === 'string' && profile.sector.trim() ? profile.sector.trim() : null,
+    industry: typeof profile?.industry === 'string' && profile.industry.trim() ? profile.industry.trim() : null,
+    source: 'yahoo',
+  };
+}
+
 async function fetchCompanyContext(ticker: string): Promise<{
   analystView: AnalystView | null;
   sector: string | null;

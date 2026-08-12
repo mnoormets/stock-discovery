@@ -4,6 +4,7 @@ import { runCollection } from '@/lib/collect';
 import { refreshCandidateOutcomes } from '@/lib/discovery-validation';
 import { collectDefaultBenchmarkPrice } from '@/lib/backtest';
 import { enrichStoredCompanyFinancials } from '@/lib/company-financials';
+import { enrichCompanyClassifications } from '@/lib/company-classification';
 import { getRklbDiscoveryCandidates } from '@/lib/rklb-discovery';
 
 function isAuthorized(req: Request): boolean {
@@ -32,6 +33,30 @@ export async function POST(req: Request) {
     } catch (error) {
       financialEnrichmentError = (error as Error).message;
       console.error('Päevane SEC CompanyFactsi enrichment ebaõnnestus:', error);
+    }
+
+    // Sector/industry klassifikatsiooni enrichment. Ühe tickeri viga ei nurja
+    // collecti. Kiirstart: /api/collect?classificationLimit=50 (või env
+    // CLASSIFICATION_ENRICHMENT_LIMIT) katab väikese universumi korraga.
+    const classificationLimitParam = Number(new URL(req.url).searchParams.get('classificationLimit'));
+    const classificationLimitEnv = Number(process.env.CLASSIFICATION_ENRICHMENT_LIMIT);
+    const classificationLimit = Number.isFinite(classificationLimitParam) && classificationLimitParam > 0
+      ? classificationLimitParam
+      : Number.isFinite(classificationLimitEnv) && classificationLimitEnv > 0
+        ? classificationLimitEnv
+        : undefined;
+    let classificationEnrichment: Awaited<ReturnType<typeof enrichCompanyClassifications>> | null = null;
+    let classificationEnrichmentError: string | null = null;
+    try {
+      classificationEnrichment = await enrichCompanyClassifications(classificationLimit);
+      console.log(
+        `Sector/industry enrichment: proovitud ${classificationEnrichment.attempted}, `
+        + `õnnestus ${classificationEnrichment.enriched}, ebaõnnestus ${classificationEnrichment.failed}, `
+        + `puudu ${classificationEnrichment.unavailable}, veel katmata ${classificationEnrichment.remaining}.`,
+      );
+    } catch (error) {
+      classificationEnrichmentError = (error as Error).message;
+      console.error('Sector/industry klassifikatsiooni enrichment ebaõnnestus:', error);
     }
 
     let dailyDiscovery: {
@@ -74,6 +99,8 @@ export async function POST(req: Request) {
       benchmarkCaptured,
       financialEnrichment,
       financialEnrichmentError,
+      classificationEnrichment,
+      classificationEnrichmentError,
       dailyDiscovery,
       outcomeUpdates,
     });
