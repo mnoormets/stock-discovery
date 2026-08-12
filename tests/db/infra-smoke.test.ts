@@ -30,6 +30,13 @@ const ENSURE_SCHEMA_TABLES = [
   'thesis_change_events',
 ];
 
+// Kõik selle faili testid algavad puhtalt lehelt. Ilma selleta sõltuksid
+// alljärgnevad tühjuse-assertsioonid sellest, mitmendana see fail jookseb —
+// teised DB-testifailid jätavad ridu maha.
+beforeEach(async () => {
+  await resetDb();
+});
+
 describe('D1 — test-andmebaasi isolatsioon (esimene värav)', () => {
   it('on ühendatud _test-lõpulise andmebaasiga, mis ei ole discovery', async () => {
     const { rows } = await pool.query('SELECT current_database() AS db');
@@ -39,16 +46,18 @@ describe('D1 — test-andmebaasi isolatsioon (esimene värav)', () => {
     expect(connected).toBe(TEST_DB_NAME);
   });
 
-  it('ei näe tootmise ridu — investment_theses on tühi', async () => {
-    const { rows } = await pool.query('SELECT count(*)::int AS n FROM investment_theses');
-    expect(rows[0].n).toBe(0);
-  });
-
-  it('ei näe tootmise canonical discovery jookse', async () => {
+  // NB: see ei tõesta, et tootmine on puutumata — seda tõestab ülemine test
+  // koos guard.ts K1/K2 kihiga. Siin tõestatakse, et me oleme ühendatud
+  // kustutatava andmebaasiga, mille sisu on testide kontrolli all.
+  it('töötab tühjendatava andmebaasiga: portfelli tabelid on pärast reset\'i tühjad', async () => {
     const { rows } = await pool.query(
-      `SELECT count(*)::int AS n FROM discovery_runs WHERE run_type = 'rklb_daily'`,
+      `SELECT (SELECT count(*)::int FROM investment_theses) AS theses,
+              (SELECT count(*)::int FROM portfolio_positions) AS positions,
+              (SELECT count(*)::int FROM discovery_runs WHERE run_type = 'rklb_daily') AS canonical`,
     );
-    expect(rows[0].n).toBe(0);
+    expect(rows[0].theses).toBe(0);
+    expect(rows[0].positions).toBe(0);
+    expect(rows[0].canonical).toBe(0);
   });
 });
 
@@ -67,10 +76,6 @@ describe('D2 — ensureSchema() tabelikomplekt', () => {
 });
 
 describe('D3 — resetDb()', () => {
-  beforeEach(async () => {
-    await resetDb();
-  });
-
   it('lähtestab ka identity-sekventsid', async () => {
     const first = await pool.query(`INSERT INTO companies (ticker) VALUES ('TEST') RETURNING id`);
     expect(Number(first.rows[0].id)).toBe(1);

@@ -1,0 +1,66 @@
+import type { DiscoveryDecisionInput } from '../../src/lib/discovery-validation';
+
+// `DiscoveryDecisionInput` on 55-väljaline (discovery-validation.ts:20-75).
+// Builder annab kõigile neutraalsed vaikeväärtused, et test räägiks ainult
+// sellest, mida ta päriselt kontrollib.
+
+export function makeDecisionInput(
+  overrides: Partial<DiscoveryDecisionInput>
+    & Pick<DiscoveryDecisionInput, 'companyId' | 'ticker'>,
+): DiscoveryDecisionInput {
+  return {
+    included: true,
+    candidateRank: 1,
+    exclusionReasons: [],
+    growthScore: 80,
+    healthScore: 70,
+    coverageScore: 90,
+    decisionPrice: 100,
+    currency: 'USD',
+    marketCap: 1_000_000_000,
+    volume: 1_000_000,
+    priceSnapshotId: null,
+    scoreSnapshotId: null,
+    scoringVersion: 'scores-v1',
+    runwayStatus: 'unknown',
+    runwayDetail: 'test fixture',
+    catalystStatus: 'none_recorded',
+    catalystType: null,
+    catalystSourceId: null,
+    catalystUrl: null,
+    catalystAt: null,
+    catalystDetail: 'test fixture',
+    catalystAssessmentVersion: null,
+    catalystEvidenceStatus: null,
+    catalystEvidenceTier: null,
+    catalystEventKind: null,
+    catalystSourceKind: null,
+    catalystMateriality: null,
+    catalystMaterialityRatio: null,
+    catalystDirection: null,
+    catalystNovelty: null,
+    catalystThesisRelevance: null,
+    catalystMandateRelevance: null,
+    catalystEvidenceFreshness: null,
+    catalystEventId: null,
+    catalystLinkedPeriodEnd: null,
+    catalystNextScheduledAt: null,
+    risks: [],
+    unknowns: [],
+    reasons: [],
+    criteria: [],
+    proofQuestions: [],
+    sector: null,
+    industry: null,
+    sectorGroupType: null,
+    sectorGrowthPercentile: null,
+    sectorHealthPercentile: null,
+    sectorCoveragePercentile: null,
+    sectorMarketCapPercentile: null,
+    sectorComparableCount: null,
+    sectorMedianGrowth: null,
+    sectorMedianHealth: null,
+    sectorMedianCoverage: null,
+    ...overrides,
+  };
+}
