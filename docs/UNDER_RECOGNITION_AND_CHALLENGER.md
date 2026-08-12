@@ -1,7 +1,7 @@
 # Under-Recognition & Challenger — disain
 
 Kuupäev: 2026-08-12
-Staatus: **ainult disain, mitte implementatsioon.** Koodi, skeemi, filtreid, API-sid ega UI-d selle põhjal ei muudetud. See dokument sõnastab järgmise tõlgenduskihi; ehitamine on eraldi otsus ja eeldab piisavat canonical frequency ajalugu (§ 7). Disaini olemasolu ei ole luba midagi muuta.
+Staatus: **under-recognition proxy V0 ehitatud 2026-08-12; challenger-vs-incumbent jääb disainiks.** Under-recognition Evidence V0 (`under-recognition-v0`) on read-only evidence-kiht (`src/lib/under-recognition.ts` + `UnderRecognitionEvidence` komponent), mis kuvab § 1 signaalivektori ja viie-oleku tuletuse company detailis ja Thesis Builderis. **Skeemi, filtreid, skoore, API-sid ega uut andmeallikat ei lisatud; ranking'ut ei muudetud.** V0 ei arvuta frequency't ega hinnareaktsiooni (mõlemad `unknown`, § 7.5) ega catalyst novelty't neil kahel surface'il (jääb `unknown`, kuna neid vaateid ei arvuta catalyst'it). Cohort QA kinnitab § 4.1 tulemust. **Challenger-vs-incumbent (§ 2) on endiselt ainult disain.**
 
 Skoop on **teadlikult kitsas:** ainult kaks kihti — **under-recognition proxy** ja **challenger-vs-incumbent narrative**. See dokument **ei** kirjelda ega luba themes, strategic investors, insider trading, dividend, smart-money ega valuation mooduleid (§ 6).
 

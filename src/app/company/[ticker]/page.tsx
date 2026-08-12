@@ -11,8 +11,10 @@ import { getSectorRelativeStats } from '@/lib/sector-relative';
 import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
 import DataQualityEvidence from '@/components/DataQualityEvidence';
 import ValuationEvidence from '@/components/ValuationEvidence';
+import UnderRecognitionEvidenceBlock from '@/components/UnderRecognitionEvidence';
 import { calculateDataQuality } from '@/lib/data-quality';
 import { buildValuationEvidence } from '@/lib/valuation-evidence';
+import { buildUnderRecognitionEvidence } from '@/lib/under-recognition';
 
 export const dynamic = 'force-dynamic';
 
@@ -162,6 +164,14 @@ export default async function CompanyPage({ params }: { params: { ticker: string
     console.error(`Ettevõtte ${ticker} sector-relative võrdlust ei õnnestunud laadida:`, error);
     return null;
   });
+  const underRecognition = buildUnderRecognitionEvidence({
+    analystOpinions: analystView?.numberOfAnalystOpinions ?? null,
+    sectorRelative,
+    catalyst: null, // company detail ei arvuta catalyst evidence't; jääb unknown
+    growth: scores.growth,
+    health: scores.financialHealth,
+    dataQuality,
+  });
   const move = quote.price != null && quote.previousClose
     ? ((quote.price - quote.previousClose) / quote.previousClose) * 100
     : null;
@@ -258,6 +268,7 @@ export default async function CompanyPage({ params }: { params: { ticker: string
           <div><p className="eyebrow">VALUATION EVIDENCE · NOT A SCORE</p><h2>Mille vastu ma seda hinnastan?</h2></div>
         </div>
         <ValuationEvidence evidence={valuationEvidence} />
+        <UnderRecognitionEvidenceBlock evidence={underRecognition} />
       </section>
 
       <section className="section">

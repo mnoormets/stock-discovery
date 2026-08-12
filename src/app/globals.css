@@ -392,12 +392,35 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .valuationDimensions em { display: inline-block; margin-top: 5px; }
 .compactValuation { padding: 14px; }
 .valuationNote { margin: 0; }
+
+/* Under-recognition Evidence V0 — kompositsioonikiht, mitte skoor */
+.underRecognition { display: grid; gap: 12px; border-left: 3px solid #7d6f5f; padding: 16px; }
+.underRecognitionTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.underRecognitionTop h3 { margin: 3px 0 0; }
+.urQuestion { margin: 0; font-size: 12px; }
+.urStateDetail { margin: 0; font-size: 13px; }
+.urBadge { border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+.urBadge.meaningful { color: var(--green); border-color: #2f7049; }
+.urBadge.low_confidence { color: var(--amber); border-color: #75602e; }
+.urBadge.attention_only { color: var(--amber); border-color: #75602e; border-style: dashed; }
+.urBadge.no_attention_gap { color: var(--muted); }
+.urBadge.unknown { color: var(--muted); border-style: dashed; }
+.urDimensions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.urDimensions span { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 11px; }
+.urDimensions strong { display: block; margin-top: 3px; color: var(--text); font-size: 12px; text-transform: capitalize; }
+.urValue.low, .urValue.small_vs_peers, .urValue.material_new_evidence, .urValue.improving { color: var(--green); }
+.urValue.high, .urValue.large, .urValue.flat_or_declining { color: var(--amber); }
+.urValue.unknown { color: var(--muted); }
+.urReasons { margin: 0; padding-left: 20px; display: grid; gap: 5px; font-size: 12px; }
+.urUnknowns summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+.urUnknowns[open] ul { margin-top: 8px; padding-left: 20px; display: grid; gap: 5px; font-size: 12px; }
+.urNote { margin: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 760px) {
   .pageStack { padding-top: 28px; }
-  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions { grid-template-columns: 1fr; }
-  .dataQualityTop, .catalystTop, .valuationTop { flex-direction: column; }
+  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions, .urDimensions { grid-template-columns: 1fr; }
+  .dataQualityTop, .catalystTop, .valuationTop, .underRecognitionTop { flex-direction: column; }
   .dataQualityBadges { justify-content: flex-start; }
   .rklbCandidateTop { display: grid; }
   .validationDecisionTop, .validationRun > summary { align-items: flex-start; flex-direction: column; }

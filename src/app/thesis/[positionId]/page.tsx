@@ -9,8 +9,10 @@ import { getSectorRelativeStats } from '@/lib/sector-relative';
 import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
 import DataQualityEvidence from '@/components/DataQualityEvidence';
 import ValuationEvidence from '@/components/ValuationEvidence';
+import UnderRecognitionEvidenceBlock from '@/components/UnderRecognitionEvidence';
 import { calculateDataQuality, hasDataQualityWarning } from '@/lib/data-quality';
 import { buildValuationEvidence } from '@/lib/valuation-evidence';
+import { buildUnderRecognitionEvidence } from '@/lib/under-recognition';
 import { getCompanyResearchDbFirst } from '@/lib/company-research-store';
 
 export const dynamic = 'force-dynamic';
@@ -83,15 +85,22 @@ export default async function ThesisPage({
   if (!workspace) notFound();
 
   const financials = await getCompanyFinancialsDbFirst(workspace.ticker).catch(() => null);
-  const marketCap = await getCompanyResearchDbFirst(workspace.ticker)
-    .then((research) => research?.quote.marketCap ?? null)
-    .catch(() => null);
+  const research = await getCompanyResearchDbFirst(workspace.ticker).catch(() => null);
+  const marketCap = research?.quote.marketCap ?? null;
   const scores = calculateCompanyScores(financials);
   const dataQuality = calculateDataQuality(financials);
   const dataQualityWarning = hasDataQualityWarning(dataQuality);
   const valuationEvidence = buildValuationEvidence(financials, marketCap);
   const tracked = await getTrackedCompanyScores(workspace.ticker, financials).catch(() => ({ current: null, previous: null, history: [] }));
   const sectorRelative = await getSectorRelativeStats(workspace.ticker).catch(() => null);
+  const underRecognition = buildUnderRecognitionEvidence({
+    analystOpinions: research?.analystView?.numberOfAnalystOpinions ?? null,
+    sectorRelative,
+    catalyst: null, // Thesis Builder ei arvuta catalyst evidence't; jääb unknown
+    growth: scores.growth,
+    health: scores.financialHealth,
+    dataQuality,
+  });
   const thesis = workspace.current || emptyThesis;
 
   return (
@@ -116,6 +125,7 @@ export default async function ThesisPage({
         </div>
         <DataQualityEvidence summary={dataQuality} title="Data quality warnings" />
         <ValuationEvidence evidence={valuationEvidence} title="Valuation evidence" />
+        <UnderRecognitionEvidenceBlock evidence={underRecognition} title="Under-recognition evidence" />
         <SectorRelativeEvidence stats={sectorRelative} title="Sector-relative evidence" showInterpretation />
       </section>
 
