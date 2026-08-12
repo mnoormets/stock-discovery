@@ -25,7 +25,22 @@ async function maintenance(sql: string): Promise<void> {
   }
 }
 
-export default async function setup() {
+// `ensureSchema()` tabelikomplekt fikseeritakse SIIN, värskes baasis ja enne
+// ühtki testi. Hilisem kood võib tabeleid lisada — nt `ensureFinancialSchema()`
+// loob `financial_enrichment_status` alles enrichment-koodi esimesel käivitusel —
+// ja testibaas on failide vahel jagatud. Jooksva `pg_tables` vastu assertimine
+// muudaks selle karakteriseeringu failijärjekorrast sõltuvaks.
+declare module 'vitest' {
+  export interface ProvidedContext {
+    ensureSchemaTables: string[];
+  }
+}
+
+interface GlobalSetupContext {
+  provide: (key: 'ensureSchemaTables', value: string[]) => void;
+}
+
+export default async function setup(context: GlobalSetupContext) {
   assertTestDatabaseName();
 
   // Värske baas iga jooksu alguses, et eelmise jooksu jäägid ei mõjutaks
@@ -44,6 +59,10 @@ export default async function setup() {
     if (String(rows[0].db) !== TEST_DB_NAME) {
       throw new Error(`globalSetup ühendus vale andmebaasiga: ${String(rows[0].db)}`);
     }
+    const tables = await pool.query(
+      `SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`,
+    );
+    context.provide('ensureSchemaTables', tables.rows.map((row) => String(row.tablename)));
   } finally {
     // Pool tuleb sulgeda, muidu DROP DATABASE teardownis ei õnnestu ja Vitest
     // ripub avatud handle'i tõttu.
