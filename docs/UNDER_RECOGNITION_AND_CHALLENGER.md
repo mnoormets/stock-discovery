@@ -155,6 +155,64 @@ Kasutan olemasolevat 2026-08-11 research sprinti märgistatud testhulgana. Otsus
 
 **Cohordi järeldus:** kiht oleks olnud kasulik peamiselt **negatiivse ja täpsustava kinnitusena** (CAKE ei ole asümmeetriline; ACHR on narratiiv ilma tõendita; HIMS vajab kasvu-allika tõendit), ja BW puhul positiivse „screen eksib" leidjana. Ükski juhtum ei nõudnud uut andmeallikat.
 
+## 4.1 Under-recognition cohort validation (2026-08-12)
+
+> **See on validation note, mitte implementatsioon.** Under-recognition kihti ei ehitatud: koodi, UI-d, DB-d, skeemi, filtreid ega skoore ei muudetud. Allolev on ainult kontroll, kas kontseptsioon seletab meie päris cohorti.
+
+**Metoodika ja §1.2 diskrimineerija.** Rakendan §1 signaalid ja §1.2 reegli 2026-08-11 sprindi faktidele. Diskrimineerija:
+
+> Under-recognition on **tähenduslik ainult siis, kui vähemalt üks tähelepanu-madaluse mõõde (a/b/c) on `strong` JA vähemalt üks tõend-paraneb mõõde (d/e/f) on `strong`, värske/joondatud sisendil.** Madal tähelepanu üksi = penny-stock / ignored-for-a-reason lõks.
+
+**Kaks ausat piirangut kogu testis:**
+
+- **Frequency behavior on kõigil viiel `unknown`.** v2 canonical seeria algas alles run'ist #17 (2026-08-12), seega signaal (c) ei saa veel eristada. Kogu diskrimineeriva töö teevad (a) attention, (b) market cap, (e) catalyst novelty — nagu § 7.5 ennustas.
+- **Täpseid analyst coverage arve sprint ei fikseerinud.** Attention on hinnatud kvalitatiivselt (small-cap ADR vs high-profile nimi); täpne count jääb `unknown` (§ 1.1a: „puuduv kate ≠ null kate").
+
+**API — Agora (ready · 81/92/93 · fresh/good)**
+- *Analyst attention:* kvalitatiivselt **madal** (väike Hiina RTE-PaaS ADR, ~$391m cap); täpne count `unknown` → strong (a).
+- *Market cap context:* ~$391m cap $366m likviidsuse ja $80m debt'i kõrval → väike implied EV → strong (b).
+- *Catalyst novelty:* 6. järjestikune GAAP-kasumlik kvartal + Q1 revenue +13,5% = `material_new_evidence` → strong (e).
+- *Frequency behavior:* `unknown`.
+- *Under-recognition hypothesis:* **STRONG** — madal tähelepanu × paranev tõend värskel sisendil täidab §1.2 mõlemad pooled; `ready` tuli tõenäoliselt just under-recognition + improving fundamentals kombinatsioonist.
+
+**BW — Babcock & Wilcox (researching · 100/67/100 · mixed/poor)**
+- *Analyst attention:* ebaselge/keskmine, mitte selge attention-edge → attention-pool nõrk/unknown.
+- *Market cap context:* väike/mid-cap, mitte selgelt ignoreeritud → weak (b).
+- *Catalyst novelty:* backlog +533%, revenue +130%, Base Electron = `material_new_evidence` → strong (e).
+- *Frequency behavior:* `unknown`.
+- *Under-recognition hypothesis:* **PARTIAL** — tõend-paraneb pool tugev, aga põhineb `mixed/poor` alignment'il (2021 debt) ja ~47% suuremal aktsiate arvul → per-share pööret pole tõestatud, valuation-alus madala usaldusega → `researching`, mitte puhas edge.
+
+**HIMS — Hims & Hers (researching · 59/35/58 · fresh/warning)**
+- *Analyst attention:* **kõrge** (laialt jälgitud consumer-nimi) → weak (a).
+- *Market cap context:* ei väike ega ignoreeritud → weak (b).
+- *Catalyst novelty:* headline +38,2%, aga Eucalyptus'e omandamine saastab uudsuse → nõrk/uncertain (e).
+- *Frequency behavior:* `unknown`.
+- *Under-recognition hypothesis:* **EI** — tähelepanu kõrge; `researching` tuleneb tõendi kvaliteedist (orgaaniline vs omandatud), mitte tähelepanu-lõhest. Under-recognition ≠ „raske analüüsida".
+
+**CAKE — Cheesecake Factory (rejected · 81/81/100 · fresh/warning)**
+- *Analyst attention:* **kõrge** (suur, küps, hästi kaetud) → weak (a).
+- *Market cap context:* väljakujunenud, adekvaatselt kaetud → weak (b).
+- *Catalyst novelty:* revenue +7,7%, comp sales +5,8%, aga `quantified_minor` + mandate not_relevant → weak (e).
+- *Frequency behavior:* `unknown`.
+- *Under-recognition hypothesis:* **EI** — kukub läbi mõlemal §1.2 poolel (tähelepanu pole madal JA tõend pole inflekteeruv); hästi mõistetav, adekvaatselt hinnastatud.
+
+**ACHR — Archer Aviation (rejected · 1/30/75 · fresh/warning)**
+- *Analyst attention:* **kõrge** (hype'itud eVTOL story-stock) → weak (a).
+- *Market cap context:* tuntud spekulatiivne nimi, $1,78b cash, mitte ignoreeritud → weak (b).
+- *Catalyst novelty:* sertifitseerimine + partnerlused = sündmused, mitte materiaalne finantstõend (revenue $1,6m, burn $217,7m) → nõrk (e).
+- *Frequency behavior:* `unknown`.
+- *Under-recognition hypothesis:* **EI** — narratiiv on tugev just seetõttu, et tähelepanu on kõrge (hype). Under-recognition nõuab madalat tähelepanu + paranevat tõendit; §5 guardrail tõkestab loo, ei võimenda.
+
+| Ettevõte | Under-recognized? | Otsustav põhjus |
+|---|---|---|
+| **API** | ✅ **Jah (strong)** | Madal tähelepanu + kasumlikkuse inflection värskel sisendil — §1.2 mõlemad pooled |
+| **BW** | 🟡 **Osaliselt** | Tõend paraneb, aga `poor` alignment + ~47% dilution → madal confidence → `researching` |
+| **HIMS** | ❌ **Ei** | Tähelepanu kõrge; `researching` tuleneb tõendi kvaliteedist, mitte tähelepanu-lõhest |
+| **CAKE** | ❌ **Ei** | Kõrge tähelepanu + küps/minor tõend — hästi mõistetav, adekvaatselt hinnastatud |
+| **ACHR** | ❌ **Ei** | Kõrge tähelepanu + narratiiv ilma economicsita; kontseptsioon tõkestab loo |
+
+**Järeldus.** Under-recognition kontseptsioon **seletab cohorti järjekindlalt:** üks selge jah (API strong), üks kvalifitseeritud osaline (BW partial) ja kolm põhjendatud ei-d (HIMS, CAKE, ACHR no) — ja iga „ei" tuleb **õigel põhjusel** (kõrge tähelepanu vs narratiiv-ainult vs küps-adekvaatne), mitte ühesuguse tõrjena. See kinnitab §1.2 põhihüpoteesi: madal tähelepanu üksi ei kvalifitseeru, ja tõend ilma tähelepanu-lõheta ei ole edge. Aegrea-jalg (frequency, signaal c) ei lisanud veel midagi — see jääb `unknown`, kuni canonical seeria kasvab (§ 7.5). See ei muuda ehitusotsust: kiht jääb disainiks.
+
 ---
 
 ## 5. Guardrails
