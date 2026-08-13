@@ -1012,6 +1012,324 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+
+-- ============================================================================
+-- OSA 4 — VEERGUDE drifti sulgemine OLEMASOLEVATES andmebaasides (H1 fix)
+-- ============================================================================
+-- `CREATE TABLE IF NOT EXISTS` jätab OLEMASOLEVA tabeli keha tervikuna vahele.
+-- Vanas driftivas baasis tähendaks see, et migratsioon raporteerib edu, aga
+-- puuduvad veerud jäävad lisamata. Allolev sulgeb selle augu.
+--
+-- Kaetud: 213 veergu, mis on kas NULL-lubavad või DEFAULT-iga
+--         (neid saab olemasolevasse ridadega tabelisse ohutult lisada).
+--
+-- EI ole kaetud: 87 veergu, mis on NOT NULL ILMA defaultita.
+--   Neid EI SAA lisada tabelisse, kus on juba ridu, ilma väärtust valimata.
+--   `npm run migrate -- --conformance` raporteerib need ja `--preflight`
+--   annab NO-GO verdikti: selline baas vajab eraldi repair-migratsiooni.
+--   Nimekiri:
+--     alerts.kind
+--     alerts.title
+--     alerts.occurred_at
+--     analyst_targets.company_id
+--     analyst_targets.source
+--     analyst_targets.data_hash
+--     candidate_outcomes.decision_id
+--     candidate_outcomes.horizon
+--     candidate_outcomes.target_at
+--     catalyst_assessments.catalyst_event_id
+--     catalyst_assessments.assessment_version
+--     catalyst_assessments.materiality
+--     catalyst_assessments.direction
+--     catalyst_assessments.novelty
+--     catalyst_assessments.source_quality
+--     catalyst_assessments.thesis_relevance
+--     catalyst_assessments.mandate_relevance
+--     catalyst_assessments.evidence_freshness
+--     catalyst_assessments.evidence_status
+--     catalyst_assessments.input_hash
+--     catalyst_events.company_id
+--     catalyst_events.event_kind
+--     catalyst_events.source_kind
+--     catalyst_events.source_ref
+--     companies.ticker
+--     company_score_snapshots.company_id
+--     company_score_snapshots.scoring_version
+--     company_score_snapshots.input_hash
+--     company_score_snapshots.coverage_score
+--     company_score_snapshots.payload
+--     discovery_decisions.run_id
+--     discovery_decisions.ticker
+--     discovery_decisions.included
+--     discovery_decisions.coverage_score
+--     discovery_decisions.runway_status
+--     discovery_decisions.runway_detail
+--     discovery_decisions.catalyst_status
+--     discovery_decisions.catalyst_detail
+--     discovery_runs.decision_date
+--     discovery_runs.model_version
+--     discovery_runs.input_hash
+--     discovery_runs.run_key
+--     discovery_runs.rules
+--     discovery_runs.universe
+--     discovery_runs.evaluated_count
+--     discovery_runs.included_count
+--     earnings_events.company_id
+--     earnings_events.event_at
+--     earnings_events.source
+--     financial_enrichment_status.company_id
+--     financial_enrichment_status.status
+--     financial_facts.company_id
+--     financial_facts.metric
+--     financial_facts.value
+--     financial_facts.unit
+--     financial_facts.period_end
+--     financial_facts.period_kind
+--     financial_facts.form_type
+--     financial_facts.filed_at
+--     financial_facts.accession_number
+--     financial_facts.taxonomy
+--     financial_facts.tag
+--     financial_facts.source_url
+--     financial_facts.fact_key
+--     investment_theses.position_id
+--     investment_theses.thesis
+--     news_items.id
+--     news_items.company_id
+--     news_items.title
+--     news_items.url
+--     news_items.source
+--     portfolio_positions.ticker
+--     portfolio_positions.quantity
+--     portfolio_positions.average_buy_price
+--     price_snapshots.company_id
+--     price_snapshots.source
+--     research_briefs.company_id
+--     research_briefs.input_hash
+--     research_briefs.model
+--     research_briefs.content
+--     sec_events.id
+--     sec_events.url
+--     sec_suspensions.normalized
+--     sec_suspensions.company
+--     snapshots.capture_date
+--     snapshots.ticker
+--     thesis_change_events.position_id
+
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('alerts_id_seq'::regclass) NOT NULL;
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS company_id bigint;
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS position_id bigint;
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS severity text DEFAULT 'info'::text NOT NULL;
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS detail text;
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS source_url text;
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS dedupe_key text;
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS payload jsonb DEFAULT '{}'::jsonb NOT NULL;
+ALTER TABLE alerts ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE analyst_targets ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('analyst_targets_id_seq'::regclass) NOT NULL;
+ALTER TABLE analyst_targets ADD COLUMN IF NOT EXISTS captured_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE analyst_targets ADD COLUMN IF NOT EXISTS target_mean_price numeric;
+ALTER TABLE analyst_targets ADD COLUMN IF NOT EXISTS target_high_price numeric;
+ALTER TABLE analyst_targets ADD COLUMN IF NOT EXISTS target_low_price numeric;
+ALTER TABLE analyst_targets ADD COLUMN IF NOT EXISTS recommendation_mean numeric;
+ALTER TABLE analyst_targets ADD COLUMN IF NOT EXISTS recommendation_key text;
+ALTER TABLE analyst_targets ADD COLUMN IF NOT EXISTS analyst_count integer;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('candidate_outcomes_id_seq'::regclass) NOT NULL;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'::text NOT NULL;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS observed_at timestamp with time zone;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS observed_price numeric;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS return_percent numeric;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS measured_at timestamp with time zone;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_symbol text DEFAULT 'SPY'::text NOT NULL;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_status text DEFAULT 'pending'::text NOT NULL;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_start_at timestamp with time zone;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_end_at timestamp with time zone;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_price_start numeric;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_price_end numeric;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS benchmark_return_percent numeric;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS excess_return_percent numeric;
+ALTER TABLE candidate_outcomes ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('catalyst_assessments_id_seq'::regclass) NOT NULL;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS materiality_basis text;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS materiality_ratio numeric;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS direction_basis text;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS novelty_basis text;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS prior_event_id bigint;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS relevance_target text;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS mandate_basis text;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS assessed_by text DEFAULT 'rule'::text NOT NULL;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS assessed_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE catalyst_assessments ADD COLUMN IF NOT EXISTS notes text;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('catalyst_events_id_seq'::regclass) NOT NULL;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS occurred_at timestamp with time zone;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS headline text;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS url text;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS accession_number text;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS form_type text;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS linked_fact_ids jsonb DEFAULT '[]'::jsonb NOT NULL;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS linked_period_end date;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS linked_period_kind text;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS first_seen_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE catalyst_events ADD COLUMN IF NOT EXISTS last_seen_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('companies_id_seq'::regclass) NOT NULL;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS exchange text;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS quote_type text;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS currency text;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS source text;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS sec_cik text;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS sector text;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS industry text;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS classification_source text;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS classification_updated_at timestamp with time zone;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE company_score_snapshots ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('company_score_snapshots_id_seq'::regclass) NOT NULL;
+ALTER TABLE company_score_snapshots ADD COLUMN IF NOT EXISTS growth_score integer;
+ALTER TABLE company_score_snapshots ADD COLUMN IF NOT EXISTS health_score integer;
+ALTER TABLE company_score_snapshots ADD COLUMN IF NOT EXISTS calculated_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('discovery_decisions_id_seq'::regclass) NOT NULL;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS company_id bigint;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS candidate_rank integer;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS exclusion_reasons jsonb DEFAULT '[]'::jsonb NOT NULL;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS growth_score integer;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS health_score integer;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS decision_price numeric;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS currency text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS market_cap bigint;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS volume bigint;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS price_snapshot_id bigint;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS score_snapshot_id bigint;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS scoring_version text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_type text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_source_id text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_url text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_at timestamp with time zone;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS risks jsonb DEFAULT '[]'::jsonb NOT NULL;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS unknowns jsonb DEFAULT '[]'::jsonb NOT NULL;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS reasons jsonb DEFAULT '[]'::jsonb NOT NULL;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS criteria jsonb DEFAULT '[]'::jsonb NOT NULL;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS proof_questions jsonb DEFAULT '[]'::jsonb NOT NULL;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS industry text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_group_type text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_growth_percentile numeric;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_health_percentile numeric;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_coverage_percentile numeric;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_market_cap_percentile numeric;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_comparable_count integer;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_growth numeric;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_health numeric;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS sector_median_coverage numeric;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS payload jsonb DEFAULT '{}'::jsonb NOT NULL;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_assessment_version text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_evidence_status text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_evidence_tier integer;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_event_kind text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_source_kind text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_materiality text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_materiality_ratio numeric;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_direction text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_novelty text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_thesis_relevance text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_mandate_relevance text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_evidence_freshness text;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_event_id bigint;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_linked_period_end date;
+ALTER TABLE discovery_decisions ADD COLUMN IF NOT EXISTS catalyst_next_scheduled_at timestamp with time zone;
+ALTER TABLE discovery_runs ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('discovery_runs_id_seq'::regclass) NOT NULL;
+ALTER TABLE discovery_runs ADD COLUMN IF NOT EXISTS run_type text DEFAULT 'rklb'::text NOT NULL;
+ALTER TABLE discovery_runs ADD COLUMN IF NOT EXISTS run_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE discovery_runs ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE earnings_events ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('earnings_events_id_seq'::regclass) NOT NULL;
+ALTER TABLE earnings_events ADD COLUMN IF NOT EXISTS timing text;
+ALTER TABLE earnings_events ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE financial_enrichment_status ADD COLUMN IF NOT EXISTS last_attempt_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE financial_enrichment_status ADD COLUMN IF NOT EXISTS last_success_at timestamp with time zone;
+ALTER TABLE financial_enrichment_status ADD COLUMN IF NOT EXISTS consecutive_failures integer DEFAULT 0 NOT NULL;
+ALTER TABLE financial_enrichment_status ADD COLUMN IF NOT EXISTS last_error text;
+ALTER TABLE financial_enrichment_status ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE financial_facts ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('financial_facts_id_seq'::regclass) NOT NULL;
+ALTER TABLE financial_facts ADD COLUMN IF NOT EXISTS period_start date;
+ALTER TABLE financial_facts ADD COLUMN IF NOT EXISTS fiscal_year integer;
+ALTER TABLE financial_facts ADD COLUMN IF NOT EXISTS fiscal_period text;
+ALTER TABLE financial_facts ADD COLUMN IF NOT EXISTS is_derived boolean DEFAULT false NOT NULL;
+ALTER TABLE financial_facts ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE financial_facts ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('investment_theses_id_seq'::regclass) NOT NULL;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS business text;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS why_now text;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS moat text;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS mispricing text;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS catalyst text;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS invalidation text;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS twelve_month_checkpoint text;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS checkpoint_is_measurable boolean DEFAULT false NOT NULL;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS time_horizon text;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft'::text NOT NULL;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS version integer DEFAULT 1 NOT NULL;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS content_hash text;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS score_snapshot_id bigint;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS is_current boolean DEFAULT true NOT NULL;
+ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE news_items ADD COLUMN IF NOT EXISTS publisher text;
+ALTER TABLE news_items ADD COLUMN IF NOT EXISTS summary text;
+ALTER TABLE news_items ADD COLUMN IF NOT EXISTS published_at timestamp with time zone;
+ALTER TABLE news_items ADD COLUMN IF NOT EXISTS discovered_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE portfolio_positions ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('portfolio_positions_id_seq'::regclass) NOT NULL;
+ALTER TABLE portfolio_positions ADD COLUMN IF NOT EXISTS company_id bigint;
+ALTER TABLE portfolio_positions ADD COLUMN IF NOT EXISTS status text DEFAULT 'active'::text NOT NULL;
+ALTER TABLE portfolio_positions ADD COLUMN IF NOT EXISTS notes text;
+ALTER TABLE portfolio_positions ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE portfolio_positions ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE price_snapshots ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('price_snapshots_id_seq'::regclass) NOT NULL;
+ALTER TABLE price_snapshots ADD COLUMN IF NOT EXISTS captured_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE price_snapshots ADD COLUMN IF NOT EXISTS price numeric;
+ALTER TABLE price_snapshots ADD COLUMN IF NOT EXISTS previous_close numeric;
+ALTER TABLE price_snapshots ADD COLUMN IF NOT EXISTS market_cap bigint;
+ALTER TABLE price_snapshots ADD COLUMN IF NOT EXISTS volume bigint;
+ALTER TABLE price_snapshots ADD COLUMN IF NOT EXISTS currency text;
+ALTER TABLE research_briefs ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('research_briefs_id_seq'::regclass) NOT NULL;
+ALTER TABLE research_briefs ADD COLUMN IF NOT EXISTS source_count integer DEFAULT 0 NOT NULL;
+ALTER TABLE research_briefs ADD COLUMN IF NOT EXISTS generated_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE sec_events ADD COLUMN IF NOT EXISTS company_id bigint;
+ALTER TABLE sec_events ADD COLUMN IF NOT EXISTS form_type text;
+ALTER TABLE sec_events ADD COLUMN IF NOT EXISTS filed_at date;
+ALTER TABLE sec_events ADD COLUMN IF NOT EXISTS description text;
+ALTER TABLE sec_events ADD COLUMN IF NOT EXISTS source text DEFAULT 'sec'::text NOT NULL;
+ALTER TABLE sec_events ADD COLUMN IF NOT EXISTS discovered_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE sec_suspensions ADD COLUMN IF NOT EXISTS link text;
+ALTER TABLE sec_suspensions ADD COLUMN IF NOT EXISTS pub_date text;
+ALTER TABLE sec_suspensions ADD COLUMN IF NOT EXISTS first_seen timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE sec_suspensions ADD COLUMN IF NOT EXISTS last_seen timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('snapshots_id_seq'::regclass) NOT NULL;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS captured_at timestamp with time zone DEFAULT now() NOT NULL;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS mentions integer DEFAULT 0 NOT NULL;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS mentions_prev integer;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS mention_growth numeric;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS upvotes integer;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS rank integer;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS rank_prev integer;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS sentiment text;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS sentiment_source text;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS sentiment_value numeric;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS market_cap bigint;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS price numeric;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS currency text;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS discovery_score numeric;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS is_new boolean DEFAULT false NOT NULL;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS volume bigint;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS fundamentals_source text;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS rising_days integer DEFAULT 0;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS sec_suspended boolean DEFAULT false;
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS warnings text;
+ALTER TABLE thesis_change_events ADD COLUMN IF NOT EXISTS id bigint DEFAULT nextval('thesis_change_events_id_seq'::regclass) NOT NULL;
+ALTER TABLE thesis_change_events ADD COLUMN IF NOT EXISTS previous_thesis text;
+ALTER TABLE thesis_change_events ADD COLUMN IF NOT EXISTS new_thesis text;
+ALTER TABLE thesis_change_events ADD COLUMN IF NOT EXISTS change_reason text;
+ALTER TABLE thesis_change_events ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL;
+
 -- ============================================================================
 -- KNOWN SOURCE / STATUS
 -- ============================================================================

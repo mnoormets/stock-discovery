@@ -41,7 +41,8 @@ npm run migrate -- --database-url postgres://discovery:discovery@localhost:5433/
 | Lipp | Tähendus |
 |---|---|
 | *(puudub)* | Rakendab rakendamata migratsioonid `DATABASE_URL` sihtbaasi |
-| `--preflight` | **GO / NO-GO kontroll enne apply't.** Koondab ühte vaatesse: sihtbaas + kas nõuab `--allow-discovery`, `schema_migrations` seis, iga migratsiooni pending/applied/mismatch, `price_snapshots` duplikaadid, `investment_theses` vigased staatused. **Read-only.** NO-GO korral exit-kood **2** |
+| `--preflight` | **GO / NO-GO kontroll enne apply't.** Koondab ühte vaatesse: sihtbaas + kas nõuab `--allow-discovery`, `schema_migrations` seis, iga migratsiooni pending/applied/mismatch, `price_snapshots` duplikaadid, `investment_theses` vigased staatused **ja conformance**. **Read-only.** |
+| `--conformance` | **Kas sihtbaas vastab baseline sihtskeemile?** Ehitab ajutise DB baseline'ist ja diffib selle sihtbaasi vastu: puuduvad tabelid, veerud, indeksid, piirangud + „üle" objektid. **Sihtbaasi suhtes read-only**; ajutine DB kustutatakse alati |
 | `--status` | Ainult raport (applied / pending / checksum mismatch). **Ei kirjuta midagi, ei loo `schema_migrations` tabelit.** Töötab ka kaitstud baasi vastu |
 | `--database-url <url>` | Eksplitsiitne sihtbaas; muidu `DATABASE_URL` või lokaalne vaikeväärtus |
 | `--allow-discovery` | **Ainus viis** rakendada baasi nimega `discovery` |
@@ -49,6 +50,21 @@ npm run migrate -- --database-url postgres://discovery:discovery@localhost:5433/
 **Kaitstud baas.** Runner **keeldub vaikimisi** baasist nimega `discovery` (dev / golden source). Ilma `--allow-discovery` liputa katkeb ta enne mistahes DDL-i. Testimiseks kasuta ajutist baasi, nt `*_migration_tmp`.
 
 **Advisory lock.** Kogu jooks on kaetud `pg_try_advisory_lock(hashtext('stock-discovery:migrate'))`-iga ühel pühendatud ühendusel; teine samaaegne migrator lõpetab puhtalt ilma rakendamata. Lukk vabastatakse alati (`finally`).
+
+**Exit-koodid.**
+
+| Kood | Tähendus |
+|---:|---|
+| `0` | Õnnestus / GO / conformance vastab |
+| `1` | Viga: checksum mismatch, guard keeldus, migratsioon ebaõnnestus (rullitud tagasi) |
+| `2` | `--preflight` või `--conformance` andis **NO-GO** |
+| `3` | Apply-režiim: **teine migrator hoiab advisory lukku**, midagi ei rakendatud |
+
+Kood `3` on eraldi koodiga just seetõttu, et skriptitud kasutuses ei tohi „midagi ei tehtud" näida edukas migratsioonina.
+
+**Timeoutid.** Apply-teel seatakse ainult sellele ühendusele `lock_timeout = 10s` ja `statement_timeout = 5min`. Põhjus: DDL võtab `ACCESS EXCLUSIVE` lukud ja ilma timeoutita ripuks migratsioon lõpmatuseni app'i lahtise ühenduse taga, hoides samal ajal advisory lukku. Ebaõnnestumisel rullub transaktsioon tagasi ja `schema_migrations` rida **ei teki**. `--status` / `--preflight` / `--conformance` on read-only ega vaja neid.
+
+**Checksum on masinateülene.** Räsi arvutatakse **normaliseeritud** sisust (CRLF → LF). Ilma selleta annaks sama fail Windowsi `core.autocrlf=true` checkout'is ja Linuxis eri räsi ning runner viskaks vale CHECKSUM MISMATCH vea. `.gitattributes` (`*.sql text eol=lf`) on teine kaitsekiht, kuid runner **ei sõltu sellest**.
 
 **Checksum.** Iga faili SHA-256 salvestatakse. Kordusjooks, kus checksum klapib → `SKIP`. Kui rakendatud migratsiooni fail on **tagantjärele muudetud**, katkeb runner veaga ja **ei rakenda ka järgnevaid** — parandus käib alati **uue** migratsiooniga.
 
@@ -59,9 +75,21 @@ npm run migrate -- --database-url postgres://discovery:discovery@localhost:5433/
 > - **Mitte enne värsket dump'i/backup'i.** Vt „Käivitamine uues arvutis" (`docs/HANDOFF.md`) `pg_dump -Fc` käsku.
 > - **Mitte enne, kui preflight näitab 0 duplikaati ja 0 vigast staatust.** `UNIQUE` ja `CHECK` **ebaõnnestuvad**, kui rikkuvad read on juba andmes.
 > - `--allow-discovery` on **ainus** viis kaitstud baasi rakendada. Ära kasuta seda kunagi kogemata tööarvutis.
-> - Baseline on **mittehävitav**: ei ühtki `DROP`-i, tüübimuutust ega `NOT NULL` lisamist. Olemasolevad andmed jäävad puutumata.
+> - Baseline on **mittehävitav**: ei ühtki `DROP`-i ega tüübimuutust. Olemasolevad andmed jäävad puutumata.
+> - **Peata enne apply't Task Scheduler ja app-konteiner.** Ajastatud `collect:daily` võib apply ajal ridu kirjutada ja `ADD CONSTRAINT` kukuks; lahtine app-ühendus võib DDL-i blokeerida (`lock_timeout` katkestaks migratsiooni).
+> - **Mitte apply'da, kui `--conformance` näitab puuduvaid veerge, mida baseline EI paranda.** Need on `NOT NULL` ilma defaultita ja vajavad eraldi repair-migratsiooni.
 
 ### ENNE (kõik read-only)
+
+Peata ajastatud töö ja app, et keegi ei kirjutaks apply ajal:
+
+```bash
+schtasks /End /TN "StockDiscoveryDailyCollect"
+```
+
+```bash
+docker compose stop app scheduler
+```
 
 ```bash
 git pull origin main
@@ -83,11 +111,16 @@ npm run schema:diff
 npm run migrate -- --preflight
 ```
 
+```bash
+npm run migrate -- --conformance
+```
+
 **Edasi tohib minna ainult siis, kui `--preflight` ütleb `GO`** ja näitab:
 - `price_snapshots duplikaate` = **0**
 - `investment_theses vigaseid` = **0**
 - `0001_baseline` = **PENDING**
 - `kaitstud baas? JAH` → seega apply nõuab `--allow-discovery`
+- conformance ei raporteeri **ühtki** puuduvat veergu, mida baseline ei paranda
 
 Kui verdikt on `NO-GO`, **peatu** ja lahenda blokeerijad. Ära lõdvenda baseline'i piiranguid selleks, et apply läbi läheks.
 
@@ -110,6 +143,16 @@ npm run migrate -- --allow-discovery
 Oodatav väljund: `APPLY 0001_baseline ... OK (…ms)` ja `rakendatud 1, vahele jäetud 0`.
 
 ### PÄRAST (kontroll)
+
+```bash
+npm run migrate -- --conformance
+```
+
+Peab ütlema **`VASTAB`** ja 0 puuduvat objekti — see on H3 tõend, et sihtbaas jõudis päriselt sihtskeemi.
+
+```bash
+npm run migrate -- --preflight
+```
 
 ```bash
 npm run schema:diff

@@ -1,0 +1,4 @@
+# Migratsioonifailide reavahetused normaliseeritakse LF-iks, et checksum oleks
+# masinateülene. NB: see on TEINE kaitsekiht — scripts/migrate.cjs normaliseerib
+# reavahetused ka ise enne räsimist ega sõltu sellest failist.
+*.sql text eol=lf
