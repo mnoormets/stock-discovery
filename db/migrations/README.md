@@ -15,7 +15,7 @@ NNNN_description.sql
 ## Reeglid
 
 1. **Ainult forward-migratsioonid.** Rollback-faile ei kirjutata. PostgreSQL-i DDL on transaktsiooniline: ebaõnnestunud migratsioon rullub ise tagasi ja jätab baasi eelmisse kehtivasse olekusse. Vale migratsiooni parandab **uus** migratsioon, mitte vana muutmine.
-2. **Iga migratsioon on transaktsiooniline.** Fail sisaldab oma `BEGIN;` … `COMMIT;` ploki ja kirjutab lõpus `schema_migrations` rea sama transaktsiooni sees. Nii ei saa tekkida „pooleldi rakendatud" olekut.
+2. **Iga migratsioon on transaktsiooniline, aga transaktsiooni omab RUNNER.** `scripts/migrate.cjs` teeb `BEGIN` → faili SQL → `INSERT INTO schema_migrations` → `COMMIT` ühe transaktsiooni sees. **Migratsioonifail ise EI TOHI sisaldada `BEGIN` / `COMMIT` / `ROLLBACK`-i** — muidu satuks raamatupidamiskirje migratsiooni transaktsioonist välja ja atomaarsus kaoks. Runner keeldub sellisest failist eksplitsiitse veaga.
 3. **Rakendatud migratsiooni ei muudeta kunagi tagantjärele.** Mootor hakkab hoidma `checksum`-i; muudetud fail annab vea, mitte vaikse lahknevuse.
 4. **Esimeses faasis ainult mittehävitav DDL:** `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `ADD CONSTRAINT`. **Mitte ühtki `DROP`-i**, mitte ühtki tüübimuutust, mitte ühtki `NOT NULL` lisamist olemasolevale veerule.
 5. **Enne piirangu lisamist on audit kohustuslik.** `UNIQUE` ja `CHECK` ebaõnnestuvad, kui andmes on juba rikkumisi. Jooksuta enne:
@@ -25,6 +25,31 @@ npm run schema:diff
 ```
 
    See raporteerib `price_snapshots` duplikaadid ja `investment_theses` vigased staatused **ainult `SELECT`-idega**. Kui rikkumisi on, tuleb need enne migratsiooni käsitsi lahendada — migratsioon ise ei tohi andmeid kustutada ega muuta.
+
+## Runner: `scripts/migrate.cjs`
+
+Käsitsi käivitatav, **midagi ei käivitu automaatselt** (ei app startup, ei testid, ei `npm run check`).
+
+```bash
+npm run migrate -- --status
+```
+
+```bash
+npm run migrate -- --database-url postgres://discovery:discovery@localhost:5433/minu_tmp_db
+```
+
+| Lipp | Tähendus |
+|---|---|
+| *(puudub)* | Rakendab rakendamata migratsioonid `DATABASE_URL` sihtbaasi |
+| `--status` | Ainult raport (applied / pending / checksum mismatch). **Ei kirjuta midagi, ei loo `schema_migrations` tabelit.** Töötab ka kaitstud baasi vastu |
+| `--database-url <url>` | Eksplitsiitne sihtbaas; muidu `DATABASE_URL` või lokaalne vaikeväärtus |
+| `--allow-discovery` | **Ainus viis** rakendada baasi nimega `discovery` |
+
+**Kaitstud baas.** Runner **keeldub vaikimisi** baasist nimega `discovery` (dev / golden source). Ilma `--allow-discovery` liputa katkeb ta enne mistahes DDL-i. Testimiseks kasuta ajutist baasi, nt `*_migration_tmp`.
+
+**Advisory lock.** Kogu jooks on kaetud `pg_try_advisory_lock(hashtext('stock-discovery:migrate'))`-iga ühel pühendatud ühendusel; teine samaaegne migrator lõpetab puhtalt ilma rakendamata. Lukk vabastatakse alati (`finally`).
+
+**Checksum.** Iga faili SHA-256 salvestatakse. Kordusjooks, kus checksum klapib → `SKIP`. Kui rakendatud migratsiooni fail on **tagantjärele muudetud**, katkeb runner veaga ja **ei rakenda ka järgnevaid** — parandus käib alati **uue** migratsiooniga.
 
 ## Rakendusjärjekord (kui mootor kunagi valmib)
 

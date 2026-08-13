@@ -14,6 +14,7 @@
     "collect:daily": "node scripts/collect-daily.cjs",
     "collect:status": "node scripts/collect-status.cjs",
     "schema:diff": "node scripts/schema-diff.cjs",
+    "migrate": "node scripts/migrate.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run lint && npm run typecheck && npm run qa:data-quality && npm run qa:catalyst && npm run qa:frequency && npm run qa:valuation && npm run qa:under-recognition && npm run build",
