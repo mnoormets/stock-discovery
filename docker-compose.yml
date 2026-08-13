@@ -2,6 +2,7 @@ services:
   # --- PostgreSQL andmebaas: hoiab päevaseid snapshotte ---
   db:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_USER: discovery
       POSTGRES_PASSWORD: discovery
