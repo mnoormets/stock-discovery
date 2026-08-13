@@ -29,8 +29,34 @@ const MIGRATIONS_DIR = path.join(root, 'db', 'migrations');
 const LOCK_NAME = 'stock-discovery:migrate';
 const PROTECTED_DATABASE = 'discovery';
 
+// M1: konservatiivsed timeoutid AINULT migratsiooni ühendusel.
+// lock_timeout on lühike — kui app hoiab tabelil lukku, katkeb migratsioon
+// kiiresti ja loetavalt, mitte ei ripu. statement_timeout on pikem, sest
+// suur CREATE INDEX võib legitiimselt kesta.
+const LOCK_TIMEOUT = '10s';
+const STATEMENT_TIMEOUT = '5min';
+
+// Exit-koodid (dokumenteeritud db/migrations/README.md-s).
+const EXIT = {
+  OK: 0,        // õnnestus / GO
+  ERROR: 1,     // viga: checksum mismatch, guard, ebaõnnestunud migratsioon
+  NO_GO: 2,     // --preflight / --conformance leidis blokeerija
+  LOCK_BUSY: 3, // apply-režiim: teine migrator hoiab advisory lukku
+};
+
+// Ajutise conformance-DB nimi PEAB lõppema selle sufiksiga — dropTmp keeldub muidu.
+const TMP_SUFFIX = '_diff_tmp';
+const CONFORMANCE_TMP = `schema_conformance${TMP_SUFFIX}`;
+
 function redact(url) { return url.replace(/\/\/[^@]*@/, '//***@'); }
-function checksum(text) { return crypto.createHash('sha256').update(text).digest('hex'); }
+
+// H2: checksum peab olema MASINATEÜLENE. Git `core.autocrlf=true` annab Windowsis
+// CRLF-checkout'i ja Linuxis LF-i — sama fail annaks eri masinates eri räsi ja
+// runner viskaks vale CHECKSUM MISMATCH vea. Normaliseerime reavahetused enne
+// räsimist; muu sisu jääb baithaaval samaks. `.gitattributes` (*.sql eol=lf) on
+// teine kaitsekiht, kuid runner EI TOHI sellest sõltuda.
+function normalizeSql(text) { return text.replace(/\r\n/g, '\n'); }
+function checksum(text) { return crypto.createHash('sha256').update(normalizeSql(text)).digest('hex'); }
 
 // Loeb migratsioonid leksikograafilises järjekorras. Mitte-.sql failid
 // (nt README.md) jäetakse vahele.
@@ -115,10 +141,135 @@ async function reportStatus(client, migrations, dbName, log) {
   return { applied: 0, skipped: 0, pending, states };
 }
 
+// --- H3: conformance — kas sihtbaas VASTAB baseline sihtskeemile? ----------
+//
+// Ehitab ajutise DB baseline'ist ja võrdleb selle skeemi sihtbaasi omaga.
+// Sihtbaasi suhtes TÄIELIKULT READ-ONLY. Ajutine DB kustutatakse alati.
+
+const OBJECT_QUERIES = {
+  tables: `SELECT tablename AS name FROM pg_tables WHERE schemaname='public' ORDER BY 1`,
+  columns: `SELECT table_name||'.'||column_name AS name FROM information_schema.columns
+            WHERE table_schema='public' ORDER BY 1`,
+  indexes: `SELECT tablename||' :: '||regexp_replace(indexdef, '^CREATE (UNIQUE )?INDEX [a-z0-9_]+ ', 'IDX ') AS name
+            FROM pg_indexes WHERE schemaname='public' ORDER BY 1`,
+  constraints: `SELECT c.conrelid::regclass::text||' :: '||c.contype::text||' :: '||pg_get_constraintdef(c.oid) AS name
+                FROM pg_constraint c JOIN pg_namespace n ON n.oid=c.connamespace
+                WHERE n.nspname='public' ORDER BY 1`,
+};
+
+function withDatabase(url, name) {
+  const [base, query] = url.split('?');
+  const afterScheme = base.replace(/^[a-zA-Z0-9+.-]+:\/\//, '');
+  const slash = afterScheme.indexOf('/');
+  if (slash === -1) throw new Error('DATABASE_URL ei sisalda andmebaasi teed.');
+  return base.slice(0, base.length - afterScheme.length + slash + 1) + name + (query ? `?${query}` : '');
+}
+
+async function withClient(url, fn) {
+  const client = new Client({ connectionString: url });
+  await client.connect();
+  try { return await fn(client); } finally { await client.end().catch(() => {}); }
+}
+
+async function readObjects(client) {
+  const out = {};
+  for (const [kind, sql] of Object.entries(OBJECT_QUERIES)) {
+    const { rows } = await client.query(sql);
+    out[kind] = rows.map((r) => String(r.name));
+  }
+  return out;
+}
+
+async function dropTmp(maintenanceUrl, name) {
+  if (!name.endsWith(TMP_SUFFIX)) {
+    throw new Error(`KEELATUD: keeldun kustutamast andmebaasi "${name}" — nimi ei lõpe "${TMP_SUFFIX}".`);
+  }
+  await withClient(maintenanceUrl, (c) => c.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`));
+}
+
+// Tagastab veergude hulga, mille baseline suudab OLEMASOLEVASSE tabelisse
+// lisada (ADD COLUMN IF NOT EXISTS plokk). Ülejäänud puuduvad veerud vajavad
+// käsitsi repair-migratsiooni — need teevad verdikti NO-GO.
+function baselineRepairableColumns(migrations) {
+  const repairable = new Set();
+  for (const migration of migrations) {
+    const re = /ALTER TABLE (\w+)\s+ADD COLUMN IF NOT EXISTS (\w+)/gi;
+    let match;
+    while ((match = re.exec(migration.sql)) !== null) {
+      repairable.add(`${match[1]}.${match[2]}`);
+    }
+  }
+  return repairable;
+}
+
+async function runConformance(targetUrl, targetClient, migrations, dbName, log) {
+  log(`\n-- Conformance: sihtbaas vs baseline sihtskeem --`);
+  log(`  sihtbaas: ${dbName} (read-only)`);
+  log(`  ajutine referents: ${CONFORMANCE_TMP}`);
+
+  const maintenanceUrl = withDatabase(targetUrl, 'postgres');
+  const tmpUrl = withDatabase(targetUrl, CONFORMANCE_TMP);
+  const repairable = baselineRepairableColumns(migrations);
+
+  try {
+    await dropTmp(maintenanceUrl, CONFORMANCE_TMP);
+    await withClient(maintenanceUrl, (c) => c.query(`CREATE DATABASE "${CONFORMANCE_TMP}"`));
+    await withClient(tmpUrl, async (c) => {
+      for (const migration of migrations) await c.query(migration.sql);
+    });
+
+    const expected = await withClient(tmpUrl, readObjects);
+    const actual = await readObjects(targetClient);
+
+    const missing = {};
+    const extra = {};
+    for (const kind of Object.keys(OBJECT_QUERIES)) {
+      const actualSet = new Set(actual[kind]);
+      const expectedSet = new Set(expected[kind]);
+      missing[kind] = expected[kind].filter((x) => !actualSet.has(x));
+      extra[kind] = actual[kind].filter((x) => !expectedSet.has(x));
+    }
+
+    // Puuduv veerg OLEMASOLEVAS tabelis on H1 juhtum: CREATE TABLE IF NOT EXISTS
+    // ei paranda seda. Eristame need, mida baseline suudab ADD COLUMN-iga lisada.
+    const existingTables = new Set(actual.tables);
+    const unrepairableColumns = missing.columns.filter((col) => {
+      const table = col.split('.')[0];
+      return existingTables.has(table) && !repairable.has(col);
+    });
+
+    for (const kind of Object.keys(OBJECT_QUERIES)) {
+      const m = missing[kind];
+      log(`  ${`puuduvaid ${kind}`.padEnd(34)} ${String(m.length).padStart(6)}`);
+      for (const x of m.slice(0, 8)) log(`      - ${x}`);
+      if (m.length > 8) log(`      ... veel ${m.length - 8}`);
+    }
+    const extraTotal = Object.values(extra).reduce((sum, list) => sum + list.length, 0);
+    log(`  ${'sihtbaasis ÜLE (baseline ei kirjelda)'.padEnd(34)} ${String(extraTotal).padStart(6)}`);
+    for (const kind of Object.keys(OBJECT_QUERIES)) {
+      for (const x of extra[kind].slice(0, 4)) log(`      + ${x}`);
+    }
+
+    const blockers = [];
+    if (unrepairableColumns.length > 0) {
+      blockers.push(
+        `${unrepairableColumns.length} puuduvat veergu OLEMASOLEVAS tabelis, mida baseline EI paranda `
+        + `(nt ${unrepairableColumns.slice(0, 3).join(', ')}). Vajab eraldi repair-migratsiooni.`,
+      );
+    }
+
+    const totalMissing = Object.values(missing).reduce((sum, list) => sum + list.length, 0);
+    return { missing, extra, unrepairableColumns, blockers, totalMissing, conformant: totalMissing === 0 };
+  } finally {
+    await dropTmp(maintenanceUrl, CONFORMANCE_TMP)
+      .catch((e) => log(`  koristus ebaõnnestus: ${e.message}`));
+  }
+}
+
 // Ühtne GO / NO-GO vaade ENNE production apply't. TÄIELIKULT READ-ONLY:
 // ei loo schema_migrations tabelit ega puuduta andmeid. Koondab ühte kohta
 // selle, mis muidu on jagatud `migrate --status` ja `schema:diff` vahel.
-async function runPreflight(client, migrations, dbName, log) {
+async function runPreflight(client, migrations, dbName, log, targetUrl) {
   const blockers = [];
   const notes = [];
 
@@ -173,7 +324,17 @@ async function runPreflight(client, migrations, dbName, log) {
     log(`  ${'investment_theses vigaseid'.padEnd(34)} ${'-'.padStart(6)}   tabel puudub (uus baas)`);
   }
 
-  log(`\n-- 4. VERDIKT --`);
+  // H1/H3: conformance ütleb, kas baseline üldse VIIB sihtbaasi sihtskeemi.
+  log(`\n-- 4. Conformance (kas baseline viib sihtskeemi?) --`);
+  const conformance = await runConformance(targetUrl, client, migrations, dbName, (m) => log(`  ${m.trim() ? m : ''}`));
+  blockers.push(...conformance.blockers);
+  if (conformance.conformant) {
+    notes.push('Sihtbaas vastab juba baseline sihtskeemile.');
+  } else if (conformance.blockers.length === 0) {
+    notes.push(`${conformance.totalMissing} puuduvat objekti — baseline suudab need lisada.`);
+  }
+
+  log(`\n-- 5. VERDIKT --`);
   if (blockers.length > 0) {
     log('  NO-GO — lahenda enne apply\'d:');
     for (const b of blockers) log(`    ! ${b}`);
@@ -191,10 +352,22 @@ async function runPreflight(client, migrations, dbName, log) {
 async function applyMigrations(client, migrations, log) {
   const lock = await client.query('SELECT pg_try_advisory_lock(hashtext($1)) AS ok', [LOCK_NAME]);
   if (lock.rows[0].ok !== true) {
-    log('\n  TEINE MIGRATOR JOOKSEB JUBA (advisory lock on võetud). Katkestan puhtalt.');
-    return { applied: 0, skipped: 0, locked: false };
+    // M2: apply-režiimis EI TOHI "midagi ei tehtud" näida õnnestunud migratsioonina.
+    // Skriptitud kasutus peab siin katkema, seega viskame vea (exit 3).
+    const error = new Error(
+      'TEINE MIGRATOR JOOKSEB JUBA (advisory lock on võetud). Ühtki migratsiooni ei rakendatud.',
+    );
+    error.exitCode = EXIT.LOCK_BUSY;
+    throw error;
   }
   try {
+    // M1: DDL võtab ACCESS EXCLUSIVE lukud. Ilma timeoutita võib migratsioon
+    // rippuda lõpmatuseni app'i lahtise ühenduse taga, hoides samal ajal
+    // advisory lukku. Timeoutid kehtivad AINULT sellel ühendusel (SET, mitte
+    // ALTER DATABASE) ja ainult apply-teel; --status/--preflight ei vaja neid.
+    await client.query(`SET lock_timeout = '${LOCK_TIMEOUT}'`);
+    await client.query(`SET statement_timeout = '${STATEMENT_TIMEOUT}'`);
+    log(`  timeoutid: lock_timeout=${LOCK_TIMEOUT}, statement_timeout=${STATEMENT_TIMEOUT}`);
     await ensureBookkeeping(client);
     const applied = (await readApplied(client)) ?? new Map();
     let appliedNow = 0;
@@ -255,6 +428,7 @@ async function applyMigrations(client, migrations, log) {
  * @param {boolean} [options.allowDiscovery] luba kaitstud "discovery" baas
  * @param {boolean} [options.statusOnly]   ainult raport, ei kirjuta midagi
  * @param {boolean} [options.preflight]    GO/NO-GO kontroll, ei kirjuta midagi
+ * @param {boolean} [options.conformanceOnly] ainult conformance (siht vs baseline)
  * @param {(msg: string) => void} [options.log]
  */
 async function runMigrations(options = {}) {
@@ -263,6 +437,7 @@ async function runMigrations(options = {}) {
     allowDiscovery = false,
     statusOnly = false,
     preflight = false,
+    conformanceOnly = false,
     log = console.log,
   } = options;
 
@@ -279,8 +454,15 @@ async function runMigrations(options = {}) {
     const { rows } = await client.query('SELECT current_database() AS db');
     const dbName = String(rows[0].db);
 
+    if (conformanceOnly) {
+      const result = await runConformance(target, client, migrations, dbName, log);
+      log(`\n  VERDIKT: ${result.blockers.length > 0 ? 'NO-GO' : result.conformant ? 'VASTAB' : 'ERINEB (baseline suudab parandada)'}`);
+      for (const b of result.blockers) log(`    ! ${b}`);
+      return { ...result, go: result.blockers.length === 0, migrations, databaseName: dbName };
+    }
+
     if (preflight) {
-      const result = await runPreflight(client, migrations, dbName, log);
+      const result = await runPreflight(client, migrations, dbName, log, target);
       return { ...result, migrations, databaseName: dbName };
     }
 
@@ -308,27 +490,30 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const statusOnly = args.includes('--status');
   const preflight = args.includes('--preflight');
+  const conformanceOnly = args.includes('--conformance');
   const allowDiscovery = args.includes('--allow-discovery');
   const urlFlagIndex = args.indexOf('--database-url');
   const databaseUrl = urlFlagIndex >= 0 ? args[urlFlagIndex + 1] : undefined;
 
-  const mode = preflight ? '--preflight (GO/NO-GO, ei kirjuta midagi)'
-    : statusOnly ? '--status (ei kirjuta midagi)'
-      : 'rakendamine';
+  const mode = conformanceOnly ? '--conformance (siht vs baseline, read-only)'
+    : preflight ? '--preflight (GO/NO-GO, ei kirjuta midagi)'
+      : statusOnly ? '--status (ei kirjuta midagi)'
+        : 'rakendamine';
 
   console.log('=== Stock Discovery · migrate ===');
   console.log(`  režiim: ${mode}`);
   console.log(`  DB: ${redact(databaseUrl || ensureLocalDatabaseUrl())}`);
 
-  runMigrations({ databaseUrl, allowDiscovery, statusOnly, preflight })
+  runMigrations({ databaseUrl, allowDiscovery, statusOnly, preflight, conformanceOnly })
     .then((result) => {
-      if (!statusOnly && !preflight && result.databaseName) console.log(`  sihtbaas: ${result.databaseName}`);
+      const readOnlyMode = statusOnly || preflight || conformanceOnly;
+      if (!readOnlyMode && result.databaseName) console.log(`  sihtbaas: ${result.databaseName}`);
       console.log('');
-      // NO-GO preflight annab mitte-nulli, et skriptitav kasutus saaks katkeda.
-      process.exit(preflight && result.go === false ? 2 : 0);
+      // NO-GO annab mitte-nulli, et skriptitav kasutus saaks katkeda.
+      process.exit((preflight || conformanceOnly) && result.go === false ? EXIT.NO_GO : EXIT.OK);
     })
     .catch((error) => {
       console.error(`\nmigrate ebaõnnestus: ${error.message}\n`);
-      process.exit(1);
+      process.exit(error.exitCode || EXIT.ERROR);
     });
 }
