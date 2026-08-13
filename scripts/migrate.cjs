@@ -1,14 +1,18 @@
 // Minimaalne KÄSITSI käivitatav migration runner.
 //
-// Kasutus:
+// Kasutus CLI-na:
 //   npm run migrate -- --status                 # ainult raport, ei kirjuta midagi
 //   npm run migrate                             # rakendab rakendamata migratsioonid
 //   npm run migrate -- --database-url <url>     # eksplitsiitne sihtbaas
 //   npm run migrate -- --allow-discovery        # lubab "discovery" baasi (VAIKIMISI KEELATUD)
 //
+// Kasutus moodulina (nt tests/setup/global-setup.ts):
+//   const { runMigrations } = require('./scripts/migrate.cjs');
+//   await runMigrations({ databaseUrl, log });
+//
 // Ohutuspõhimõtted:
-//   * Midagi ei käivitu automaatselt — app startup ja testid seda ei kutsu.
-//   * Vaikimisi KEELDUB baasist nimega "discovery" (tootmine/dev golden source).
+//   * Midagi ei käivitu automaatselt — app startup seda ei kutsu.
+//   * Vaikimisi KEELDUB baasist nimega "discovery" (dev / golden source).
 //   * Iga migratsioon jookseb ÜHES transaktsioonis koos oma schema_migrations
 //     kirjega — pooleldi rakendatud olekut ei saa tekkida.
 //   * Advisory lock hoiab ära kaks samaaegset migratorit.
@@ -21,15 +25,6 @@ const { Client } = require('pg');
 const { loadEnv, ensureLocalDatabaseUrl, repoRoot } = require('./_ts-loader.cjs');
 
 const root = repoRoot();
-loadEnv(root);
-
-const args = process.argv.slice(2);
-const STATUS_ONLY = args.includes('--status');
-const ALLOW_DISCOVERY = args.includes('--allow-discovery');
-const urlFlagIndex = args.indexOf('--database-url');
-const urlOverride = urlFlagIndex >= 0 ? args[urlFlagIndex + 1] : null;
-
-const TARGET_URL = urlOverride || ensureLocalDatabaseUrl();
 const MIGRATIONS_DIR = path.join(root, 'db', 'migrations');
 const LOCK_NAME = 'stock-discovery:migrate';
 const PROTECTED_DATABASE = 'discovery';
@@ -50,8 +45,8 @@ function readMigrations() {
     });
 }
 
-// Transaktsiooni omab RUNNER. Kui fail sisaldaks oma BEGIN/COMMIT-i, läheks
-// schema_migrations kirje väljapoole migratsiooni transaktsiooni ja atomaarsus
+// Transaktsiooni omab RUNNER. Kui fail sisaldaks oma BEGIN/COMMIT-i, satuks
+// schema_migrations kirje migratsiooni transaktsioonist välja ja atomaarsus
 // kaoks. Seetõttu keeldume sellisest failist.
 function assertNoExplicitTransaction(migration) {
   const naked = migration.sql
@@ -61,6 +56,15 @@ function assertNoExplicitTransaction(migration) {
     throw new Error(
       `${migration.file}: fail sisaldab oma BEGIN/COMMIT/ROLLBACK-i. `
       + 'Transaktsiooni omab runner — eemalda need failist.',
+    );
+  }
+}
+
+function assertDatabaseAllowed(dbName, allowDiscovery) {
+  if (dbName === PROTECTED_DATABASE && !allowDiscovery) {
+    throw new Error(
+      `KEELATUD: sihtbaas on "${dbName}". Migratsioone ei rakendata kaitstud baasi vastu ilma `
+      + '--allow-discovery liputa. Testimiseks kasuta ajutist baasi (nt *_migration_tmp).',
     );
   }
 }
@@ -84,22 +88,14 @@ async function readApplied(client) {
   return new Map(rows.map((r) => [r.version, r]));
 }
 
-function assertDatabaseAllowed(dbName) {
-  if (dbName === PROTECTED_DATABASE && !ALLOW_DISCOVERY) {
-    throw new Error(
-      `KEELATUD: sihtbaas on "${dbName}". Migratsioone ei rakendata kaitstud baasi vastu ilma `
-      + '--allow-discovery liputa. Testimiseks kasuta ajutist baasi (nt *_migration_tmp).',
-    );
-  }
-}
-
-async function runStatus(client, migrations, dbName) {
+async function reportStatus(client, migrations, dbName, log) {
   const applied = await readApplied(client);
-  console.log(`\n  andmebaas: ${dbName}`);
-  console.log(`  schema_migrations: ${applied === null ? 'PUUDUB (kõik on pending)' : `olemas, ${applied.size} kirjet`}`);
-  console.log(`\n  ${'versioon'.padEnd(26)} ${'seis'.padEnd(18)} detail`);
-  console.log(`  ${'-'.repeat(70)}`);
+  log(`\n  andmebaas: ${dbName}`);
+  log(`  schema_migrations: ${applied === null ? 'PUUDUB (kõik on pending)' : `olemas, ${applied.size} kirjet`}`);
+  log(`\n  ${'versioon'.padEnd(26)} ${'seis'.padEnd(18)} detail`);
+  log(`  ${'-'.repeat(70)}`);
   let pending = 0;
+  const states = [];
   for (const migration of migrations) {
     const row = applied?.get(migration.version);
     let state; let detail = '';
@@ -111,17 +107,19 @@ async function runStatus(client, migrations, dbName) {
       state = 'applied';
       detail = `${new Date(row.applied_at).toISOString().slice(0, 19)}Z · ${row.execution_ms ?? '?'} ms`;
     }
-    console.log(`  ${migration.version.padEnd(26)} ${state.padEnd(18)} ${detail}`);
+    states.push({ version: migration.version, state });
+    log(`  ${migration.version.padEnd(26)} ${state.padEnd(18)} ${detail}`);
   }
-  console.log(`\n  kokku ${migrations.length} migratsiooni, ${pending} rakendamata`);
-  console.log('  (--status ei kirjuta midagi ega loo schema_migrations tabelit)');
+  log(`\n  kokku ${migrations.length} migratsiooni, ${pending} rakendamata`);
+  log('  (--status ei kirjuta midagi ega loo schema_migrations tabelit)');
+  return { applied: 0, skipped: 0, pending, states };
 }
 
-async function runMigrations(client, migrations) {
+async function applyMigrations(client, migrations, log) {
   const lock = await client.query('SELECT pg_try_advisory_lock(hashtext($1)) AS ok', [LOCK_NAME]);
   if (lock.rows[0].ok !== true) {
-    console.log('\n  TEINE MIGRATOR JOOKSEB JUBA (advisory lock on võetud). Katkestan puhtalt.');
-    return 0;
+    log('\n  TEINE MIGRATOR JOOKSEB JUBA (advisory lock on võetud). Katkestan puhtalt.');
+    return { applied: 0, skipped: 0, locked: false };
   }
   try {
     await ensureBookkeeping(client);
@@ -133,7 +131,7 @@ async function runMigrations(client, migrations) {
       const row = applied.get(migration.version);
 
       if (row && row.checksum === migration.checksum) {
-        console.log(`  SKIP     ${migration.version} (juba rakendatud, checksum klapib)`);
+        log(`  SKIP     ${migration.version} (juba rakendatud, checksum klapib)`);
         skipped += 1;
         continue;
       }
@@ -150,7 +148,6 @@ async function runMigrations(client, migrations) {
       }
 
       assertNoExplicitTransaction(migration);
-      process.stdout.write(`  APPLY    ${migration.version} ... `);
       const started = Date.now();
       try {
         await client.query('BEGIN');
@@ -161,50 +158,91 @@ async function runMigrations(client, migrations) {
           [migration.version, migration.checksum, ms],
         );
         await client.query('COMMIT');
-        console.log(`OK (${ms} ms)`);
+        log(`  APPLY    ${migration.version} ... OK (${ms} ms)`);
         appliedNow += 1;
       } catch (error) {
         await client.query('ROLLBACK').catch(() => {});
-        console.log('EBAÕNNESTUS');
+        log(`  APPLY    ${migration.version} ... EBAÕNNESTUS`);
         throw new Error(`${migration.file} ebaõnnestus ja rulliti tagasi: ${error.message}`);
       }
     }
-    console.log(`\n  rakendatud ${appliedNow}, vahele jäetud ${skipped}`);
-    return appliedNow;
+    log(`\n  rakendatud ${appliedNow}, vahele jäetud ${skipped}`);
+    return { applied: appliedNow, skipped, locked: true };
   } finally {
     await client.query('SELECT pg_advisory_unlock(hashtext($1))', [LOCK_NAME]).catch(() => {});
   }
 }
 
-(async () => {
-  console.log('=== Stock Discovery · migrate ===');
-  console.log(`  režiim: ${STATUS_ONLY ? '--status (ei kirjuta midagi)' : 'rakendamine'}`);
-  console.log(`  DB: ${redact(TARGET_URL)}`);
+/**
+ * Rakendab migratsioonid ühe sihtbaasi vastu. Kasutatav nii CLI-st kui
+ * test-setupist. Ühendus avatakse ja suletakse siin.
+ *
+ * @param {object} options
+ * @param {string} [options.databaseUrl]   sihtbaas; muidu DATABASE_URL / lokaalne vaikeväärtus
+ * @param {boolean} [options.allowDiscovery] luba kaitstud "discovery" baas
+ * @param {boolean} [options.statusOnly]   ainult raport, ei kirjuta midagi
+ * @param {(msg: string) => void} [options.log]
+ */
+async function runMigrations(options = {}) {
+  const {
+    databaseUrl,
+    allowDiscovery = false,
+    statusOnly = false,
+    log = console.log,
+  } = options;
 
+  const target = databaseUrl || ensureLocalDatabaseUrl();
   const migrations = readMigrations();
   if (migrations.length === 0) {
-    console.log('\n  db/migrations/ ei sisalda ühtki .sql faili.');
-    return;
+    log('\n  db/migrations/ ei sisalda ühtki .sql faili.');
+    return { applied: 0, skipped: 0, migrations: [], databaseName: null };
   }
 
-  const client = new Client({ connectionString: TARGET_URL });
+  const client = new Client({ connectionString: target });
   await client.connect();
   try {
     const { rows } = await client.query('SELECT current_database() AS db');
     const dbName = String(rows[0].db);
 
-    if (STATUS_ONLY) {
-      await runStatus(client, migrations, dbName);
-      return;
+    if (statusOnly) {
+      const result = await reportStatus(client, migrations, dbName, log);
+      return { ...result, migrations, databaseName: dbName };
     }
 
     // Kaitse rakendub ALLES siin: --status tohib ka kaitstud baasi vaadata.
-    assertDatabaseAllowed(dbName);
-    console.log(`  sihtbaas: ${dbName}\n`);
-    await runMigrations(client, migrations);
+    assertDatabaseAllowed(dbName, allowDiscovery);
+    const result = await applyMigrations(client, migrations, log);
+    return { ...result, migrations, databaseName: dbName };
   } finally {
     await client.end().catch(() => {});
   }
-})()
-  .then(() => { console.log(''); process.exit(0); })
-  .catch((error) => { console.error(`\nmigrate ebaõnnestus: ${error.message}\n`); process.exit(1); });
+}
+
+module.exports = { runMigrations, readMigrations, checksum, MIGRATIONS_DIR };
+
+// --- CLI ------------------------------------------------------------------
+// Jookseb AINULT otsekäivitusel; moodulina importimine ei käivita midagi.
+if (require.main === module) {
+  loadEnv(root);
+
+  const args = process.argv.slice(2);
+  const statusOnly = args.includes('--status');
+  const allowDiscovery = args.includes('--allow-discovery');
+  const urlFlagIndex = args.indexOf('--database-url');
+  const databaseUrl = urlFlagIndex >= 0 ? args[urlFlagIndex + 1] : undefined;
+
+  console.log('=== Stock Discovery · migrate ===');
+  console.log(`  režiim: ${statusOnly ? '--status (ei kirjuta midagi)' : 'rakendamine'}`);
+  console.log(`  DB: ${redact(databaseUrl || ensureLocalDatabaseUrl())}`);
+
+  runMigrations({ databaseUrl, allowDiscovery, statusOnly })
+    .then((result) => {
+      if (!statusOnly && result.databaseName) console.log(`  sihtbaas: ${result.databaseName}`);
+      console.log('');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error(`\nmigrate ebaõnnestus: ${error.message}\n`);
+      process.exit(1);
+    });
+}
