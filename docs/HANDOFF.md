@@ -535,6 +535,25 @@ Golden-source migratsioon ja scheduler, kontrollitud koduarvutil **2026-08-13**:
 - `db/init.sql` koondumine **tõestatud, mitte järeldatud**: init.sql-ist ehitatud ajutine baas (19 tabelit) + `0001_baseline` → `--conformance VASTAB`; „sihtbaasis ÜLE" = 0. Ajutine baas kustutati.
 - Task Scheduler `StockDiscoveryDailyCollect`: registreeritud ja käsitsi käivitatud, **`LastTaskResult = 0`**. Logi (`C:\sd-logs\collect.log`) näitas `runReused JAH`, canonical 3 → 3, outcomes 255 → 255, `price_snapshots` +19, SPY +1, klassifikatsioon 5 rikastatud. Lock-skip'i ei esinenud. Kõrvalmärkus: `Tradestie ebaõnnestus, kasutan ApeWisdomi proxy-sentimenti` — väline provider kukkus ja fallback töötas, jooks ei katkenud.
 
+Täielik `npm run check` ahel läbis hostil **2026-08-13** täies mahus: lint ✔, typecheck ✔, data-quality 7/7, catalyst 11/11, frequency 12/12, valuation 12/12, under-recognition 18/18, build ✓ (13/13 lehte). `pre-migration.dump` taastatavus kontrollitud: `pg_restore --list` exit 0, 191 TOC kirjet, 21 tabelit. **NB:** see dump on migratsiooni-EELNE, seega `schema_migrations` selles puudub — taastamise järel tuleb `npm run migrate` uuesti jooksutada.
+
+### Forward-valimi seis (mõõdetud 2026-08-13, read-only audit)
+
+| Näitaja | Seis | Lävi | Puudu |
+|---|---|---|---|
+| canonical päevi kokku | 3 (08-11, 08-12, 08-13) | — | — |
+| **canonical päevi `rklb-discovery-v2` seerias** | **2** (08-12, 08-13) | ≥5, eelistatult 10 | **3 (eelistatult 8)** |
+| ettevõtteid SEC faktidega | **24** | ≥20 | **täidetud** |
+| katvus aktiivsest universumist | 24/54 = **44,4%** | ≥70% (alternatiiv) | ~14 ettevõtet ≈ 3 päeva |
+
+**Siduv piirang on nihkunud.** Varem oli see SEC katvus; nüüd on „≥20 ettevõtet" lävi täidetud ja ainus takistus on **canonical päevade arv v2 seerias**. Run #3 (08-11) on `rklb-discovery-v1` ega kuulu frequency-seeriasse.
+
+- **Enrichment-järjekord on puhas:** kõik 20 katset on `success`, ühtki `error` ega `unavailable` ei ole. Kõik 30 katmata ettevõtet on „kunagi proovimata" ehk lihtsalt järjekorras — 5/päev tempoga ~6 päeva täieliku katvuseni.
+- **Esimesed mõõdetavad outcome'id: 2026-08-18** (1n horisont, 5 päeva pärast). Seejärel 2n 08-25, 1k 09-11, 3k 11-11, 6k 2027-02-11. Enne 08-18 on `/backtest` koondnäitajad paratamatult tühjad.
+- **Forward-valim on püsiv:** 08-12 kaasati BW, CAVA, CAKE, API, HR; 08-13 BW, CAVA, CAKE, API, FCF. Neli viiest kordub — täpselt see, mida `/frequency` persistence mõõdab.
+- **Kõigil viiel tänasel kandidaadil on `catalyst_evidence_status = material_new_evidence`** (tugevaim tier). Võrdluseks: 08-11 v1 jooksus välistas catalyst hard gate kõik.
+- Üks andmekvaliteedi tähelepanek: **API uusim salvestatud periood on `2025-12-31`**, ülejäänud neljal Q2/Q3 2026 (BW 08-04, FCF 08-07, CAKE 07-27, CAVA 05-12). API on foreign filer ilma `dei` sektsioonita ja püsib aastaaruande peal — selle tõend on materiaalselt vanem kui ülejäänud valimil.
+
 Varasem seis:
 
 - `npm run lint`: läbib ilma hoiatusteta.
