@@ -34,6 +34,84 @@ export interface CompanyFactsStub {
   body?: unknown;
 }
 
+// --- CompanyFacts KEHA ehitaja (success-path) ------------------------------
+//
+// Senised testid kasutasid ainult veeteid (404 / 500). Success-path vajab
+// päris `facts.<taxonomy>.<Tag>.units.<unit>[]` struktuuri.
+//
+// Iga väli on TEADLIKULT valikuline, sest `extractDefinition` (company-financials.ts:247)
+// jätab rea vahele, kui `val` / `end` / `filed` / `accn` / `form` / `periodKind`
+// ei kvalifitseeru. E9.5 alamjuhtumid ehitatakse just väljade ÄRAJÄTMISEGA.
+//
+// NB: `val: null` EI ole "puuduv väärtus" — `Number(null) === 0` läbib filtri.
+// Puuduva väärtuse simuleerimiseks jäta võti hoopis ära.
+export interface FactUnitOptions {
+  val?: unknown;
+  start?: string;
+  end?: string;
+  filed?: string;
+  accn?: unknown;
+  form?: string;
+  fy?: unknown;
+  fp?: unknown;
+}
+
+export interface ConceptOptions {
+  taxonomy?: 'us-gaap' | 'dei';
+  unit?: string;
+  units: FactUnitOptions[];
+}
+
+// Ehitab CompanyFacts keha kontseptide kaardist: tag -> ühikud.
+// Näide: companyFactsBody({ CashAndCashEquivalentsAtCarryingValue: { units: [cashUnit()] } })
+export function companyFactsBody(
+  concepts: Record<string, ConceptOptions>,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const facts: Record<string, Record<string, unknown>> = {};
+  for (const [tag, concept] of Object.entries(concepts)) {
+    const taxonomy = concept.taxonomy ?? 'us-gaap';
+    const unit = concept.unit ?? (taxonomy === 'dei' ? 'shares' : 'USD');
+    facts[taxonomy] = facts[taxonomy] ?? {};
+    facts[taxonomy][tag] = { units: { [unit]: concept.units } };
+  }
+  return { facts, ...overrides };
+}
+
+// Minimaalne kvalifitseeruv INSTANT kirje (`duration: false` -> periodKind on
+// alati 'instant', seega `start` ei ole vajalik). Viis välja = üks salvestatav rida.
+export function instantUnit(overrides: FactUnitOptions = {}): FactUnitOptions {
+  return {
+    val: 500,
+    end: '2025-12-31',
+    filed: '2026-02-01',
+    accn: '0000000000-26-000001',
+    form: '10-K',
+    ...overrides,
+  };
+}
+
+// Minimaalne kvalifitseeruv DURATION kirje. 2025-01-01 -> 2025-12-31 = 364
+// päeva, mis on >= 300 ja <= 430, seega periodKind = 'annual'.
+export function durationUnit(overrides: FactUnitOptions = {}): FactUnitOptions {
+  return {
+    val: 1_000,
+    start: '2025-01-01',
+    end: '2025-12-31',
+    filed: '2026-02-01',
+    accn: '0000000000-26-000001',
+    form: '10-K',
+    ...overrides,
+  };
+}
+
+// Kõige lihtsam täielik success-keha: üks `cash` fakt -> üks financial_facts rida.
+export function minimalCashFacts(unit: FactUnitOptions = {}): Record<string, unknown> {
+  return companyFactsBody({
+    CashAndCashEquivalentsAtCarryingValue: { units: [instantUnit(unit)] },
+  });
+}
+
 export interface SecStubOptions {
   tickerMap: SecTickerEntry[];
   tickerMapStatus?: number;
