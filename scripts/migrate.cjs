@@ -492,8 +492,25 @@ if (require.main === module) {
   const preflight = args.includes('--preflight');
   const conformanceOnly = args.includes('--conformance');
   const allowDiscovery = args.includes('--allow-discovery');
+  // `--database-url` PEAB saama väärtuse. Ilma selle kontrollita langeks
+  // puuduva argumendi korral sihtbaas vaikselt tagasi vaikeväärtusele ehk
+  // golden source'ile — ja koos `--allow-discovery`-ga tähendaks äralibisenud
+  // argument migratsiooni kaitstud baasi. Footgun osutab just ohtlikus suunas,
+  // seega katkestame valjult.
   const urlFlagIndex = args.indexOf('--database-url');
-  const databaseUrl = urlFlagIndex >= 0 ? args[urlFlagIndex + 1] : undefined;
+  let databaseUrl;
+  if (urlFlagIndex >= 0) {
+    const value = args[urlFlagIndex + 1];
+    if (!value || value.startsWith('--')) {
+      console.error(
+        '\nmigrate ebaõnnestus: --database-url nõuab väärtust '
+        + '(nt --database-url postgres://discovery:discovery@localhost:5433/minu_tmp_db).\n'
+        + '  Ilma väärtuseta oleks sihtbaas langenud tagasi vaikeväärtusele.\n',
+      );
+      process.exit(EXIT.ERROR);
+    }
+    databaseUrl = value;
+  }
 
   const mode = conformanceOnly ? '--conformance (siht vs baseline, read-only)'
     : preflight ? '--preflight (GO/NO-GO, ei kirjuta midagi)'
