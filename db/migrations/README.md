@@ -55,10 +55,12 @@ npm run migrate -- --database-url postgres://discovery:discovery@localhost:5433/
 
 | Kood | Tähendus |
 |---:|---|
-| `0` | Õnnestus / GO / conformance vastab |
-| `1` | Viga: checksum mismatch, guard keeldus, migratsioon ebaõnnestus (rullitud tagasi) |
-| `2` | `--preflight` või `--conformance` andis **NO-GO** |
+| `0` | Õnnestus / GO / **conformance ilma blokeerijateta** — vt hoiatust allpool |
+| `1` | Viga: checksum mismatch, guard keeldus, `--database-url` ilma väärtuseta, migratsioon ebaõnnestus (rullitud tagasi) |
+| `2` | `--preflight` või `--conformance` andis **NO-GO** (ehk leidis blokeerija) |
 | `3` | Apply-režiim: **teine migrator hoiab advisory lukku**, midagi ei rakendatud |
+
+> ⚠️ **`--conformance` exit-kood ei erista `VASTAB`-i ja `ERINEB`-i.** Mõlemad annavad `0`, sest `ERINEB (baseline suudab parandada)` ei ole blokeerija — exit `2` tuleb ainult päris blokeerijast (nt puuduv `NOT NULL` veerg olemasolevas tabelis). Tagajärg: `npm run migrate -- --conformance && echo OK` prindib `OK` ka mittevastava baasi korral. **Range värava jaoks kontrolli väljundist sõna `VASTAB`**, mitte exit-koodi.
 
 Kood `3` on eraldi koodiga just seetõttu, et skriptitud kasutuses ei tohi „midagi ei tehtud" näida edukas migratsioonina.
 
@@ -216,6 +218,16 @@ Migreeritud skeemil on `ensureSchema()` **no-op** ja seda on tõestatud kahel ta
 Kumbki pool **ei ole** teise ülemhulk. Baseline-migratsiooni ülesanne on kirjeldada **liitu** (runtime ∪ init.sql).
 
 See kahesuunaline drift on nüüd **lahendatud**: baseline kirjeldab liitu ja testibaas ehitatakse migratsioonidest, seega `price_snapshots` UNIQUE ja thesis-staatuse CHECK on ka testiskeemis olemas (`tests/db/infra-smoke.test.ts`, D4). Testiskeem ei ole enam tootmisest nõrgem.
+
+## Teadaolevad piirid (koodiülevaatus 2026-08-13)
+
+Runner (`scripts/migrate.cjs`, 519 rida) vaadati rida-realt üle. Kaitsekihid on paigas: kaitstud baasi guard rakendub alles apply-teel (nii et `--status` / `--preflight` / `--conformance` töötavad ka `discovery` vastu), iga migratsioon jookseb koos oma `schema_migrations` kirjega ühes transaktsioonis, advisory lock vabastatakse `finally`-s, checksum normaliseeritakse reavahetuste osas ja `dropTmp` keeldub nimest, mis ei lõpe `_diff_tmp`-ga. Kolm piiri, mida tasub teada:
+
+1. **`--conformance` ei valideeri `BEGIN`/`COMMIT` keeldu.** Conformance rakendab migratsioonid ajutisse baasi ilma `assertNoExplicitTransaction` kontrollita, apply-tee teeb seda. Seega conformance võib „läbida" migratsiooni, mille apply hiljem tagasi lükkab. Mõju on väike (ajutine baas kustutatakse), aga valideerimine on ebaühtlane.
+2. **Kaks samaaegset `--conformance` / `--preflight` jooksu segavad üksteist.** Ajutise baasi nimi on fikseeritud (`schema_conformance_diff_tmp`) ja jooks alustab `DROP DATABASE … WITH (FORCE)`-ga, mis katkestab teise jooksu ühendused. Andmeohtu ei ole (sihtbaas on read-only), aga tulemus on segadust tekitav viga. Ära jooksuta kahte korraga.
+3. **`baselineRepairableColumns` regex on kitsas** — see loeb ainult `ALTER TABLE <tabel> ADD COLUMN IF NOT EXISTS <veerg>` kuju. Teistsuguse kirjapildi (nt skeemiga kvalifitseeritud tabelinimi) korral alahindab see parandatavaid veerge ja annab **valehäire NO-GO**. Viga on konservatiivses suunas, seega ohutu, kuid võib blokeerida legitiimse apply.
+
+Parandatud samas ülevaatuses: `--database-url` ilma väärtuseta langes varem vaikselt tagasi vaikimisi sihtbaasile ehk golden source'ile. Koos `--allow-discovery`-ga tähendanuks äralibisenud argument migratsiooni kaitstud baasi. Nüüd katkeb runner valjult exit-koodiga `1`.
 
 ## `db/init.sql` roll pärast baseline'i
 
