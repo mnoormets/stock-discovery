@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-08-12
+Uuendatud: 2026-08-13
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -56,11 +56,14 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - `/guide` ja `docs/USER_GUIDE.md` selgitavad uuele kasutajale kogu rakenduse soovitatud töövoogu.
 - Automaattestide infrastruktuur (Vitest, ainult devDependency) on olemas ja tootmisandmebaasist isoleeritud:
   - eraldi `discovery_test` andmebaas, mille test-harness ise loob (`globalSetup`) ja jooksu lõpus kustutab; hooldusühendus (CREATE/DROP DATABASE) käib `postgres` baasi kaudu, seega tootmisbaasi `discovery` vastu ei avata testides ühtki ühendust;
-  - skeem luuakse tootmise tõeallikaga `ensureSchema()`, mitte `db/init.sql`-iga;
+  - skeem luuakse **versioonitud migratsioonidest** (`db/migrations/*.sql` läbi `scripts/migrate.cjs`), mitte `ensureSchema()`-st ega `db/init.sql`-ist; nii valideerib kogu testikomplekt ühtlasi runnerit, baseline'i ja `schema_migrations` raamatupidamist;
   - neljakihiline kaitse: `DATABASE_URL` seatakse enne igat lib-importi (`src/lib/db.ts` loob Pool'i impordi hetkel ja cache'ib selle `globalThis` peale), runtime `SELECT current_database()` kontroll enne igat testifaili, sihtbaasi nimekontroll (peab lõppema `_test`-iga ja ei tohi olla `discovery`) ning `.env` faili testides ei loeta;
   - kaitse on ka negatiivselt tõestatud: vale baasinimega jooks katkeb enne ühtki `CREATE`/`DROP` käsku;
-  - käivitamine `docker compose run --rm -T app npm test` (hostil ei ole Node'i, seega testid jooksevad konteineris);
-  - kokku 70 testi viies failis, 100% roheline; `npm test` **ei ole veel** `npm run check` ahelas.
+  - käivitamine konteineris `docker compose run --rm -T app npm test` **või** hostil `npm test`. Hostil tuleb `TEST_DATABASE_URL` eksplitsiitselt seada, sest fixture'i vaikeväärtus (`db:5432`) on Dockeri-sisene ja hostist ei resolvu: `$env:TEST_DATABASE_URL='postgres://discovery:discovery@localhost:5433/discovery_test'`;
+  - kokku 136 testi seitsmes failis, 100% roheline; `npm test` **ei ole veel** `npm run check` ahelas.
+- Golden-source DB (koduarvuti, `localhost:5433/discovery`) on **migreeritud versioonitud skeemile 2026-08-13**: `0001_baseline` applied, `schema_migrations` 1 kirje, `--conformance` verdikt `VASTAB` (0 puuduvat, 0 üle). Backup `pre-migration.dump` võeti enne apply't. `ensureSchema()` jääb koodis alles, kuid on tõestatud no-op — conformance jäi `VASTAB` ka pärast päris `collect:daily` jooksu, mis selle kutsub.
+- Koduarvutil on **Node 24.19.0 + npm 11.17.0** paigaldatud kasutaja-õigustes (`winget install OpenJS.NodeJS.LTS --scope user`; UAC-i ei vajanud, zip-variant `%LOCALAPPDATA%\Microsoft\WinGet\Packages\OpenJS.NodeJS.LTS_*` all) ja `npm ci` tehtud. Seega `lint`, `typecheck`, `test`, `collect:*`, `migrate` ja `schema:diff` töötavad ka otse hostist; DB jääb Dockerisse.
+- **Windows Task Scheduler ülesanne `StockDiscoveryDailyCollect` on koduarvutil registreeritud ja käsitsi testitud** (iga päev 08:05, `LastTaskResult = 0`, logi `C:\sd-logs\collect.log`). Vt „Lokaalne päevane collect (CLI)".
 
 Viimati kontrollitud päris skoorid:
 
@@ -188,9 +191,9 @@ Auditi järel ootel collection reliability ja canonical cloud-history:
 
 - lisa DB-põhine `collection_runs` ledger ning PostgreSQL advisory lock või lease, et sama päeva kattuvad worker'id ei teeks paralleelset collecti;
 - säilita job'i algus, lõpp, staatus, provider'ite loendurid ja piiratud veainfo, et ebaõnnestumine oleks UI-st või DB-st jälgitav;
-- **TOP 5 Core Tests on sisuliselt valmis** (vt [Automated Test Coverage](#automated-test-coverage-2026-08-13)). Esimene faas valmis **2026-08-12**: `1046f0e` isoleeritud Vitest testinfrastruktuur, `47aa895` score determinism, `0412148` canonical run idempotency, `286b11d` manual run key ja outcome'ide loomine, `2192e62` outcome'ide mõõtmine ja muutumatus, `b2ff0d6` outcome immutability, `6a9fc8f` score snapshot dedupe — testinfrastruktuur/isolatsioon, canonical run idempotency (20 testi), score determinism (24 testi), outcome immutability (13 testi) ja score snapshot dedupe (7 testi). **2026-08-13** lisandus enrichment-budget katvus: `74ff848` Make test schema snapshot order-independent (testinfra eeltingimus: `resetDb()` cache maha, `ensureSchema()` tabelikomplekt fikseeritud `globalSetup`-is) ja `aee6d75` Add enrichment budget and retry tests (35 testi). Kokku **106 testi, 100% roheline**. Enrichment-budget on nüüd testidega kaetud: 5 ettevõtet Tallinna päeva kohta; **Tallinna kalendripäeva piir, mitte 24-tunnine liuguraken**; limiidi clamp 1–20; `error` retry 1 päeva järel; `unavailable` 30-päeva aken; stale-facts 7-päeva haru; queue prioriteet; ühe tickeri vea taluvus;
-- **katmata jääb enrichment success-tee** ja see on järgmise testislice'i sisu: kehtiv CompanyFacts JSON-fixture, `enriched` loendur, `financial_facts` ridade päris kirjutamine CompanyFacts JSON-ist, `companies.sec_cik` täitmine, `coveredAfter > coveredBefore`, juhtum „CompanyFacts vastas 200, aga ekstraheeritavaid mõõdikuid pole → `unavailable`" ning `last_error` 500-märgiline kärpimine (viimast ei saa fetch-seami kaudu indutseerida, sest veateate genereerib `src/`);
-- koonda hajutatud runtime `CREATE TABLE` / `ALTER TABLE` loogika versioonitud migratsioonide üheks tõeallikaks;
+- **TOP 5 Core Tests on sisuliselt valmis** (vt [Automated Test Coverage](#automated-test-coverage-2026-08-13)). Esimene faas valmis **2026-08-12**: `1046f0e` isoleeritud Vitest testinfrastruktuur, `47aa895` score determinism, `0412148` canonical run idempotency, `286b11d` manual run key ja outcome'ide loomine, `2192e62` outcome'ide mõõtmine ja muutumatus, `b2ff0d6` outcome immutability, `6a9fc8f` score snapshot dedupe — testinfrastruktuur/isolatsioon, canonical run idempotency (20 testi), score determinism (24 testi), outcome immutability (13 testi) ja score snapshot dedupe (7 testi). **2026-08-13** lisandus enrichment-budget katvus: `74ff848` Make test schema snapshot order-independent (testinfra eeltingimus: `resetDb()` cache maha, `ensureSchema()` tabelikomplekt fikseeritud `globalSetup`-is) ja `aee6d75` Add enrichment budget and retry tests (35 testi). Kokku **136 testi, 100% roheline**. Enrichment-budget on nüüd testidega kaetud: 5 ettevõtet Tallinna päeva kohta; **Tallinna kalendripäeva piir, mitte 24-tunnine liuguraken**; limiidi clamp 1–20; `error` retry 1 päeva järel; `unavailable` 30-päeva aken; stale-facts 7-päeva haru; queue prioriteet; ühe tickeri vea taluvus;
+- **enrichment success-tee on samuti kaetud** (`ca6416c`, 22 testi failis `tests/db/enrichment-success.test.ts`): `enriched` loendur, `financial_facts` ridade päris kirjutamine CompanyFacts JSON-ist koos kõigi SEC väljade kaardistusega, `companies.sec_cik` täitmine, katvuse kasv, idempotentsus ning üheksa alamjuhtumit „CompanyFacts vastas 200, aga ekstraheeritavaid mõõdikuid pole → `unavailable`, mitte `error`". **Katmata jääb ainult `last_error` 500-märgiline kärpimine** — seda ei saa fetch-seami kaudu indutseerida, sest veateate genereerib `src/`;
+- versioonitud migratsioonid on **ehitatud ja golden source'ile rakendatud 2026-08-13**: `db/migrations/0001_baseline.sql`, runner `scripts/migrate.cjs` (`--status` / `--preflight` / `--conformance` / `--allow-discovery`), audit `scripts/schema-diff.cjs`; runbook [`db/migrations/README.md`](../db/migrations/README.md). Testibaas ehitatakse migratsioonidest ja D5 valvab, et runtime `ensure*` kutsed oleksid migreeritud skeemil no-op'id. **Järel on ainult puhastus:** hajutatud runtime `CREATE TABLE` / `ALTER TABLE` eemaldamine `src/`-st (18 `ensureSchema()` kutsekohta) ja otsus `db/init.sql` saatuse kohta — mõlemad eraldi slice'id, mis muudavad `src/` koodi;
 - planeeri Next.js 14 EOL tõttu kontrollitud üleminek toetatud ja turvaparandustega versioonile koos regressioonitestidega;
 - eelista tasuta keskseks DB-ks Neon PostgreSQL-i ja arvutitest sõltumatuks scheduleriks GitHub Actionsit, mis käivitab collector CLI-d otse DB vastu; ära avalikusta selleks kogu Next.js rakendust;
 - pärast keskse DB kontrolli suuna mõlema arvuti lokaalne app sama `DATABASE_URL` vastu; lokaalsed Docker DB-d jäävad arendus-/taastekeskkonnaks;
@@ -310,7 +313,7 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - 2026-08-11 auditi alguses oli sector ja industry olemas 0/24 ettevõttel. Pärast päris AAPL DB-first taustavärskendust oli olemasoleva Yahoo provider'i katvus 1/24; klassifikatsiooni ei backfillita väljamõeldud väärtustega.
 - Uute Nasdaqi tickerite radari eelistatud tasuta feed on ametlik Nasdaq Trader `nasdaqlisted.txt`; enne ehitamist tuleb fikseerida noteeringu lisandumise/muutumise reeglid ja ETF/test issue filtrid.
 - Canonical forward-validation DB otsus vajab kasutaja tasuta Neon projekti ja GitHub Actions secret'ite seadistamist. Soovitus: Neon Free + scheduled GitHub Actions collector, mitte tööarvuti lokaalne DB.
-- Koduarvuti scheduler ei ole sobiv canonical lahendus, sest arvuti on öösel ja kell 08:00 väljas. Ajutine fallback võib käivitada päeva esimese collecti app'i käivitumisel, kuid see ei lahenda kahe arvuti ajaloo lahknemist.
+- Koduarvuti scheduler ei ole **lõplik** canonical lahendus: arvuti võib olla öösel väljas ja ülesanne nõuab sisselogitud kasutajat, sest Docker Desktop vajab interaktiivset sessiooni. Alates 2026-08-13 on `StockDiscoveryDailyCollect` siiski registreeritud ja `-StartWhenAvailable` teeb vahelejäänud jooksu ärkamisel järele, seega päevad ei kao enam vaikselt. Kahe arvuti ajaloo lahknemist see ei lahenda — selleks on endiselt vaja keskset DB-d.
 - Kiiraudit leidis, et repo ei sisalda automaattestide komplekti, skeemi loomine/muutmine on hajutatud `db/init.sql` ja runtime teekide vahel ning rakendusel puudub kasutaja autentimine. Need on enne avalikku deploy'd P0/P1 töö, mitte uue research-provider'i lisamise põhjus.
 - Next.js 14 haru ei ole enam aktiivselt toetatud; versiooniuuendus tuleb teha eraldi kontrollitud tööna, mitte segada seda collection reliability muudatustega.
 - Funnel-auditi püsiv snapshot oli 42 rida, kuigi varasem collect-loendur näitas 43; puuduvat 43. rida ei rekonstrueeritud ega fabritseeritud.
@@ -417,11 +420,46 @@ npm run collect:daily
 - Kogu job on kaitstud Postgres **advisory lock**'iga (`pg_try_advisory_lock`): teine samaaegne collect lõpetab puhtalt, ilma teist jooksu alustamata.
 - **Idempotentne:** sama Tallinna päeva teine jooks taaskasutab canonical run'i (`runReused`), ei loo teist canonical `discovery_run`'i ega dubleeri `candidate_outcomes` ridu.
 
-Windows Task Scheduler (asenda tee enda omaga):
+Windows Task Scheduler — **registreeritud koduarvutil 2026-08-13**, ülesande nimi `StockDiscoveryDailyCollect`, iga päev 08:05, logi `C:\sd-logs\collect.log`.
 
-```bash
-schtasks /Create /TN "StockDiscoveryDailyCollect" /SC DAILY /ST 08:05 /TR "powershell -NoProfile -ExecutionPolicy Bypass -Command cd 'D:\stock-discovery'; npm run collect:daily"
+Kasuta `Register-ScheduledTask`, **mitte** `schtasks /TR` inline-käsku: viimane rikub jutumärkide käsitluse ja logimise ära. Töötav retsept (kohanda `$nodeBin` enda paigalduse järgi):
+
+```powershell
+New-Item -ItemType Directory -Force C:\sd-logs | Out-Null
+$repo = 'D:\stock-discovery'
+$log = 'C:\sd-logs\collect.log'
+$nodeBin = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\OpenJS.NodeJS.LTS_Microsoft.Winget.Source_8wekyb3d8bbwe\node-v24.19.0-win-x64"
+
+$arg = @"
+-NoProfile -ExecutionPolicy Bypass -Command "`$ErrorActionPreference='Continue'; Start-Transcript -Path '$log' -Append; Set-Location '$repo'; `$env:PATH='$nodeBin;' + `$env:PATH; docker compose up -d db; npm run collect:daily; `$c=`$LASTEXITCODE; Stop-Transcript; exit `$c"
+"@
+
+$act = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arg -WorkingDirectory $repo
+$trg = New-ScheduledTaskTrigger -Daily -At 08:05
+$set = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 1)
+$prn = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
+
+Register-ScheduledTask -TaskName 'StockDiscoveryDailyCollect' -Action $act -Trigger $trg -Settings $set -Principal $prn -Description 'Daily stock-discovery canonical collect on golden-source DB' -Force
 ```
+
+Miks just nii:
+
+- **`$env:PATH` prepend käsu sees** — ülesanne ei sõltu sellest, kas winget'i PATH-muudatus on protsessi pärandunud.
+- **`docker compose up -d db` enne collecti** — kui DB konteiner on maas, tõstab ülesanne selle ise üles. `restart: unless-stopped` katab Docker Desktopi taaskäivituse, aga mitte olukorda, kus konteiner on käsitsi peatatud.
+- **`Start-Transcript`** — kogu väljund läheb faili; ilma selleta ei ole ajastatud jooksul mingit jälge.
+- **`-LogonType Interactive`** — Docker Desktop **vajab** sisselogitud sessiooni. „Run whether user is logged on or not" annaks garanteeritud ebaõnnestumise.
+- **`-StartWhenAvailable`** — vahelejäänud jooks tehakse ärkamisel järele. See on ainuke põhjus, miks see lahendus on parem kui compose `scheduler` (node-cron ei tee järele).
+- **`-AllowStartIfOnBatteries` + `-DontStopIfGoingOnBatteries`** — Windows ei käivita vaikimisi ülesannet akutoitel; sülearvutil oleks see vaikne päevatapja.
+
+Kontroll ja käsitsi käivitus:
+
+```powershell
+Start-ScheduledTask -TaskName 'StockDiscoveryDailyCollect'
+Get-ScheduledTaskInfo -TaskName 'StockDiscoveryDailyCollect' | Select-Object LastRunTime, LastTaskResult, NextRunTime
+Get-Content C:\sd-logs\collect.log -Tail 60
+```
+
+`LastTaskResult = 0` tähendab, et ülesanne lõppes korrektselt. **NB:** exit 0 ei tõesta, et collect tegelikult jooksis — kui logis on `TEINE COLLECT JOOKSEB JUBA` ja puudub `Kokkuvote` plokk, siis advisory lock katkestas jooksu puhtalt (`collect-daily.cjs` tagastab sel juhul samuti 0). Loe alati logi sisu, mitte ainult koodi.
 
 Piirangud, mida tuleb teadvustada:
 
@@ -440,7 +478,7 @@ Piirangud, mida tuleb teadvustada:
 
 ## Automated Test Coverage (2026-08-13)
 
-Vitest, 106 testi, 6 faili. Käivitamine: `docker compose run --rm -T app npm test`. Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja kustutab; tootmisbaasi `discovery` ei puudutata. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
+Vitest, **136 testi, 7 faili**. Käivitamine konteineris `docker compose run --rm -T app npm test` või hostil `npm test` (hostil on `TEST_DATABASE_URL` kohustuslik, vt „Praegune töötav seis"). Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja kustutab; tootmisbaasi `discovery` ei puudutata. **Testibaasi skeem ehitatakse versioonitud migratsioonidest** (`scripts/migrate.cjs`), seega iga jooks valideerib ühtlasi runnerit ja baseline'i. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
 
 Testitakse viit funktsiooni:
 
@@ -448,13 +486,12 @@ Testitakse viit funktsiooni:
 - `calculateCompanyScores` (`src/lib/company-scores.ts`) — 24 testi, **DB-vaba** (~40 ms): determinism, mõõdikute järjekorra sõltumatus, `growthRateScore` ja cash/debt piirväärtused, puuduv mõõdik langetab katvust mitte skoori, `null` sisendi dokumenteeritud kuju. `detail` väljadele assertitakse ainult olemasolu, sest `toLocaleString('et-EE')` väljund sõltub keskkonna ICU-st; Coverage detailid on lokaadist sõltumatud ja seega täpselt lukustatud.
 - `refreshCandidateOutcomes` (`src/lib/discovery-validation.ts`) — 13 testi: `measured` on ainus lõplik olek (hilisem soodsam hind ei kirjuta üle, ka benchmark'i mitte); enne sihtaega ei puututa; esimene hind sihtajast alates võidab, mitte parim; 7-päevane aken ja akna järel `missing`; `missing` **ei ole** lukustatud olek (hilinenud aknasisene hind mõõdab ära); puuduv baashind → `unavailable`; excess = kandidaat − benchmark ning puuduv benchmark jääb NULL, mitte 0; horisondi sihtkuupäevad koos kuu-lõpu clamp'iga (31. jaanuar → 28. veebruar, 30. aprill).
 - `saveCompanyScoreSnapshot` (`src/lib/score-tracking.ts`) — 7 testi: sama hash annab ühe rea ja `calculated_at` ei muutu; muutunud `latest.value` või `previousComparable.value` loob uue rea; mõõdikute järjekord ei loo uut snapshot'i; tundmatu ticker viskab erindi, orvu rida ei teki; `ON CONFLICT` uuendab ainult `payload`-i.
-- `enrichStoredCompanyFinancials` (`src/lib/company-financials.ts`) — 35 testi: `SEC_USER_AGENT` värav (`status: 'disabled'`, `attempted 0`, null võrgupäringut); päevane enrichment-eelarve **Tallinna kalendripäeva** kaupa ja eelmise Tallinna päeva katsed ei kuluta tänast eelarvet; vaikimisi päevalimiit 5; `safeLimit` clamp 0 → 5, −3 → 1, 100 → 20, 2.9 → 2; universumi filtrid (SPY, ETF, üle 30 päeva vanune hind, hinnasnapshotita ettevõte); `error` retry 1 päeva järel koos `consecutive_failures` kasvuga; `unavailable` retry 30 päeva järel (2 ja 29 päeva ei kvalifitseeru, 31 kvalifitseerub); stale-facts 7-päeva haru koos 1-päevase cooldown'iga; stale-facts + `unavailable` asümmeetria; queue järjekord (faktideta enne stale-faktidega, kunagi proovimata enne varem proovitut, vanim katse esimesena); ühe tickeri viga ei katkesta kogu jooksu; mixed batch tulemuse kuju (`failed` ja `unavailable` eraldi loendurid).
+- `enrichStoredCompanyFinancials` (`src/lib/company-financials.ts`) — 35 testi: `SEC_USER_AGENT` värav (`status: 'disabled'`, `attempted 0`, null võrgupäringut); päevane enrichment-eelarve **Tallinna kalendripäeva** kaupa ja eelmise Tallinna päeva katsed ei kuluta tänast eelarvet; vaikimisi päevalimiit 5; `safeLimit` clamp 0 → 5, −3 → 1, 100 → 20, 2.9 → 2; universumi filtrid (SPY, ETF, üle 30 päeva vanune hind, hinnasnapshotita ettevõte); `error` retry 1 päeva järel koos `consecutive_failures` kasvuga; `unavailable` retry 30 päeva järel (2 ja 29 päeva ei kvalifitseeru, 31 kvalifitseerub); stale-facts 7-päeva haru koos 1-päevase cooldown'iga; stale-facts + `unavailable` asümmeetria; queue järjekord (faktideta enne stale-faktidega, kunagi proovimata enne varem proovitut, vanim katse esimesena); ühe tickeri viga ei katkesta kogu jooksu; mixed batch tulemuse kuju (`failed` ja `unavailable` eraldi loendurid). Kokku kahes failis: `tests/db/enrichment-budget.test.ts` (35, eelarve/retry/aknad) ja `tests/db/enrichment-success.test.ts` (22, success-tee — `enriched` loendur, SEC väljade kaardistus `financial_facts` ridadesse, `sec_cik`, katvuse kasv, idempotentsus ja üheksa mitte-ekstraheeritava vastuse alamjuhtumit).
 
 Enrichment-testide seam on **`globalThis.fetch`**, mitte mooduli mock: `getSecIdentity` ja `fetchCompanyFacts` on `company-financials.ts`-i mooduli-privaatsed funktsioonid ja neid kutsutakse lokaalse sidumise kaudu, mida mooduli-mock ESM-is kinni ei püüa. Seetõttu ei muudetud testitavuse nimel ühtki `src/` faili ja ükski test ei tee päris võrgupäringut — tundmatu URL viskab valjult erindi. `unavailable` indutseeritakse SEC ticker-map'ist puuduva tickeriga, `error` non-ok companyfacts vastusega.
 
 Ei testita (teadlikult, selle faasi skoobist väljas):
 
-- **enrichment success-tee** kehtiva CompanyFacts JSON-iga — `enriched` loendur, `financial_facts` ridade päris kirjutamine CompanyFacts JSON-ist, `companies.sec_cik` täitmine, `coveredAfter > coveredBefore` ja juhtum „CompanyFacts vastas 200, aga ekstraheeritavaid mõõdikuid pole → `unavailable`";
 - **`last_error` 500-märgiline kärpimine** — veateate genereerib `src/` (`SEC CompanyFacts vastas ${status}.`), seega üle 500 märgi pikka teadet ei saa fetch-seami kaudu indutseerida ilma `src/` muutmata;
 - **advisory lock'i samaaegsus** — testid jooksevad järjestikku ühe ühenduse peal, seega `pg_try_advisory_lock` (session-level, `collect-daily.cjs`) ja `pg_advisory_xact_lock` (`src/lib/db.ts`) tegelikku vastastikust välistamist ei pingutata;
 - **välised provider'id päriselt** — Yahoo Finance, SEC CompanyFacts, ApeWisdom ja FMP; SEC-i kiht on `globalThis.fetch` stub'i taga ja ükski test ei võta päris võrguühendust;
@@ -463,6 +500,21 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, data-quality/freshness, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+Golden-source migratsioon ja scheduler, kontrollitud koduarvutil **2026-08-13**:
+
+- `npm run migrate -- --preflight`: **GO** — 0 `price_snapshots` duplikaati, 0 vigast thesis-staatust, `0001_baseline` PENDING, kaitstud baas JAH.
+- backup `pre-migration.dump` **459 923 baiti**, sha256 klapib konteineri omaga, `.gitignore` katab (`*.dump`).
+- `npm run migrate -- --allow-discovery`: `APPLY 0001_baseline ... OK (27 ms)`, rakendatud 1, vahele jäetud 0.
+- `npm run migrate -- --conformance`: **VASTAB** (0 puuduvat, 0 üle). Sama verdikt ka **pärast** päris `collect:daily` jooksu, mis `ensureSchema()` kutsub — empiiriline tõend, et runtime DDL on migreeritud skeemil no-op.
+- `npm run migrate -- --status`: `0001_baseline applied 2026-08-13T16:21:41Z · 27 ms`, 0 rakendamata.
+- `npm run schema:diff`: 22 tabelit; `price_snapshots UNIQUE` **OLEMAS** ja `investment_theses status CHECK` **OLEMAS** (viimane oli enne migratsiooni PUUDUB).
+- `npm test` hostil: **136/136 roheline**. `npm run typecheck` ja `npm run lint` läbivad samuti hostil.
+- Andmed puutumata: theses 11, positions 5, canonical run'e 3, decisions 209, outcomes 255 — kõik identsed migratsiooni-eelse seisuga.
+- `db/init.sql` koondumine **tõestatud, mitte järeldatud**: init.sql-ist ehitatud ajutine baas (19 tabelit) + `0001_baseline` → `--conformance VASTAB`; „sihtbaasis ÜLE" = 0. Ajutine baas kustutati.
+- Task Scheduler `StockDiscoveryDailyCollect`: registreeritud ja käsitsi käivitatud, **`LastTaskResult = 0`**. Logi (`C:\sd-logs\collect.log`) näitas `runReused JAH`, canonical 3 → 3, outcomes 255 → 255, `price_snapshots` +19, SPY +1, klassifikatsioon 5 rikastatud. Lock-skip'i ei esinenud. Kõrvalmärkus: `Tradestie ebaõnnestus, kasutan ApeWisdomi proxy-sentimenti` — väline provider kukkus ja fallback töötas, jooks ei katkenud.
+
+Varasem seis:
 
 - `npm run lint`: läbib ilma hoiatusteta.
 - `npm run typecheck`: läbib.

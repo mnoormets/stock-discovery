@@ -1,6 +1,6 @@
 # Migratsioonid — konventsioon ja rakendusjärjekord
 
-Staatus: **Slice 0 — ettevalmistus.** Siin kaustas olevaid faile **ei rakendata kuskil automaatselt**. Migratsioonimootorit ei ole veel olemas; `ensureSchema()` jääb esialgu tootmise skeemiteeks. Migratsioonid lisanduvad **kõrvale**, mitte asemele.
+Staatus: **rakendatud.** `0001_baseline` on rakendatud golden-source DB-le **2026-08-13** (`schema_migrations`: 1 kirje) ja `--conformance` ütleb `VASTAB`. Testibaas ehitatakse migratsioonidest (`tests/setup/global-setup.ts`). Runner `scripts/migrate.cjs` on olemas ja **käsitsi käivitatav** — app startup ega `npm run check` seda ei kutsu. `ensureSchema()` jääb tootmises esialgu alles, kuid on migreeritud skeemil tõestatud **no-op** (vt „`ensureSchema()` staatus").
 
 ## Failinime formaat
 
@@ -28,7 +28,7 @@ npm run schema:diff
 
 ## Runner: `scripts/migrate.cjs`
 
-Käsitsi käivitatav, **midagi ei käivitu automaatselt** (ei app startup, ei testid, ei `npm run check`).
+Käsitsi käivitatav: **app startup ega `npm run check` seda ei kutsu.** Ainus automaatne kasutaja on testharness — `tests/setup/global-setup.ts` ehitab testibaasi `runMigrations()` kaudu, mistõttu kogu testikomplekt valideerib ühtlasi runnerit, baseline'i ja `schema_migrations` raamatupidamist.
 
 ```bash
 npm run migrate -- --status
@@ -178,7 +178,7 @@ npm run collect:status
 
 Migratsioon jookseb ühes transaktsioonis: ebaõnnestumisel rullub ta **ise tagasi** ja `schema_migrations` rida ei teki. Andmete taastamiseks kasuta `pre-migration.dump`-i (`pg_restore --clean --if-exists`).
 
-## Rakendusjärjekord (kui mootor kunagi valmib)
+## Rakendusjärjekord (runneri tegelik käitumine)
 
 1. Võta PostgreSQL advisory lock (sama muster nagu `scripts/collect-daily.cjs`), et kaks samaaegset startupi ei rakendaks korraga.
 2. Loo `schema_migrations`, kui puudub.
@@ -195,11 +195,16 @@ Migratsioon jookseb ühes transaktsioonis: ebaõnnestumisel rullub ta **ise taga
 | `checksum` | `TEXT NOT NULL` | Faili SHA-256; tuvastab tagantjärele muudetud migratsiooni |
 | `execution_ms` | `INTEGER` | Kestus, et aeglane migratsioon oleks nähtav |
 
-**Tabelit ei ole veel üheski andmebaasis loodud.** Slice 0 on ainult disain.
+Tabel on olemas nii golden-source DB-s (rakendatud 2026-08-13) kui igas testibaasis.
 
-## Miks `ensureSchema()` jääb esialgu alles
+## `ensureSchema()` staatus
 
-`ensureSchema()` kutsutakse **18 kohast** `src/`-s ja see on praegu ka testibaasi skeemi-tõeallikas (`tests/setup/global-setup.ts`). Selle eemaldamine on eraldi, hilisem samm. Slice 0 ei muuda ühtki käivitusteed.
+`ensureSchema()` kutsutakse **18 kohast** `src/`-s ja jääb tootmises esialgu alles; selle eemaldamine on eraldi samm. Testibaasi skeemi-tõeallikas see **enam ei ole** — testibaas tuleb migratsioonidest.
+
+Migreeritud skeemil on `ensureSchema()` **no-op** ja seda on tõestatud kahel tasandil:
+
+1. **Testides** valvab seda D5 (`tests/db/infra-smoke.test.ts`): kui keegi lisab `ensureSchema()`-sse veeru ilma vastava migratsioonita, läheb test kohe punaseks.
+2. **Golden-source DB-s** jäi `--conformance` verdikt `VASTAB` ka pärast päris `collect:daily` jooksu, mis `ensureSchema()` kutsub (mõõdetud 2026-08-13, Task Scheduleri esimene jooks).
 
 ## Teadaolev kahesuunaline drift (mõõdetud 2026-08-13)
 
@@ -210,4 +215,12 @@ Migratsioon jookseb ühes transaktsioonis: ebaõnnestumisel rullub ta **ise taga
 
 Kumbki pool **ei ole** teise ülemhulk. Baseline-migratsiooni ülesanne on kirjeldada **liitu** (runtime ∪ init.sql).
 
-Tagajärg, mida tuleb teada: testibaas ehitatakse `ensureSchema()`-st, seega **testides puuduvad `price_snapshots` UNIQUE ja thesis-staatuse CHECK** — testiskeem on tootmisest nõrgem.
+See kahesuunaline drift on nüüd **lahendatud**: baseline kirjeldab liitu ja testibaas ehitatakse migratsioonidest, seega `price_snapshots` UNIQUE ja thesis-staatuse CHECK on ka testiskeemis olemas (`tests/db/infra-smoke.test.ts`, D4). Testiskeem ei ole enam tootmisest nõrgem.
+
+## `db/init.sql` roll pärast baseline'i
+
+`init.sql` jookseb endiselt **ainult värske Dockeri volume'i** loomisel (`docker-compose.yml` mount). Mõõdetud 2026-08-13: sellest tekkiv skeem on **19 tabelit** ja `--conformance` ütleb `ERINEB` — puuduvad `catalyst_events`, `catalyst_assessments`, `schema_migrations` (56 veergu, 7 indeksit, 8 piirangut). **Aga „sihtbaasis ÜLE" = 0:** `init.sql` ei loo midagi, mida baseline ei kirjelda.
+
+Koondumine on **tõestatud, mitte järeldatud**: init.sql-ist ehitatud ajutisele baasile rakendatud `0001_baseline` andis `--conformance VASTAB` (0 puuduvat, 0 üle).
+
+Tagajärg: pärast `docker compose down -v` on korrektne järjekord **`up -d db` → `npm run migrate`**. `init.sql` on nüüd üleliigne, kuid kahjutu; selle eemaldamine on eraldi otsus.
