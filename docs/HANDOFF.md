@@ -399,6 +399,24 @@ npm run build
 
 `npm run check` käivitab sama järjekorra ühe käsuga.
 
+### Skeem värskes andmebaasis
+
+Värske Dockeri volume'i korral jookseb `db/init.sql` (19 tabelit) ja `ensureSchema()` lisab ülejäänu app'i esimesel kasutusel — rakendus töötab, aga `schema_migrations` raamatupidamine ja `investment_theses` status CHECK jäävad puudu. Korrektne järjekord on seetõttu:
+
+```bash
+docker compose up -d db
+```
+
+```bash
+npm run migrate -- --preflight
+```
+
+```bash
+npm run migrate
+```
+
+Golden-source DB (`discovery`) on kaitstud ja nõuab `--allow-discovery` — vt [`db/migrations/README.md`](../db/migrations/README.md) täielikku runbook'i koos backup-nõudega. Mõõdetud 2026-08-13: init.sql-ist ehitatud baas + `0001_baseline` annab `--conformance VASTAB`, seega need kaks teed koonduvad.
+
 ## Lokaalne päevane collect (CLI)
 
 Lokaalne alternatiiv Dockeri `scheduler` teenusele, mis töötab ainult siis, kui kogu stack on 08:00 Tallinna aja seisuga püsti. CLI kutsub **täpselt sama ahelat nagu `/api/collect`** (`runCollection` → SPY benchmark → SEC enrichment → classification enrichment → canonical discovery → `refreshCandidateOutcomes`) ega dubleeri ärilogikat. Vajab ainult töötavat DB-d (`docker compose up -d db`).
@@ -436,7 +454,7 @@ $arg = @"
 
 $act = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arg -WorkingDirectory $repo
 $trg = New-ScheduledTaskTrigger -Daily -At 08:05
-$set = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 1)
+$set = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 1) -MultipleInstances IgnoreNew -RestartInterval (New-TimeSpan -Minutes 10) -RestartCount 3
 $prn = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
 
 Register-ScheduledTask -TaskName 'StockDiscoveryDailyCollect' -Action $act -Trigger $trg -Settings $set -Principal $prn -Description 'Daily stock-discovery canonical collect on golden-source DB' -Force
@@ -450,6 +468,9 @@ Miks just nii:
 - **`-LogonType Interactive`** — Docker Desktop **vajab** sisselogitud sessiooni. „Run whether user is logged on or not" annaks garanteeritud ebaõnnestumise.
 - **`-StartWhenAvailable`** — vahelejäänud jooks tehakse ärkamisel järele. See on ainuke põhjus, miks see lahendus on parem kui compose `scheduler` (node-cron ei tee järele).
 - **`-AllowStartIfOnBatteries` + `-DontStopIfGoingOnBatteries`** — Windows ei käivita vaikimisi ülesannet akutoitel; sülearvutil oleks see vaikne päevatapja.
+- **`-RestartInterval 10 min` + `-RestartCount 3`** — katab konkreetse augu, mida `-StartWhenAvailable` EI kata: kui masin buutis 08:04 ja ülesanne käivitub ajal, mil Docker Desktop veel initsialiseerub, kukub `docker compose up -d db` ja päev kaoks vaikselt. `-StartWhenAvailable` teeb järele ainult **vahelejäänud trigeri**, mitte ebaõnnestunud jooksu. Kolm katset 10-minutise vahega annab Dockerile ~30 minutit. Kordused on ohutud: canonical run on Tallinna päeva kohta idempotentne ja advisory lock väldib kattuvaid jookse.
+- **`-WakeToRun` on teadlikult VÄLJAS** — magav masin ei ärka 08:05 ajaks, vaid jooks tehakse ärkamisel järele (`-StartWhenAvailable`). Kui tahad garanteeritud hommikust kadentsi, lisa `-WakeToRun`, aga arvesta, et Windowsi toitesätted võivad wake-timerid akutoitel niikuinii keelata.
+- **`-RunOnlyIfNetworkAvailable` on teadlikult VÄLJAS** — kogumine vajab internetti, aga see säte reageerib ka VPN-i ja virtuaalsete adapterite peale ebaühtlaselt. Võrgu puudumine annab praegu ausa ebaõnnestumise + retry, mitte vaikse mittekäivitumise.
 
 Kontroll ja käsitsi käivitus:
 

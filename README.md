@@ -54,7 +54,14 @@ npm ci
 npm run dev
 ```
 
-`DATABASE_URL` peab osutama andmebaasile. Esmakäivitusel loob rakendus vajalikud V1 tabelid; värske Dockeri andmebaas kasutab ka faili `db/init.sql`.
+`DATABASE_URL` peab osutama andmebaasile. Skeemi kanooniline allikas on **versioonitud migratsioonid** kaustas `db/migrations` — rakenda need runneriga:
+
+```bash
+npm run migrate -- --preflight
+npm run migrate
+```
+
+Ajalooline taust: värske Dockeri andmebaas jookseb ka `db/init.sql` ja rakendus loob puuduvad tabelid käivitusel ise (`ensureSchema()`). Nii jääb rakendus töökorda ka ilma migratsioone rakendamata, kuid `schema_migrations` raamatupidamine ja mõned piirangud jäävad puudu. Runbook ja kaitstud golden-source DB reeglid: [`db/migrations/README.md`](db/migrations/README.md).
 
 ## Kaitstud radari kogumine
 
