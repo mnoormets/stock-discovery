@@ -115,6 +115,79 @@ async function reportStatus(client, migrations, dbName, log) {
   return { applied: 0, skipped: 0, pending, states };
 }
 
+// Ühtne GO / NO-GO vaade ENNE production apply't. TÄIELIKULT READ-ONLY:
+// ei loo schema_migrations tabelit ega puuduta andmeid. Koondab ühte kohta
+// selle, mis muidu on jagatud `migrate --status` ja `schema:diff` vahel.
+async function runPreflight(client, migrations, dbName, log) {
+  const blockers = [];
+  const notes = [];
+
+  log(`\n-- 1. Sihtandmebaas --`);
+  const isProtected = dbName === PROTECTED_DATABASE;
+  log(`  ${'andmebaas'.padEnd(34)} ${dbName}`);
+  log(`  ${'kaitstud baas?'.padEnd(34)} ${isProtected ? 'JAH' : 'ei'}`
+    + (isProtected ? '   <-- apply NÕUAB --allow-discovery lippu' : ''));
+  if (isProtected) notes.push('Apply nõuab eksplitsiitset --allow-discovery lippu.');
+
+  log(`\n-- 2. Migratsioonide seis --`);
+  const applied = await readApplied(client);
+  log(`  ${'schema_migrations'.padEnd(34)} ${applied === null ? 'PUUDUB (kõik on pending)' : `olemas, ${applied.size} kirjet`}`);
+  let pending = 0;
+  for (const migration of migrations) {
+    const row = applied?.get(migration.version);
+    let state;
+    if (!row) { state = 'PENDING'; pending += 1; }
+    else if (row.checksum !== migration.checksum) {
+      state = 'CHECKSUM MISMATCH';
+      blockers.push(`${migration.file}: checksum ei klapi — fail on pärast rakendamist muudetud.`);
+    } else state = 'applied';
+    log(`  ${migration.version.padEnd(34)} ${state}`);
+  }
+
+  log(`\n-- 3. Andmekontroll (piirangute eeldused) --`);
+  const tableExists = async (table) => {
+    const { rows } = await client.query('SELECT to_regclass($1) IS NOT NULL AS ok', [`public.${table}`]);
+    return rows[0].ok;
+  };
+
+  if (await tableExists('price_snapshots')) {
+    const { rows } = await client.query(`
+      SELECT count(*)::int AS n FROM (
+        SELECT 1 FROM price_snapshots GROUP BY company_id, captured_at HAVING count(*) > 1
+      ) dup`);
+    const n = rows[0].n;
+    log(`  ${'price_snapshots duplikaate'.padEnd(34)} ${String(n).padStart(6)}   ${n === 0 ? 'OK — UNIQUE saab lisada' : 'BLOKEERIB'}`);
+    if (n > 0) blockers.push(`price_snapshots: ${n} duplikaatpaari — UNIQUE piirang ebaõnnestuks.`);
+  } else {
+    log(`  ${'price_snapshots duplikaate'.padEnd(34)} ${'-'.padStart(6)}   tabel puudub (uus baas)`);
+  }
+
+  if (await tableExists('investment_theses')) {
+    const { rows } = await client.query(`
+      SELECT count(*)::int AS n FROM investment_theses
+      WHERE status IS NULL OR status NOT IN ('draft','researching','ready','rejected')`);
+    const n = rows[0].n;
+    log(`  ${'investment_theses vigaseid'.padEnd(34)} ${String(n).padStart(6)}   ${n === 0 ? 'OK — CHECK saab lisada' : 'BLOKEERIB'}`);
+    if (n > 0) blockers.push(`investment_theses: ${n} vigast staatust — CHECK piirang ebaõnnestuks.`);
+  } else {
+    log(`  ${'investment_theses vigaseid'.padEnd(34)} ${'-'.padStart(6)}   tabel puudub (uus baas)`);
+  }
+
+  log(`\n-- 4. VERDIKT --`);
+  if (blockers.length > 0) {
+    log('  NO-GO — lahenda enne apply\'d:');
+    for (const b of blockers) log(`    ! ${b}`);
+  } else if (pending === 0) {
+    log('  GO (tegevust pole) — kõik migratsioonid on juba rakendatud.');
+  } else {
+    log(`  GO — ${pending} migratsiooni on rakendamiseks valmis.`);
+    for (const n of notes) log(`    NB: ${n}`);
+  }
+  log('  (--preflight on read-only: ei loo schema_migrations tabelit ega muuda andmeid)');
+
+  return { applied: 0, skipped: 0, pending, blockers, go: blockers.length === 0 };
+}
+
 async function applyMigrations(client, migrations, log) {
   const lock = await client.query('SELECT pg_try_advisory_lock(hashtext($1)) AS ok', [LOCK_NAME]);
   if (lock.rows[0].ok !== true) {
@@ -181,6 +254,7 @@ async function applyMigrations(client, migrations, log) {
  * @param {string} [options.databaseUrl]   sihtbaas; muidu DATABASE_URL / lokaalne vaikeväärtus
  * @param {boolean} [options.allowDiscovery] luba kaitstud "discovery" baas
  * @param {boolean} [options.statusOnly]   ainult raport, ei kirjuta midagi
+ * @param {boolean} [options.preflight]    GO/NO-GO kontroll, ei kirjuta midagi
  * @param {(msg: string) => void} [options.log]
  */
 async function runMigrations(options = {}) {
@@ -188,6 +262,7 @@ async function runMigrations(options = {}) {
     databaseUrl,
     allowDiscovery = false,
     statusOnly = false,
+    preflight = false,
     log = console.log,
   } = options;
 
@@ -203,6 +278,11 @@ async function runMigrations(options = {}) {
   try {
     const { rows } = await client.query('SELECT current_database() AS db');
     const dbName = String(rows[0].db);
+
+    if (preflight) {
+      const result = await runPreflight(client, migrations, dbName, log);
+      return { ...result, migrations, databaseName: dbName };
+    }
 
     if (statusOnly) {
       const result = await reportStatus(client, migrations, dbName, log);
@@ -227,19 +307,25 @@ if (require.main === module) {
 
   const args = process.argv.slice(2);
   const statusOnly = args.includes('--status');
+  const preflight = args.includes('--preflight');
   const allowDiscovery = args.includes('--allow-discovery');
   const urlFlagIndex = args.indexOf('--database-url');
   const databaseUrl = urlFlagIndex >= 0 ? args[urlFlagIndex + 1] : undefined;
 
+  const mode = preflight ? '--preflight (GO/NO-GO, ei kirjuta midagi)'
+    : statusOnly ? '--status (ei kirjuta midagi)'
+      : 'rakendamine';
+
   console.log('=== Stock Discovery · migrate ===');
-  console.log(`  režiim: ${statusOnly ? '--status (ei kirjuta midagi)' : 'rakendamine'}`);
+  console.log(`  režiim: ${mode}`);
   console.log(`  DB: ${redact(databaseUrl || ensureLocalDatabaseUrl())}`);
 
-  runMigrations({ databaseUrl, allowDiscovery, statusOnly })
+  runMigrations({ databaseUrl, allowDiscovery, statusOnly, preflight })
     .then((result) => {
-      if (!statusOnly && result.databaseName) console.log(`  sihtbaas: ${result.databaseName}`);
+      if (!statusOnly && !preflight && result.databaseName) console.log(`  sihtbaas: ${result.databaseName}`);
       console.log('');
-      process.exit(0);
+      // NO-GO preflight annab mitte-nulli, et skriptitav kasutus saaks katkeda.
+      process.exit(preflight && result.go === false ? 2 : 0);
     })
     .catch((error) => {
       console.error(`\nmigrate ebaõnnestus: ${error.message}\n`);

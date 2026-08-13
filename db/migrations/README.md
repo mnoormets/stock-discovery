@@ -41,6 +41,7 @@ npm run migrate -- --database-url postgres://discovery:discovery@localhost:5433/
 | Lipp | Tähendus |
 |---|---|
 | *(puudub)* | Rakendab rakendamata migratsioonid `DATABASE_URL` sihtbaasi |
+| `--preflight` | **GO / NO-GO kontroll enne apply't.** Koondab ühte vaatesse: sihtbaas + kas nõuab `--allow-discovery`, `schema_migrations` seis, iga migratsiooni pending/applied/mismatch, `price_snapshots` duplikaadid, `investment_theses` vigased staatused. **Read-only.** NO-GO korral exit-kood **2** |
 | `--status` | Ainult raport (applied / pending / checksum mismatch). **Ei kirjuta midagi, ei loo `schema_migrations` tabelit.** Töötab ka kaitstud baasi vastu |
 | `--database-url <url>` | Eksplitsiitne sihtbaas; muidu `DATABASE_URL` või lokaalne vaikeväärtus |
 | `--allow-discovery` | **Ainus viis** rakendada baasi nimega `discovery` |
@@ -50,6 +51,89 @@ npm run migrate -- --database-url postgres://discovery:discovery@localhost:5433/
 **Advisory lock.** Kogu jooks on kaetud `pg_try_advisory_lock(hashtext('stock-discovery:migrate'))`-iga ühel pühendatud ühendusel; teine samaaegne migrator lõpetab puhtalt ilma rakendamata. Lukk vabastatakse alati (`finally`).
 
 **Checksum.** Iga faili SHA-256 salvestatakse. Kordusjooks, kus checksum klapib → `SKIP`. Kui rakendatud migratsiooni fail on **tagantjärele muudetud**, katkeb runner veaga ja **ei rakenda ka järgnevaid** — parandus käib alati **uue** migratsiooniga.
+
+## How to apply baseline to golden-source DB
+
+> ⚠️ **HOIATUSED — loe enne igat sammu**
+> - Käivita **AINULT koduarvuti golden source DB vastu**. Tööarvuti lokaalne DB **ei ole** golden source; sellel migratsioone ei rakendata.
+> - **Mitte enne värsket dump'i/backup'i.** Vt „Käivitamine uues arvutis" (`docs/HANDOFF.md`) `pg_dump -Fc` käsku.
+> - **Mitte enne, kui preflight näitab 0 duplikaati ja 0 vigast staatust.** `UNIQUE` ja `CHECK` **ebaõnnestuvad**, kui rikkuvad read on juba andmes.
+> - `--allow-discovery` on **ainus** viis kaitstud baasi rakendada. Ära kasuta seda kunagi kogemata tööarvutis.
+> - Baseline on **mittehävitav**: ei ühtki `DROP`-i, tüübimuutust ega `NOT NULL` lisamist. Olemasolevad andmed jäävad puutumata.
+
+### ENNE (kõik read-only)
+
+```bash
+git pull origin main
+```
+
+```bash
+npm ci
+```
+
+```bash
+docker compose up -d db
+```
+
+```bash
+npm run schema:diff
+```
+
+```bash
+npm run migrate -- --preflight
+```
+
+**Edasi tohib minna ainult siis, kui `--preflight` ütleb `GO`** ja näitab:
+- `price_snapshots duplikaate` = **0**
+- `investment_theses vigaseid` = **0**
+- `0001_baseline` = **PENDING**
+- `kaitstud baas? JAH` → seega apply nõuab `--allow-discovery`
+
+Kui verdikt on `NO-GO`, **peatu** ja lahenda blokeerijad. Ära lõdvenda baseline'i piiranguid selleks, et apply läbi läheks.
+
+### VÕTA BACKUP
+
+```bash
+docker compose exec -T db pg_dump -U discovery -d discovery -Fc -f /tmp/pre-migration.dump
+```
+
+```bash
+docker compose cp db:/tmp/pre-migration.dump ./pre-migration.dump
+```
+
+### APPLY
+
+```bash
+npm run migrate -- --allow-discovery
+```
+
+Oodatav väljund: `APPLY 0001_baseline ... OK (…ms)` ja `rakendatud 1, vahele jäetud 0`.
+
+### PÄRAST (kontroll)
+
+```bash
+npm run schema:diff
+```
+
+Nüüd peavad `price_snapshots UNIQUE` ja `investment_theses status CHECK` näitama **OLEMAS**.
+
+```bash
+npm run typecheck
+```
+
+```bash
+node node_modules/vitest/vitest.mjs run
+```
+
+```bash
+npm run collect:status
+```
+
+`collect:status` peab näitama samu loendureid nagu enne migratsiooni — canonical run'id, outcome'id ja faktid ei tohi muutuda.
+
+### Kui midagi läheb valesti
+
+Migratsioon jookseb ühes transaktsioonis: ebaõnnestumisel rullub ta **ise tagasi** ja `schema_migrations` rida ei teki. Andmete taastamiseks kasuta `pre-migration.dump`-i (`pg_restore --clean --if-exists`).
 
 ## Rakendusjärjekord (kui mootor kunagi valmib)
 
