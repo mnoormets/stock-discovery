@@ -1,7 +1,12 @@
-import { beforeEach, describe, expect, inject, it } from 'vitest';
-import { pool } from '../../src/lib/db';
+import { afterEach, beforeEach, describe, expect, inject, it, vi } from 'vitest';
+import { ensureSchema, pool } from '../../src/lib/db';
+import { ensureFinancialSchema } from '../../src/lib/company-financials';
+import { ensureResearchSchema } from '../../src/lib/company-research-store';
+import { ensureScoreTrackingSchema } from '../../src/lib/score-tracking';
+import { enrichCompanyClassifications } from '../../src/lib/company-classification';
 import { TEST_DB_NAME } from '../setup/test-db-url';
 import { publicTables, resetDb } from '../setup/reset';
+import { addedItems, removedItems, schemaSnapshot } from '../setup/schema-snapshot';
 
 // Testibaasi tabelikomplekt on siia fikseeritud KARAKTERISEERIVA testina: see
 // ei väida, mis peaks olema, vaid lukustab selle, mis praegu on.
@@ -159,5 +164,89 @@ describe('D3 — resetDb()', () => {
 
     const after = await pool.query('SELECT count(*)::int AS n FROM companies');
     expect(after.rows[0].n).toBe(0);
+  });
+});
+
+describe('D5 — runtime schema ensure funktsioonid on migratsioonide järel no-op', () => {
+  // TOP 9 Slice 2. Testibaas ehitatakse `db/migrations/*.sql`-ist. Kui baseline
+  // katab kogu runtime DDL-i, EI TOHI ükski `ensure*` kutse skeemi muuta.
+  //
+  // Miks see test on oluline:
+  //   1. Tõestab empiiriliselt, et runtime DDL on migreeritud skeemil üleliigne.
+  //      See on eeltingimus, et `src/` alt üldse tohiks midagi eemaldada.
+  //   2. Toimib DRIFTI VALVENA: kui keegi lisab `ensureSchema()`-sse veeru ilma
+  //      vastava migratsioonita, läheb see test kohe punaseks.
+  //
+  // Parandus ebaõnnestumise korral käib ALATI baseline/migratsiooni poolelt —
+  // mitte `ensure*` funktsiooni eemaldades.
+  //
+  // NB memoiseerimise kohta: `ensureSchema()` (db.ts) EI ole memoiseeritud ja
+  // jookseb iga kutse peale täies mahus (20 CREATE TABLE + 58 ADD COLUMN +
+  // 12 CREATE INDEX). Ülejäänud neli hoiavad mooduli tasemel promise-cache'i,
+  // seega nende SQL käivitub selles protsessis ESIMESEL kutsel — mis siin ka
+  // toimub, sest ükski varasem test selles failis neid ei kutsu.
+
+  // `enrichCompanyClassifications` on ainus eksporditud tee
+  // `ensureClassificationColumns()`-ini. Tühja `companies` tabeliga on järjekord
+  // tühi ega tehta ühtki võrgupäringut; stub tõestab seda valjult.
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  async function callAllEnsureFunctions(): Promise<void> {
+    await ensureSchema();
+    await ensureFinancialSchema();
+    await ensureResearchSchema();
+    await ensureScoreTrackingSchema();
+    await enrichCompanyClassifications(1);
+  }
+
+  it('ei lisa ega eemalda ühtegi tabelit, veergu, indeksit ega piirangut', async () => {
+    vi.stubGlobal('fetch', async (input: unknown) => {
+      throw new Error(`D5 ei tohi võrku puutuda, aga püüti: ${String(input)}`);
+    });
+
+    const before = await schemaSnapshot();
+    await callAllEnsureFunctions();
+    const after = await schemaSnapshot();
+
+    // Iga liik eraldi, et ebaõnnestumise teade nimetaks TÄPSE objekti.
+    expect(addedItems(before.tables, after.tables)).toEqual([]);
+    expect(addedItems(before.columns, after.columns)).toEqual([]);
+    expect(addedItems(before.indexes, after.indexes)).toEqual([]);
+    expect(addedItems(before.constraints, after.constraints)).toEqual([]);
+
+    // Runtime DDL on ainult IF NOT EXISTS kujul, seega ei tohi ka midagi kaduda.
+    expect(removedItems(before.tables, after.tables)).toEqual([]);
+    expect(removedItems(before.columns, after.columns)).toEqual([]);
+    expect(removedItems(before.indexes, after.indexes)).toEqual([]);
+    expect(removedItems(before.constraints, after.constraints)).toEqual([]);
+
+    expect(after).toEqual(before);
+  });
+
+  it('on stabiilne ka korduval kutsel (ensureSchema ei ole memoiseeritud)', async () => {
+    vi.stubGlobal('fetch', async (input: unknown) => {
+      throw new Error(`D5 ei tohi võrku puutuda, aga püüti: ${String(input)}`);
+    });
+
+    await callAllEnsureFunctions();
+    const before = await schemaSnapshot();
+    await callAllEnsureFunctions();
+    const after = await schemaSnapshot();
+
+    expect(after).toEqual(before);
+  });
+
+  it('snapshot ise on deterministlik ja mittetühi', async () => {
+    const first = await schemaSnapshot();
+    const second = await schemaSnapshot();
+
+    expect(second).toEqual(first);
+    // Kaitse sisutühja testi vastu: kui tõmmis oleks tühi, läbiks võrdlus
+    // triviaalselt ega tõestaks midagi.
+    expect(first.tables.length).toBeGreaterThan(20);
+    expect(first.columns.length).toBeGreaterThan(250);
+    expect(first.constraints.length).toBeGreaterThan(50);
   });
 });
