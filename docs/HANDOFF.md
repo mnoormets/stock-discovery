@@ -453,7 +453,14 @@ $arg = @"
 "@
 
 $act = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arg -WorkingDirectory $repo
-$trg = New-ScheduledTaskTrigger -Daily -At 08:05
+
+# KAKS trigerit. Ainult päevane 08:05 nõuaks, et masin oleks just siis sisse
+# logitud; sisselogimise trigger tähendab, et piisab arvuti kasutamisest
+# ükskõik mis kellaajal sel päeval.
+$daily = New-ScheduledTaskTrigger -Daily -At 08:05
+$logon = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
+$logon.Delay = 'PT5M'   # anna Docker Desktopile aega käivituda
+$trg = @($daily, $logon)
 $set = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 1) -MultipleInstances IgnoreNew -RestartInterval (New-TimeSpan -Minutes 10) -RestartCount 3
 $prn = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
 
@@ -469,7 +476,23 @@ Miks just nii:
 - **`-StartWhenAvailable`** — vahelejäänud jooks tehakse ärkamisel järele. See on ainuke põhjus, miks see lahendus on parem kui compose `scheduler` (node-cron ei tee järele).
 - **`-AllowStartIfOnBatteries` + `-DontStopIfGoingOnBatteries`** — Windows ei käivita vaikimisi ülesannet akutoitel; sülearvutil oleks see vaikne päevatapja.
 - **`-RestartInterval 10 min` + `-RestartCount 3`** — katab konkreetse augu, mida `-StartWhenAvailable` EI kata: kui masin buutis 08:04 ja ülesanne käivitub ajal, mil Docker Desktop veel initsialiseerub, kukub `docker compose up -d db` ja päev kaoks vaikselt. `-StartWhenAvailable` teeb järele ainult **vahelejäänud trigeri**, mitte ebaõnnestunud jooksu. Kolm katset 10-minutise vahega annab Dockerile ~30 minutit. Kordused on ohutud: canonical run on Tallinna päeva kohta idempotentne ja advisory lock väldib kattuvaid jookse.
-- **`-WakeToRun` on teadlikult VÄLJAS** — magav masin ei ärka 08:05 ajaks, vaid jooks tehakse ärkamisel järele (`-StartWhenAvailable`). Kui tahad garanteeritud hommikust kadentsi, lisa `-WakeToRun`, aga arvesta, et Windowsi toitesätted võivad wake-timerid akutoitel niikuinii keelata.
+- **Sisselogimise trigger (`-AtLogOn`, 5 min viivitus)** — see on kõige olulisem kaitse väljalülitatud masina vastu. Ainult päevane 08:05 nõuaks, et arvuti oleks just sel hetkel sisse logitud; sisselogimise trigeriga piisab, et sa mingil hetkel sel päeval arvutit üldse kasutad.
+- **`-WakeToRun` on teadlikult VÄLJAS** — magav masin ei ärka 08:05 ajaks. Jooks tehakse ärkamisel/sisselogimisel järele. Kui tahad garanteeritud hommikust kadentsi, lisa `-WakeToRun`, aga arvesta, et Windowsi toitesätted võivad wake-timerid akutoitel niikuinii keelata.
+
+**Mis juhtub, kui arvuti on 08:05 ajal väljas.** `-StartWhenAvailable` + sisselogimise trigger taastavad **ülesande**, mitte **päevad**. Kui masin on kolm päeva väljas, saad naastes **ühe** jooksu — selle päeva canonical run'i. Kolm vahelejäänud päeva on **jäädavalt kadunud**, sest `run_key` on Tallinna kuupäev ja retrospektiivne konstrueerimine on teadlikult keelatud (vt „Backtesti kuupäeval `t`…" reeglit). Ainus lahendus, mis kadentsi arvutist sõltumatuks teeb, on keskne DB + pilve-scheduler.
+
+**Mitu jooksu samal päeval on tõestatult kahjutud** (mõõdetud 2026-08-13, kolm jooksu):
+
+| Kiht | Teine jooks samal Tallinna päeval |
+|---|---|
+| canonical `discovery_runs` | `runReused JAH`, loend muutumatu (3 → 3) |
+| `discovery_decisions` | muutumatu (209 → 209) |
+| `candidate_outcomes` | muutumatu (255 → 255) |
+| SEC enrichment | `attempted 0`, `dailyRemaining 0` — Tallinna päevaeelarve on juba kulutatud |
+| **klassifikatsiooni enrichment** | **kuni 5 ettevõtet juurde** — sellel kihil EI ole päevaeelarvet (`DAILY_CLASSIFICATION_ENRICHMENT_LIMIT` on per-call, mitte per-päev) |
+| `price_snapshots` | mõni rida juurde (5-min dedupe piirab) |
+
+Seega lisajooksud ei riku idempotentsust ja on **aktiivselt kasulikud**, kuni sektor/industry katvus on puudulik.
 - **`-RunOnlyIfNetworkAvailable` on teadlikult VÄLJAS** — kogumine vajab internetti, aga see säte reageerib ka VPN-i ja virtuaalsete adapterite peale ebaühtlaselt. Võrgu puudumine annab praegu ausa ebaõnnestumise + retry, mitte vaikse mittekäivitumise.
 
 Kontroll ja käsitsi käivitus:
