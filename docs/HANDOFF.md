@@ -560,18 +560,29 @@ Golden-source migratsioon ja scheduler, kontrollitud koduarvutil **2026-08-13**:
 
 Täielik `npm run check` ahel läbis hostil **2026-08-13** täies mahus: lint ✔, typecheck ✔, data-quality 7/7, catalyst 11/11, frequency 12/12, valuation 12/12, under-recognition 18/18, build ✓ (13/13 lehte). `pre-migration.dump` taastatavus kontrollitud: `pg_restore --list` exit 0, 191 TOC kirjet, 21 tabelit. **NB:** see dump on migratsiooni-EELNE, seega `schema_migrations` selles puudub — taastamise järel tuleb `npm run migrate` uuesti jooksutada.
 
-### Forward-valimi seis (mõõdetud 2026-08-13, read-only audit)
+### Forward-valimi seis (mõõdetud 2026-08-14)
 
 | Näitaja | Seis | Lävi | Puudu |
 |---|---|---|---|
-| canonical päevi kokku | 3 (08-11, 08-12, 08-13) | — | — |
-| **canonical päevi `rklb-discovery-v2` seerias** | **2** (08-12, 08-13) | ≥5, eelistatult 10 | **3 (eelistatult 8)** |
-| ettevõtteid SEC faktidega | **24** | ≥20 | **täidetud** |
-| katvus aktiivsest universumist | 24/54 = **44,4%** | ≥70% (alternatiiv) | ~14 ettevõtet ≈ 3 päeva |
+| canonical päevi kokku | 4 (08-11 … 08-14) | — | — |
+| **canonical päevi `rklb-discovery-v2` seerias** | **3** (08-12, 08-13, 08-14) | ≥5, eelistatult 10 | **2 (eelistatult 7)** |
+| ettevõtteid SEC faktidega | **29** | ≥20 | **täidetud** |
+| `candidate_outcomes` | 280 | — | esimesed mõõdetavad 08-18 |
+
+Canonical jooksud ja kaasatud kandidaadid:
+
+| Otsusepäev | Run | Hinnatud | Kaasatud |
+|---|---:|---:|---|
+| 2026-08-11 (v1) | #3 | 8 | — |
+| 2026-08-12 | #17 | 19 | BW, CAVA, CAKE, API, HR |
+| 2026-08-13 | #25 | 24 | BW, CAVA, CAKE, API, FCF |
+| 2026-08-14 | #28 | 29 | ELF, BW, CAVA, CAKE, API |
+
+**Püsiv tuum on nüüd kolme päeva peal sama: BW, CAVA, CAKE, API.** Viies koht vahetub iga päev (HR → FCF → ELF). Hinnatud universum kasvab järjekindlalt (19 → 24 → 29), sest SEC enrichment lisab 5 ettevõtet päevas.
 
 **Siduv piirang on nihkunud.** Varem oli see SEC katvus; nüüd on „≥20 ettevõtet" lävi täidetud ja ainus takistus on **canonical päevade arv v2 seerias**. Run #3 (08-11) on `rklb-discovery-v1` ega kuulu frequency-seeriasse.
 
-- **Enrichment-järjekord on puhas:** kõik 20 katset on `success`, ühtki `error` ega `unavailable` ei ole. Kõik 30 katmata ettevõtet on „kunagi proovimata" ehk lihtsalt järjekorras — 5/päev tempoga ~6 päeva täieliku katvuseni.
+- **Enrichment-järjekord on puhas:** kõik 25 katset on `success`, ühtki `error` ega `unavailable` ei ole. Katmata ettevõtted on „kunagi proovimata" ehk lihtsalt järjekorras — 5/päev tempoga.
 - **Esimesed mõõdetavad outcome'id: 2026-08-18** (1n horisont, 5 päeva pärast). Seejärel 2n 08-25, 1k 09-11, 3k 11-11, 6k 2027-02-11. Enne 08-18 on `/backtest` koondnäitajad paratamatult tühjad.
 - **Forward-valim on püsiv:** 08-12 kaasati BW, CAVA, CAKE, API, HR; 08-13 BW, CAVA, CAKE, API, FCF. Neli viiest kordub — täpselt see, mida `/frequency` persistence mõõdab.
 - **Kõigil viiel tänasel kandidaadil on `catalyst_evidence_status = material_new_evidence`** (tugevaim tier). Võrdluseks: 08-11 v1 jooksus välistas catalyst hard gate kõik.
