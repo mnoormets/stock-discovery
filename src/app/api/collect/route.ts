@@ -6,6 +6,7 @@ import { collectDefaultBenchmarkPrice } from '@/lib/backtest';
 import { enrichStoredCompanyFinancials } from '@/lib/company-financials';
 import { enrichCompanyClassifications } from '@/lib/company-classification';
 import { getRklbDiscoveryCandidates } from '@/lib/rklb-discovery';
+import { RequiredDataQualitySnapshotError } from '@/lib/data-quality-snapshots';
 
 function isAuthorized(req: Request): boolean {
   const expected = process.env.CRON_SECRET;
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await runCollection();
+    const result = await runCollection({ trigger: 'api' });
     const benchmarkCaptured = await collectDefaultBenchmarkPrice();
     let financialEnrichment: Awaited<ReturnType<typeof enrichStoredCompanyFinancials>> | null = null;
     let financialEnrichmentError: string | null = null;
@@ -69,7 +70,10 @@ export async function POST(req: Request) {
       error: string | null;
     };
     try {
-      const discovery = await getRklbDiscoveryCandidates({ runType: 'rklb_daily' });
+      const discovery = await getRklbDiscoveryCandidates({
+        runType: 'rklb_daily',
+        collectionRunId: result.collectionRunId,
+      });
       dailyDiscovery = {
         ok: true,
         runId: discovery.runId,
@@ -80,6 +84,11 @@ export async function POST(req: Request) {
         error: null,
       };
     } catch (error) {
+      // Canonical run'i kvaliteedisnapshot on audit trail'i kohustuslik osa.
+      // Lase sellel outer catch'ini jõuda, et HTTP collect tagastaks 500 ja
+      // scheduler näeks päris failure'it. Muud discovery vead jäävad senise
+      // käitumise järgi dailyDiscovery alamstaatusse.
+      if (error instanceof RequiredDataQualitySnapshotError) throw error;
       const message = (error as Error).message;
       console.error('Päevane canonical discovery ebaõnnestus:', error);
       dailyDiscovery = {

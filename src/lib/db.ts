@@ -214,16 +214,14 @@ export async function saveCompanyResearch(research: CompanyResearch): Promise<vo
 
 // /api/collect saab fundamentaalidest ettevõtte ja hinnainfo. Teised live-tabelid
 // täituvad siis, kui detailne research-päring annab vastavad andmed.
-export async function saveCollectedCompanies(candidates: Candidate[]): Promise<void> {
-  const withMarketData = candidates.filter((candidate) =>
-    candidate.price != null || candidate.marketCap != null || candidate.volume != null,
-  );
-  if (withMarketData.length === 0) return;
+export async function saveCollectedCompanies(candidates: Candidate[]): Promise<Map<string, number>> {
+  const companyIds = new Map<string, number>();
+  if (candidates.length === 0) return companyIds;
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    for (const candidate of withMarketData) {
+    for (const candidate of candidates) {
       const source = candidate.fundamentalsSource || 'collection';
       const companyId = await upsertCompany(client, {
         ticker: candidate.ticker,
@@ -233,16 +231,22 @@ export async function saveCollectedCompanies(candidates: Candidate[]): Promise<v
         currency: candidate.currency,
         source,
       });
-      await insertPriceSnapshot(client, companyId, {
-        price: candidate.price,
-        previousClose: null,
-        marketCap: candidate.marketCap,
-        volume: candidate.volume,
-        currency: candidate.currency,
-        source,
-      });
+      companyIds.set(candidate.ticker, companyId);
+      // Radarist nähtud ticker on väärtuslik point-in-time tõend ka siis, kui
+      // Yahoo/FMP vastus puudub. Hinnasnapshot tekib ainult päris turuandmetest.
+      if (candidate.price != null || candidate.marketCap != null || candidate.volume != null) {
+        await insertPriceSnapshot(client, companyId, {
+          price: candidate.price,
+          previousClose: null,
+          marketCap: candidate.marketCap,
+          volume: candidate.volume,
+          currency: candidate.currency,
+          source,
+        });
+      }
     }
     await client.query('COMMIT');
+    return companyIds;
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -255,6 +259,30 @@ export async function saveCollectedCompanies(candidates: Candidate[]): Promise<v
 // olemasolev (varem loodud) andmebaas saaks uued veerud/tabelid ilma reset'ita.
 export async function ensureSchema(): Promise<void> {
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS collection_runs (
+      id BIGSERIAL PRIMARY KEY,
+      trigger TEXT NOT NULL DEFAULT 'direct',
+      status TEXT NOT NULL DEFAULT 'running',
+      started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      finished_at TIMESTAMPTZ,
+      duration_ms BIGINT,
+      metrics JSONB NOT NULL DEFAULT '{}'::jsonb,
+      error_name TEXT,
+      error_message TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      CONSTRAINT collection_runs_trigger_check CHECK (char_length(trigger) BETWEEN 1 AND 64),
+      CONSTRAINT collection_runs_status_check CHECK (status IN ('running', 'success', 'failure')),
+      CONSTRAINT collection_runs_metrics_object_check CHECK (jsonb_typeof(metrics) = 'object'),
+      CONSTRAINT collection_runs_lifecycle_check CHECK (
+        (status = 'running' AND finished_at IS NULL AND duration_ms IS NULL AND error_name IS NULL AND error_message IS NULL)
+        OR (status = 'success' AND finished_at IS NOT NULL AND duration_ms >= 0 AND error_name IS NULL AND error_message IS NULL)
+        OR (status = 'failure' AND finished_at IS NOT NULL AND duration_ms >= 0 AND error_message IS NOT NULL)
+      )
+    );
+    CREATE INDEX IF NOT EXISTS idx_collection_runs_started
+      ON collection_runs (started_at DESC, id DESC);
+    CREATE INDEX IF NOT EXISTS idx_collection_runs_status_started
+      ON collection_runs (status, started_at DESC, id DESC);
     CREATE TABLE IF NOT EXISTS snapshots (
       id BIGSERIAL PRIMARY KEY,
       capture_date DATE NOT NULL,

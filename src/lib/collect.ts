@@ -8,8 +8,24 @@ import {
   saveSnapshot, saveCollectedCompanies, ensureSchema, upsertSecSuspensions,
   getSecSuspendedSet, getMentionHistory,
 } from './db';
-import { BLACKLIST, MIN_MENTIONS, TOP_N, FUND_LOOKUP_LIMIT } from './config';
-import type { Fundamentals } from './types';
+import {
+  BLACKLIST,
+  MIN_MENTIONS,
+  TOP_N,
+  FUND_LOOKUP_LIMIT,
+  FUND_RECALL_LOOKUP_LIMIT,
+} from './config';
+import type { ApeWisdomRow, Fundamentals } from './types';
+import {
+  COLLECTION_METRICS_VERSION,
+  executeCollectionRun,
+  type CollectionRunMetrics,
+} from './collection-runs';
+import {
+  recordCollectionRunItems,
+  resolveLookupBucket,
+  type CollectionRunItemInput,
+} from './collection-run-items';
 
 // Tänase kuupäev "YYYY-MM-DD" (lokaalne, ilma UTC-nihketa).
 function today(): string {
@@ -18,20 +34,43 @@ function today(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-export async function runCollection() {
-  const captureDate = today();
+export function selectFundamentalLookupTickers(rows: ApeWisdomRow[]): {
+  growthTickers: string[];
+  recallTickers: string[];
+  lookupTickers: string[];
+} {
+  const growthOf = (row: ApeWisdomRow) => {
+    const prev = row.mentions_24h_ago ?? 0;
+    return prev > 0 ? (row.mentions - prev) / prev : (row.mentions > 0 ? 1 : 0);
+  };
+  const growthTickers = [...rows]
+    .sort((a, b) => growthOf(b) - growthOf(a) || b.mentions - a.mentions || a.ticker.localeCompare(b.ticker))
+    .slice(0, FUND_LOOKUP_LIMIT)
+    .map((row) => row.ticker);
+  const growthSet = new Set(growthTickers);
+  const recallTickers = [...rows]
+    .filter((row) => !growthSet.has(row.ticker))
+    .sort((a, b) => b.mentions - a.mentions || a.rank - b.rank || a.ticker.localeCompare(b.ticker))
+    .slice(0, FUND_RECALL_LOOKUP_LIMIT)
+    .map((row) => row.ticker);
+  return { growthTickers, recallTickers, lookupTickers: [...growthTickers, ...recallTickers] };
+}
 
-  // 0) Veendu, et skeem on uuendatud (uued veerud/tabelid olemasolevas DB-s).
-  await ensureSchema();
+async function collectCore(collectionRunId: number) {
+  const captureDate = today();
+  let tradestieFallback = false;
+  let secFallback = false;
 
   // 1) Andmed sisse: ApeWisdom (kasv) + Tradestie (sentiment) + SEC (peatamised).
   const [apeRows, tradestie, secItems] = await Promise.all([
     fetchApeWisdom(2),
     fetchTradestie().catch((e) => {
+      tradestieFallback = true;
       console.warn('Tradestie ebaõnnestus, kasutan ApeWisdomi proxy-sentimenti:', e.message);
       return new Map();
     }),
     fetchSecSuspensions().catch((e) => {
+      secFallback = true;
       console.warn('SEC feed ebaõnnestus (jätkan ilma):', e.message);
       return [];
     }),
@@ -46,18 +85,13 @@ export async function runCollection() {
     (r) => !BLACKLIST.has(r.ticker) && r.mentions >= MIN_MENTIONS,
   );
 
-  // 3) Vali top-kandidaadid fundamentaalide jaoks (kasvu-eelskoori järgi).
-  const growthOf = (r: typeof preFiltered[number]) => {
-    const prev = r.mentions_24h_ago ?? 0;
-    return prev > 0 ? (r.mentions - prev) / prev : (r.mentions > 0 ? 1 : 0);
-  };
-  const lookupTickers = [...preFiltered]
-    .sort((a, b) => growthOf(b) - growthOf(a))
-    .slice(0, FUND_LOOKUP_LIMIT)
-    .map((r) => r.ticker);
+  // 3) Vali nii kasvu- kui recall-ring fundamentaalide jaoks.
+  const { growthTickers, recallTickers, lookupTickers } = selectFundamentalLookupTickers(preFiltered);
 
   // 4a) Proovi Yahoo esimesena.
   const fundamentals = await fetchFundamentals(lookupTickers);
+  const yahooFundamentals = fundamentals.size;
+  let fmpFundamentals = 0;
 
   // 4b) FMP VARUVARIANT: tickeritele, kus Yahoo turukappi ei andnud (429/tühi).
   const apiKey = process.env.FMP_API_KEY || '';
@@ -65,6 +99,7 @@ export async function runCollection() {
   if (apiKey && missing.length > 0) {
     console.log(`Yahoo puudu ${missing.length} tickeril → proovin FMP varuvarianti.`);
     const fmp = await fetchFmpFundamentals(missing, apiKey);
+    fmpFundamentals = fmp.size;
     for (const [k, v] of fmp) {
       const ex = fundamentals.get(k);
       // Täida ainult puuduvad väljad; ära kirjuta Yahoo andmeid üle.
@@ -95,18 +130,129 @@ export async function runCollection() {
   // Salvesta enne päevast enrichment/discovery faasi, kuid ära nurja kogu
   // collection'it, kui lokaalne live-tabelite kirjutus ebaõnnestub.
   let liveDataSaved = true;
-  await saveCollectedCompanies(candidates).catch((error) => {
+  let savedCompanyIds = new Map<string, number>();
+  await saveCollectedCompanies(candidates).then((ids) => {
+    savedCompanyIds = ids;
+  }).catch((error) => {
     liveDataSaved = false;
     console.error('Kogutud ettevõtete live-andmete salvestamine ebaõnnestus:', error);
   });
+
+  // Ticker-level provenance is part of the collection audit trail. Record every
+  // radar row, including rows that never reached the paid/limited lookup ring.
+  // Failure is fatal to this collection run: a successful aggregate ledger row
+  // without its ticker evidence would be misleading.
+  const preFilteredSet = new Set(preFiltered.map((row) => row.ticker));
+  const growthSet = new Set(growthTickers);
+  const recallSet = new Set(recallTickers);
+  const growthRank = new Map(growthTickers.map((ticker, index) => [ticker, index + 1]));
+  const recallRank = new Map(recallTickers.map((ticker, index) => [ticker, index + 1]));
+  const candidateByTicker = new Map(candidates.map((candidate) => [candidate.ticker, candidate]));
+  const recallCandidateSet = new Set([...preFiltered]
+    .sort((a, b) => b.mentions - a.mentions || a.rank - b.rank || a.ticker.localeCompare(b.ticker))
+    .slice(0, FUND_RECALL_LOOKUP_LIMIT)
+    .map((row) => row.ticker));
+  const items: CollectionRunItemInput[] = apeRows.map((row) => {
+    const bucket = resolveLookupBucket(row.ticker, growthSet, recallSet);
+    const selected = bucket === 'growth' || bucket === 'recall';
+    const fundamental = selected ? fundamentals.get(row.ticker) : undefined;
+    const found = Boolean(fundamental && (
+      fundamental.price != null || fundamental.marketCap != null || fundamental.volume != null
+    ));
+    const candidate = candidateByTicker.get(row.ticker);
+    let skipReason: string | null = null;
+    if (!preFilteredSet.has(row.ticker) || (selected && found && !candidate)) skipReason = 'filtered_out';
+    else if (selected && !found) skipReason = 'no_market_data';
+    else if (selected && fundamental?.price == null) skipReason = 'missing_price';
+    else if (selected && fundamental?.marketCap == null) skipReason = 'missing_market_cap';
+    const previous = row.mentions_24h_ago;
+    const mentionGrowthPercent = previous == null
+      ? null
+      : previous > 0
+        ? ((row.mentions - previous) / previous) * 100
+        : row.mentions > 0 ? 100 : 0;
+    return {
+      collectionRunId,
+      ticker: row.ticker,
+      lookupBucket: bucket,
+      selectedForMarketData: selected,
+      marketDataAttempted: selected,
+      marketDataFound: found,
+      marketDataSource: selected ? (found ? fundamental?.source || 'unknown' : 'none') : null,
+      mentionCount: row.mentions,
+      previousMentionCount: previous,
+      mentionGrowthPercent,
+      attentionRank: row.rank,
+      growthRank: growthRank.get(row.ticker) ?? null,
+      recallRank: recallRank.get(row.ticker) ?? null,
+      companyId: savedCompanyIds.get(row.ticker) ?? null,
+      skipReason,
+      rawSignal: {
+        source: 'apewisdom',
+        passedPreFilter: preFilteredSet.has(row.ticker),
+        selectionPaths: {
+          growth: growthSet.has(row.ticker),
+          recallCandidate: recallCandidateSet.has(row.ticker),
+        },
+      },
+      warnings: candidate?.warnings ?? [],
+    };
+  });
+  await recordCollectionRunItems(items);
 
   return {
     captureDate,
     scanned: apeRows.length,
     candidates: candidates.length,
+    marketDataLookup: {
+      growth: growthTickers.length,
+      recall: recallTickers.length,
+      total: lookupTickers.length,
+    },
     secSuspensionsTracked: secNames.size,
     flagged: candidates.filter((c) => c.warnings.length > 0).length,
     liveDataSaved,
+    providers: {
+      apewisdomRows: apeRows.length,
+      tradestieRows: tradestie.size,
+      tradestieFallback,
+      secSuspensionsFetched: secItems.length,
+      secFallback,
+      yahooFundamentals,
+      fmpRequested: apiKey ? missing.length : 0,
+      fmpFundamentals,
+    },
     top: candidates.slice(0, TOP_N),
   };
+}
+
+export interface RunCollectionOptions {
+  trigger?: string;
+}
+
+function collectionMetrics(result: Awaited<ReturnType<typeof collectCore>>): CollectionRunMetrics {
+  return {
+    schemaVersion: COLLECTION_METRICS_VERSION,
+    captureDate: result.captureDate,
+    scanned: result.scanned,
+    candidates: result.candidates,
+    flagged: result.flagged,
+    secSuspensionsTracked: result.secSuspensionsTracked,
+    liveDataSaved: result.liveDataSaved,
+    marketDataLookup: result.marketDataLookup,
+    providers: result.providers,
+  };
+}
+
+export async function runCollection(options: RunCollectionOptions = {}) {
+  // Ledger kuulub põhikogumise lifecycle'i ümber. Skeem peab enne alustamist
+  // olemas olema; pärast running-kirjet lõpeb iga püütav tee success/failure'iga.
+  await ensureSchema();
+  const execution = await executeCollectionRun({
+    trigger: options.trigger || 'direct',
+    initialMetrics: { schemaVersion: COLLECTION_METRICS_VERSION },
+    operation: (run) => collectCore(run.id),
+    successMetrics: collectionMetrics,
+  });
+  return { ...execution.result, collectionRunId: execution.run.id };
 }
