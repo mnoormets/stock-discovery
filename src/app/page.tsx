@@ -40,6 +40,10 @@ export default async function Home() {
       <TickerSearch />
 
       <div className="quickGrid">
+        <Link className="card linkCard" href="/today">
+          <strong>Today&apos;s Research Brief</strong>
+          <span>Tänane canonical run, kandidaadid, kvaliteet ja review-list</span>
+        </Link>
         <Link className="card linkCard" href="/portfolio">
           <strong>Portfell</strong>
           <span>Positsioonid, teesid ja ajahorisondid</span>
