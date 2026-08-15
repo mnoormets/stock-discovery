@@ -21,6 +21,10 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 - Catalyst Evidence V2: catalyst ei ole kaasamisfilter, vaid struktureeritud tõend, mis näitab sündmuse materiality't, suunda, allika kvaliteeti, uudsust, thesis-relevance'i ja mandaadi sobivust eraldi. Planeeritud earnings-kuupäev ega uudise pealkiri ei kvalifitseeru tõendiks.
 - Iga RKLB discovery jooks salvestab muutumatu otsusehetke universumi, kaasatud ja välistatud tickerid, põhjused, skoorid, hinna, market cap'i, runway-kirjelduse, katalüsaatori, riskid ja teadmata info.
 - Päevane `/api/collect` kasvatab olemasoleva SEC CompanyFactsi allika katvust maksimaalselt viie ettevõtte kaupa ning salvestab ühe idempotentse `rklb_daily` canonical discovery run'i Tallinna kalendripäeva kohta.
+- Iga `runCollection()` põhikogumise katse loob `collection_runs` auditikirje: `running` läheb terminalolekusse `success` või `failure`, säilitades algus-/lõpuaja, kestuse, triggeri, versioonitud JSON-metricud ja piiratud veainfo. Katkenud protsess jääb nähtavalt `running` olekusse.
+- Iga uus canonical `rklb_daily` discovery run saab ühe immutable `data_quality_snapshots` kirje: otsuse hetke universumi SEC/score/sektori/hinnakate, freshness-loendurid ja nähtavad riskiflagid. Manual `rklb` run'idele snapshot'i ei looda.
+- Iga measured candidate outcome saab automaatselt immutable Outcome Analysis Snapshot V1 kirje, mis külmutab ainult otsusehetke decision/quality/collection provenance'i ning outcome'i enda. Winner ja benchmark beat on eraldi; puuduv sisend jääb `unknown`.
+- `/today` on read-only Daily Research Brief: latest canonical run, collection status, top kandidaadid, provenance, data quality, review-itemid, päevamuutus, missed moves ja järgmised outcome-kuupäevad ühel hommikusel research-vaatel. See ei ole trading recommendation.
 - `/validation` mõõdab kaasatud kandidaatide tegelikku hinnamuutust eraldi 1 nädala, 2 nädala, 1 kuu, 3 kuu ja 6 kuu horisondil ning näitab keskmist, mediaani, võitjaid, kaotajaid, parimat ja halvimat tulemust.
 - `/backtest` loeb ainult salvestatud point-in-time discovery run'e ja outcome'e, võrdleb mõõdetud kandidaate SPY benchmark'iga ning kuvab excess return'i ainult siis, kui mõlemad hinnad on päriselt olemas.
 - Sector-relative Ranking võrdleb Growth, Financial Health, Coverage ja market cap'i olemasoleva Yahoo sector/industry grupi sees; alla viie võrreldava ettevõtte korral percentile'i ei kuvata.
@@ -72,7 +76,7 @@ curl -X POST http://localhost:3005/api/collect \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
 
-Üks edukas päevatöö salvestab radariettevõtete hinnad, SPY benchmark'i, kuni viis puuduva või aegunud SEC CompanyFactsi katvusega ettevõtet, canonical discovery snapshot'i ning valminud candidate outcome'id. Enrichment- või discovery alamfaasi viga logitakse ja tagastatakse eraldi staatusena; see ei muuda juba õnnestunud põhikogumist ebaõnnestunuks.
+Üks edukas päevatöö salvestab radariettevõtete hinnad, SPY benchmark'i, kuni viis puuduva või aegunud SEC CompanyFactsi katvusega ettevõtet, canonical discovery snapshot'i, selle point-in-time andmekvaliteedi kirje ning valminud candidate outcome'id. Põhikogumise lifecycle ja providerimõõdikud salvestatakse `collection_runs` tabelisse. Enrichment- või discovery alamfaasi viga logitakse ja tagastatakse eraldi staatusena; canonical discovery järel ebaõnnestunud kvaliteedisnapshot teeb discovery sammu kriitiliselt ebaõnnestunuks, kuid juba committed run jääb auditisse alles.
 
 ## Keskkonnamuutujad
 
