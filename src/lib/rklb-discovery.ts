@@ -9,10 +9,15 @@ import { getCatalystEvidenceMap } from './catalyst-events';
 import type { CatalystEvidence } from './catalyst-evidence';
 import { buildValuationEvidence, type ValuationEvidenceSummary } from './valuation-evidence';
 import {
+  CANONICAL_RUN_TYPE,
   recordDiscoveryRun,
   type DiscoveryDecisionInput,
   type DiscoveryRunType,
 } from './discovery-validation';
+import {
+  recordDataQualitySnapshot,
+  RequiredDataQualitySnapshotError,
+} from './data-quality-snapshots';
 
 export type DiscoveryCriterionStatus = 'supported' | 'uncertain' | 'missing';
 
@@ -56,6 +61,7 @@ export interface RklbDiscoveryResult {
   generatedAt: string;
   rules: string[];
   runId: number;
+  collectionRunId: number | null;
   runReused: boolean;
   inputChangedAfterCanonicalSnapshot: boolean;
 }
@@ -299,7 +305,7 @@ function decisionInput(item: EvaluatedCompany, included: boolean, rank: number |
 }
 
 export async function getRklbDiscoveryCandidates(
-  options: { runType?: DiscoveryRunType } = {},
+  options: { runType?: DiscoveryRunType; collectionRunId?: number | null } = {},
 ): Promise<RklbDiscoveryResult> {
   const financials = await getAllStoredCompanyFinancials();
   await saveCompanyScoreSnapshots(financials);
@@ -382,7 +388,18 @@ export async function getRklbDiscoveryCandidates(
     const rank = selectedRank.get(item.evidence.ticker) ?? null;
     return decisionInput(item, rank != null, rank);
   });
-  const run = await recordDiscoveryRun(RULES, decisions, runAt, options.runType || 'rklb');
+  const runType = options.runType || 'rklb';
+  const run = await recordDiscoveryRun(RULES, decisions, runAt, runType, options.collectionRunId ?? null);
+  // Canonical run ilma kvaliteedisnapshotita oleks poolik audit trail. Viga
+  // propagatsioonib collect:daily sammu (CLI lisab selle errors nimekirja ja
+  // lõpetab exit 1-ga), kuid juba committed canonical run jääb alles.
+  if (runType === CANONICAL_RUN_TYPE) {
+    try {
+      await recordDataQualitySnapshot(run.runId);
+    } catch (error) {
+      throw new RequiredDataQualitySnapshotError(run.runId, error);
+    }
+  }
   const candidates: RklbCandidate[] = selected.map((item) => ({
     ticker: item.evidence.ticker,
     name: item.evidence.name || item.financials.companyName,
@@ -416,6 +433,7 @@ export async function getRklbDiscoveryCandidates(
     generatedAt: runAt.toISOString(),
     rules: RULES,
     runId: run.runId,
+    collectionRunId: run.collectionRunId,
     runReused: !run.created,
     inputChangedAfterCanonicalSnapshot: run.inputChangedAfterCanonicalSnapshot,
   };

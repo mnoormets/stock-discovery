@@ -22,8 +22,11 @@ const MIGRATED_TABLES = [
   'candidate_outcomes',
   'catalyst_assessments',
   'catalyst_events',
+  'collection_run_items',
+  'collection_runs',
   'companies',
   'company_score_snapshots',
+  'data_quality_snapshots',
   'discovery_decisions',
   'discovery_runs',
   'earnings_events',
@@ -31,6 +34,7 @@ const MIGRATED_TABLES = [
   'financial_facts',
   'investment_theses',
   'news_items',
+  'outcome_analysis_snapshots',
   'portfolio_positions',
   'price_snapshots',
   'research_briefs',
@@ -75,7 +79,7 @@ describe('D1 — test-andmebaasi isolatsioon (esimene värav)', () => {
 describe('D2 — migratsioonidest ehitatud tabelikomplekt', () => {
   // Assertitakse globalSetup'is fikseeritud hetkeseisu, MITTE jooksvat
   // `pg_tables` vastu: testibaas on failide vahel jagatud.
-  it('loob täpselt need 22 tabelit', () => {
+  it('loob täpselt need 26 tabelit', () => {
     expect(inject('migratedTables')).toEqual(MIGRATED_TABLES);
   });
 
@@ -99,6 +103,25 @@ describe('D4 — testibaas on ehitatud migratsioonidest', () => {
   // TRUNCATE'ib ka selle tabeli.
   it('0001_baseline on rakendatud', () => {
     expect(inject('appliedMigrations')).toContain('0001_baseline');
+  });
+
+  it('0002_collection_runs_ledger on rakendatud', () => {
+    expect(inject('appliedMigrations')).toContain('0002_collection_runs_ledger');
+  });
+
+  it('0003_data_quality_snapshots on rakendatud', () => {
+    expect(inject('appliedMigrations')).toContain('0003_data_quality_snapshots');
+    expect(inject('migratedTables')).toContain('data_quality_snapshots');
+  });
+
+  it('0004_collection_run_items on rakendatud', () => {
+    expect(inject('appliedMigrations')).toContain('0004_collection_run_items');
+    expect(inject('migratedTables')).toContain('collection_run_items');
+  });
+
+  it('0005_outcome_analysis_snapshots on rakendatud', () => {
+    expect(inject('appliedMigrations')).toContain('0005_outcome_analysis_snapshots');
+    expect(inject('migratedTables')).toContain('outcome_analysis_snapshots');
   });
 
   it('schema_migrations tabel on olemas', async () => {

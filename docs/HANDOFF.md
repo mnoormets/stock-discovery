@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-08-13
+Uuendatud: 2026-08-16
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -40,16 +40,23 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Versioonitud `company_score_snapshots`, mis säilitavad input-hashi, SEC fact ID-d, perioodid ja komponendid.
 - `/scanner` fundamentaalne edetabel ja sortimine Growthi, Healthi või Coverage'i järgi.
 - `/watchlist` kasutab `portfolio_positions.status = 'watch'` kirjeid ja pakub olemasolevate skooride põhjal uurimisideid.
-- `/portfolio` positsioonid, P/L ja turuväärtus; olemasoleva positsiooni tees suunatakse Thesis Builderisse.
+- `/portfolio` positsioonid, P/L ja turuväärtus; noteeringu valuuta tuleb hinnasnapshotist, EUR/USD summasid ei liideta ega konverteerita ilma FX-allikata ning ostuhind sisestatakse aktsia noteerimisvaluutas. Olemasoleva positsiooni tees suunatakse Thesis Builderisse.
 - `/daily` snapshot-võrdlused ja alert'id.
 - `/thesis/[positionId]` struktureeritud, versioonitud Thesis Builder koos 12 kuu kontrollpunkti ja skooritõenditega.
 - Watchlisti score-change alert võrdleb järjestikuseid sama mudeliversiooni snapshot'e, säilitab idempotentse alert'i ning näitab muutunud komponente nii Watchlistis kui Daily Changes vaates.
 - `/scanner?preset=rklb` kuvab olemasolevast universumist 0-5 läbipaistvalt põhjendatud uurimiskandidaati koos kriteeriumide, riskide, teadmata info ning Watchlisti/Thesis tegevustega.
 - Iga RKLB discovery käivitus salvestab `discovery_runs` ja `discovery_decisions` tabelitesse muutumatu point-in-time otsuse koos kogu vaadeldud universumi ning kaasamise/välistamise põhjustega.
 - Päevane `/api/collect` töötleb Tallinna kalendripäeva kohta kuni viis puuduva või aegunud SEC CompanyFactsi katvusega ettevõtet, säilitab `financial_enrichment_status` retry/auditi ning loob ühe `rklb_daily` canonical discovery run'i.
+- `collection_runs` ledger (`0002_collection_runs_ledger`) annab igale `runCollection()` katsele oma rea: trigger, `running → success|failure` lifecycle, algus/lõpp, kestus, `schemaVersion: 1` JSON-metricud ning kuni 2000 märgini piiratud veainfo. API trigger on `api`, schedulerit/CLI-d muutmata kutsed on `direct`; protsessi jõuga katkemine jääb auditeeritava `running` reana nähtavaks.
+- `data_quality_snapshots` (`0003_data_quality_snapshots`, `data-quality-snapshot-v1`) külmutab iga uue canonical `rklb_daily` run'i juurde ühe otsusehetke kvaliteedipildi: hinnatud/kaasatud arv, tuntud mitte-ETF universumi SEC/score/sektori/30 päeva hinna kate, finantsperioodide vahemik ja 550 päeva stale-loendur ning immutable decision/score snapshot'ist coverage-, mandate-, FCF- ja dilution-flagid. Manual `rklb` run on keelatud; sama run'i kirjet ei kirjutata üle.
+- `collection_run_items` (`0004_collection_run_items`, `collection-run-item-v1`) külmutab iga collect'i radaritickeri growth/recall/not-selected bucketi, lookup-katse ja tabamuse, provider'i, mention/rank signaalid, skip-põhjuse ning võimaliku company-seose. `discovery_runs.collection_run_id` seob uue canonical otsuse selle loonud collect'iga; manual run ja vanemad canonical run'id jäävad ausalt `NULL`. Growth võidab deterministlikult võimaliku growth+recall konflikti ning olemasolevat terminalinfot ei kirjutata korduskutsel üle.
+- `outcome_analysis_snapshots` (`0005_outcome_analysis_snapshots`, `outcome-analysis-snapshot-v1`) loob iga measured outcome'i kohta immutable õppimiskirje ainult `discovery_decisions`, `candidate_outcomes`, `data_quality_snapshots` ja `collection_run_items` sisenditest. Winner (`return > 0`) ja benchmark beat (`excess return > 0`) on eraldi; puuduv provenance/quality/catalyst/mandate/benchmark jääb `unknown`. DB-trigger keelab UPDATE/DELETE ning summary võrdleb canonical kohordis bucketit, skoori, kvaliteeti, catalyst tier'i ja mandate relevance'i; legacy manual/unknown scope ei saasta vaikimisi koondit. Detailne leping: [`docs/OUTCOME_ANALYSIS_SNAPSHOT_V1.md`](OUTCOME_ANALYSIS_SNAPSHOT_V1.md).
+- `/today` Daily Research Brief on rakenduse read-only hommikune entrypoint: latest canonical ja collect status, immutable included otsused, tickeritaseme collection bucket, quality snapshot, inimese review-list, eelmise canonical päevaga new/removed/repeated muutus, missed-move kokkuvõte ning järgmised pending outcome-kuupäevad. Kõik päringud jooksevad ühes `REPEATABLE READ, READ ONLY` transaktsioonis; collectorit, outcome refresh'i, rankingut ega write-on-read route'e ei kutsuta. Vaade on research cockpit, mitte trading recommendation.
 - `/validation` värskendab `candidate_outcomes` tulemusi 1n, 2n, 1k, 3k ja 6k horisondil ning kuvab iga horisondi statistika ja jooksude auditivaate. Koondstatistika kasutab alates 2026-08-12 ainult canonical (`rklb_daily`) jooksu; jooksude ajalugu kuvab endiselt kõiki run'e (audit).
 - `/backtest` kasutab ainult salvestatud discovery run'e ja outcome'e, võrdleb kandidaadi tootlust fikseeritud SPY benchmark'iga ning näitab puuduva benchmark'i korral excess return'i `unknown` olekuna. Koondnäitajad kasutavad alates 2026-08-12 ainult canonical jooksu; run-level detail kuvab kõiki run'e.
 - `/frequency` (Discovery Frequency V1) kuvab canonical `rklb_daily` jooksude põhjal, kui järjekindlalt sama ticker jooksva mudeliversiooni piires kaasati: kaasamiste arv, 5/10/20 päeva aknad, jooksev streak, esimene/viimane kaasamine + rank'i muutus, `included/excluded/absent` timeline ning persistence (`stale_evidence` vs `evolving_evidence`). Käsitsi `rklb` jooksud ei osale kunagi; alla viie canonical päeva kuvab loendurid, aga märgib, et tõlgendada ei tohi.
+- `/missed-moves` on read-only point-in-time järelkontroll: vähemalt 8% liikumised eri Tallinna kauplemispäevade viimaste salvestatud hinnasnapshotide vahel seotakse liikumisele eelnenud canonical otsuse, varasema sotsiaalradari nähtavuse ning samasse intervalli salvestatud Yahoo/SEC/earnings sündmustega. Vaade eristab `included`, `excluded`, `radar_data_gap` ja `universe_gap`; see ei nimeta tagantjärele liikumist ennustatavaks.
+- Päevane collection säilitab nüüd `companies` tabelis ka sotsiaalradaris nähtud tickeri, millele Yahoo/FMP turuandmeid ei tagastanud; hinnasnapshot tekib endiselt ainult päris turuandmest. Kasvu järgi top-40 kõrval küsitakse olemasolevast Yahoo/FMP kihist kuni 20 absoluutse tähelepanu põhist recall-tickerit, et langevate mainimistega RDDT-laadne nimi ei kaoks enne fundamentaalpäringut.
 - Sector-relative Ranking V1 kasutab olemasoleva Yahoo `assetProfile` sector/industry välju, võrdleb sama score-versiooni ettevõtteid eelistatult industry ja vajadusel sector grupis ning kuvab percentile'id ainult vähemalt viie täieliku võrreldava ettevõtte korral.
 - Under-recognition Evidence V0 (`under-recognition-v0`) kuvab company detailis ja Thesis Builderis kompositsioonikihina, kas ettevõte võib olla varajane research-kandidaat (tõend paraneb, aga turg ei pruugi veel hinnastada). See LOEB olemasolevaid signaale (analyst kate, sector-relative market cap percentiil, Catalyst novelty, Growth/Health, Data Freshness + Period Alignment) ega arvuta neid uuesti — ei dubleeri Catalyst ega Valuation kihti. Signaalivektor (analystAttention, marketCapContext, discoveryFrequency, priceReaction, catalystNovelty, improvingFinancials) → üks viiest tekstiolekust: `meaningful` / `attention_only` / `no_attention_gap` / `low_confidence` / `unknown`. **Mitte skoor, mitte number, mitte ranking, mitte buy/sell.** `unknown`-first: puuduvat infot ei asendata oletusega; frequency ja price reaction on V0-s alati `unknown`. Cohort QA vastab § 4.1-le: API meaningful, BW low_confidence, HIMS/CAKE/ACHR no_attention_gap.
 - Valuation Evidence V1 (`valuation-evidence-v1`) kuvab company detailis, Thesis Builderis ja `/scanner?preset=rklb` kandidaadikaardil valuation-ankrud (EV/Sales, P/E, FCF Yield arvutatuna olemasolevatest SEC faktidest + market cap'ist; Peer comparison ja Sum-of-parts alati `unknown`). Iga ankur on üks läbipaistev suhtarv (fakt/fakt) allika, confidence'i (tuletatud Data Freshness + Period Alignment kihist), viimase sisendi ja staatusega — **mitte koondskoor, mitte osta/müü soovitus**. `unknown` on lubatud kõikjal; negatiivse kasumi P/E on `not_meaningful`, negatiivne FCF yield märgitakse raha põletamiseks. Growth, Health, Coverage, Catalyst ja Frequency jäid muutmata.
@@ -60,8 +67,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
   - neljakihiline kaitse: `DATABASE_URL` seatakse enne igat lib-importi (`src/lib/db.ts` loob Pool'i impordi hetkel ja cache'ib selle `globalThis` peale), runtime `SELECT current_database()` kontroll enne igat testifaili, sihtbaasi nimekontroll (peab lõppema `_test`-iga ja ei tohi olla `discovery`) ning `.env` faili testides ei loeta;
   - kaitse on ka negatiivselt tõestatud: vale baasinimega jooks katkeb enne ühtki `CREATE`/`DROP` käsku;
   - käivitamine konteineris `docker compose run --rm -T app npm test` **või** hostil `npm test`. Hostil tuleb `TEST_DATABASE_URL` eksplitsiitselt seada, sest fixture'i vaikeväärtus (`db:5432`) on Dockeri-sisene ja hostist ei resolvu: `$env:TEST_DATABASE_URL='postgres://discovery:discovery@localhost:5433/discovery_test'`;
-  - kokku 136 testi seitsmes failis, 100% roheline; `npm test` **ei ole veel** `npm run check` ahelas.
-- Golden-source DB (koduarvuti, `localhost:5433/discovery`) on **migreeritud versioonitud skeemile 2026-08-13**: `0001_baseline` applied, `schema_migrations` 1 kirje, `--conformance` verdikt `VASTAB` (0 puuduvat, 0 üle). Backup `pre-migration.dump` võeti enne apply't. `ensureSchema()` jääb koodis alles, kuid on tõestatud no-op — conformance jäi `VASTAB` ka pärast päris `collect:daily` jooksu, mis selle kutsub.
+  - kokku 190 testi 14 failis, 100% roheline; `npm test` **ei ole veel** `npm run check` ahelas.
+- Golden-source DB (koduarvuti, `localhost:5433/discovery`) kasutab versioonitud skeemi: `0001_baseline` rakendati 2026-08-13 ning `0002_collection_runs_ledger`, `0003_data_quality_snapshots`, `0004_collection_run_items` ja `0005_outcome_analysis_snapshots` 2026-08-15; `schema_migrations` sisaldab 5 kirjet ning 0005-järgne `--conformance` verdikt on `VASTAB` (0 puuduvat, 0 üle). Enne 0005 apply'd võeti taastatav `pre-0005-outcome-analysis.dump` (611 159 baiti, 225 TOC kirjet, SHA-256 `F234A9E592449393A4AF48A1A9C242FCF0A6E932C050C73DE034E0C7F81FEE02`). `ensureSchema()` jääb koodis alles ja on testidega tõestatud migreeritud skeemil no-op.
 - Koduarvutil on **Node 24.19.0 + npm 11.17.0** paigaldatud kasutaja-õigustes (`winget install OpenJS.NodeJS.LTS --scope user`; UAC-i ei vajanud, zip-variant `%LOCALAPPDATA%\Microsoft\WinGet\Packages\OpenJS.NodeJS.LTS_*` all) ja `npm ci` tehtud. Seega `lint`, `typecheck`, `test`, `collect:*`, `migrate` ja `schema:diff` töötavad ka otse hostist; DB jääb Dockerisse.
 - **Windows Task Scheduler ülesanne `StockDiscoveryDailyCollect` on koduarvutil registreeritud ja käsitsi testitud** (iga päev 08:05, `LastTaskResult = 0`, logi `C:\sd-logs\collect.log`). Vt „Lokaalne päevane collect (CLI)".
 
@@ -77,6 +84,19 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Tehtud verstapostid
 
+- Collection Runs Ledger (`0002_collection_runs_ledger`):
+  - iga põhikogumise katse saab enne väliseid providerikutsed oma `running` rea;
+  - edu salvestab `success`, lõpuaja, kestuse ja versioonitud metricud (capture date, scanned, candidates, flagged, lookup ja providerite loendurid/fallbackid);
+  - püütud viga salvestab `failure`, vea tüübi ja kuni 2000 märki; algne viga rethrowitakse;
+  - sama terminalseisu kordus on idempotentne, vastupidine terminalüleminek keelatud ning PostgreSQL CHECK-id välistavad vastuolulise rea;
+  - force-kill/crash jätab rea `running` olekusse, et kadunud töö ei muutuks näiliseks success'iks;
+  - scheduler, migration runner ja Neon jäid muutmata.
+- RDDT järelkontrollist lähtunud collection reliability slice:
+  - radariticker säilib ettevõtete universumis ka turuandmeteta, kuid nullhinda ei leiutata;
+  - growth top-40 kõrval on kuni 20 tickeri attention-recall ring olemasoleva Yahoo/FMP provideriga;
+  - `/missed-moves` eristab tagantjärele universumi-, andme- ja reegliauku point-in-time snapshotidest;
+  - Frequency PostgreSQL `DATE` normaliseeritakse andmekihi piiril ning vigane väärtus ei kukuta UI-d;
+  - portfell kuvab USD noteeringud USD-na ja hoiab eri valuutade koondid lahus.
 - Idempotentne price/news/SEC/earnings ajalugu.
 - Daily Changes võrdleb päris snapshot-ajalugu ja loob idempotentseid alert'e.
 - Portfelli turuväärtus, unrealized P/L ning võitja/kaotaja.
@@ -164,7 +184,9 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**Catalyst Evidence V2 on tehtud; järgmine otsus peab põhinema uue tõendikihi kasutamisel päris research'is, mitte uue mooduli ehitamisel.**
+**Praegune kasutusfookus on avada iga päev esmalt `/today`, kontrollida canonical/collect/quality staatust ning valida review-listist inimese uurimist vajavad nimed; järgmine arendusfookus jääb recall- ja missed-move auditi päris forward-käitumisele, mitte uue AI-provideri lisamisele.**
+
+RDDT audit näitas kahte eri probleemi: ticker oli sotsiaalradaris olemas, kuid langeva mention-growth'i tõttu ei jõudnud piiratud fundamentaalpäringusse; samal ajal puudus rakendusel indeksi lisamise ametlik sündmuseallikas. Esimene auk on nüüd parandatud olemasoleva Yahoo/FMP kihiga. Teine vajab eraldi kasutaja otsust uue versioonitud allika kohta; tasuta mudelite kataloog ei ole selle asendus.
 
 Catalyst hard gate on asendatud structured evidence field'iga. Discovery mudeliversioon on `rklb-discovery-v2`, seega v1 canonical päevajooksud ja v2 jooksud ei ole üks frequency-seeria: persistence-loendur algab uuesti 2026-08-12 canonical run'ist #17.
 
@@ -178,6 +200,16 @@ Catalyst-otsuse jaoks on nüüd olemas kirjalik disain [`docs/CATALYST_EVIDENCE_
 
 ### NOW - järgmine töö
 
+Kasuta uut auditikihti päris forward-andmetel enne uue allika või rankingureegli lisamist:
+
+- kasuta `/today` vaadet hommikul või pärast collecti research entrypoint'ina; `WAITING` tähendab, et tänane Tallinna canonical run puudub, `WARNING` et latest collection ebaõnnestus, ning quality warning'ut ei tohi tõlgendada kandidaadi automaatse välistamisena;
+- kontrolli, et järgmine daily collect loob esimese `data_quality_snapshots` rea, tickeritaseme `collection_run_items` read ja uue canonical run'i `collection_run_id` seose; tänasele enne 0003/0004 integratsiooni loodud run #29-le backfilli ega hilist seost ei tehtud;
+- kui esimene outcome muutub päriselt `measured` olekusse, kontrolli et `outcome_analysis_snapshots` rida tekib automaatselt; legacy `analysis_scope=unknown` read jäävad auditeeritavaks, kuid canonical summary'st välja. Ära kalibreeri rankingut enne mitme horisondi piisavat valimit;
+- kontrolli järgmise viie päevase collecti `marketDataLookup.growth/recall/total` loendureid ning kas recall-ring annab päris hinnasnapshotte nimedele, mis growth top-40-st välja jäid;
+- vaata `/missed-moves` iga vähemalt 8% liikumise puhul eraldi, kas põhjus oli `universe_gap`, `radar_data_gap`, nähtav välistamisreegel või olemasolev sündmus; ära kalibreeri läve ühe RDDT näite järgi;
+- lisa uus ametlik indeksimuutuste või ettevõtte IR allikas ainult eraldi provenance-, rate-limit- ja point-in-time otsusega; ClawLabsAI `free-ai-models` on mudelikataloog, mitte sündmuseallikas ega search pipeline;
+- ära lisa tasuta LLM-i päevasesse kriitilisse collecti enne, kui deterministlik providerikiht, timeout/fallback, prompt-versioon, allikaviited ja hinnapiir on eraldi disainitud.
+
 Kasuta Data Freshness + Period Alignment V1 ja Catalyst Evidence V2 päris research-kihina enne järgmise valemi või filtri muutmist:
 
 - kontrolli API, BW, CAKE, HIMS ja ACHR olemasolevad teesiotsused uue evidence-ploki kõrval üle;
@@ -187,9 +219,9 @@ Kasuta Data Freshness + Period Alignment V1 ja Catalyst Evidence V2 päris resea
 - vaata, kas `mandate_relevance` peaks mõjutama järjestust; praegu see ainult kirjeldab ja ei muuda rank'i;
 - jätka viie päris teesi 12 kuu checkpoint'ide jälgimist; ära kustuta neid integration-test andmetena.
 
-Auditi järel ootel collection reliability ja canonical cloud-history:
+Auditi järel ootel collection hardening ja canonical cloud-history:
 
-- lisa DB-põhine `collection_runs` ledger ning PostgreSQL advisory lock või lease, et sama päeva kattuvad worker'id ei teeks paralleelset collecti;
+- Lokaalsel `collect:daily` CLI-l on PostgreSQL advisory lock juba olemas; kaitstud HTTP `/api/collect` vajab enne paralleelsete worker'ite kasutamist sama locki või lease'i. Ledger ei ole lock ega takista paralleelset jooksu.
 - säilita job'i algus, lõpp, staatus, provider'ite loendurid ja piiratud veainfo, et ebaõnnestumine oleks UI-st või DB-st jälgitav;
 - **TOP 5 Core Tests on sisuliselt valmis** (vt [Automated Test Coverage](#automated-test-coverage-2026-08-13)). Esimene faas valmis **2026-08-12**: `1046f0e` isoleeritud Vitest testinfrastruktuur, `47aa895` score determinism, `0412148` canonical run idempotency, `286b11d` manual run key ja outcome'ide loomine, `2192e62` outcome'ide mõõtmine ja muutumatus, `b2ff0d6` outcome immutability, `6a9fc8f` score snapshot dedupe — testinfrastruktuur/isolatsioon, canonical run idempotency (20 testi), score determinism (24 testi), outcome immutability (13 testi) ja score snapshot dedupe (7 testi). **2026-08-13** lisandus enrichment-budget katvus: `74ff848` Make test schema snapshot order-independent (testinfra eeltingimus: `resetDb()` cache maha, `ensureSchema()` tabelikomplekt fikseeritud `globalSetup`-is) ja `aee6d75` Add enrichment budget and retry tests (35 testi). Kokku **136 testi, 100% roheline**. Enrichment-budget on nüüd testidega kaetud: 5 ettevõtet Tallinna päeva kohta; **Tallinna kalendripäeva piir, mitte 24-tunnine liuguraken**; limiidi clamp 1–20; `error` retry 1 päeva järel; `unavailable` 30-päeva aken; stale-facts 7-päeva haru; queue prioriteet; ühe tickeri vea taluvus;
 - **enrichment success-tee on samuti kaetud** (`ca6416c`, 22 testi failis `tests/db/enrichment-success.test.ts`): `enriched` loendur, `financial_facts` ridade päris kirjutamine CompanyFacts JSON-ist koos kõigi SEC väljade kaardistusega, `companies.sec_cik` täitmine, katvuse kasv, idempotentsus ning üheksa alamjuhtumit „CompanyFacts vastas 200, aga ekstraheeritavaid mõõdikuid pole → `unavailable`, mitte `error`". **Katmata jääb ainult `last_error` 500-märgiline kärpimine** — seda ei saa fetch-seami kaudu indutseerida, sest veateate genereerib `src/`;
@@ -266,6 +298,14 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 - Annual, quarter ja YTD flow-sisendite segamine tekitab Alignment `warning` oleku ka sama period-end korral, sest nende väärtused ei kirjelda sama perioodipikkust.
 - Growth/Health sortimisel tulevad vähemalt 70 Coverage read enne madala kattega ridu.
 - Watchlist kasutab `portfolio_positions.status = 'watch'`, kogust 0 ja ostuhinda 0.
+- `collection_runs.status` on append-lifecycle: algseis `running`, terminalseis ainult `success` või `failure`. Sama terminalseisu finalize on idempotentne; success↔failure ümberkirjutus on keelatud. `success` kirjeldab olemasoleva `runCollection()` põhifaasi; teadlikult non-fatal Tradestie/SEC/live-data fallbackid kajastuvad metricutes ega muuda põhifaasi automaatselt failure'iks.
+- `data_quality_snapshots` on canonical-only immutable audit: üks rida `discovery_runs.id` kohta, ainult `run_type='rklb_daily'`. Kõik ajaliselt versioonitud allikad piiratakse `run_at`-iga; outcome-tabeleid ei loeta. Otsuseflagid tulevad `discovery_decisions` ja seotud `company_score_snapshots.payload` ridadest. `recordDataQualitySnapshot` tagastab sama versiooni kordusel olemasoleva rea ja keeldub teise versiooniga ajalugu üle kirjutamast.
+- Point-in-time piirangud on nähtavad `metrics.limitations` väljal: sektoril pole versiooniajalugu ning `financial_facts` võib sama fact_key rida hiljem restate'ida. Kohene collect-integratsioon külmutab hetkeväärtuse; ajaloolise run'i hilist rebuild/backfilli ei käsitleta sama tugeva tõendina. Seetõttu tänast run #29 ei backfillitud ja outcome/backtest tõlgendus hakkab kvaliteedisnapshot'i osas esimesest järgmisest canonical run'ist.
+- Collection metricud on paindlik JSONB, kuid alati objekt ja versiooniga `schemaVersion: 1`; praegune komplekt säilitab capture date'i, scanned/candidates/flagged loendurid, market-data growth/recall/total ja providerite saadud ridade/fallbackide loendurid. Suuri payload'e ega tickeriloendeid ledgerisse ei kopeerita.
+- Portfelli `average_buy_price` tähendab ühe aktsia ostuhinda sama väärtpaberi noteerimisvaluutas. Quote currency tuleb `price_snapshots.currency` / `companies.currency` väljast; eri valuutas summasid ei liideta ja FX-kurssi ei oletata.
+- Radaris nähtud ticker ja turuandmetega ticker on eri seisundid: `companies` säilitab esimese ka ilma hinnata, `price_snapshots` ainult tegeliku Yahoo/FMP vastuse korral. Recall-ring muudab providerikatte ulatust, mitte discovery-skoori valemit.
+- `/missed-moves` on tuletatud audit olemasolevatest muutumatutest snapshotidest, mitte uus prediction- ega soovitusmootor. Katvus vaadatakse liikumisele eelnenud kuupäevalt, et sama päeva tagantjärele otsus ei muutuks näiliselt varasemaks teadmiseks.
+- ClawLabsAI `free-ai-models` repo kirjeldab tasuta mudelite saadavust; see ei ole uus finantsandmete algallikas. Seda ei ühendata päevasesse collecti ilma eraldi provider/provenance otsuseta.
 - Thesis Builder ei esita moat'i, mispricing'ut ega „miks praegu?” välja automaatse faktina; need on kasutaja tõendatavad hüpoteesid.
 - Teesi muutmine loob uue versiooni ainult siis, kui sisu või seotud score snapshot muutus.
 - Teesi score snapshot'i viide valideeritakse sama ettevõtte vastu; skeemis pole teadlikult hilise tabeliloomise tõttu init-taseme FK-d.
@@ -520,17 +560,23 @@ Piirangud, mida tuleb teadvustada:
 - Ajutised integratsioonitesti read tuleb pärast kontrolli kustutada.
 - Production build kirjutab dev-serveri `.next` kataloogi üle; pärast buildi taaskäivita `app` konteiner.
 
-## Automated Test Coverage (2026-08-13)
+## Automated Test Coverage (2026-08-16)
 
-Vitest, **136 testi, 7 faili**. Käivitamine konteineris `docker compose run --rm -T app npm test` või hostil `npm test` (hostil on `TEST_DATABASE_URL` kohustuslik, vt „Praegune töötav seis"). Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja kustutab; tootmisbaasi `discovery` ei puudutata. **Testibaasi skeem ehitatakse versioonitud migratsioonidest** (`scripts/migrate.cjs`), seega iga jooks valideerib ühtlasi runnerit ja baseline'i. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
+Vitest, **190 testi, 14 faili**. Käivitamine konteineris `docker compose run --rm -T app npm test` või hostil `npm test` (hostil on `TEST_DATABASE_URL` kohustuslik, vt „Praegune töötav seis"). Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja jooksu lõpus kustutab; tootmisbaasi `discovery` ei puudutata. **Testibaasi skeem ehitatakse versioonitud migratsioonidest** (`scripts/migrate.cjs`), seega iga jooks valideerib ühtlasi runnerit, `0001` baseline'i, `0002` ledgerit, `0003` data-quality tabelit, `0004` provenance-silda, `0005` outcome-analysis snapshot'i ja `schema_migrations` raamatupidamist. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
 
-Testitakse viit funktsiooni:
+Peamised kaetud funktsioonid ja töövood:
 
 - `recordDiscoveryRun` (`src/lib/discovery-validation.ts`) — 20 testi: canonical run-key ignoreerib input-hash'i (üks canonical run Tallinna päeva kohta, hilisem sisendimuutus märgitakse `inputChangedAfterCanonicalSnapshot` lipuga, kordusjooks ei lisa otsuseid ega outcome'e); manual `rklb` run-key sisaldab hash'i, seega muutunud sisend loob samal päeval teise run'i, aga otsuste ümberjärjestus mitte; ainult canonical loob `candidate_outcomes`; välistatud otsus ei saa outcome'e; nullkandidaadi päev salvestub ikka; Tallinna päevapiir neljal DST-juhul (suvi UTC+3, talv UTC+2) — see tõestab, et nihe tuleb tsooniandmetest, mitte koodist.
 - `calculateCompanyScores` (`src/lib/company-scores.ts`) — 24 testi, **DB-vaba** (~40 ms): determinism, mõõdikute järjekorra sõltumatus, `growthRateScore` ja cash/debt piirväärtused, puuduv mõõdik langetab katvust mitte skoori, `null` sisendi dokumenteeritud kuju. `detail` väljadele assertitakse ainult olemasolu, sest `toLocaleString('et-EE')` väljund sõltub keskkonna ICU-st; Coverage detailid on lokaadist sõltumatud ja seega täpselt lukustatud.
 - `refreshCandidateOutcomes` (`src/lib/discovery-validation.ts`) — 13 testi: `measured` on ainus lõplik olek (hilisem soodsam hind ei kirjuta üle, ka benchmark'i mitte); enne sihtaega ei puututa; esimene hind sihtajast alates võidab, mitte parim; 7-päevane aken ja akna järel `missing`; `missing` **ei ole** lukustatud olek (hilinenud aknasisene hind mõõdab ära); puuduv baashind → `unavailable`; excess = kandidaat − benchmark ning puuduv benchmark jääb NULL, mitte 0; horisondi sihtkuupäevad koos kuu-lõpu clamp'iga (31. jaanuar → 28. veebruar, 30. aprill).
 - `saveCompanyScoreSnapshot` (`src/lib/score-tracking.ts`) — 7 testi: sama hash annab ühe rea ja `calculated_at` ei muutu; muutunud `latest.value` või `previousComparable.value` loob uue rea; mõõdikute järjekord ei loo uut snapshot'i; tundmatu ticker viskab erindi, orvu rida ei teki; `ON CONFLICT` uuendab ainult `payload`-i.
 - `enrichStoredCompanyFinancials` (`src/lib/company-financials.ts`) — 35 testi: `SEC_USER_AGENT` värav (`status: 'disabled'`, `attempted 0`, null võrgupäringut); päevane enrichment-eelarve **Tallinna kalendripäeva** kaupa ja eelmise Tallinna päeva katsed ei kuluta tänast eelarvet; vaikimisi päevalimiit 5; `safeLimit` clamp 0 → 5, −3 → 1, 100 → 20, 2.9 → 2; universumi filtrid (SPY, ETF, üle 30 päeva vanune hind, hinnasnapshotita ettevõte); `error` retry 1 päeva järel koos `consecutive_failures` kasvuga; `unavailable` retry 30 päeva järel (2 ja 29 päeva ei kvalifitseeru, 31 kvalifitseerub); stale-facts 7-päeva haru koos 1-päevase cooldown'iga; stale-facts + `unavailable` asümmeetria; queue järjekord (faktideta enne stale-faktidega, kunagi proovimata enne varem proovitut, vanim katse esimesena); ühe tickeri viga ei katkesta kogu jooksu; mixed batch tulemuse kuju (`failed` ja `unavailable` eraldi loendurid). Kokku kahes failis: `tests/db/enrichment-budget.test.ts` (35, eelarve/retry/aknad) ja `tests/db/enrichment-success.test.ts` (22, success-tee — `enriched` loendur, SEC väljade kaardistus `financial_facts` ridadesse, `sec_cik`, katvuse kasv, idempotentsus ja üheksa mitte-ekstraheeritava vastuse alamjuhtumit).
+- `saveCollectedCompanies` + data-boundary audit — 5 testi: turuandmeteta radariticker säilib ilma väljamõeldud hinnata, hilisem päris Yahoo hind seotakse sama ettevõttega idempotentselt, DATE objekt normaliseerub, missed-move katvuse neli olekut eristuvad ning langeva mainimiskasvuga ticker jõuab attention-recall ringi.
+- `collection_runs` (`src/lib/collection-runs.ts`) — 10 testi: iga katse saab eraldi `running` rea; success salvestab kestuse ja ühendatud metricud; failure salvestab veatüübi/teate ja rethrowib algse vea; veateade kärbitakse 2000 märgile; sama terminalseisu kordus on idempotentne; vastupidine terminalüleminek on keelatud; DB lifecycle- ja JSON-objekti CHECK-id jõustuvad; audit-list on uusim ees ja limiiditud; kõrgema taseme orkestreerija katab nii success- kui failure-tee. Infra-smoke tõestab eraldi, et `0002_collection_runs_ledger` rakendub, tabelikomplekt on 23 ja runtime `ensureSchema()` ei tekita drift'i.
+- `data_quality_snapshots` (`src/lib/data-quality-snapshots.ts`) — 7 DB-testi: canonical run saab ühe rea; kordus on idempotentne ja immutable; manual run keelatud; kolme ettevõtte coverage/freshness/flag loendurid deterministlikud; hilisem measured outcome ei muuda build'i ega salvestatud snapshot'i; päris `UNIQUE(run_id)` jõustub. Infra-smoke lisab 1 testi: `0003` on rakendatud, tabelikomplekt on 24 ja runtime `ensure*` funktsioonid jäävad no-op'iks.
+- `collection_run_items` (`src/lib/collection-run-items.ts`) — 10 DB-testi: growth, recall ja not-selected bucketid; market-data tabamus/puudumine ja company-FK; identne kordus on idempotentne, vastuoluline terminalinfo keelatud; growth võidab konflikti; canonical run saab sama collection ID ning manual run ei vaja seda. Infra-smoke lisab `0004` rakendumise kontrolli ja lukustab migratsioonidest tuleva tabelikomplekti 25 tabelile.
+- `outcome_analysis_snapshots` (`src/lib/outcome-analysis-snapshots.ts`) — 11 DB-testi: recall/growth provenance, winner vs benchmark beat eristus, skoorid, data-quality suhtarvud, catalyst tier ja mandate; missing → unknown; measured-eelne keeld; idempotentsus ja hilisemate source-muudatuste ignoreerimine; DB UPDATE/DELETE trigger; canonical-only summary; automaatne loomine outcome refresh'is; tickeritaseme decision link ja batch retry. Infra-smoke lisab `0005` kontrolli ning tabelikomplekt on 26.
+- `/today` read model (`src/lib/today-brief.ts`) — 7 DB-testi: puuduva tänase canonical run'i WAITING/warning, latest included otsus, quality snapshot'i seos, recall provenance, off-mandate review-item, kõigi public tabelite muutumatu reaarv ning new/removed/repeated päevavõrdlus. Helper kasutab PostgreSQL `READ ONLY` transaktsiooni ega kutsu `ensureSchema()`-t.
 
 Enrichment-testide seam on **`globalThis.fetch`**, mitte mooduli mock: `getSecIdentity` ja `fetchCompanyFacts` on `company-financials.ts`-i mooduli-privaatsed funktsioonid ja neid kutsutakse lokaalse sidumise kaudu, mida mooduli-mock ESM-is kinni ei püüa. Seetõttu ei muudetud testitavuse nimel ühtki `src/` faili ja ükski test ei tee päris võrgupäringut — tundmatu URL viskab valjult erindi. `unavailable` indutseeritakse SEC ticker-map'ist puuduva tickeriga, `error` non-ok companyfacts vastusega.
 
@@ -541,9 +587,41 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - **välised provider'id päriselt** — Yahoo Finance, SEC CompanyFacts, ApeWisdom ja FMP; SEC-i kiht on `globalThis.fetch` stub'i taga ja ükski test ei võta päris võrguühendust;
 - **UI ja HTTP route'id** — sh `/api/collect` autoriseerimine ja vastuse kuju, server action'id;
 - `scripts/collect-daily.cjs` orkestreerimine (kuue sammu järjekord, veataluvus, `--dry-run` konservatiivsus);
-- catalyst evidence V2, data-quality/freshness, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
+- catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+Daily Research Dashboard / Morning Brief, kontrollitud koduarvutil **2026-08-16**:
+
+- lisati dünaamiline `/today` koos navilingi ja avalehe CTA-ga; latest canonical/collection, top candidates, quality, review-list, day-over-day muutus, missed moves ja next outcomes on ühes praktilises vaates;
+- `getTodayBrief()` on ainult lugev `REPEATABLE READ, READ ONLY` read model. `inputChangedAfterCanonicalSnapshot` jääb `unknown`, sest seda runtime-return lippu pole ajalooliselt DB-s salvestatud; stale/missing financials kuvatakse quality snapshot'i aggregate warninguna, mitte ei omistata tõendita üksikule tickerile;
+- Vitest **190/190** ✔, lint ✔, typecheck ✔, production build ✔ (15/15 lehte). App taaskäivitati; `/today`, `/`, `/frequency` ja `/backtest` vastasid pordil 3005 HTTP 200;
+- päris browser QA: status `WAITING` on korrektne, sest 2026-08-16 canonical run puudub; latest run #29 viis kandidaati ja puuduv pre-0003 quality snapshot on nähtavad, horisontaalset page overflow'd ega console error'e polnud.
+
+Outcome Analysis Snapshot V1, kontrollitud koduarvutil **2026-08-15**:
+
+- `0005_outcome_analysis_snapshots` lisas immutable snapshot-tabeli, `discovery_decisions.collection_run_item_id` tickeritaseme FK ja `analysis_scope` (`canonical|manual|unknown`); runtime DDL-i, rankingut, skoorimist, schedulerit ega allikaid ei muudetud;
+- build-päring loeb ainult nelja lubatud tabelit. `refreshCandidateOutcomes()` proovib esmalt kandidaadi ja benchmark'i mõõtmist ning loob siis kõik puuduvad measured snapshotid; hilisem backfill ei kirjuta olemasolevat rida üle ja DB-trigger keelab UPDATE/DELETE;
+- preflight **GO**; backup `pre-0005-outcome-analysis.dump` on kontrollitud: 611 159 baiti, 225 TOC kirjet, SHA-256 `F234A9E592449393A4AF48A1A9C242FCF0A6E932C050C73DE034E0C7F81FEE02`. `0005` rakendus golden-source DB-le 64 ms-ga ning järel-conformance on **VASTAB**;
+- lint ✔, typecheck ✔, production build ✔ (14/14 lehte), Vitest **183/183** ✔; app taaskäivitati ning `/`, `/validation` ja `/backtest` vastasid pordil 3005 HTTP 200;
+- golden-source DB-s on 305 pending, 0 measured ja 0 outcome-analysis snapshot'i. Backfilli ega kunstlikku mõõtmist ei tehtud; esimene päris measured outcome käivitab snapshoti automaatselt.
+
+Collection → Canonical Ticker Provenance Bridge, kontrollitud koduarvutil **2026-08-15**:
+
+- `0004_collection_run_items` lisas ühe immutable tickerirea collect-run'i kohta ning nullable `discovery_runs.collection_run_id` FK; runtime DDL-i, migration runnerit, schedulerikonfiguratsiooni ega uusi allikaid ei muudetud;
+- preflight **GO**; enne apply'd oli ainus oodatud erinevus pending `0004` (1 tabel ja nullable canonical link). Backup `pre-0004-collection-provenance.dump` on kontrollitud: 603 858 baiti, 212 TOC kirjet, SHA-256 `B19724A484396FBDCD7E2B6B4FC0B39207E8E4A23AA7D224D0F4D3275E70CE4F`;
+- `0004` rakendus golden-source DB-le 59 ms-ga; järel-conformance **VASTAB** (0 puuduvat, 0 üle). `collect:status` jäi mõistlikuks: 5 canonical run'i, latest #29, 305 pending outcome'i ja 0 mõõdetavat;
+- lint ✔, typecheck ✔, production build ✔ (14/14 lehte), Vitest **171/171** ✔; app taaskäivitati ning `/` ja `/frequency` vastasid pordil 3005 HTTP 200;
+- `collect:daily --dry-run` läbis ega kirjutanud ridu. Päris collect'i ei käivitatud: tänane canonical #29 eelnes sillale ning selle seose hiline ümberkirjutamine rikuks point-in-time tähendust. Seetõttu on golden DB-s praegu 0 `collection_run_items` rida; esimese rea ja canonical seose peab looma järgmine uus daily collect.
+
+TOP 10 #4 point-in-time data-quality snapshot, kontrollitud koduarvutil **2026-08-15**:
+
+- preflight **GO**; enne apply'd oli ainsa oodatud erinevusena pending `0003_data_quality_snapshots` (1 tabel, 24 veergu, 2 indeksit, 9 piirangut);
+- kontrollitud backup `pre-0003-data-quality.dump`: 597 612 baiti, 203 TOC kirjet, SHA-256 `C6D6656AC16DE3BAC2B8E3289C9FEF5AC5160F285B4D4460FB4DFEED7B853867`;
+- `0003` rakendus golden-source DB-le 23 ms-ga; järel-conformance **VASTAB** (0 tabeli-, veeru-, indeksi- või piirangudrifti);
+- lint ✔, typecheck ✔, production build ✔ (14/14 lehte), Vitest **160/160** ✔; app taaskäivitati ning `/` ja `/frequency` vastasid HTTP 200;
+- schedulerit, migration runnerit, `db/init.sql`-i, runtime `ensureSchema()` DDL-i ega Next.js versiooni ei muudetud;
+- golden-source kontroll: 5 canonical run'i, latest #29, 0 kvaliteedisnapshot'i. See on oodatud, sest #29 eelnes integratsioonile; uut canonical run'i ega hilist backfilli ei loodud.
 
 Golden-source migratsioon ja scheduler, kontrollitud koduarvutil **2026-08-13**:
 
@@ -667,6 +745,56 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-08-16 - Daily Research Dashboard / Morning Brief
+
+- Lisati `/today` read-only research cockpit, navilink ja avalehe CTA. Vaade koondab canonical/collect staatuse, immutable kandidaadid, collection provenance'i, quality snapshot'i, review-itemid, päevamuutuse, missed-move auditi ning järgmised outcome-kuupäevad.
+- `getTodayBrief()` kasutab üht PostgreSQL `REPEATABLE READ, READ ONLY` transaktsiooni; uusi allikaid, AI-d, rankingut, skoorimist, schedulerit, migratsioone ega DB kirjutusi ei lisatud. Puuduv sisend jääb unknown või nähtavaks warninguks.
+- Lisati 7 DB-testi; täiskomplekt kasvas 183 → 190. Lint/typecheck/build/restart, nõutud HTTP-smoke ja päris in-app browser QA läbisid; commit'i ei tehtud.
+
+### 2026-08-15 - Outcome Analysis Snapshot V1
+
+- Lisati migratsioon `0005_outcome_analysis_snapshots`: üks immutable rida measured outcome'i kohta, otsuse tickeritaseme collection-item FK, canonical/manual/unknown scope, winner ja benchmark-beat eraldi väljad, kvaliteedi suhtarvud ning catalyst/mandate signaalid.
+- Snapshoti build-päringul on range nelja tabeli boundary: `discovery_decisions`, `candidate_outcomes`, `data_quality_snapshots`, `collection_run_items`. Puuduv sisend jääb unknown; live price/facts/score/catalyst tabeleid ei loeta.
+- `refreshCandidateOutcomes()` salvestab pärast kandidaadi ja benchmark'i mõõtmisfaase kõik puuduvad snapshotid. Kordus on idempotentne, versioonikonflikt ei kirjuta üle ning PostgreSQL trigger keelab snapshoti UPDATE/DELETE.
+- Lisati canonical-only summary bucketi, winneri, catalyst tier'i ja mandate relevance'i kaupa koos eraldi winner/benchmark-beat määrade ja keskmiste score/quality sisenditega. Legacy manual/unknown scope on summary'st väljas.
+- Lisati 11 DB-testi ja infra-assert; täiskomplekt kasvas 171 → 183. Golden-source backup/apply/conformance, lint/typecheck/build/restart ja runtime-smoke läbivad; measured outcome'i ega backfilli kunstlikult ei loodud.
+
+### 2026-08-15 - Collection → Canonical Ticker Provenance Bridge
+
+- Lisati ainult migratsioonina `0004_collection_run_items.sql`: collect-run'i cascade-FK, company nullable FK, unikaalne run+ticker, bucket/signaal/market-data väljad, JSON-kuju ja lifecycle CHECK-id ning nullable `discovery_runs.collection_run_id`.
+- `runCollection()` annab ledgeri ID operatsioonile, salvestab iga ApeWisdomi radaritickeri immutable `collection-run-item-v1` rea ning lõpetab run'i failure'ina, kui kohustuslik tickeriaudit ei salvestu. Growth on primary path ja võidab võimaliku recall-konflikti.
+- API ja daily CLI annavad eduka collection ID canonical discovery sammule. Uus canonical run külmutab seose loomisel; sama päeva kordus ei kirjuta varasema snapshot'i seost üle. Manual run jääb seoseta.
+- Lisati 10 DB-testi ning infra migratsiooniassert; täiskomplekt kasvas 160 → 171 ja on roheline. Golden-source 0004 backup/apply/conformance, dry-run, build/restart ja HTTP-smoke läbivad; päris hilist collect'i ega ajaloolist backfilli ei tehtud.
+
+### 2026-08-15 - TOP 10 #4 Point-in-time Data-quality Snapshot
+
+- Lisati ainult migratsioonina `0003_data_quality_snapshots.sql`: üks cascade-FK ja UNIQUE rida canonical run'i kohta, mittenegatiivsed/bounds/JSON-kuju CHECK-id ning versioonitud metrics/warnings payload. Runtime DDL-i, migration runnerit ega schedulerit ei muudetud.
+- `src/lib/data-quality-snapshots.ts` ehitab run-at piiriga universumi- ja freshness-loendurid ning immutable decision/score payload'ist coverage-, mandate-, negatiivse FCF ja dilution flagid. Outcome'e ei loeta; manual `rklb` run lükatakse tagasi; olemasolevat sama versiooni snapshot'i ei kirjutata üle.
+- Canonical discovery salvestab kvaliteedisnapshot'i kohe pärast `recordDiscoveryRun` commit'i. Snapshot'i viga on kriitiline: CLI lõpetab exit 1-ga ja `/api/collect` tagastab HTTP 500; juba committed canonical run jääb nähtavalt alles.
+- Lisandus 7 sihitud DB-testi ja 1 infra migration-test; kogu komplekt kasvas 152 → 160 ning läbis. Lint, typecheck ja 14/14 production build läbisid; app restart ja HTTP smoke läbisid.
+- Preflight oli GO. Kontrollitud backup `pre-0003-data-quality.dump` (597 612 baiti, 203 TOC, SHA-256 `C6D6656AC16DE3BAC2B8E3289C9FEF5AC5160F285B4D4460FB4DFEED7B853867`) võeti enne apply'd; 0003 rakendus 23 ms-ga ja conformance on `VASTAB`.
+- Tänast varem loodud canonical run #29 ei backfillitud ega dubleeritud. Esimene rida jääb järgmise daily collecti luua; selle järel tuleb kontrollida run-seost ja kordusjooksu idempotentsust.
+
+### 2026-08-15 - TOP 10 #7 Collection Runs Ledger
+
+- Lisati migratsioon `db/migrations/0002_collection_runs_ledger.sql`; migration runnerit ei muudetud. Tabelil on trigger, lifecycle staatus, algus/lõpp, kestus, JSONB metricud, veatüüp/teade, neli CHECK-piirangut ja kaks auditipäringute indeksit.
+- `runCollection()` loob rea enne providerikutsed ja finalize'ib selle `success`/`failure`; API märgib triggeriks `api`, muud olemasolevad kutsed `direct`. Schedulerifaili, schedulerit ennast ega Neonit ei muudetud.
+- Metric schema v1 sisaldab capture date'i, scanned/candidates/flagged, SEC tracked, live-data salvestuse olekut, growth/recall/total lookup'i ning ApeWisdom/Tradestie/SEC/Yahoo/FMP loendureid ja fallback-lippe.
+- Testibaasis rakendus kaks migratsiooni, `collection_runs` lifecycle'i 10 testi ja infra 16 testi läbisid; kogu komplekt 152/152 roheline. TypeScript läbis.
+- Golden-source preflight: GO, `0002` pending ja 19 lisatavat objekti. Enne apply'd võeti kontrollitud custom dump `pre-0002-collection-runs-20260815.dump` (593 867 baiti, 194 TOC, SHA-256 `4AC280683CE408E768A21214B11154D0D1C04F0B4666211238BE7A4942DD480E`). `0002` rakendus 40 ms-ga, 0001 checksum klappis; järel-conformance `VASTAB` 0/0/0/0 driftiga.
+- Päris `runCollection({trigger: 'verification'})` lõi golden-source rea #1: `success`, 4362 ms, scanned 200, candidates 7, lookup 23/0/23, Yahoo 23, SEC 25, Tradestie fallback true, liveDataSaved true. Sünteetilist failure-rida tootmisbaasi ei lisatud.
+- Scheduler jäi kogu töö vältel puutumata ja töötama. Ajutisi test-DB ridu harness kustutas; golden-source verification-rida on teadlik audititõend ja jääb alles.
+
+### 2026-08-15 - RDDT recall, valuuta/date parandused ja missed-move audit
+
+- RDDT point-in-time audit kinnitas: ticker oli 11.–14.08 sotsiaalradaris, kuid negatiivse mention-growth'i tõttu jäi Yahoo top-40 päringust välja; `saveCollectedCompanies` viskas seejärel turuandmeteta nime ettevõtete universumist välja. Vana hinnatõusu tagantjärele snapshotiks ei backfillitud.
+- Collection valib nüüd growth top-40 kõrval kuni 20 kõrge absoluutse tähelepanuga recall-tickerit ning säilitab kõik eelfiltri radaritickerid `companies` tabelis. `price_snapshots` saab rea ainult päris turuandme korral.
+- Lisati `/missed-moves`: vähemalt 8% salvestatud päevahinnaliikumised klassifitseeritakse liikumisele eelnenud canonical otsuse ja radari ajaloo põhjal. Sündmuste loendur kasutab ainult olemasolevaid Yahoo/SEC/earnings ridu.
+- Frequency 500 parandati PostgreSQL `DATE` normaliseerimisega andmekihi piiril ja kaitsva UI fallback'iga.
+- Portfell ei märgista USD noteeringuid enam eurodeks: noteeringu valuuta liigub päringust UI-ni, EUR/USD kogusummad jäävad eraldi ja FX-konversiooni ei oletata.
+- Uut välist allikat ega tasuta AI providerit ei lisatud. ClawLabsAI repo jääb võimaliku mudelitaristu ideeks, mitte turusündmuste allikaks.
+- Verifitseerimine: TypeScript ja lint puhtad; production build kompileeris 14/14 lehte, sh `/missed-moves`; Vitest 141/141 roheline; app restart pärast buildi; `/frequency`, `/portfolio` ja `/missed-moves` HTTP 200. HTML smoke kinnitas Frequency vigase kuupäeva puudumist, portfelli USD/FX märkust ning missed-move päringu veatut renderdust. Ajutisi tootmis-DB testiridu ei loodud.
 
 ### 2026-08-12 - Catalyst Evidence V2 hardening audit
 

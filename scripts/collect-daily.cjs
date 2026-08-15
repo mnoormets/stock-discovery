@@ -79,7 +79,7 @@ async function main() {
       console.log('  2. collectDefaultBenchmarkPrice()  -> SPY hinnasnapshot (benchmark baseline)');
       console.log('  3. enrichStoredCompanyFinancials() -> kuni 5 ettevotet/Tallinna paev -> financial_facts');
       console.log('  4. enrichCompanyClassifications()  -> companies.sector/industry');
-      console.log(`  5. getRklbDiscoveryCandidates({runType:'rklb_daily'}) -> ${before.today_canonical ? 'taaskasutab tanast canonical run i' : 'LOOB tanase canonical run i'}`);
+      console.log(`  5. getRklbDiscoveryCandidates({runType:'rklb_daily', collectionRunId}) -> ${before.today_canonical ? 'taaskasutab tanast canonical run i' : 'LOOB tanase canonical run i'}`);
       console.log('  6. refreshCandidateOutcomes()      -> moodab outcome id, mille target_at on kaes');
       console.log('\n  Dry-run ei kutsunud uhtegi kirjutavat funktsiooni. Ridu ei lisatud.');
       return 0;
@@ -102,6 +102,7 @@ async function main() {
     section('1. runCollection');
     const collected = await step('runCollection', () => collect.runCollection());
     if (collected) {
+      line('collectionRunId', `#${collected.collectionRunId}`);
       line('captureDate', collected.captureDate);
       line('scanned', collected.scanned);
       line('candidates', collected.candidates);
@@ -137,7 +138,10 @@ async function main() {
     const outcomesBeforeDiscovery = (await counters()).outcomes;
 
     section('5. canonical discovery');
-    const run = await step('getRklbDiscoveryCandidates', () => discovery.getRklbDiscoveryCandidates({ runType: 'rklb_daily' }));
+    const run = await step('getRklbDiscoveryCandidates', () => discovery.getRklbDiscoveryCandidates({
+      runType: 'rklb_daily',
+      collectionRunId: collected?.collectionRunId ?? null,
+    }));
     if (run) {
       line('runId', `#${run.runId}`);
       line('runReused', run.runReused ? 'JAH' : 'EI', run.runReused ? '(sama Tallinna paev)' : '(uus canonical snapshot)');

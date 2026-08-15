@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import { ensureSchema, pool } from './db';
 import type { DiscoveryCriterion } from './rklb-discovery';
+import { recordMissingOutcomeAnalysisSnapshots } from './outcome-analysis-snapshots';
 
 // Kaasamisreegel muutus Catalyst Evidence V2-ga: catalyst ei ole enam hard
 // gate. Versioon tõuseb, et frequency/persistence ei võrdleks v1 ja v2 run'e
@@ -76,6 +77,7 @@ export interface DiscoveryDecisionInput {
 
 export interface DiscoveryRunRecord {
   runId: number;
+  collectionRunId: number | null;
   created: boolean;
   decisionDate: string;
   evaluatedCount: number;
@@ -201,6 +203,7 @@ export async function recordDiscoveryRun(
   decisions: DiscoveryDecisionInput[],
   runAt = new Date(),
   runType: DiscoveryRunType = 'rklb',
+  collectionRunId: number | null = null,
 ): Promise<DiscoveryRunRecord> {
   await ensureSchema();
   const decisionDate = tallinnDate(runAt);
@@ -215,13 +218,20 @@ export async function recordDiscoveryRun(
   // scanneri (`rklb`) jooks säilitab discovery_runs + discovery_decisions auditi,
   // aga ei loo outcome-ridu — leheavamine ei tohi tekitada mõõtmislubadust.
   const createsOutcomes = runType === CANONICAL_RUN_TYPE;
+  const linkedCollectionRunId = createsOutcomes && collectionRunId != null
+    ? collectionRunId
+    : null;
+  if (linkedCollectionRunId != null && (!Number.isInteger(linkedCollectionRunId) || linkedCollectionRunId <= 0)) {
+    throw new Error('collectionRunId peab olema positiivne täisarv.');
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const inserted = await client.query(
       `INSERT INTO discovery_runs
-        (run_type, decision_date, run_at, model_version, input_hash, run_key, rules, universe, evaluated_count, included_count)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10)
+        (run_type, decision_date, run_at, model_version, input_hash, run_key, rules, universe,
+         evaluated_count, included_count, collection_run_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11)
        ON CONFLICT (run_key) DO NOTHING
        RETURNING id`,
       [
@@ -235,6 +245,7 @@ export async function recordDiscoveryRun(
         JSON.stringify(universe),
         decisions.length,
         includedCount,
+        linkedCollectionRunId,
       ],
     );
     const created = Boolean(inserted.rowCount);
@@ -242,9 +253,10 @@ export async function recordDiscoveryRun(
     let recordedEvaluatedCount = decisions.length;
     let recordedIncludedCount = includedCount;
     let recordedInputHash = hash;
+    let recordedCollectionRunId = linkedCollectionRunId;
     if (!created) {
       const existing = await client.query(
-        `SELECT id, evaluated_count, included_count, input_hash
+        `SELECT id, evaluated_count, included_count, input_hash, collection_run_id
          FROM discovery_runs WHERE run_key = $1`,
         [runKey],
       );
@@ -252,6 +264,9 @@ export async function recordDiscoveryRun(
       recordedEvaluatedCount = Number(existing.rows[0].evaluated_count);
       recordedIncludedCount = Number(existing.rows[0].included_count);
       recordedInputHash = String(existing.rows[0].input_hash);
+      recordedCollectionRunId = existing.rows[0].collection_run_id == null
+        ? null
+        : Number(existing.rows[0].collection_run_id);
     }
     if (created) {
       // Benchmark start hind on vajalik ainult outcome-ridade jaoks; manual
@@ -270,6 +285,16 @@ export async function recordDiscoveryRun(
         : null;
       const benchmarkStart = benchmarkStartResult?.rows[0] || null;
       for (const decision of decisions) {
+        const collectionItemResult = linkedCollectionRunId == null
+          ? null
+          : await client.query(
+              `SELECT id FROM collection_run_items
+               WHERE collection_run_id = $1 AND ticker = $2`,
+              [linkedCollectionRunId, decision.ticker.trim().toUpperCase()],
+            );
+        const collectionRunItemId = collectionItemResult?.rows[0]
+          ? Number(collectionItemResult.rows[0].id)
+          : null;
         const decisionResult = await client.query(
           `INSERT INTO discovery_decisions
             (run_id, company_id, ticker, included, candidate_rank, exclusion_reasons,
@@ -288,12 +313,13 @@ export async function recordDiscoveryRun(
              catalyst_materiality_ratio, catalyst_direction, catalyst_novelty,
              catalyst_thesis_relevance, catalyst_mandate_relevance,
              catalyst_evidence_freshness, catalyst_event_id,
-             catalyst_linked_period_end, catalyst_next_scheduled_at)
+             catalyst_linked_period_end, catalyst_next_scheduled_at,
+             collection_run_item_id, analysis_scope)
            VALUES
             ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,
              $17,$18,$19,$20,$21,$22,$23,$24,$25::jsonb,$26::jsonb,$27::jsonb,
              $28::jsonb,$29::jsonb,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,
-             $41::jsonb,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56)
+             $41::jsonb,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,$58)
            RETURNING id`,
           [
             runId, decision.companyId, decision.ticker, decision.included, decision.candidateRank,
@@ -318,6 +344,8 @@ export async function recordDiscoveryRun(
             decision.catalystMandateRelevance, decision.catalystEvidenceFreshness,
             decision.catalystEventId, decision.catalystLinkedPeriodEnd,
             decision.catalystNextScheduledAt,
+            collectionRunItemId,
+            runType === CANONICAL_RUN_TYPE ? 'canonical' : 'manual',
           ],
         );
         if (createsOutcomes && decision.included) {
@@ -344,6 +372,7 @@ export async function recordDiscoveryRun(
     await client.query('COMMIT');
     return {
       runId,
+      collectionRunId: recordedCollectionRunId,
       created,
       decisionDate,
       evaluatedCount: recordedEvaluatedCount,
@@ -484,6 +513,10 @@ export async function refreshCandidateOutcomes(now = new Date()): Promise<number
       changed += result.rowCount || 0;
     }
   }
+  // Outcome-analysis rows are written only after the candidate and benchmark
+  // measurement passes have completed. A failure remains visible and the next
+  // refresh retries the missing immutable snapshot without changing an existing one.
+  await recordMissingOutcomeAnalysisSnapshots();
   return changed;
 }
 
