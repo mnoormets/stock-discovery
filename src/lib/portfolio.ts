@@ -30,6 +30,7 @@ export async function listPositions(): Promise<PortfolioPosition[]> {
 export interface LatestPortfolioPrice {
   ticker: string;
   price: number;
+  currency: string | null;
   capturedAt: string;
 }
 
@@ -39,7 +40,7 @@ export async function getLatestPortfolioPrices(tickers: string[]): Promise<Map<s
 
   const { rows } = await pool.query(
     `SELECT DISTINCT ON (c.ticker)
-       c.ticker, p.price, p.captured_at
+       c.ticker, p.price, COALESCE(p.currency, c.currency) AS currency, p.captured_at
      FROM companies c
      JOIN price_snapshots p ON p.company_id = c.id
      WHERE c.ticker = ANY($1::text[]) AND p.price IS NOT NULL
@@ -52,6 +53,7 @@ export async function getLatestPortfolioPrices(tickers: string[]): Promise<Map<s
     prices.set(row.ticker, {
       ticker: row.ticker,
       price,
+      currency: row.currency || null,
       capturedAt: new Date(row.captured_at).toISOString(),
     });
   }

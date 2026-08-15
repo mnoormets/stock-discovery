@@ -31,6 +31,31 @@ CREATE TABLE IF NOT EXISTS snapshots (
 CREATE INDEX IF NOT EXISTS idx_snapshots_date  ON snapshots (capture_date);
 CREATE INDEX IF NOT EXISTS idx_snapshots_score ON snapshots (capture_date, discovery_score DESC);
 
+CREATE TABLE IF NOT EXISTS collection_runs (
+  id            BIGSERIAL PRIMARY KEY,
+  trigger       TEXT NOT NULL DEFAULT 'direct',
+  status        TEXT NOT NULL DEFAULT 'running',
+  started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at   TIMESTAMPTZ,
+  duration_ms   BIGINT,
+  metrics       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  error_name    TEXT,
+  error_message TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT collection_runs_trigger_check CHECK (char_length(trigger) BETWEEN 1 AND 64),
+  CONSTRAINT collection_runs_status_check CHECK (status IN ('running', 'success', 'failure')),
+  CONSTRAINT collection_runs_metrics_object_check CHECK (jsonb_typeof(metrics) = 'object'),
+  CONSTRAINT collection_runs_lifecycle_check CHECK (
+    (status = 'running' AND finished_at IS NULL AND duration_ms IS NULL AND error_name IS NULL AND error_message IS NULL)
+    OR (status = 'success' AND finished_at IS NOT NULL AND duration_ms >= 0 AND error_name IS NULL AND error_message IS NULL)
+    OR (status = 'failure' AND finished_at IS NOT NULL AND duration_ms >= 0 AND error_message IS NOT NULL)
+  )
+);
+CREATE INDEX IF NOT EXISTS idx_collection_runs_started
+  ON collection_runs (started_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_collection_runs_status_started
+  ON collection_runs (status, started_at DESC, id DESC);
+
 -- V1 investeerimisjälgimise vundament.
 CREATE TABLE IF NOT EXISTS companies (
   id            BIGSERIAL PRIMARY KEY,

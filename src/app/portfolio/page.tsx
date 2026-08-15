@@ -6,9 +6,16 @@ import type { PortfolioPosition } from '@/lib/investment';
 
 export const dynamic = 'force-dynamic';
 
-function money(value: number, signed = false): string {
-  const [whole, fraction] = Math.abs(value).toFixed(2).split('.');
-  const formatted = `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0')},${fraction}\u00a0€`;
+function money(value: number, currency: string | null, signed = false): string {
+  const absolute = Math.abs(value);
+  const formatted = currency
+    ? new Intl.NumberFormat('et-EE', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(absolute)
+    : `${absolute.toLocaleString('et-EE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (valuuta puudu)`;
   if (!signed || value === 0) return formatted;
   return `${value > 0 ? '+' : '−'}${formatted}`;
 }
@@ -27,6 +34,7 @@ function tone(value: number): string {
 interface PositionPerformance {
   position: PortfolioPosition;
   price: number | null;
+  currency: string | null;
   capturedAt: string | null;
   marketValue: number | null;
   unrealizedPl: number | null;
@@ -48,10 +56,12 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
   const performance: PositionPerformance[] = positions.map((position) => {
     const latest = latestPrices.get(position.ticker);
     const price = latest?.price ?? null;
-    const includedInTotals = position.status !== 'closed' && position.quantity > 0 && price != null;
+    const currency = latest?.currency ?? null;
+    const includedInTotals = position.status !== 'closed' && position.quantity > 0 && price != null && currency != null;
     return {
       position,
       price,
+      currency,
       capturedAt: latest?.capturedAt ?? null,
       marketValue: price == null ? null : price * position.quantity,
       unrealizedPl: price == null ? null : (price - position.averageBuyPrice) * position.quantity,
@@ -62,20 +72,31 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
     };
   });
   const included = performance.filter((item) => item.includedInTotals);
-  const totalValue = included.reduce((sum, item) => sum + item.marketValue!, 0);
-  const totalPl = included.reduce((sum, item) => sum + item.unrealizedPl!, 0);
-  const totalCost = included.reduce(
-    (sum, item) => sum + item.position.averageBuyPrice * item.position.quantity,
-    0,
-  );
-  const totalPercent = totalCost > 0 ? (totalPl / totalCost) * 100 : null;
+  const totalsByCurrency = new Map<string, { value: number; pl: number; cost: number }>();
+  for (const item of included) {
+    const current = totalsByCurrency.get(item.currency!) ?? { value: 0, pl: 0, cost: 0 };
+    current.value += item.marketValue!;
+    current.pl += item.unrealizedPl!;
+    current.cost += item.position.averageBuyPrice * item.position.quantity;
+    totalsByCurrency.set(item.currency!, current);
+  }
+  const totalGroups = [...totalsByCurrency.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const totalValueText = totalGroups.length
+    ? totalGroups.map(([currency, total]) => money(total.value, currency)).join(' · ')
+    : '—';
+  const totalPlText = totalGroups.length
+    ? totalGroups.map(([currency, total]) => money(total.pl, currency, true)).join(' · ')
+    : '—';
+  const totalPercent = totalGroups.length === 1 && totalGroups[0][1].cost > 0
+    ? (totalGroups[0][1].pl / totalGroups[0][1].cost) * 100
+    : null;
   const ranked = included
     .filter((item) => item.unrealizedPercent != null)
     .sort((a, b) => b.unrealizedPercent! - a.unrealizedPercent!);
   const winner = ranked[0] || null;
   const loser = ranked.length > 1 ? ranked[ranked.length - 1] : ranked[0] || null;
   const unavailableCount = performance.filter((item) =>
-    item.position.status !== 'closed' && item.position.quantity > 0 && item.price == null,
+    item.position.status !== 'closed' && item.position.quantity > 0 && (item.price == null || item.currency == null),
   ).length;
 
   return (
@@ -89,12 +110,12 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
       {!dbError && positions.length > 0 && (
         <>
           <div className="metricGrid portfolioSummary">
-            <div className="metric"><span>Portfelli koguväärtus</span><strong>{money(totalValue)}</strong><small>Avatud, hinnaga positsioonid</small></div>
-            <div className="metric"><span>Kogu unrealized P/L</span><strong className={tone(totalPl)}>{money(totalPl, true)}</strong><small className={totalPercent == null ? '' : tone(totalPercent)}>{totalPercent == null ? 'Protsent pole saadaval' : percent(totalPercent)}</small></div>
+            <div className="metric"><span>Portfelli koguväärtus</span><strong>{totalValueText}</strong><small>Valuutad on eraldi; FX-konversiooni ei tehta</small></div>
+            <div className="metric"><span>Kogu unrealized P/L</span><strong>{totalPlText}</strong><small className={totalPercent == null ? '' : tone(totalPercent)}>{totalPercent == null ? (totalGroups.length > 1 ? 'Mitme valuuta koondprotsenti ei arvutata' : 'Protsent pole saadaval') : percent(totalPercent)}</small></div>
             <div className="metric"><span>Suurim võitja</span><strong>{winner ? winner.position.ticker : '—'}</strong><small className={winner?.unrealizedPercent == null ? '' : tone(winner.unrealizedPercent)}>{winner?.unrealizedPercent == null ? 'Andmeid pole' : percent(winner.unrealizedPercent)}</small></div>
             <div className="metric"><span>Suurim kaotaja</span><strong>{loser ? loser.position.ticker : '—'}</strong><small className={loser?.unrealizedPercent == null ? '' : tone(loser.unrealizedPercent)}>{loser?.unrealizedPercent == null ? 'Andmeid pole' : percent(loser.unrealizedPercent)}</small></div>
           </div>
-          {unavailableCount > 0 && <div className="notice">{unavailableCount} avatud positsiooni hind pole saadaval ja need ei sisaldu kogusummades.</div>}
+          {unavailableCount > 0 && <div className="notice">{unavailableCount} avatud positsiooni hind või valuuta pole saadaval ja need ei sisaldu kogusummades.</div>}
         </>
       )}
 
@@ -108,14 +129,14 @@ export default async function PortfolioPage({ searchParams }: { searchParams: { 
             <details className="card editor" key={position.id}>
               <summary>
                 <div className="positionSummary">
-                  <div><strong className="ticker large">{position.ticker}</strong><span className="muted"> · {position.quantity} tk · avg cost {money(position.averageBuyPrice)}</span></div>
+                  <div><strong className="ticker large">{position.ticker}</strong><span className="muted"> · {position.quantity} tk · avg cost {money(position.averageBuyPrice, item.currency)}</span></div>
                   {item.price == null ? <div className="priceUnavailable">Hind pole saadaval</div> : (
                     <div className="positionPerformance">
-                      <span>Hind <strong>{money(item.price)}</strong></span>
+                      <span>Hind <strong>{money(item.price, item.currency)}</strong></span>
                       {excluded ? <span className="muted">{position.quantity === 0 ? 'Watch-positsioon · koguväärtusest väljas' : 'Suletud · koguväärtusest väljas'}</span> : (
                         <>
-                          <span>Turuväärtus <strong>{money(item.marketValue!)}</strong></span>
-                          <span>P/L <strong className={tone(item.unrealizedPl!)}>{money(item.unrealizedPl!, true)}{item.unrealizedPercent == null ? '' : ` (${percent(item.unrealizedPercent)})`}</strong></span>
+                          <span>Turuväärtus <strong>{money(item.marketValue!, item.currency)}</strong></span>
+                          <span>P/L <strong className={tone(item.unrealizedPl!)}>{money(item.unrealizedPl!, item.currency, true)}{item.unrealizedPercent == null ? '' : ` (${percent(item.unrealizedPercent)})`}</strong></span>
                         </>
                       )}
                       <small>Hind seisuga {new Intl.DateTimeFormat('et-EE', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(item.capturedAt!))}</small>

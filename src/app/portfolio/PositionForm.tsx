@@ -10,7 +10,7 @@ export default function PositionForm({ position, defaultTicker = '' }: { positio
       <div className="formGrid">
         <label><span>Ticker</span><input name="ticker" defaultValue={position?.ticker || defaultTicker} maxLength={10} required /></label>
         <label><span>Kogus</span><input name="quantity" type="number" min="0" step="any" defaultValue={position?.quantity ?? 0} required /></label>
-        <label><span>Keskmine ostuhind</span><input name="averageBuyPrice" type="number" min="0" step="any" defaultValue={position?.averageBuyPrice ?? 0} required /></label>
+        <label><span>Keskmine ostuhind (aktsia noteerimisvaluutas)</span><input name="averageBuyPrice" type="number" min="0" step="any" defaultValue={position?.averageBuyPrice ?? 0} required /></label>
         <label><span>Staatus</span><select name="status" defaultValue={position?.status || 'active'}><option value="active">Active</option><option value="watch">Watch</option><option value="closed">Closed</option></select></label>
         {!position && <label><span>Ajahorisont</span><input name="timeHorizon" defaultValue="" placeholder="Näiteks 2–3 aastat" maxLength={200} /></label>}
       </div>
