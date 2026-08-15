@@ -1,6 +1,6 @@
 # Migratsioonid — konventsioon ja rakendusjärjekord
 
-Staatus: **rakendatud.** `0001_baseline` on rakendatud golden-source DB-le **2026-08-13** (`schema_migrations`: 1 kirje) ja `--conformance` ütleb `VASTAB`. Testibaas ehitatakse migratsioonidest (`tests/setup/global-setup.ts`). Runner `scripts/migrate.cjs` on olemas ja **käsitsi käivitatav** — app startup ega `npm run check` seda ei kutsu. `ensureSchema()` jääb tootmises esialgu alles, kuid on migreeritud skeemil tõestatud **no-op** (vt „`ensureSchema()` staatus").
+Staatus: **rakendatud.** Golden-source DB-s on migratsioonid `0001_baseline` kuni `0005_outcome_analysis_snapshots`; `schema_migrations` sisaldab 5 kirjet ja `--conformance` ütleb `VASTAB` (kontrollitud 2026-08-15). Testibaas ehitatakse migratsioonidest (`tests/setup/global-setup.ts`). Runner `scripts/migrate.cjs` on olemas ja **käsitsi käivitatav** — app startup ega `npm run check` seda ei kutsu. `ensureSchema()` jääb tootmises esialgu alles, kuid on migreeritud skeemil tõestatud **no-op** (vt „`ensureSchema()` staatus").
 
 ## Failinime formaat
 
