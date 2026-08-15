@@ -15,12 +15,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <nav className="nav wrap">
             <Link className="brand" href="/">Stock Discovery</Link>
             <div className="navLinks">
+              <Link href="/today">Today</Link>
               <Link href="/scanner">Skänner</Link>
               <Link href="/watchlist">Watchlist</Link>
               <Link href="/portfolio">Portfell</Link>
               <Link href="/daily">Daily Changes</Link>
               <Link href="/validation">Validation</Link>
               <Link href="/frequency">Frequency</Link>
+              <Link href="/missed-moves">Missed Moves</Link>
               <Link href="/backtest">Backtest</Link>
               <Link href="/guide">Kasutusjuhend</Link>
             </div>
