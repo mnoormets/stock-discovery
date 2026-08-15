@@ -9,7 +9,9 @@ export const dynamic = 'force-dynamic';
 
 function shortDate(value: string | null): string {
   if (!value) return '—';
-  return new Intl.DateTimeFormat('et-EE', { dateStyle: 'medium' }).format(new Date(`${value}T00:00:00Z`));
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (!Number.isFinite(parsed.getTime())) return 'Vigane kuupäev';
+  return new Intl.DateTimeFormat('et-EE', { dateStyle: 'medium' }).format(parsed);
 }
 
 function rankChangeLabel(change: number | null): string {

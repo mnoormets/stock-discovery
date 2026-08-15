@@ -3,6 +3,7 @@ import {
   CANONICAL_RUN_TYPE,
   DISCOVERY_MODEL_VERSION,
 } from './discovery-validation';
+import { toDateOnly } from './date-only';
 
 // Discovery Frequency V1 (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 3).
 //
@@ -239,13 +240,13 @@ export async function getDiscoveryFrequencyDashboard(): Promise<DiscoveryFrequen
       catalystEvidenceTier: row.catalyst_evidence_tier == null ? null : Number(row.catalyst_evidence_tier),
       catalystEvidenceStatus: row.catalyst_evidence_status || null,
       catalystLinkedPeriodEnd: row.catalyst_linked_period_end
-        ? String(row.catalyst_linked_period_end).slice(0, 10)
+        ? toDateOnly(row.catalyst_linked_period_end)
         : null,
     });
   }
 
   const days: CanonicalDay[] = runRows.rows.map((row) => ({
-    decisionDate: String(row.decision_date).slice(0, 10),
+    decisionDate: toDateOnly(row.decision_date),
     runId: Number(row.id),
     decisions: decisionsByRun.get(Number(row.id)) ?? [],
   }));

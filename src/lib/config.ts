@@ -51,6 +51,11 @@ export function looksLikeFundOrEtf(name: string): boolean {
 // Hoiab FMP 250/päev limiiti — pärime ainult lootustandvamatele.
 export const FUND_LOOKUP_LIMIT = 40;
 
+// Recall-ring: kasvu järgi top-40 seast välja jäänud, kuid absoluutse tähelepanu
+// järgi tugevamad nimed. See sulgeb RDDT-laadse augu, kus mainimised langevad,
+// aga ticker on endiselt radaris. Kogu Yahoo töö jääb rangelt piiratuks.
+export const FUND_RECALL_LOOKUP_LIMIT = 20;
+
 // ── Pump-and-dump / manipulatsiooni tuvastus ──────────────────────────────
 // Järsu üleöö-piigi tunnused (kahtlane, MITTE hea):
 export const SPIKE_GROWTH_THRESHOLD = 3.0;   // +300% ühe päevaga
