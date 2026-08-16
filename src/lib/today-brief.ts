@@ -101,6 +101,21 @@ export interface TodayCandidateOwnershipBadge {
   href: string;
 }
 
+export type TodayCandidateChangeField =
+  | 'rank'
+  | 'growth'
+  | 'health'
+  | 'coverage'
+  | 'mandate'
+  | 'catalyst';
+
+export interface TodayCandidateInlineChange {
+  field: TodayCandidateChangeField;
+  label: string;
+  previousValue: string;
+  currentValue: string;
+}
+
 export interface TodayCandidate {
   decisionId: number;
   ticker: string;
@@ -134,6 +149,7 @@ export interface TodayCandidate {
   researchSummary: TodayCandidateResearchSummary;
   rankComparisonToNext: RklbAdjacentRankExplanation | null;
   ownershipBadges: TodayCandidateOwnershipBadge[];
+  inlineChanges: TodayCandidateInlineChange[];
 }
 
 export type TodayCandidatePriority = 'review_first' | 'promising' | 'watch' | 'low_priority';
@@ -173,6 +189,9 @@ export interface TodayRepeatedCandidateChange {
   previousGrowthScore: number | null;
   currentGrowthScore: number | null;
   growthScoreChange: number | null;
+  previousHealthScore: number | null;
+  currentHealthScore: number | null;
+  healthScoreChange: number | null;
   previousCoverageScore: number;
   currentCoverageScore: number;
   coverageScoreChange: number;
@@ -182,6 +201,7 @@ export interface TodayRepeatedCandidateChange {
   previousCatalystStatus: string;
   currentCatalystStatus: string;
   catalystChanged: boolean;
+  changedFields: TodayCandidateInlineChange[];
 }
 
 export interface TodayMissedMoveSummary {
@@ -282,6 +302,64 @@ function thesisStatusLabel(status: string): string {
   if (status === 'researching') return 'researching';
   if (status === 'rejected') return 'rejected';
   return 'draft';
+}
+
+function changeValue(value: number | null, prefix = ''): string {
+  return value == null ? 'unknown' : `${prefix}${value}`;
+}
+
+function mandateChangeValue(value: string): string {
+  if (value === 'fits') return 'Fits mandate';
+  if (value === 'partial') return 'Partial mandate fit';
+  if (value === 'not_relevant') return 'Off mandate';
+  return value === 'unknown' ? 'Unknown' : value.replaceAll('_', ' ');
+}
+
+function changedCandidateFields(change: Omit<TodayRepeatedCandidateChange, 'changedFields'>): TodayCandidateInlineChange[] {
+  const fields: TodayCandidateInlineChange[] = [];
+  if (change.previousRank !== change.currentRank) {
+    fields.push({
+      field: 'rank', label: 'Rank',
+      previousValue: changeValue(change.previousRank, '#'),
+      currentValue: changeValue(change.currentRank, '#'),
+    });
+  }
+  if (change.previousGrowthScore !== change.currentGrowthScore) {
+    fields.push({
+      field: 'growth', label: 'Fundamental Growth',
+      previousValue: changeValue(change.previousGrowthScore),
+      currentValue: changeValue(change.currentGrowthScore),
+    });
+  }
+  if (change.previousHealthScore !== change.currentHealthScore) {
+    fields.push({
+      field: 'health', label: 'Financial Health',
+      previousValue: changeValue(change.previousHealthScore),
+      currentValue: changeValue(change.currentHealthScore),
+    });
+  }
+  if (change.previousCoverageScore !== change.currentCoverageScore) {
+    fields.push({
+      field: 'coverage', label: 'Coverage',
+      previousValue: String(change.previousCoverageScore),
+      currentValue: String(change.currentCoverageScore),
+    });
+  }
+  if (change.mandateChanged) {
+    fields.push({
+      field: 'mandate', label: 'Mandate',
+      previousValue: mandateChangeValue(change.previousMandateRelevance),
+      currentValue: mandateChangeValue(change.currentMandateRelevance),
+    });
+  }
+  if (change.catalystChanged) {
+    fields.push({
+      field: 'catalyst', label: 'Catalyst evidence',
+      previousValue: getCatalystStatusLabel(change.previousCatalystStatus),
+      currentValue: getCatalystStatusLabel(change.currentCatalystStatus),
+    });
+  }
+  return fields;
 }
 
 interface ScoreSourceInput {
@@ -540,11 +618,22 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
          FROM discovery_runs
          WHERE run_type = $1
          ORDER BY decision_date, run_at DESC, id DESC
+       ), latest AS (
+         SELECT * FROM canonical_days
+         ORDER BY decision_date DESC, run_at DESC, id DESC
+         LIMIT 1
+       ), selected AS (
+         SELECT c.*
+         FROM canonical_days c
+         CROSS JOIN latest l
+         WHERE c.model_version = l.model_version
+         ORDER BY c.decision_date DESC, c.run_at DESC, c.id DESC
+         LIMIT 2
        )
-       SELECT *, count(*) OVER ()::int AS canonical_run_count
-       FROM canonical_days
+       SELECT selected.*, (SELECT count(*)::int FROM canonical_days) AS canonical_run_count
+       FROM selected
        ORDER BY decision_date DESC, run_at DESC, id DESC
-       LIMIT 2`,
+      `,
       [CANONICAL_RUN_TYPE],
     );
     const latestCanonicalRun = canonicalResult.rows[0]
@@ -765,6 +854,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           warnings,
           rankComparisonToNext: null,
           ownershipBadges: ownershipByTicker.get(String(row.ticker)) || [],
+          inlineChanges: [],
         };
         return { ...candidate, researchSummary: buildCandidateResearchSummary(candidate) };
       });
@@ -782,7 +872,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
     let changes = emptyChanges();
     if (latestCanonicalRun && previousCanonicalRun) {
       const changeResult = await client.query(
-        `SELECT run_id, ticker, candidate_rank, growth_score, coverage_score,
+        `SELECT run_id, ticker, candidate_rank, growth_score, health_score, coverage_score,
                 catalyst_mandate_relevance, catalyst_evidence_status, catalyst_status
          FROM discovery_decisions
          WHERE included = true AND run_id = ANY($1::bigint[])
@@ -813,13 +903,15 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           const currentRank = numberValue(current.candidate_rank);
           const previousGrowthScore = numberValue(previous.growth_score);
           const currentGrowthScore = numberValue(current.growth_score);
+          const previousHealthScore = numberValue(previous.health_score);
+          const currentHealthScore = numberValue(current.health_score);
           const previousCoverageScore = Number(previous.coverage_score);
           const currentCoverageScore = Number(current.coverage_score);
           const previousMandateRelevance = previous.catalyst_mandate_relevance || 'unknown';
           const currentMandateRelevance = current.catalyst_mandate_relevance || 'unknown';
           const previousCatalystStatus = previous.catalyst_evidence_status || previous.catalyst_status || 'unknown';
           const currentCatalystStatus = current.catalyst_evidence_status || current.catalyst_status || 'unknown';
-          return {
+          const change = {
             ticker,
             previousRank,
             currentRank,
@@ -828,6 +920,10 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
             currentGrowthScore,
             growthScoreChange: previousGrowthScore == null || currentGrowthScore == null
               ? null : currentGrowthScore - previousGrowthScore,
+            previousHealthScore,
+            currentHealthScore,
+            healthScoreChange: previousHealthScore == null || currentHealthScore == null
+              ? null : currentHealthScore - previousHealthScore,
             previousCoverageScore,
             currentCoverageScore,
             coverageScoreChange: currentCoverageScore - previousCoverageScore,
@@ -838,9 +934,15 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
             currentCatalystStatus,
             catalystChanged: previousCatalystStatus !== currentCatalystStatus,
           };
+          return { ...change, changedFields: changedCandidateFields(change) };
         }),
       };
     }
+    const changesByTicker = new Map(changes.repeated.map((change) => [change.ticker, change.changedFields]));
+    topCandidates = topCandidates.map((candidate) => ({
+      ...candidate,
+      inlineChanges: changesByTicker.get(candidate.ticker) || [],
+    }));
 
     const outcomeCountResult = await client.query(
       `SELECT o.status, count(*)::int AS count
