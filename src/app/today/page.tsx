@@ -99,6 +99,14 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
         <strong>{summary.headline}</strong>
       </div>
 
+      {candidate.rankComparisonToNext && (
+        <div className={`todayRankComparison ${candidate.rankComparisonToNext.consistentWithComparator ? '' : 'mismatch'}`}>
+          <span>Why this rank?</span>
+          <strong>{candidate.rankComparisonToNext.summary}</strong>
+          <small>Actual comparator order: Supported criteria → Catalyst tier → Fundamental Growth → Coverage → Financial Health.</small>
+        </div>
+      )}
+
       <div className="todayCandidateSignals">
         <span>Fundamental Growth <strong>{candidate.growthScore == null ? '—' : `${candidate.growthScore}/100`}</strong></span>
         <span>Health <strong>{candidate.healthScore == null ? '—' : `${candidate.healthScore}/100`}</strong></span>

@@ -13,6 +13,11 @@ import {
 } from './price-context';
 import { buildScenarioValuation, type ScenarioValuation } from './scenario-valuation';
 import type { ValuationEvidenceInput, ValuationInputMetric } from './valuation-evidence';
+import {
+  explainAdjacentRklbRanks,
+  type RklbAdjacentRankExplanation,
+  type RklbRankFactors,
+} from './rklb-ranking';
 
 export type TodayBriefStatus = 'ready' | 'waiting' | 'attention' | 'error';
 export type TodayQualityStatus = 'ok' | 'warning' | 'unknown';
@@ -98,6 +103,7 @@ export interface TodayCandidate {
   growthScore: number | null;
   healthScore: number | null;
   coverageScore: number;
+  supportedCriteriaCount: number;
   mandateRelevance: string;
   catalystStatus: string;
   catalystEvidenceStatus: string;
@@ -120,6 +126,7 @@ export interface TodayCandidate {
   unknowns: string[];
   warnings: TodayCandidateWarning[];
   researchSummary: TodayCandidateResearchSummary;
+  rankComparisonToNext: RklbAdjacentRankExplanation | null;
 }
 
 export type TodayCandidatePriority = 'review_first' | 'promising' | 'watch' | 'low_priority';
@@ -246,6 +253,21 @@ function stringSet(value: unknown): Set<string> {
 
 function stringArray(value: unknown): string[] {
   return arrayValue(value).filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+}
+
+function supportedCriteriaCount(value: unknown): number {
+  return arrayValue(value).filter((item) => objectValue(item).status === 'supported').length;
+}
+
+function candidateRankFactors(candidate: TodayCandidate): RklbRankFactors {
+  return {
+    ticker: candidate.ticker,
+    supportedCriteriaCount: candidate.supportedCriteriaCount,
+    catalystTier: candidate.catalystTier,
+    growthScore: candidate.growthScore,
+    coverageScore: candidate.coverageScore,
+    healthScore: candidate.healthScore,
+  };
 }
 
 interface ScoreSourceInput {
@@ -586,7 +608,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
                 d.catalyst_status, d.catalyst_evidence_status, d.catalyst_evidence_tier,
                 d.catalyst_materiality, d.catalyst_mandate_relevance,
                 d.catalyst_event_kind, d.catalyst_source_kind, d.catalyst_detail,
-                d.catalyst_at, d.catalyst_url, d.reasons, d.risks, d.unknowns,
+                d.catalyst_at, d.catalyst_url, d.reasons, d.risks, d.unknowns, d.criteria,
                 d.sector, d.collection_run_item_id,
                 c.name AS company_name, i.lookup_bucket
          FROM discovery_decisions d
@@ -664,6 +686,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           growthScore: numberValue(row.growth_score),
           healthScore: numberValue(row.health_score),
           coverageScore: Number(row.coverage_score),
+          supportedCriteriaCount: supportedCriteriaCount(row.criteria),
           mandateRelevance: row.catalyst_mandate_relevance || 'unknown',
           catalystStatus: row.catalyst_status || 'unknown',
           catalystEvidenceStatus: row.catalyst_evidence_status || 'unknown',
@@ -689,8 +712,18 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           risks: stringArray(row.risks),
           unknowns: stringArray(row.unknowns),
           warnings,
+          rankComparisonToNext: null,
         };
         return { ...candidate, researchSummary: buildCandidateResearchSummary(candidate) };
+      });
+      topCandidates = topCandidates.map((candidate, index) => {
+        const next = topCandidates[index + 1];
+        return {
+          ...candidate,
+          rankComparisonToNext: next
+            ? explainAdjacentRklbRanks(candidateRankFactors(candidate), candidateRankFactors(next))
+            : null,
+        };
       });
     }
 

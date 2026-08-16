@@ -350,4 +350,45 @@ describe('Daily Research Brief read model', () => {
       .toEqual(beforeLaterFact.topCandidates[0].scenarioValuation.scenarios);
   });
 
+  it('A14 seob iga adjacent rank pairi päris RKLB comparatori esimese erineva väljaga', async () => {
+    const firstId = await insertCompany('FIRST', { name: 'First Research Inc.' });
+    const secondId = await insertCompany('SECOND', { name: 'Second Research Inc.' });
+    await recordDiscoveryRun(
+      ['rank explanation fixture'],
+      [
+        makeDecisionInput({
+          companyId: firstId,
+          ticker: 'FIRST',
+          candidateRank: 1,
+          catalystEvidenceTier: 2,
+          criteria: [{ id: 'growth', label: 'Growth', status: 'supported', detail: 'stored fixture' }],
+        }),
+        makeDecisionInput({
+          companyId: secondId,
+          ticker: 'SECOND',
+          candidateRank: 2,
+          catalystEvidenceTier: 4,
+          growthScore: 100,
+          coverageScore: 100,
+          healthScore: 100,
+          criteria: [],
+        }),
+      ],
+      RUN_AT,
+      'rklb_daily',
+    );
+
+    const brief = await getTodayBrief(TODAY);
+
+    expect(brief.topCandidates).toHaveLength(2);
+    expect(brief.topCandidates[0].rankComparisonToNext).toMatchObject({
+      higherTicker: 'FIRST',
+      lowerTicker: 'SECOND',
+      decisiveFactor: 'supported_criteria',
+      consistentWithComparator: true,
+    });
+    expect(brief.topCandidates[0].rankComparisonToNext?.summary).toMatch(/supported criteria \(1 vs 0\)/i);
+    expect(brief.topCandidates[1].rankComparisonToNext).toBeNull();
+  });
+
 });
