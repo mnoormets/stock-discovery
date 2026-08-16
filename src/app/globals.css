@@ -507,6 +507,12 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .todayStoredEvidence > summary { cursor: pointer; }
 .todayStoredEvidence > div { margin-top: 8px; }
 .todayStoredEvidence ul { display: grid; gap: 4px; margin: 5px 0 0; padding-left: 18px; }
+.todayTechnicalDetails { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+.todayTechnicalDetails summary { color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 800; }
+.todayTechnicalDetails dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
+.todayTechnicalDetails dl > div { display: grid; gap: 2px; padding: 6px 8px; border-radius: 7px; background: #0f1928; }
+.todayTechnicalDetails dt { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+.todayTechnicalDetails dd { margin: 0; overflow-wrap: anywhere; font-size: 11px; }
 .todayDetailLink { margin-top: 12px; }
 .todayRunStrip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
 .todayRunStrip > div { display: grid; gap: 4px; padding: 14px; border-left: 1px solid var(--border); }
@@ -559,7 +565,7 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .todayHero { align-items: flex-start; flex-direction: column; }
   .todaySystemStatus { align-items: flex-start; flex-direction: column; max-width: none; width: 100%; }
   .todayCandidateTop { align-items: flex-start; flex-direction: column; }
-  .todayCandidateDetailGrid, .todayRunStrip, .todayTwoColumn, .todayQualityGrid, .todayPriceGrid, .todayScenarioGrid { grid-template-columns: 1fr; }
+  .todayCandidateDetailGrid, .todayRunStrip, .todayTwoColumn, .todayQualityGrid, .todayPriceGrid, .todayScenarioGrid, .todayTechnicalDetails dl { grid-template-columns: 1fr; }
   .todaySubsectionHeading, .todayHistoryNotice, .todayRunUpNotice { align-items: flex-start; flex-direction: column; }
   .todayRunStrip > div { border-top: 1px solid var(--border); border-left: 0; }
   .todayRunStrip > div:first-child { border-top: 0; }
