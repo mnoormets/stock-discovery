@@ -17,9 +17,9 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 .wrap { width: min(1160px, calc(100% - 32px)); margin: 0 auto; }
 .siteHeader { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid rgba(38,52,69,.8); background: rgba(11,15,20,.9); backdrop-filter: blur(14px); }
-.nav { min-height: 64px; display: flex; align-items: center; justify-content: space-between; }
-.brand { color: var(--text); font-weight: 800; letter-spacing: -.02em; }
-.navLinks { display: flex; gap: 22px; }
+.nav { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 9px 0; }
+.brand { flex: 0 0 auto; color: var(--text); font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+.navLinks { display: flex; flex: 1 1 auto; min-width: 0; flex-wrap: wrap; justify-content: flex-end; gap: 8px 18px; }
 .navLinks a { color: var(--muted); }
 .pageStack { display: grid; gap: 24px; padding-top: 48px; padding-bottom: 72px; }
 .hero { max-width: 880px; padding: 28px 0 8px; }
@@ -290,6 +290,13 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .backfillStatus.missing-price-data { color: var(--red); border-color: #7a3939; }
 .backfillStatus.already-measured { color: var(--accent); border-color: #34618d; }
 .backfillStatus.too-recent { color: var(--amber); border-color: #75602e; }
+.qualityOverviewGrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.qualityMetadataGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.qualityDistributionTable table, .qualityScoreTable table { min-width: 420px; }
+.qualityDuplicateTable table { min-width: 720px; }
+.qualityPattern { display: inline-block; padding: 3px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+.qualityPattern.repeated { color: var(--amber); border-color: #75602e; }
+.qualityPattern.one-time { color: var(--muted); }
 .scannerTable { padding: 4px 12px; }
 .eventGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
 .eventCard { display: grid; gap: 6px; }
@@ -610,7 +617,7 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .todayRunStrip > div { border-top: 1px solid var(--border); border-left: 0; }
   .todayRunStrip > div:first-child { border-top: 0; }
   .todayReviewList article { align-items: flex-start; flex-direction: column; }
-  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions, .urDimensions, .coverageSummaryGrid, .backfillSummaryGrid { grid-template-columns: 1fr; }
+  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions, .urDimensions, .coverageSummaryGrid, .backfillSummaryGrid, .qualityOverviewGrid, .qualityMetadataGrid { grid-template-columns: 1fr; }
   .dataQualityTop, .catalystTop, .valuationTop, .underRecognitionTop { flex-direction: column; }
   .dataQualityBadges { justify-content: flex-start; }
   .rklbCandidateTop { display: grid; }
