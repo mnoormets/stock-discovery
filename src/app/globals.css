@@ -253,6 +253,28 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .antiCheat h3 { margin: 0; }
 .antiCheat ul { display: grid; gap: 7px; margin: 0; padding-left: 20px; color: var(--muted); }
 .backtestEmpty { border-color: #6d4c2a; }
+.outcomeAttributionPage { display: grid; gap: 20px; }
+.attributionHeader { align-items: stretch; }
+.attributionSampleCard { display: grid; align-content: center; min-width: 210px; padding: 18px 22px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); }
+.attributionSampleCard span, .attributionSampleCard small { color: var(--muted); font-size: 11px; }
+.attributionSampleCard strong { font-size: 34px; }
+.attributionGuardrail { display: grid; gap: 7px; border-left: 3px solid var(--amber); }
+.attributionGuardrail p { margin: 0; color: var(--muted); }
+.attributionHighlights ul { display: grid; gap: 8px; margin-bottom: 0; padding-left: 20px; }
+.attributionSections { display: grid; gap: 18px; }
+.attributionSection { display: grid; gap: 14px; }
+.attributionSectionHeading { align-items: end; }
+.attributionSectionHeading p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+.attributionSectionHeading > small { max-width: 520px; color: var(--muted); font-size: 10px; text-align: right; }
+.attributionTable { padding: 0; }
+.attributionTable table { min-width: 760px; }
+.attributionTable th button { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.attributionTable th button:hover { color: var(--accent); }
+.attributionTable td:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.lowSampleBadge { padding: 3px 6px; border: 1px solid #75602e; border-radius: 999px; color: var(--amber); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.attributionUnavailable, .attributionEmpty { padding: 18px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); }
+.attributionUnavailable strong { color: var(--amber); }
+.attributionUnavailable p { margin: 5px 0 0; }
 .scannerTable { padding: 4px 12px; }
 .eventGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
 .eventCard { display: grid; gap: 6px; }
@@ -562,6 +584,9 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .pageStack { padding-top: 28px; }
   .nav { align-items: flex-start; flex-direction: column; gap: 8px; padding: 12px 0; }
   .navLinks { flex-wrap: wrap; width: 100%; }
+  .attributionHeader { align-items: flex-start; flex-direction: column; }
+  .attributionSampleCard { width: 100%; }
+  .attributionSectionHeading > small { text-align: left; }
   .todayHero { align-items: flex-start; flex-direction: column; }
   .todaySystemStatus { align-items: flex-start; flex-direction: column; max-width: none; width: 100%; }
   .todayCandidateTop { align-items: flex-start; flex-direction: column; }
