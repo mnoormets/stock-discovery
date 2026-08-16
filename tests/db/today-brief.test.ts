@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { pool } from '../../src/lib/db';
 import { recordCollectionRunItem } from '../../src/lib/collection-run-items';
-import { startCollectionRun, succeedCollectionRun } from '../../src/lib/collection-runs';
+import { failCollectionRun, startCollectionRun, succeedCollectionRun } from '../../src/lib/collection-runs';
 import { recordDataQualitySnapshot } from '../../src/lib/data-quality-snapshots';
 import { recordDiscoveryRun, type DiscoveryDecisionInput } from '../../src/lib/discovery-validation';
-import { getTodayBrief } from '../../src/lib/today-brief';
+import { buildCandidateResearchSummary, getTodayBrief } from '../../src/lib/today-brief';
 import { insertCompany } from '../fixtures/company';
 import { makeDecisionInput } from '../fixtures/decision';
 import { publicTables, resetDb } from '../setup/reset';
@@ -98,12 +98,12 @@ describe('Daily Research Brief read model', () => {
     ]));
   });
 
-  it('A2 loeb latest canonical run\'i ja included decision\'i', async () => {
+  it('A2 loeb latest canonical run\'i ja included decision\'i ning annab puhtale briefile READY', async () => {
     const fixture = await createCanonicalFixture();
     const brief = await getTodayBrief(TODAY);
 
     expect(brief.hasTodayCanonicalRun).toBe(true);
-    expect(brief.status).toBe('ok');
+    expect(brief.status).toBe('ready');
     expect(brief.latestCanonicalRun).toMatchObject({
       id: fixture.runId,
       decisionDate: '2026-08-16',
@@ -112,7 +112,11 @@ describe('Daily Research Brief read model', () => {
       inputChangedAfterCanonicalSnapshot: null,
     });
     expect(brief.topCandidates).toEqual([
-      expect.objectContaining({ ticker: 'BRIEF', companyName: 'BRIEF Research Inc.', rank: 1 }),
+      expect.objectContaining({
+        ticker: 'BRIEF', companyName: 'BRIEF Research Inc.', rank: 1,
+        sourcePathLabel: 'Growth screen',
+        researchSummary: expect.objectContaining({ priority: 'promising' }),
+      }),
     ]);
   });
 
@@ -128,6 +132,7 @@ describe('Daily Research Brief read model', () => {
       status: 'warning',
     });
     expect(brief.dataQuality?.warnings.join(' ')).toMatch(/no SEC financial facts/i);
+    expect(brief.status).toBe('ready');
   });
 
   it('A4 toob collection provenance bucketi candidate reale', async () => {
@@ -138,6 +143,7 @@ describe('Daily Research Brief read model', () => {
     expect(brief.watchItems).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: 'recall_candidate', ticker: 'BRIEF' }),
     ]));
+    expect(brief.status).toBe('attention');
   });
 
   it('A5 märgib included not_relevant mandate kandidaadi inimese kontrolliks', async () => {
@@ -150,6 +156,7 @@ describe('Daily Research Brief read model', () => {
     expect(brief.watchItems).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: 'not_relevant_mandate', severity: 'critical' }),
     ]));
+    expect(brief.status).toBe('attention');
   });
 
   it('A6 ei muuda brief\'i lugemisel ühegi public tabeli ridade arvu', async () => {
@@ -176,7 +183,7 @@ describe('Daily Research Brief read model', () => {
     );
     await recordDiscoveryRun(
       ['latest'],
-      decisions([[newId, 'NEW'], [sharedId, 'SHARED']]),
+      decisions([[sharedId, 'SHARED'], [newId, 'NEW']]),
       RUN_AT,
       'rklb_daily',
     );
@@ -189,5 +196,62 @@ describe('Daily Research Brief read model', () => {
       removedTickers: ['OLD'],
       repeatedTickers: ['SHARED'],
     });
+    expect(brief.changes.repeated).toEqual([
+      expect.objectContaining({ ticker: 'SHARED', previousRank: 2, currentRank: 1, rankChange: 1 }),
+    ]);
   });
+
+  it('A8 annab latest collection failure korral ERROR staatuse', async () => {
+    await createCanonicalFixture();
+    const failed = await startCollectionRun('today-failure-test');
+    await failCollectionRun(failed.id, new Error('fixture failure'));
+
+    const brief = await getTodayBrief(TODAY);
+    expect(brief.status).toBe('error');
+    expect(brief.warnings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'latest_collection_failed' }),
+    ]));
+  });
+
+  it('A9 ehitab tugevale kandidaadile puhta promising research summary', async () => {
+    await createCanonicalFixture({ ticker: 'ELF' });
+    const candidate = (await getTodayBrief(TODAY)).topCandidates[0];
+
+    expect(candidate.researchSummary).toMatchObject({ priority: 'promising' });
+    expect(candidate.researchSummary.headline).toMatch(/Rank #1.*Growth 80.*Coverage 90/i);
+    expect(candidate.researchSummary.riskBullets).toEqual([]);
+  });
+
+  it('A10 liigutab negative FCF ja dilution warningud riskBullets alla', async () => {
+    await createCanonicalFixture({ ticker: 'RISK' });
+    const stored = (await getTodayBrief(TODAY)).topCandidates[0];
+    const { researchSummary: _ignored, ...candidate } = stored;
+    const summary = buildCandidateResearchSummary({
+      ...candidate,
+      warnings: [
+        { code: 'negative_fcf', label: 'Negative FCF' },
+        { code: 'dilution_warning', label: 'Dilution warning' },
+      ],
+    });
+
+    expect(summary.priority).toBe('review_first');
+    expect(summary.riskBullets).toEqual(['Negative FCF', 'Dilution warning']);
+  });
+
+  it('A11 unknown provenance jääb subtle traceability note\'iks, mitte high-priority warninguks', async () => {
+    await createCanonicalFixture({ ticker: 'TRACE' });
+    const stored = (await getTodayBrief(TODAY)).topCandidates[0];
+    const { researchSummary: _ignored, ...candidate } = stored;
+    const summary = buildCandidateResearchSummary({
+      ...candidate,
+      lookupBucket: 'unknown',
+      sourcePathLabel: 'Stored research universe',
+      provenanceKnown: false,
+      warnings: [],
+    });
+
+    expect(summary.priority).toBe('promising');
+    expect(summary.riskBullets.join(' ')).not.toMatch(/provenance/i);
+  });
+
 });

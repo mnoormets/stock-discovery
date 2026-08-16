@@ -7,7 +7,7 @@ import {
   type PriorCoverage,
 } from './missed-moves';
 
-export type TodayBriefStatus = 'ok' | 'waiting' | 'warning';
+export type TodayBriefStatus = 'ready' | 'waiting' | 'attention' | 'error';
 export type TodayQualityStatus = 'ok' | 'warning' | 'unknown';
 export type TodayWarningSeverity = 'info' | 'warning' | 'critical';
 
@@ -92,12 +92,33 @@ export interface TodayCandidate {
   coverageScore: number;
   mandateRelevance: string;
   catalystStatus: string;
+  catalystEvidenceStatus: string;
   catalystTier: number | null;
   catalystMateriality: string;
+  catalystEventKind: string | null;
+  catalystSourceKind: string | null;
+  catalystDetail: string | null;
+  catalystAt: string | null;
+  catalystUrl: string | null;
   lookupBucket: string;
+  sourcePathLabel: string;
+  provenanceKnown: boolean;
   decisionPrice: number | null;
   currency: string | null;
+  reasons: string[];
+  risks: string[];
+  unknowns: string[];
   warnings: TodayCandidateWarning[];
+  researchSummary: TodayCandidateResearchSummary;
+}
+
+export type TodayCandidatePriority = 'review_first' | 'promising' | 'watch' | 'low_priority';
+
+export interface TodayCandidateResearchSummary {
+  headline: string;
+  reasonBullets: string[];
+  riskBullets: string[];
+  priority: TodayCandidatePriority;
 }
 
 export interface TodayWatchItem {
@@ -117,6 +138,26 @@ export interface TodayChanges {
   newIncludedTickers: string[];
   removedTickers: string[];
   repeatedTickers: string[];
+  repeated: TodayRepeatedCandidateChange[];
+}
+
+export interface TodayRepeatedCandidateChange {
+  ticker: string;
+  previousRank: number | null;
+  currentRank: number | null;
+  rankChange: number | null;
+  previousGrowthScore: number | null;
+  currentGrowthScore: number | null;
+  growthScoreChange: number | null;
+  previousCoverageScore: number;
+  currentCoverageScore: number;
+  coverageScoreChange: number;
+  previousMandateRelevance: string;
+  currentMandateRelevance: string;
+  mandateChanged: boolean;
+  previousCatalystStatus: string;
+  currentCatalystStatus: string;
+  catalystChanged: boolean;
 }
 
 export interface TodayMissedMoveSummary {
@@ -193,6 +234,105 @@ function stringSet(value: unknown): Set<string> {
   return new Set(arrayValue(value).map(String));
 }
 
+function stringArray(value: unknown): string[] {
+  return arrayValue(value).filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+}
+
+function scoreDescription(label: string, value: number | null): string | null {
+  return value == null ? null : `${label} ${value}`;
+}
+
+export function getSourcePathLabel(lookupBucket: string): string {
+  if (lookupBucket === 'growth') return 'Growth screen';
+  if (lookupBucket === 'recall') return 'Attention recall';
+  if (lookupBucket === 'not_selected') return 'Not selected for market lookup';
+  return 'Stored research universe';
+}
+
+export function getCatalystStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    supported: 'Supported catalyst',
+    material_new_evidence: 'Material new evidence',
+    scheduled_only: 'Scheduled event only',
+    weak_or_unconfirmed: 'Weak / unconfirmed',
+    none_recorded: 'No catalyst recorded',
+    unknown: 'Catalyst unknown',
+  };
+  return labels[status] || status.replaceAll('_', ' ');
+}
+
+export function getCatalystMaterialityLabel(materiality: string): string {
+  const labels: Record<string, string> = {
+    quantified_major: 'Major quantified signal',
+    quantified_minor: 'Minor quantified signal',
+    unquantified: 'Unquantified signal',
+    unknown: 'Materiality unknown',
+  };
+  return labels[materiality] || materiality.replaceAll('_', ' ');
+}
+
+export function buildCandidateResearchSummary(
+  candidate: Omit<TodayCandidate, 'researchSummary'>,
+): TodayCandidateResearchSummary {
+  const warningCodes = new Set(candidate.warnings.map((warning) => warning.code));
+  const reviewFirst = ['not_relevant_mandate', 'negative_fcf', 'dilution_warning', 'low_coverage']
+    .some((code) => warningCodes.has(code as TodayCandidateWarningCode));
+  const watch = candidate.lookupBucket === 'recall'
+    || warningCodes.has('partial_mandate')
+    || warningCodes.has('missing_sector');
+  const promising = !reviewFirst
+    && !watch
+    && (candidate.growthScore ?? 0) >= HIGH_GROWTH_THRESHOLD
+    && (candidate.healthScore ?? 0) >= 60
+    && candidate.coverageScore >= LOW_COVERAGE_THRESHOLD
+    && candidate.mandateRelevance === 'fits';
+  const priority: TodayCandidatePriority = reviewFirst
+    ? 'review_first'
+    : promising ? 'promising' : watch ? 'watch' : 'low_priority';
+
+  const scoreParts = [
+    scoreDescription('Growth', candidate.growthScore),
+    scoreDescription('Health', candidate.healthScore),
+    `Coverage ${candidate.coverageScore}`,
+  ].filter((value): value is string => Boolean(value));
+  const rank = candidate.rank == null ? 'Shortlisted' : `Rank #${candidate.rank}`;
+  const riskLabels = candidate.warnings.map((warning) => warning.label);
+  if (candidate.lookupBucket === 'recall') {
+    riskLabels.push('Entered through attention recall; verify what sustained the attention.');
+  }
+
+  let headline: string;
+  if (priority === 'review_first') {
+    headline = `${rank}: ${scoreParts.join(', ')}, but ${riskLabels[0]?.toLowerCase() || 'the evidence'} needs review before trusting the rank.`;
+  } else if (priority === 'promising') {
+    headline = `${rank}: ${scoreParts.join(', ')}, mandate fits, and no major candidate-level quality warnings are recorded.`;
+  } else if (priority === 'watch') {
+    headline = `${rank}: ${scoreParts.join(', ')}. The setup is worth watching, but one or more inputs need a human check.`;
+  } else {
+    headline = `${rank}: ${scoreParts.join(', ')}. Compare the stored evidence before prioritising deeper research.`;
+  }
+
+  const reasonBullets = [
+    `${rank} in the latest daily research snapshot.`,
+    candidate.growthScore == null ? null : `Growth score ${candidate.growthScore}; Health score ${candidate.healthScore ?? 'unknown'}.`,
+    `Coverage ${candidate.coverageScore}; mandate ${candidate.mandateRelevance === 'fits' ? 'fits' : candidate.mandateRelevance.replaceAll('_', ' ')}.`,
+    `${getCatalystStatusLabel(candidate.catalystEvidenceStatus !== 'unknown' ? candidate.catalystEvidenceStatus : candidate.catalystStatus)}${candidate.catalystTier == null ? '' : `, Tier ${candidate.catalystTier}`}.`,
+    `Source path: ${candidate.sourcePathLabel}.`,
+  ].filter((value): value is string => Boolean(value));
+
+  if ((candidate.catalystStatus === 'supported' || candidate.catalystEvidenceStatus === 'material_new_evidence')
+      && !candidate.catalystDetail) {
+    reasonBullets.push('Catalyst is classified as supported, but an event description is not available in this brief.');
+  }
+
+  return {
+    headline,
+    reasonBullets,
+    riskBullets: riskLabels,
+    priority,
+  };
+}
+
 function mapCanonicalRun(row: any): TodayCanonicalRun {
   return {
     id: Number(row.id),
@@ -254,9 +394,6 @@ function candidateWarnings(row: any, qualityMetrics: Record<string, unknown>): T
   if (!row.sector || !String(row.sector).trim()) {
     warnings.push({ code: 'missing_sector', label: 'Missing sector' });
   }
-  if (!row.collection_run_item_id || !row.lookup_bucket || row.lookup_bucket === 'unknown') {
-    warnings.push({ code: 'unknown_provenance', label: 'Unknown provenance' });
-  }
   return warnings;
 }
 
@@ -269,6 +406,7 @@ function emptyChanges(): TodayChanges {
     newIncludedTickers: [],
     removedTickers: [],
     repeatedTickers: [],
+    repeated: [],
   };
 }
 
@@ -378,8 +516,10 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
       const candidateResult = await client.query(
         `SELECT d.id, d.ticker, d.candidate_rank, d.growth_score,
                 d.health_score, d.coverage_score, d.decision_price, d.currency,
-                d.catalyst_status, d.catalyst_evidence_tier,
+                d.catalyst_status, d.catalyst_evidence_status, d.catalyst_evidence_tier,
                 d.catalyst_materiality, d.catalyst_mandate_relevance,
+                d.catalyst_event_kind, d.catalyst_source_kind, d.catalyst_detail,
+                d.catalyst_at, d.catalyst_url, d.reasons, d.risks, d.unknowns,
                 d.sector, d.collection_run_item_id,
                 c.name AS company_name, i.lookup_bucket
          FROM discovery_decisions d
@@ -389,40 +529,59 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
          ORDER BY d.candidate_rank NULLS LAST, d.ticker`,
         [latestCanonicalRun.id],
       );
-      topCandidates = candidateResult.rows.map((row) => ({
-        decisionId: Number(row.id),
-        ticker: String(row.ticker),
-        companyName: row.company_name || null,
-        rank: numberValue(row.candidate_rank),
-        growthScore: numberValue(row.growth_score),
-        healthScore: numberValue(row.health_score),
-        coverageScore: Number(row.coverage_score),
-        mandateRelevance: row.catalyst_mandate_relevance || 'unknown',
-        catalystStatus: row.catalyst_status || 'unknown',
-        catalystTier: numberValue(row.catalyst_evidence_tier),
-        catalystMateriality: row.catalyst_materiality || 'unknown',
-        lookupBucket: row.lookup_bucket || 'unknown',
-        decisionPrice: numberValue(row.decision_price),
-        currency: row.currency || null,
-        warnings: candidateWarnings(row, qualityMetrics),
-      }));
+      topCandidates = candidateResult.rows.map((row) => {
+        const lookupBucket = row.lookup_bucket || 'unknown';
+        const candidate: Omit<TodayCandidate, 'researchSummary'> = {
+          decisionId: Number(row.id),
+          ticker: String(row.ticker),
+          companyName: row.company_name || null,
+          rank: numberValue(row.candidate_rank),
+          growthScore: numberValue(row.growth_score),
+          healthScore: numberValue(row.health_score),
+          coverageScore: Number(row.coverage_score),
+          mandateRelevance: row.catalyst_mandate_relevance || 'unknown',
+          catalystStatus: row.catalyst_status || 'unknown',
+          catalystEvidenceStatus: row.catalyst_evidence_status || 'unknown',
+          catalystTier: numberValue(row.catalyst_evidence_tier),
+          catalystMateriality: row.catalyst_materiality || 'unknown',
+          catalystEventKind: row.catalyst_event_kind || null,
+          catalystSourceKind: row.catalyst_source_kind || null,
+          catalystDetail: row.catalyst_detail?.trim() || null,
+          catalystAt: row.catalyst_at ? new Date(row.catalyst_at).toISOString() : null,
+          catalystUrl: row.catalyst_url || null,
+          lookupBucket,
+          sourcePathLabel: getSourcePathLabel(lookupBucket),
+          provenanceKnown: Boolean(row.collection_run_item_id && row.lookup_bucket && row.lookup_bucket !== 'unknown'),
+          decisionPrice: numberValue(row.decision_price),
+          currency: row.currency || null,
+          reasons: stringArray(row.reasons),
+          risks: stringArray(row.risks),
+          unknowns: stringArray(row.unknowns),
+          warnings: candidateWarnings(row, qualityMetrics),
+        };
+        return { ...candidate, researchSummary: buildCandidateResearchSummary(candidate) };
+      });
     }
 
     let changes = emptyChanges();
     if (latestCanonicalRun && previousCanonicalRun) {
       const changeResult = await client.query(
-        `SELECT run_id, ticker
+        `SELECT run_id, ticker, candidate_rank, growth_score, coverage_score,
+                catalyst_mandate_relevance, catalyst_evidence_status, catalyst_status
          FROM discovery_decisions
          WHERE included = true AND run_id = ANY($1::bigint[])
          ORDER BY run_id, ticker`,
         [[latestCanonicalRun.id, previousCanonicalRun.id]],
       );
-      const latestTickers = new Set<string>();
-      const previousTickers = new Set<string>();
+      const latestRows = new Map<string, any>();
+      const previousRows = new Map<string, any>();
       for (const row of changeResult.rows) {
-        const target = Number(row.run_id) === latestCanonicalRun.id ? latestTickers : previousTickers;
-        target.add(String(row.ticker));
+        const target = Number(row.run_id) === latestCanonicalRun.id ? latestRows : previousRows;
+        target.set(String(row.ticker), row);
       }
+      const latestTickers = new Set(latestRows.keys());
+      const previousTickers = new Set(previousRows.keys());
+      const repeatedTickers = [...latestTickers].filter((ticker) => previousTickers.has(ticker)).sort();
       changes = {
         available: true,
         previousRunId: previousCanonicalRun.id,
@@ -430,7 +589,40 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
         modelVersionChanged: previousCanonicalRun.modelVersion !== latestCanonicalRun.modelVersion,
         newIncludedTickers: [...latestTickers].filter((ticker) => !previousTickers.has(ticker)).sort(),
         removedTickers: [...previousTickers].filter((ticker) => !latestTickers.has(ticker)).sort(),
-        repeatedTickers: [...latestTickers].filter((ticker) => previousTickers.has(ticker)).sort(),
+        repeatedTickers,
+        repeated: repeatedTickers.map((ticker) => {
+          const previous = previousRows.get(ticker);
+          const current = latestRows.get(ticker);
+          const previousRank = numberValue(previous.candidate_rank);
+          const currentRank = numberValue(current.candidate_rank);
+          const previousGrowthScore = numberValue(previous.growth_score);
+          const currentGrowthScore = numberValue(current.growth_score);
+          const previousCoverageScore = Number(previous.coverage_score);
+          const currentCoverageScore = Number(current.coverage_score);
+          const previousMandateRelevance = previous.catalyst_mandate_relevance || 'unknown';
+          const currentMandateRelevance = current.catalyst_mandate_relevance || 'unknown';
+          const previousCatalystStatus = previous.catalyst_evidence_status || previous.catalyst_status || 'unknown';
+          const currentCatalystStatus = current.catalyst_evidence_status || current.catalyst_status || 'unknown';
+          return {
+            ticker,
+            previousRank,
+            currentRank,
+            rankChange: previousRank == null || currentRank == null ? null : previousRank - currentRank,
+            previousGrowthScore,
+            currentGrowthScore,
+            growthScoreChange: previousGrowthScore == null || currentGrowthScore == null
+              ? null : currentGrowthScore - previousGrowthScore,
+            previousCoverageScore,
+            currentCoverageScore,
+            coverageScoreChange: currentCoverageScore - previousCoverageScore,
+            previousMandateRelevance,
+            currentMandateRelevance,
+            mandateChanged: previousMandateRelevance !== currentMandateRelevance,
+            previousCatalystStatus,
+            currentCatalystStatus,
+            catalystChanged: previousCatalystStatus !== currentCatalystStatus,
+          };
+        }),
       };
     }
 
@@ -490,48 +682,48 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
       warnings.push({
         code: 'today_canonical_missing',
         severity: 'warning',
-        message: `Tallinna kuupäeval ${todayTallinnDate} ei ole canonical discovery run'i.`,
+        message: `No daily research snapshot exists for Tallinn date ${todayTallinnDate}.`,
       });
     }
     if (!latestCanonicalRun) {
       warnings.push({
         code: 'canonical_history_empty',
         severity: 'critical',
-        message: 'Canonical discovery ajalugu puudub.',
+        message: 'Daily research snapshot history is empty.',
       });
     } else if (!dataQuality) {
       warnings.push({
         code: 'data_quality_snapshot_missing',
-        severity: 'critical',
-        message: `Latest canonical run #${latestCanonicalRun.id} ei oma data-quality snapshot'i.`,
+        severity: 'warning',
+        message: `Daily research snapshot #${latestCanonicalRun.id} has no data-quality snapshot.`,
       });
     }
     if (latestCollectionRun?.status === 'failure') {
       warnings.push({
         code: 'latest_collection_failed',
         severity: 'critical',
-        message: `Viimane collection run #${latestCollectionRun.id} ebaõnnestus.`,
+        message: `Latest collection run #${latestCollectionRun.id} failed.`,
       });
     }
     if (latestCanonicalRun) {
       warnings.push({
         code: 'canonical_input_change_unknown',
         severity: 'info',
-        message: 'inputChangedAfterCanonicalSnapshot ei ole ajalooliselt DB-s salvestatud; brief näitab seda unknown väärtusena.',
+        message: 'Whether inputs changed after this snapshot was captured is not stored historically.',
       });
     }
     if (!missedMovesSummary.available) {
       warnings.push({
         code: 'missed_moves_unavailable',
         severity: 'info',
-        message: "Missed-move kokkuvõte ei olnud selles brief'is saadaval.",
+        message: 'The missed-move summary is unavailable in this brief.',
       });
     }
     if (changes.modelVersionChanged) {
       warnings.push({
         code: 'model_version_changed',
         severity: 'warning',
-        message: 'Viimane ja eelmine canonical päev kasutavad eri mudeliversiooni; tickerimuutust tuleb tõlgendada ettevaatlikult.',
+        message: 'The latest two daily snapshots use different model versions; compare ticker changes cautiously.',
       });
     }
 
@@ -539,8 +731,8 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
     if (!hasTodayCanonicalRun) {
       watchItems.push({
         code: 'today_canonical_missing', severity: 'warning', ticker: null,
-        title: 'Tänane canonical run puudub',
-        detail: 'Kontrolli collect logi ja ära käsitle eilset nimekirja tänase värske valikuna.',
+        title: "Today's daily snapshot is missing",
+        detail: "Check the collection log and do not treat yesterday's shortlist as today's fresh result.",
         href: null,
       });
     }
@@ -548,17 +740,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
       watchItems.push({
         code: 'latest_collection_failed', severity: 'critical', ticker: null,
         title: `Collection run #${latestCollectionRun.id} failed`,
-        detail: latestCollectionRun.errorMessage || 'Veateade puudub; kontrolli collection ledgerit.',
-        href: null,
-      });
-    }
-    if (dataQuality?.status !== 'ok') {
-      watchItems.push({
-        code: 'data_quality_warning', severity: dataQuality ? 'warning' : 'critical', ticker: null,
-        title: dataQuality ? 'Data quality vajab kontrolli' : 'Data quality snapshot puudub',
-        detail: dataQuality
-          ? `${dataQuality.missingFinancialsCount} finantsideta, ${dataQuality.missingSectorCount} sektorita, ${dataQuality.staleFinancialsCount} stale.`
-          : 'Latest canonical otsuse sisendkvaliteeti ei saa tõendada.',
+        detail: latestCollectionRun.errorMessage || 'No error message was stored; inspect system details.',
         href: null,
       });
     }
@@ -566,8 +748,8 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
       if (candidate.mandateRelevance === 'not_relevant') {
         watchItems.push({
           code: 'not_relevant_mandate', severity: 'critical', ticker: candidate.ticker,
-          title: `${candidate.ticker}: included, kuid off-mandate`,
-          detail: 'Kontrolli käsitsi, miks kandidaat kaasati ja kas teesi mandaat tegelikult sobib.',
+          title: `${candidate.ticker}: included but off mandate`,
+          detail: 'Review why it ranked and whether it fits the research mandate before trusting the shortlist position.',
           href: `/company/${encodeURIComponent(candidate.ticker)}`,
         });
       }
@@ -575,16 +757,38 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           && candidate.coverageScore < LOW_COVERAGE_THRESHOLD) {
         watchItems.push({
           code: 'high_score_low_coverage', severity: 'warning', ticker: candidate.ticker,
-          title: `${candidate.ticker}: kõrge Growth, madal coverage`,
-          detail: `Growth ${candidate.growthScore}, coverage ${candidate.coverageScore}. Kontrolli puuduvaid score-sisendeid.`,
+          title: `${candidate.ticker}: strong Growth, low coverage`,
+          detail: `Growth ${candidate.growthScore}, coverage ${candidate.coverageScore}. Check the missing score inputs.`,
+          href: `/company/${encodeURIComponent(candidate.ticker)}`,
+        });
+      }
+      if (candidate.mandateRelevance === 'partial') {
+        watchItems.push({
+          code: 'partial_mandate', severity: 'warning', ticker: candidate.ticker,
+          title: `${candidate.ticker}: partial mandate fit`,
+          detail: 'Clarify which part of the research mandate it meets before spending more time.',
+          href: `/company/${encodeURIComponent(candidate.ticker)}`,
+        });
+      }
+      for (const warning of candidate.warnings.filter((item) => (
+        item.code === 'negative_fcf' || item.code === 'dilution_warning' || item.code === 'missing_sector'
+      ))) {
+        watchItems.push({
+          code: warning.code,
+          severity: warning.code === 'missing_sector' ? 'warning' : 'critical',
+          ticker: candidate.ticker,
+          title: `${candidate.ticker}: ${warning.label}`,
+          detail: warning.code === 'missing_sector'
+            ? 'Peer and sector-relative context may be incomplete.'
+            : 'Treat this as a core risk to verify in the stored filing evidence.',
           href: `/company/${encodeURIComponent(candidate.ticker)}`,
         });
       }
       if (candidate.lookupBucket === 'recall') {
         watchItems.push({
-          code: 'recall_candidate', severity: 'info', ticker: candidate.ticker,
-          title: `${candidate.ticker}: recall bucket`,
-          detail: "Ticker jõudis lookup'i absoluutse tähelepanu, mitte mainimiste kasvu kaudu; kontrolli, mis tähelepanu hoidis.",
+          code: 'recall_candidate', severity: 'warning', ticker: candidate.ticker,
+          title: `${candidate.ticker}: Attention recall`,
+          detail: 'It entered through sustained absolute attention rather than mention growth; verify what kept attention elevated.',
           href: `/company/${encodeURIComponent(candidate.ticker)}`,
         });
       }
@@ -593,14 +797,25 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
       watchItems.push({
         code: 'missed_move_universe_gap', severity: 'warning', ticker: move.ticker,
         title: `${move.ticker}: missed-move universe gap`,
-        detail: `${move.changePercent >= 0 ? '+' : ''}${move.changePercent.toFixed(1)}% ${move.previousDate} → ${move.observedDate}; enne liikumist polnud canonical universumis ega radaris.`,
+        detail: `${move.changePercent >= 0 ? '+' : ''}${move.changePercent.toFixed(1)}% ${move.previousDate} → ${move.observedDate}; it was outside the stored research universe before the move.`,
         href: '/missed-moves',
       });
     }
 
+    const hasCandidateReview = topCandidates.some((candidate) => (
+      candidate.warnings.length > 0 || candidate.lookupBucket === 'recall'
+    ));
+    const hasMissedUniverseGap = missedMovesSummary.recent.some((move) => move.priorCoverage === 'universe_gap');
     const status: TodayBriefStatus = latestCollectionRun?.status === 'failure'
-      ? 'warning'
-      : hasTodayCanonicalRun ? 'ok' : 'waiting';
+      ? 'error'
+      : !hasTodayCanonicalRun
+        ? 'waiting'
+        : latestCollectionRun?.status !== 'success'
+          || hasCandidateReview
+          || hasMissedUniverseGap
+          || changes.modelVersionChanged
+          ? 'attention'
+          : 'ready';
 
     await client.query('COMMIT');
     return {
