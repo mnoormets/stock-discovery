@@ -6,6 +6,13 @@ import {
   type MissedMoveAudit,
   type PriorCoverage,
 } from './missed-moves';
+import {
+  buildPriceContext,
+  type CandidatePriceContext,
+  type StoredPriceObservation,
+} from './price-context';
+import { buildScenarioValuation, type ScenarioValuation } from './scenario-valuation';
+import type { ValuationEvidenceInput, ValuationInputMetric } from './valuation-evidence';
 
 export type TodayBriefStatus = 'ready' | 'waiting' | 'attention' | 'error';
 export type TodayQualityStatus = 'ok' | 'warning' | 'unknown';
@@ -75,6 +82,7 @@ export type TodayCandidateWarningCode =
   | 'negative_fcf'
   | 'dilution_warning'
   | 'missing_sector'
+  | 'recent_run_up'
   | 'unknown_provenance';
 
 export interface TodayCandidateWarning {
@@ -105,6 +113,8 @@ export interface TodayCandidate {
   provenanceKnown: boolean;
   decisionPrice: number | null;
   currency: string | null;
+  priceContext: CandidatePriceContext;
+  scenarioValuation: ScenarioValuation;
   reasons: string[];
   risks: string[];
   unknowns: string[];
@@ -238,6 +248,61 @@ function stringArray(value: unknown): string[] {
   return arrayValue(value).filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
 }
 
+interface ScoreSourceInput {
+  metric: string;
+  latestFactId: number | null;
+  latestPeriodEnd: string | null;
+  latestValue: number | null;
+}
+
+interface FinancialFactMetadata {
+  periodKind: ValuationInputMetric['periodKind'];
+  accessionNumber: string | null;
+  sourceUrl: string | null;
+  derived: boolean;
+}
+
+function scoreSources(value: unknown): ScoreSourceInput[] {
+  const payload = objectValue(value);
+  return arrayValue(payload.sources).flatMap((item) => {
+    const source = objectValue(item);
+    const metric = typeof source.metric === 'string' ? source.metric : '';
+    const latestFactId = numberValue(source.latestFactId);
+    const latestValue = numberValue(source.latestValue);
+    const latestPeriodEnd = typeof source.latestPeriodEnd === 'string' ? source.latestPeriodEnd : null;
+    return metric ? [{ metric, latestFactId, latestPeriodEnd, latestValue }] : [];
+  });
+}
+
+function scenarioInput(
+  row: any,
+  facts: Map<number, FinancialFactMetadata>,
+): ValuationEvidenceInput {
+  const sources = scoreSources(row.score_payload);
+  const metric = (name: string): ValuationInputMetric | null => {
+    const source = sources.find((item) => item.metric === name);
+    if (!source || source.latestFactId == null || source.latestValue == null) return null;
+    const metadata = facts.get(source.latestFactId);
+    if (!metadata) return null;
+    return {
+      value: source.latestValue,
+      periodEnd: source.latestPeriodEnd,
+      periodKind: metadata.periodKind,
+      accessionNumber: metadata.accessionNumber,
+      sourceUrl: metadata.sourceUrl,
+      derived: metadata.derived,
+    };
+  };
+  return {
+    marketCap: numberValue(row.market_cap),
+    revenue: metric('revenue'),
+    netIncome: metric('net_income'),
+    freeCashFlow: metric('free_cash_flow'),
+    cash: metric('cash'),
+    debt: metric('debt'),
+  };
+}
+
 function scoreDescription(label: string, value: number | null): string | null {
   return value == null ? null : `${label} ${value}`;
 }
@@ -279,7 +344,8 @@ export function buildCandidateResearchSummary(
     .some((code) => warningCodes.has(code as TodayCandidateWarningCode));
   const watch = candidate.lookupBucket === 'recall'
     || warningCodes.has('partial_mandate')
-    || warningCodes.has('missing_sector');
+    || warningCodes.has('missing_sector')
+    || warningCodes.has('recent_run_up');
   const promising = !reviewFirst
     && !watch
     && (candidate.growthScore ?? 0) >= HIGH_GROWTH_THRESHOLD
@@ -291,9 +357,9 @@ export function buildCandidateResearchSummary(
     : promising ? 'promising' : watch ? 'watch' : 'low_priority';
 
   const scoreParts = [
-    scoreDescription('Growth', candidate.growthScore),
+    candidate.growthScore == null ? null : `Fundamental Growth ${candidate.growthScore}/100`,
     scoreDescription('Health', candidate.healthScore),
-    `Coverage ${candidate.coverageScore}`,
+    `Coverage ${candidate.coverageScore}/100`,
   ].filter((value): value is string => Boolean(value));
   const rank = candidate.rank == null ? 'Shortlisted' : `Rank #${candidate.rank}`;
   const riskLabels = candidate.warnings.map((warning) => warning.label);
@@ -314,7 +380,7 @@ export function buildCandidateResearchSummary(
 
   const reasonBullets = [
     `${rank} in the latest daily research snapshot.`,
-    candidate.growthScore == null ? null : `Growth score ${candidate.growthScore}; Health score ${candidate.healthScore ?? 'unknown'}.`,
+    candidate.growthScore == null ? null : `Fundamental Growth ${candidate.growthScore}/100; Health ${candidate.healthScore ?? 'unknown'}/100.`,
     `Coverage ${candidate.coverageScore}; mandate ${candidate.mandateRelevance === 'fits' ? 'fits' : candidate.mandateRelevance.replaceAll('_', ' ')}.`,
     `${getCatalystStatusLabel(candidate.catalystEvidenceStatus !== 'unknown' ? candidate.catalystEvidenceStatus : candidate.catalystStatus)}${candidate.catalystTier == null ? '' : `, Tier ${candidate.catalystTier}`}.`,
     `Source path: ${candidate.sourcePathLabel}.`,
@@ -514,8 +580,9 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
     let topCandidates: TodayCandidate[] = [];
     if (latestCanonicalRun) {
       const candidateResult = await client.query(
-        `SELECT d.id, d.ticker, d.candidate_rank, d.growth_score,
+        `SELECT d.id, d.company_id, d.ticker, d.candidate_rank, d.growth_score,
                 d.health_score, d.coverage_score, d.decision_price, d.currency,
+                d.market_cap, d.score_snapshot_id, s.payload AS score_payload,
                 d.catalyst_status, d.catalyst_evidence_status, d.catalyst_evidence_tier,
                 d.catalyst_materiality, d.catalyst_mandate_relevance,
                 d.catalyst_event_kind, d.catalyst_source_kind, d.catalyst_detail,
@@ -525,12 +592,70 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
          FROM discovery_decisions d
          LEFT JOIN companies c ON c.id = d.company_id
          LEFT JOIN collection_run_items i ON i.id = d.collection_run_item_id
+         LEFT JOIN company_score_snapshots s ON s.id = d.score_snapshot_id
          WHERE d.run_id = $1 AND d.included = true
          ORDER BY d.candidate_rank NULLS LAST, d.ticker`,
         [latestCanonicalRun.id],
       );
+      const companyIds = candidateResult.rows
+        .map((row) => numberValue(row.company_id))
+        .filter((id): id is number => id != null);
+      const pricesByCompany = new Map<number, StoredPriceObservation[]>();
+      if (companyIds.length > 0) {
+        const priceResult = await client.query(
+          `SELECT company_id, price, captured_at
+           FROM price_snapshots
+           WHERE company_id = ANY($1::bigint[])
+             AND price IS NOT NULL
+             AND captured_at <= $2::timestamptz
+             AND captured_at >= $2::timestamptz - interval '380 days'
+           ORDER BY company_id, captured_at`,
+          [companyIds, latestCanonicalRun.runAt],
+        );
+        for (const row of priceResult.rows) {
+          const companyId = Number(row.company_id);
+          const observations = pricesByCompany.get(companyId) || [];
+          observations.push({ price: Number(row.price), capturedAt: new Date(row.captured_at).toISOString() });
+          pricesByCompany.set(companyId, observations);
+        }
+      }
+
+      const factIds = [...new Set(candidateResult.rows.flatMap((row) => (
+        scoreSources(row.score_payload)
+          .map((source) => source.latestFactId)
+          .filter((id): id is number => id != null)
+      )))];
+      const factMetadata = new Map<number, FinancialFactMetadata>();
+      if (factIds.length > 0) {
+        const factResult = await client.query(
+          `SELECT id, period_kind, accession_number, source_url, is_derived
+           FROM financial_facts
+           WHERE id = ANY($1::bigint[])`,
+          [factIds],
+        );
+        for (const row of factResult.rows) {
+          factMetadata.set(Number(row.id), {
+            periodKind: row.period_kind || null,
+            accessionNumber: row.accession_number || null,
+            sourceUrl: row.source_url || null,
+            derived: Boolean(row.is_derived),
+          });
+        }
+      }
+
       topCandidates = candidateResult.rows.map((row) => {
         const lookupBucket = row.lookup_bucket || 'unknown';
+        const decisionPrice = numberValue(row.decision_price);
+        const companyId = numberValue(row.company_id);
+        const priceContext = buildPriceContext({
+          asOf: latestCanonicalRun.runAt,
+          currentPrice: decisionPrice,
+          observations: companyId == null ? [] : pricesByCompany.get(companyId) || [],
+        });
+        const warnings = candidateWarnings(row, qualityMetrics);
+        if (priceContext.recentRunUp) {
+          warnings.push({ code: 'recent_run_up', label: 'Recent run-up; review entry price' });
+        }
         const candidate: Omit<TodayCandidate, 'researchSummary'> = {
           decisionId: Number(row.id),
           ticker: String(row.ticker),
@@ -552,12 +677,18 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           lookupBucket,
           sourcePathLabel: getSourcePathLabel(lookupBucket),
           provenanceKnown: Boolean(row.collection_run_item_id && row.lookup_bucket && row.lookup_bucket !== 'unknown'),
-          decisionPrice: numberValue(row.decision_price),
+          decisionPrice,
           currency: row.currency || null,
+          priceContext,
+          scenarioValuation: buildScenarioValuation(
+            scenarioInput(row, factMetadata),
+            decisionPrice,
+            new Date(latestCanonicalRun.runAt),
+          ),
           reasons: stringArray(row.reasons),
           risks: stringArray(row.risks),
           unknowns: stringArray(row.unknowns),
-          warnings: candidateWarnings(row, qualityMetrics),
+          warnings,
         };
         return { ...candidate, researchSummary: buildCandidateResearchSummary(candidate) };
       });
@@ -757,8 +888,8 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           && candidate.coverageScore < LOW_COVERAGE_THRESHOLD) {
         watchItems.push({
           code: 'high_score_low_coverage', severity: 'warning', ticker: candidate.ticker,
-          title: `${candidate.ticker}: strong Growth, low coverage`,
-          detail: `Growth ${candidate.growthScore}, coverage ${candidate.coverageScore}. Check the missing score inputs.`,
+          title: `${candidate.ticker}: strong Fundamental Growth, low coverage`,
+          detail: `Fundamental Growth ${candidate.growthScore}/100, coverage ${candidate.coverageScore}/100. Check the missing score inputs.`,
           href: `/company/${encodeURIComponent(candidate.ticker)}`,
         });
       }
@@ -789,6 +920,14 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           code: 'recall_candidate', severity: 'warning', ticker: candidate.ticker,
           title: `${candidate.ticker}: Attention recall`,
           detail: 'It entered through sustained absolute attention rather than mention growth; verify what kept attention elevated.',
+          href: `/company/${encodeURIComponent(candidate.ticker)}`,
+        });
+      }
+      if (candidate.priceContext.recentRunUp) {
+        watchItems.push({
+          code: 'recent_run_up', severity: 'warning', ticker: candidate.ticker,
+          title: `${candidate.ticker}: recent price run-up`,
+          detail: `${candidate.priceContext.recentRunUpReasons.join('; ')}. Strong fundamentals do not by themselves make today's entry price attractive.`,
           href: `/company/${encodeURIComponent(candidate.ticker)}`,
         });
       }

@@ -456,6 +456,30 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .todayCandidateDetail { padding-top: 2px; border-top: 1px solid var(--border); }
 .todayCandidateDetail > summary, .todayCompactDetails > summary, .todaySystemDetails > summary { cursor: pointer; color: var(--accent); font-size: 12px; font-weight: 800; }
 .todayCandidateDetail[open] > summary, .todayCompactDetails[open] > summary { margin-bottom: 12px; }
+.todayPriceContext, .todayScenarioValuation { display: grid; gap: 11px; margin-bottom: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: rgba(8,14,22,.65); }
+.todaySubsectionHeading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.todaySubsectionHeading h3 { margin: 2px 0 0; font-size: 17px; }
+.todaySubsectionHeading .eyebrow { margin: 0; }
+.todayHistoryStatus { border: 1px solid var(--border); border-radius: 999px; padding: 4px 8px; color: var(--muted); font-size: 9px; font-weight: 900; text-transform: uppercase; white-space: nowrap; }
+.todayHistoryStatus.sufficient { color: var(--green); border-color: #2f7049; }
+.todayHistoryStatus.partial { color: var(--amber); border-color: #75602e; }
+.todayPriceGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.todayPriceGrid > span { display: grid; gap: 3px; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 10px; text-transform: uppercase; }
+.todayPriceGrid strong { color: var(--text); font-size: 14px; text-transform: none; overflow-wrap: anywhere; }
+.todayPriceGrid small { min-height: 1.2em; text-transform: none; }
+.todayHistoryNotice, .todayRunUpNotice { display: flex; align-items: flex-start; gap: 8px 14px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-size: 11px; }
+.todayHistoryNotice strong, .todayRunUpNotice strong { color: var(--text); white-space: nowrap; }
+.todayRunUpNotice { border-color: #75602e; background: rgba(42,35,15,.55); }
+.todayRunUpNotice strong { color: var(--amber); }
+.todayScenarioGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.todayScenarioGrid article { display: grid; gap: 5px; min-width: 0; padding: 12px; border: 1px solid var(--border); border-top: 3px solid var(--muted); border-radius: 9px; }
+.todayScenarioGrid article.bear { border-top-color: var(--red); }
+.todayScenarioGrid article.base { border-top-color: var(--accent); }
+.todayScenarioGrid article.bull { border-top-color: var(--green); }
+.todayScenarioGrid article > span { color: var(--muted); font-size: 10px; font-weight: 900; text-transform: uppercase; }
+.todayScenarioGrid article > strong { font-size: 21px; overflow-wrap: anywhere; }
+.todayScenarioGrid article > b { font-size: 12px; }
+.todayScenarioGrid ul { display: grid; gap: 4px; margin: 5px 0 0; padding-left: 16px; color: var(--muted); font-size: 10px; line-height: 1.45; }
 .todayCandidateDetailGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .todayCandidateDetailGrid section { padding: 12px; border-radius: 9px; background: rgba(8,14,22,.65); }
 .todayCandidateDetailGrid h3 { margin: 0 0 7px; font-size: 13px; }
@@ -514,10 +538,13 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 
 @media (max-width: 760px) {
   .pageStack { padding-top: 28px; }
+  .nav { align-items: flex-start; flex-direction: column; gap: 8px; padding: 12px 0; }
+  .navLinks { flex-wrap: wrap; width: 100%; }
   .todayHero { align-items: flex-start; flex-direction: column; }
   .todaySystemStatus { align-items: flex-start; flex-direction: column; max-width: none; width: 100%; }
   .todayCandidateTop { align-items: flex-start; flex-direction: column; }
-  .todayCandidateDetailGrid, .todayRunStrip, .todayTwoColumn, .todayQualityGrid { grid-template-columns: 1fr; }
+  .todayCandidateDetailGrid, .todayRunStrip, .todayTwoColumn, .todayQualityGrid, .todayPriceGrid, .todayScenarioGrid { grid-template-columns: 1fr; }
+  .todaySubsectionHeading, .todayHistoryNotice, .todayRunUpNotice { align-items: flex-start; flex-direction: column; }
   .todayRunStrip > div { border-top: 1px solid var(--border); border-left: 0; }
   .todayRunStrip > div:first-child { border-top: 0; }
   .todayReviewList article { align-items: flex-start; flex-direction: column; }

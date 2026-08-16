@@ -24,13 +24,26 @@ const horizonLabel: Record<string, string> = {
 
 const priorityLabel = {
   review_first: 'Review first',
-  promising: 'Promising research lead',
+  promising: 'High research priority',
   watch: 'Watch and verify',
   low_priority: 'Lower priority',
 };
 
 function formatPercent(value: number | null): string {
   return value == null ? 'Unknown' : `${value.toLocaleString('en-US', { maximumFractionDigits: 1 })}%`;
+}
+
+function formatSignedPercent(value: number | null): string {
+  if (value == null) return 'Insufficient price history';
+  return `${value >= 0 ? '+' : ''}${value.toLocaleString('en-US', { maximumFractionDigits: 1 })}%`;
+}
+
+function formatPrice(value: number | null, currency: string | null): string {
+  if (value == null) return 'Unavailable';
+  if (currency && /^[A-Z]{3}$/.test(currency)) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(value);
+  }
+  return value.toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 
 function formatDateTime(value: string | null): string {
@@ -87,9 +100,9 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
       </div>
 
       <div className="todayCandidateSignals">
-        <span>Growth <strong>{candidate.growthScore ?? '—'}</strong></span>
-        <span>Health <strong>{candidate.healthScore ?? '—'}</strong></span>
-        <span>Coverage <strong>{candidate.coverageScore}</strong></span>
+        <span>Fundamental Growth <strong>{candidate.growthScore == null ? '—' : `${candidate.growthScore}/100`}</strong></span>
+        <span>Health <strong>{candidate.healthScore == null ? '—' : `${candidate.healthScore}/100`}</strong></span>
+        <span>Coverage <strong>{candidate.coverageScore}/100</strong></span>
         <span>{humanValue(candidate.mandateRelevance)}</span>
         <span>{catalystStatus}</span>
         <span className={candidate.provenanceKnown ? undefined : 'todayTraceSignal'}>{candidate.sourcePathLabel}</span>
@@ -102,7 +115,48 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
       )}
 
       <details className="todayCandidateDetail">
-        <summary>Compare evidence and risks</summary>
+        <summary>Compare price, valuation, evidence and risks</summary>
+        <section className="todayPriceContext">
+          <div className="todaySubsectionHeading">
+            <div><p className="eyebrow">ENTRY CONTEXT</p><h3>Price Context</h3></div>
+            <span className={`todayHistoryStatus ${candidate.priceContext.historyStatus}`}>{candidate.priceContext.historyStatus} history</span>
+          </div>
+          <p className="muted">Fundamental Growth measures reported business growth. It does not measure recent share-price momentum or whether today&apos;s entry price is attractive.</p>
+          <div className="todayPriceGrid">
+            <span>Decision price<strong>{formatPrice(candidate.decisionPrice, candidate.currency)}</strong></span>
+            <span>1 month<strong>{formatSignedPercent(candidate.priceContext.oneMonthReturnPercent)}</strong></span>
+            <span>3 months<strong>{formatSignedPercent(candidate.priceContext.threeMonthReturnPercent)}</strong></span>
+            <span>6 months<strong>{formatSignedPercent(candidate.priceContext.sixMonthReturnPercent)}</strong></span>
+            <span>From stored 52w high<strong>{formatSignedPercent(candidate.priceContext.distanceFrom52WeekHighPercent)}</strong><small>{candidate.priceContext.fiftyTwoWeekHigh == null ? '' : `High ${formatPrice(candidate.priceContext.fiftyTwoWeekHigh, candidate.currency)}`}</small></span>
+            <span>From stored 52w low<strong>{formatSignedPercent(candidate.priceContext.distanceFrom52WeekLowPercent)}</strong><small>{candidate.priceContext.fiftyTwoWeekLow == null ? '' : `Low ${formatPrice(candidate.priceContext.fiftyTwoWeekLow, candidate.currency)}`}</small></span>
+          </div>
+          {candidate.priceContext.historyStatus !== 'sufficient' && <div className="todayHistoryNotice"><strong>Insufficient price history</strong><span>Only stored observations are used; unavailable periods are not estimated.</span></div>}
+          {candidate.priceContext.recentRunUp && <div className="todayRunUpNotice"><strong>Recent run-up warning</strong><span>{candidate.priceContext.recentRunUpReasons.join(' · ')}. Review valuation and entry risk before trusting the fundamental rank.</span></div>}
+          <small className="todaySubtle">{candidate.priceContext.observationCount} stored price observations through the daily snapshot time.</small>
+        </section>
+
+        <section className="todayScenarioValuation">
+          <div className="todaySubsectionHeading"><div><p className="eyebrow">MECHANICAL SENSITIVITY</p><h3>Scenario Valuation V1</h3></div></div>
+          {candidate.scenarioValuation.status === 'unavailable' ? (
+            <div className="todayHistoryNotice"><strong>Scenario valuation unavailable</strong><span>{candidate.scenarioValuation.reason}</span></div>
+          ) : (
+            <>
+              <p className="muted">Uses the decision-time {candidate.scenarioValuation.anchorLabel} anchor ({candidate.scenarioValuation.anchorValue?.toLocaleString('en-US', { maximumFractionDigits: 1 })}{candidate.scenarioValuation.anchorUnit}) and the exact fundamentals linked to the stored score snapshot. These are transparent sensitivities, not price targets.</p>
+              <div className="todayScenarioGrid">
+                {candidate.scenarioValuation.scenarios.map((scenario) => (
+                  <article className={scenario.case} key={scenario.case}>
+                    <span>{scenario.case}</span>
+                    <strong>{formatPrice(scenario.impliedPrice, candidate.currency)}</strong>
+                    <b className={scenario.upsideDownsidePercent >= 0 ? 'positive' : 'negative'}>{formatSignedPercent(scenario.upsideDownsidePercent)}</b>
+                    <ul>{scenario.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}</ul>
+                  </article>
+                ))}
+              </div>
+              <small className="todaySubtle">Confidence: {candidate.scenarioValuation.confidence} · Basis: {candidate.scenarioValuation.anchorBasis?.replaceAll('_', ' ') || 'unknown'} · Fundamental period: {candidate.scenarioValuation.lastUpdated || 'unknown'}.</small>
+            </>
+          )}
+        </section>
+
         <div className="todayCandidateDetailGrid">
           <section><h3>Main strengths</h3><ul>{strengths.map((item) => <li key={item}>{item}</li>)}</ul></section>
           <section>
