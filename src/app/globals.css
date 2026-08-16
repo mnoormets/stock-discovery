@@ -281,6 +281,15 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .coverageSummaryCard strong { font-size: 30px; }
 .coverageSummaryCard small { font-size: 10px; }
 .coverageTable table { min-width: 680px; }
+.backfillSummaryGrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.backfillAuditTable table { min-width: 760px; }
+.symbolAuditTable table { min-width: 1120px; }
+.runAuditTable table { min-width: 980px; }
+.backfillStatus { display: inline-block; padding: 3px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+.backfillStatus.eligible-for-backfill { color: var(--green); border-color: #2f7049; }
+.backfillStatus.missing-price-data { color: var(--red); border-color: #7a3939; }
+.backfillStatus.already-measured { color: var(--accent); border-color: #34618d; }
+.backfillStatus.too-recent { color: var(--amber); border-color: #75602e; }
 .scannerTable { padding: 4px 12px; }
 .eventGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
 .eventCard { display: grid; gap: 6px; }
@@ -601,7 +610,7 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .todayRunStrip > div { border-top: 1px solid var(--border); border-left: 0; }
   .todayRunStrip > div:first-child { border-top: 0; }
   .todayReviewList article { align-items: flex-start; flex-direction: column; }
-  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions, .urDimensions, .coverageSummaryGrid { grid-template-columns: 1fr; }
+  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions, .urDimensions, .coverageSummaryGrid, .backfillSummaryGrid { grid-template-columns: 1fr; }
   .dataQualityTop, .catalystTop, .valuationTop, .underRecognitionTop { flex-direction: column; }
   .dataQualityBadges { justify-content: flex-start; }
   .rklbCandidateTop { display: grid; }
