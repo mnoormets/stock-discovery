@@ -95,6 +95,12 @@ export interface TodayCandidateWarning {
   label: string;
 }
 
+export interface TodayCandidateOwnershipBadge {
+  kind: 'watchlist' | 'portfolio' | 'thesis';
+  label: string;
+  href: string;
+}
+
 export interface TodayCandidate {
   decisionId: number;
   ticker: string;
@@ -127,6 +133,7 @@ export interface TodayCandidate {
   warnings: TodayCandidateWarning[];
   researchSummary: TodayCandidateResearchSummary;
   rankComparisonToNext: RklbAdjacentRankExplanation | null;
+  ownershipBadges: TodayCandidateOwnershipBadge[];
 }
 
 export type TodayCandidatePriority = 'review_first' | 'promising' | 'watch' | 'low_priority';
@@ -268,6 +275,13 @@ function candidateRankFactors(candidate: TodayCandidate): RklbRankFactors {
     coverageScore: candidate.coverageScore,
     healthScore: candidate.healthScore,
   };
+}
+
+function thesisStatusLabel(status: string): string {
+  if (status === 'ready') return 'ready';
+  if (status === 'researching') return 'researching';
+  if (status === 'rejected') return 'rejected';
+  return 'draft';
 }
 
 interface ScoreSourceInput {
@@ -622,6 +636,43 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
       const companyIds = candidateResult.rows
         .map((row) => numberValue(row.company_id))
         .filter((id): id is number => id != null);
+      const candidateTickers = candidateResult.rows.map((row) => String(row.ticker));
+      const ownershipByTicker = new Map<string, TodayCandidateOwnershipBadge[]>();
+      if (candidateTickers.length > 0) {
+        const ownershipResult = await client.query(
+          `SELECT p.id AS position_id, p.ticker, p.status AS position_status,
+                  t.id AS thesis_id, t.status AS thesis_status, t.created_at AS thesis_created_at
+           FROM portfolio_positions p
+           LEFT JOIN investment_theses t ON t.position_id = p.id AND t.is_current = true
+           WHERE p.ticker = ANY($1::text[])
+           ORDER BY p.ticker, t.created_at DESC NULLS LAST, p.updated_at DESC, p.id DESC`,
+          [candidateTickers],
+        );
+        const seenKinds = new Map<string, Set<TodayCandidateOwnershipBadge['kind']>>();
+        for (const row of ownershipResult.rows) {
+          const ticker = String(row.ticker);
+          const badges = ownershipByTicker.get(ticker) || [];
+          const seen = seenKinds.get(ticker) || new Set<TodayCandidateOwnershipBadge['kind']>();
+          if (row.position_status === 'watch' && !seen.has('watchlist')) {
+            badges.push({ kind: 'watchlist', label: 'Watchlist', href: '/watchlist' });
+            seen.add('watchlist');
+          }
+          if (row.position_status === 'active' && !seen.has('portfolio')) {
+            badges.push({ kind: 'portfolio', label: 'Portfolio', href: '/portfolio' });
+            seen.add('portfolio');
+          }
+          if (row.thesis_id != null && !seen.has('thesis')) {
+            badges.push({
+              kind: 'thesis',
+              label: `Thesis · ${thesisStatusLabel(String(row.thesis_status || 'draft'))}`,
+              href: `/thesis/${Number(row.position_id)}`,
+            });
+            seen.add('thesis');
+          }
+          ownershipByTicker.set(ticker, badges);
+          seenKinds.set(ticker, seen);
+        }
+      }
       const pricesByCompany = new Map<number, StoredPriceObservation[]>();
       if (companyIds.length > 0) {
         const priceResult = await client.query(
@@ -713,6 +764,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           unknowns: stringArray(row.unknowns),
           warnings,
           rankComparisonToNext: null,
+          ownershipBadges: ownershipByTicker.get(String(row.ticker)) || [],
         };
         return { ...candidate, researchSummary: buildCandidateResearchSummary(candidate) };
       });

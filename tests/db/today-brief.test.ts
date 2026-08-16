@@ -391,4 +391,49 @@ describe('Daily Research Brief read model', () => {
     expect(brief.topCandidates[1].rankComparisonToNext).toBeNull();
   });
 
+  it('A15 kuvab ownership badge ainult päris watchlist/portfolio/thesis kirje korral', async () => {
+    const watchId = await insertCompany('OWNWATCH');
+    const portfolioId = await insertCompany('OWNPORT');
+    const emptyId = await insertCompany('OWNEMPTY');
+    await recordDiscoveryRun(
+      ['ownership fixture'],
+      [
+        makeDecisionInput({ companyId: watchId, ticker: 'OWNWATCH', candidateRank: 1 }),
+        makeDecisionInput({ companyId: portfolioId, ticker: 'OWNPORT', candidateRank: 2 }),
+        makeDecisionInput({ companyId: emptyId, ticker: 'OWNEMPTY', candidateRank: 3 }),
+      ],
+      RUN_AT,
+      'rklb_daily',
+    );
+    const watchPosition = await pool.query(
+      `INSERT INTO portfolio_positions
+         (company_id, ticker, quantity, average_buy_price, status)
+       VALUES ($1, 'OWNWATCH', 0, 0, 'watch') RETURNING id`,
+      [watchId],
+    );
+    await pool.query(
+      `INSERT INTO investment_theses (position_id, thesis, status, is_current)
+       VALUES ($1, 'Stored thesis', 'researching', true)`,
+      [watchPosition.rows[0].id],
+    );
+    await pool.query(
+      `INSERT INTO portfolio_positions
+         (company_id, ticker, quantity, average_buy_price, status)
+       VALUES ($1, 'OWNPORT', 2, 40, 'active')`,
+      [portfolioId],
+    );
+
+    const brief = await getTodayBrief(TODAY);
+    const byTicker = new Map(brief.topCandidates.map((candidate) => [candidate.ticker, candidate]));
+
+    expect(byTicker.get('OWNWATCH')?.ownershipBadges).toEqual([
+      { kind: 'watchlist', label: 'Watchlist', href: '/watchlist' },
+      { kind: 'thesis', label: 'Thesis · researching', href: `/thesis/${Number(watchPosition.rows[0].id)}` },
+    ]);
+    expect(byTicker.get('OWNPORT')?.ownershipBadges).toEqual([
+      { kind: 'portfolio', label: 'Portfolio', href: '/portfolio' },
+    ]);
+    expect(byTicker.get('OWNEMPTY')?.ownershipBadges).toEqual([]);
+  });
+
 });
