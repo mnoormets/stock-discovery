@@ -28,6 +28,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href="/research/outcome-coverage">Coverage</Link>
               <Link href="/research/outcome-backfill-audit">Backfill Audit</Link>
               <Link href="/research/discovery-quality">Discovery Quality</Link>
+              <Link href="/research/metadata-coverage">Metadata Coverage</Link>
               <Link href="/guide">Kasutusjuhend</Link>
             </div>
           </nav>
