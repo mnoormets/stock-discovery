@@ -89,6 +89,13 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
           <div>
             <Link className="ticker" href={`/company/${encodeURIComponent(candidate.ticker)}`}>{candidate.ticker}</Link>
             <small>{candidate.companyName || 'Company name unavailable'}</small>
+            {candidate.ownershipBadges.length > 0 && (
+              <div className="todayOwnershipBadges" aria-label={`${candidate.ticker} research ownership`}>
+                {candidate.ownershipBadges.map((badge) => (
+                  <Link className={`todayOwnershipBadge ${badge.kind}`} href={badge.href} key={badge.kind}>{badge.label}</Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <span className={`todayPriority ${summary.priority}`}>{priorityLabel[summary.priority]}</span>
