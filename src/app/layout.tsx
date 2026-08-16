@@ -25,6 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href="/missed-moves">Missed Moves</Link>
               <Link href="/backtest">Backtest</Link>
               <Link href="/research/outcome-attribution">Attribution</Link>
+              <Link href="/research/outcome-coverage">Coverage</Link>
               <Link href="/guide">Kasutusjuhend</Link>
             </div>
           </nav>
