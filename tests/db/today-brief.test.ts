@@ -480,4 +480,47 @@ describe('Daily Research Brief read model', () => {
     ]);
   });
 
+  it('A17 loeb catalyst human summary jaoks ainult salvestatud decision väljad', async () => {
+    const companyId = await insertCompany('CATWORD');
+    await recordDiscoveryRun(
+      ['catalyst wording fixture'],
+      [makeDecisionInput({
+        companyId,
+        ticker: 'CATWORD',
+        catalystStatus: 'supported',
+        catalystEvidenceStatus: 'material_new_evidence',
+        catalystEvidenceTier: 3,
+        catalystEventKind: 'sec_filing',
+        catalystSourceKind: 'primary_sec',
+        catalystMateriality: 'quantified_major',
+        catalystDirection: 'improving',
+        catalystNovelty: 'new_information',
+        catalystThesisRelevance: 'decisive',
+        catalystEvidenceFreshness: 'fresh',
+        catalystLinkedPeriodEnd: '2026-06-30',
+        catalystAt: '2026-08-10T12:00:00.000Z',
+        catalystUrl: 'https://www.sec.gov/Archives/catword',
+      })],
+      RUN_AT,
+      'rklb_daily',
+    );
+
+    const candidate = (await getTodayBrief(TODAY)).topCandidates[0];
+
+    expect(candidate.catalystSummary).toMatchObject({
+      headline: 'The SEC filing from the SEC primary source added new information.',
+      sourceLabel: 'SEC primary source',
+      eventLabel: 'SEC filing',
+    });
+    expect(candidate.catalystSummary.assessment).toMatch(/major quantified signal.*improving business evidence.*directly relevant/i);
+    expect(candidate).toMatchObject({
+      catalystDirection: 'improving',
+      catalystNovelty: 'new_information',
+      catalystThesisRelevance: 'decisive',
+      catalystEvidenceFreshness: 'fresh',
+      catalystLinkedPeriodEnd: '2026-06-30',
+      catalystUrl: 'https://www.sec.gov/Archives/catword',
+    });
+  });
+
 });

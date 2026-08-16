@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import {
-  getCatalystMaterialityLabel,
   getCatalystStatusLabel,
   getTodayBrief,
   type TodayBrief,
@@ -189,10 +188,29 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
           </section>
           <section>
             <h3>Evidence summary</h3>
-            <p><strong>{catalystStatus}</strong> · {getCatalystMaterialityLabel(candidate.catalystMateriality)}{candidate.catalystTier == null ? '' : ` · Tier ${candidate.catalystTier}`}</p>
-            <p>{candidate.catalystDetail ? `Stored event detail: ${candidate.catalystDetail}` : 'Event description not captured in brief data.'}</p>
+            <p><strong>{catalystStatus}</strong></p>
+            <p><strong>{candidate.catalystSummary.headline}</strong></p>
+            <p>{candidate.catalystSummary.assessment}</p>
             {candidate.catalystAt && <p>Event date: {formatDate(candidate.catalystAt)}</p>}
             {candidate.catalystUrl ? <a href={candidate.catalystUrl} target="_blank" rel="noreferrer">Open stored catalyst source ↗</a> : <p className="muted">Full source detail may be available in company detail.</p>}
+            <details className="todayTechnicalDetails">
+              <summary>Technical details</summary>
+              <dl>
+                <div><dt>Evidence status</dt><dd>{candidate.catalystEvidenceStatus}</dd></div>
+                <div><dt>Criterion status</dt><dd>{candidate.catalystStatus}</dd></div>
+                <div><dt>Tier</dt><dd>{candidate.catalystTier ?? 'unknown'}</dd></div>
+                <div><dt>Event kind</dt><dd>{candidate.catalystEventKind || 'unknown'}</dd></div>
+                <div><dt>Source kind</dt><dd>{candidate.catalystSourceKind || 'unknown'}</dd></div>
+                <div><dt>Materiality</dt><dd>{candidate.catalystMateriality}</dd></div>
+                <div><dt>Direction</dt><dd>{candidate.catalystDirection || 'unknown'}</dd></div>
+                <div><dt>Novelty</dt><dd>{candidate.catalystNovelty || 'unknown'}</dd></div>
+                <div><dt>Thesis relevance</dt><dd>{candidate.catalystThesisRelevance || 'unknown'}</dd></div>
+                <div><dt>Mandate relevance</dt><dd>{candidate.mandateRelevance}</dd></div>
+                <div><dt>Evidence freshness</dt><dd>{candidate.catalystEvidenceFreshness || 'unknown'}</dd></div>
+                <div><dt>Linked period</dt><dd>{candidate.catalystLinkedPeriodEnd || 'unknown'}</dd></div>
+              </dl>
+              <p>{candidate.catalystDetail ? `Stored detail: ${candidate.catalystDetail}` : 'Stored event detail is unavailable.'}</p>
+            </details>
           </section>
           <section>
             <h3>Data quality notes</h3>

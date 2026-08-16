@@ -116,6 +116,22 @@ export interface TodayCandidateInlineChange {
   currentValue: string;
 }
 
+export interface TodayCatalystSummaryInput {
+  eventKind: string | null;
+  sourceKind: string | null;
+  materiality: string;
+  direction: string | null;
+  novelty: string | null;
+  thesisRelevance: string | null;
+}
+
+export interface TodayCatalystSummary {
+  headline: string;
+  assessment: string;
+  sourceLabel: string;
+  eventLabel: string;
+}
+
 export interface TodayCandidate {
   decisionId: number;
   ticker: string;
@@ -132,6 +148,11 @@ export interface TodayCandidate {
   catalystMateriality: string;
   catalystEventKind: string | null;
   catalystSourceKind: string | null;
+  catalystDirection: string | null;
+  catalystNovelty: string | null;
+  catalystThesisRelevance: string | null;
+  catalystEvidenceFreshness: string | null;
+  catalystLinkedPeriodEnd: string | null;
   catalystDetail: string | null;
   catalystAt: string | null;
   catalystUrl: string | null;
@@ -150,6 +171,7 @@ export interface TodayCandidate {
   rankComparisonToNext: RklbAdjacentRankExplanation | null;
   ownershipBadges: TodayCandidateOwnershipBadge[];
   inlineChanges: TodayCandidateInlineChange[];
+  catalystSummary: TodayCatalystSummary;
 }
 
 export type TodayCandidatePriority = 'review_first' | 'promising' | 'watch' | 'low_priority';
@@ -450,6 +472,78 @@ export function getCatalystMaterialityLabel(materiality: string): string {
   return labels[materiality] || materiality.replaceAll('_', ' ');
 }
 
+function catalystEventLabel(kind: string | null): string {
+  const labels: Record<string, string> = {
+    earnings_scheduled: 'scheduled earnings event',
+    earnings_disclosed: 'reported earnings',
+    sec_filing: 'SEC filing',
+    company_release: 'company release',
+    news_headline: 'news headline',
+  };
+  return kind ? labels[kind] || kind.replaceAll('_', ' ') : 'catalyst event';
+}
+
+function catalystSourceLabel(kind: string | null): string {
+  const labels: Record<string, string> = {
+    primary_sec: 'SEC primary source',
+    primary_ir: 'company investor-relations source',
+    secondary_news: 'secondary news source',
+    social: 'social source',
+  };
+  return kind ? labels[kind] || kind.replaceAll('_', ' ') : 'source not captured';
+}
+
+function catalystNoveltyPhrase(value: string | null): string {
+  const labels: Record<string, string> = {
+    new_information: 'added new information',
+    confirms_known: 'confirmed information already known',
+    repeat_of_prior_event: 'repeated a previously captured event',
+    unknown: 'has unknown novelty',
+  };
+  return value ? labels[value] || `has ${value.replaceAll('_', ' ')} novelty` : 'has unknown novelty';
+}
+
+function catalystDirectionPhrase(value: string | null): string {
+  const labels: Record<string, string> = {
+    improving: 'improving business evidence',
+    deteriorating: 'deteriorating business evidence',
+    mixed: 'mixed business evidence',
+    unknown: 'unknown business direction',
+  };
+  return value ? labels[value] || value.replaceAll('_', ' ') : 'unknown business direction';
+}
+
+function catalystRelevancePhrase(value: string | null): string {
+  const labels: Record<string, string> = {
+    decisive: 'directly relevant to the thesis question',
+    supporting: 'supporting rather than decisive for the thesis',
+    adjacent: 'adjacent to the thesis rather than decisive',
+    not_relevant: 'not relevant to the thesis question',
+    unknown: 'of unknown thesis relevance',
+  };
+  return value ? labels[value] || value.replaceAll('_', ' ') : 'of unknown thesis relevance';
+}
+
+function catalystMaterialityPhrase(value: string): string {
+  const labels: Record<string, string> = {
+    quantified_major: 'a major quantified signal',
+    quantified_minor: 'a minor quantified signal',
+    unquantified: 'an unquantified signal',
+    unknown: 'unknown in materiality',
+  };
+  return labels[value] || value.replaceAll('_', ' ');
+}
+
+export function buildHumanCatalystSummary(input: TodayCatalystSummaryInput): TodayCatalystSummary {
+  const eventLabel = catalystEventLabel(input.eventKind);
+  const sourceLabel = catalystSourceLabel(input.sourceKind);
+  const headline = !input.eventKind && !input.sourceKind
+    ? 'No specific catalyst event is captured in this brief.'
+    : `The ${eventLabel} from the ${sourceLabel} ${catalystNoveltyPhrase(input.novelty)}.`;
+  const assessment = `The stored rule assessment calls it ${catalystMaterialityPhrase(input.materiality)}, with ${catalystDirectionPhrase(input.direction)}, and ${catalystRelevancePhrase(input.thesisRelevance)}.`;
+  return { headline, assessment, sourceLabel, eventLabel };
+}
+
 export function buildCandidateResearchSummary(
   candidate: Omit<TodayCandidate, 'researchSummary'>,
 ): TodayCandidateResearchSummary {
@@ -496,7 +590,7 @@ export function buildCandidateResearchSummary(
     `${rank} in the latest daily research snapshot.`,
     candidate.growthScore == null ? null : `Fundamental Growth ${candidate.growthScore}/100; Health ${candidate.healthScore ?? 'unknown'}/100.`,
     `Coverage ${candidate.coverageScore}; mandate ${candidate.mandateRelevance === 'fits' ? 'fits' : candidate.mandateRelevance.replaceAll('_', ' ')}.`,
-    `${getCatalystStatusLabel(candidate.catalystEvidenceStatus !== 'unknown' ? candidate.catalystEvidenceStatus : candidate.catalystStatus)}${candidate.catalystTier == null ? '' : `, Tier ${candidate.catalystTier}`}.`,
+    `${getCatalystStatusLabel(candidate.catalystEvidenceStatus !== 'unknown' ? candidate.catalystEvidenceStatus : candidate.catalystStatus)}.`,
     `Source path: ${candidate.sourcePathLabel}.`,
   ].filter((value): value is string => Boolean(value));
 
@@ -710,7 +804,11 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
                 d.market_cap, d.score_snapshot_id, s.payload AS score_payload,
                 d.catalyst_status, d.catalyst_evidence_status, d.catalyst_evidence_tier,
                 d.catalyst_materiality, d.catalyst_mandate_relevance,
-                d.catalyst_event_kind, d.catalyst_source_kind, d.catalyst_detail,
+                d.catalyst_event_kind, d.catalyst_source_kind, d.catalyst_direction,
+                d.catalyst_novelty, d.catalyst_thesis_relevance,
+                d.catalyst_evidence_freshness,
+                d.catalyst_linked_period_end::text AS catalyst_linked_period_end,
+                d.catalyst_detail,
                 d.catalyst_at, d.catalyst_url, d.reasons, d.risks, d.unknowns, d.criteria,
                 d.sector, d.collection_run_item_id,
                 c.name AS company_name, i.lookup_bucket
@@ -834,6 +932,12 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           catalystMateriality: row.catalyst_materiality || 'unknown',
           catalystEventKind: row.catalyst_event_kind || null,
           catalystSourceKind: row.catalyst_source_kind || null,
+          catalystDirection: row.catalyst_direction || null,
+          catalystNovelty: row.catalyst_novelty || null,
+          catalystThesisRelevance: row.catalyst_thesis_relevance || null,
+          catalystEvidenceFreshness: row.catalyst_evidence_freshness || null,
+          catalystLinkedPeriodEnd: row.catalyst_linked_period_end
+            ? toDateOnly(row.catalyst_linked_period_end) : null,
           catalystDetail: row.catalyst_detail?.trim() || null,
           catalystAt: row.catalyst_at ? new Date(row.catalyst_at).toISOString() : null,
           catalystUrl: row.catalyst_url || null,
@@ -855,6 +959,14 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           rankComparisonToNext: null,
           ownershipBadges: ownershipByTicker.get(String(row.ticker)) || [],
           inlineChanges: [],
+          catalystSummary: buildHumanCatalystSummary({
+            eventKind: row.catalyst_event_kind || null,
+            sourceKind: row.catalyst_source_kind || null,
+            materiality: row.catalyst_materiality || 'unknown',
+            direction: row.catalyst_direction || null,
+            novelty: row.catalyst_novelty || null,
+            thesisRelevance: row.catalyst_thesis_relevance || null,
+          }),
         };
         return { ...candidate, researchSummary: buildCandidateResearchSummary(candidate) };
       });
