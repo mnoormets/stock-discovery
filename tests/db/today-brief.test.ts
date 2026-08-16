@@ -7,6 +7,7 @@ import { recordDiscoveryRun, type DiscoveryDecisionInput } from '../../src/lib/d
 import { buildCandidateResearchSummary, getTodayBrief } from '../../src/lib/today-brief';
 import { insertCompany } from '../fixtures/company';
 import { makeDecisionInput } from '../fixtures/decision';
+import { insertPriceSnapshot } from '../fixtures/price';
 import { publicTables, resetDb } from '../setup/reset';
 
 const TODAY = new Date('2026-08-16T10:00:00.000Z');
@@ -252,6 +253,101 @@ describe('Daily Research Brief read model', () => {
 
     expect(summary.priority).toBe('promising');
     expect(summary.riskBullets.join(' ')).not.toMatch(/provenance/i);
+  });
+
+  it('A12 seob salvestatud price history kandidaadi konteksti ja märgib run-up riski', async () => {
+    const fixture = await createCanonicalFixture({ ticker: 'RUNUP' });
+    await insertPriceSnapshot(fixture.companyId, 60, '2026-02-17T08:00:00.000Z');
+    await insertPriceSnapshot(fixture.companyId, 70, '2026-05-18T08:00:00.000Z');
+    await insertPriceSnapshot(fixture.companyId, 80, '2026-07-17T08:00:00.000Z');
+
+    const brief = await getTodayBrief(TODAY);
+    const candidate = brief.topCandidates[0];
+
+    expect(candidate.priceContext).toMatchObject({
+      oneMonthReturnPercent: 25,
+      threeMonthReturnPercent: 42.86,
+      sixMonthReturnPercent: 66.67,
+      historyStatus: 'partial',
+      recentRunUp: true,
+    });
+    expect(candidate.warnings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'recent_run_up' }),
+    ]));
+    expect(brief.watchItems).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'recent_run_up', ticker: 'RUNUP' }),
+    ]));
+    expect(brief.status).toBe('attention');
+  });
+
+  it('A13 ehitab scenario valuationi ainult decision-time score snapshoti fact-viitest', async () => {
+    const companyId = await insertCompany('VALUE', { name: 'Value Context Inc.' });
+    const factResult = await pool.query(
+      `INSERT INTO financial_facts
+         (company_id, metric, value, unit, period_start, period_end, period_kind,
+          fiscal_year, fiscal_period, form_type, filed_at, accession_number,
+          taxonomy, tag, is_derived, source_url, fact_key, created_at, updated_at)
+       VALUES ($1, 'net_income', 40000000, 'USD', '2025-01-01', '2025-12-31', 'annual',
+               2025, 'FY', '10-K', '2026-02-15', 'value-annual',
+               'us-gaap', 'NetIncomeLoss', false, 'https://www.sec.gov/value',
+               'today-value-annual', '2026-02-15', '2026-02-15')
+       RETURNING id`,
+      [companyId],
+    );
+    const factId = Number(factResult.rows[0].id);
+    const snapshotResult = await pool.query(
+      `INSERT INTO company_score_snapshots
+         (company_id, scoring_version, input_hash, growth_score, health_score,
+          coverage_score, payload, calculated_at)
+       VALUES ($1, 'scores-v1', 'today-value-input', 80, 70, 90, $2::jsonb, '2026-08-16T07:00:00Z')
+       RETURNING id`,
+      [companyId, JSON.stringify({
+        scores: {},
+        sources: [{
+          metric: 'net_income', latestFactId: factId, latestPeriodEnd: '2025-12-31',
+          latestValue: 40_000_000, previousFactId: null, previousPeriodEnd: null, previousValue: null,
+        }],
+      })],
+    );
+    await recordDiscoveryRun(
+      ['scenario valuation fixture'],
+      [makeDecisionInput({
+        companyId,
+        ticker: 'VALUE',
+        decisionPrice: 100,
+        marketCap: 1_000_000_000,
+        scoreSnapshotId: Number(snapshotResult.rows[0].id),
+        sector: 'Technology',
+      })],
+      RUN_AT,
+      'rklb_daily',
+    );
+
+    const beforeLaterFact = await getTodayBrief(TODAY);
+    expect(beforeLaterFact.topCandidates[0].scenarioValuation).toMatchObject({
+      status: 'available',
+      anchorKind: 'pe',
+      scenarios: [
+        { case: 'bear', impliedPrice: 64 },
+        { case: 'base', impliedPrice: 100 },
+        { case: 'bull', impliedPrice: 144 },
+      ],
+    });
+
+    await pool.query(
+      `INSERT INTO financial_facts
+         (company_id, metric, value, unit, period_start, period_end, period_kind,
+          fiscal_year, fiscal_period, form_type, filed_at, accession_number,
+          taxonomy, tag, is_derived, source_url, fact_key)
+       VALUES ($1, 'net_income', 400000000, 'USD', '2026-01-01', '2026-12-31', 'annual',
+               2026, 'FY', '10-K', '2027-02-15', 'value-later',
+               'us-gaap', 'NetIncomeLoss', false, 'https://www.sec.gov/value-later',
+               'today-value-later')`,
+      [companyId],
+    );
+    const afterLaterFact = await getTodayBrief(TODAY);
+    expect(afterLaterFact.topCandidates[0].scenarioValuation.scenarios)
+      .toEqual(beforeLaterFact.topCandidates[0].scenarioValuation.scenarios);
   });
 
 });
