@@ -306,6 +306,21 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .metadataSchemaBadge { display: inline-block; padding: 3px 7px; border: 1px solid var(--border); border-radius: 999px; font-size: 9px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
 .metadataSchemaBadge.available { color: var(--green); border-color: #2f7049; }
 .metadataSchemaBadge.unavailable { color: var(--amber); border-color: #75602e; }
+.rootCauseSummaryGrid, .rootCauseLargestGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.rootCauseLargestGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rootCauseLargestCard { display: grid; gap: 6px; }
+.rootCauseLargestCard > span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+.rootCauseLargestCard > strong { color: var(--amber); font-size: 34px; line-height: 1; }
+.rootCauseLargestCard h2 { font-size: 17px; }
+.rootCauseFunnelTable table { min-width: 650px; }
+.rootCauseFailureTable table { min-width: 720px; }
+.rootCauseItemTable table { min-width: 1980px; }
+.rootCauseItemTable td:first-child, .rootCauseItemTable td:nth-child(3), .rootCauseItemTable td:nth-child(7), .rootCauseItemTable td:nth-child(8), .rootCauseItemTable td:nth-child(13), .rootCauseItemTable td:last-child { display: grid; gap: 3px; }
+.rootCauseFailureTable code { color: var(--muted); font-size: 10px; }
+.rootCauseBoolean, .rootCauseClass { display: inline-block; width: max-content; padding: 3px 7px; border: 1px solid var(--border); border-radius: 999px; font-size: 9px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+.rootCauseBoolean.yes, .rootCauseClass.complete { color: var(--green); border-color: #2f7049; }
+.rootCauseBoolean.no { color: var(--red); border-color: #7a3939; }
+.rootCauseClass { color: var(--amber); border-color: #75602e; }
 .scannerTable { padding: 4px 12px; }
 .eventGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
 .eventCard { display: grid; gap: 6px; }
@@ -626,7 +641,7 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .todayRunStrip > div { border-top: 1px solid var(--border); border-left: 0; }
   .todayRunStrip > div:first-child { border-top: 0; }
   .todayReviewList article { align-items: flex-start; flex-direction: column; }
-  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions, .urDimensions, .coverageSummaryGrid, .backfillSummaryGrid, .qualityOverviewGrid, .qualityMetadataGrid, .metadataSummaryGrid { grid-template-columns: 1fr; }
+  .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions, .urDimensions, .coverageSummaryGrid, .backfillSummaryGrid, .qualityOverviewGrid, .qualityMetadataGrid, .metadataSummaryGrid, .rootCauseSummaryGrid, .rootCauseLargestGrid { grid-template-columns: 1fr; }
   .dataQualityTop, .catalystTop, .valuationTop, .underRecognitionTop { flex-direction: column; }
   .dataQualityBadges { justify-content: flex-start; }
   .rklbCandidateTop { display: grid; }
