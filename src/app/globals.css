@@ -449,6 +449,11 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .todayWhy { display: grid; gap: 4px; }
 .todayWhy span { color: var(--accent); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
 .todayWhy strong { max-width: 1000px; font-size: 16px; line-height: 1.45; }
+.todayRankComparison { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid rgba(86, 123, 171, .35); border-radius: 10px; background: rgba(86, 123, 171, .08); }
+.todayRankComparison > span { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.todayRankComparison > strong { font-size: 13px; line-height: 1.45; }
+.todayRankComparison > small { color: var(--muted); }
+.todayRankComparison.mismatch { border-color: rgba(190, 88, 61, .48); background: rgba(190, 88, 61, .09); }
 .todayCandidateSignals { display: flex; flex-wrap: wrap; gap: 7px; }
 .todayCandidateSignals span { padding: 5px 8px; border-radius: 7px; background: #0f1928; color: var(--muted); font-size: 11px; text-transform: capitalize; }
 .todayCandidateSignals strong { color: var(--text); }

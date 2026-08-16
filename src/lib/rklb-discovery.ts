@@ -18,6 +18,7 @@ import {
   recordDataQualitySnapshot,
   RequiredDataQualitySnapshotError,
 } from './data-quality-snapshots';
+import { compareRklbRankFactors } from './rklb-ranking';
 
 export type DiscoveryCriterionStatus = 'supported' | 'uncertain' | 'missing';
 
@@ -236,12 +237,21 @@ async function marketEvidence(): Promise<Map<string, MarketEvidence>> {
 function candidateOrder(a: EvaluatedCompany, b: EvaluatedCompany): number {
   const supportedA = a.criteria.filter((criterion) => criterion.status === 'supported').length;
   const supportedB = b.criteria.filter((criterion) => criterion.status === 'supported').length;
-  return supportedB - supportedA
-    || b.catalystEvidence.tier - a.catalystEvidence.tier
-    || (b.growth?.score ?? -1) - (a.growth?.score ?? -1)
-    || b.coverage - a.coverage
-    || (b.health?.score ?? -1) - (a.health?.score ?? -1)
-    || a.evidence.ticker.localeCompare(b.evidence.ticker);
+  return compareRklbRankFactors({
+    ticker: a.evidence.ticker,
+    supportedCriteriaCount: supportedA,
+    catalystTier: a.catalystEvidence.tier,
+    growthScore: a.growth?.score ?? null,
+    coverageScore: a.coverage,
+    healthScore: a.health?.score ?? null,
+  }, {
+    ticker: b.evidence.ticker,
+    supportedCriteriaCount: supportedB,
+    catalystTier: b.catalystEvidence.tier,
+    growthScore: b.growth?.score ?? null,
+    coverageScore: b.coverage,
+    healthScore: b.health?.score ?? null,
+  });
 }
 
 function decisionInput(item: EvaluatedCompany, included: boolean, rank: number | null): DiscoveryDecisionInput {
