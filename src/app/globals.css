@@ -417,30 +417,66 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .urNote { margin: 0; }
 
 /* Daily Research Dashboard — read-only morning brief */
-.todayBrief { gap: 22px; }
-.todayHero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 28px 0 4px; }
-.todayHero h1 { font-size: clamp(34px, 5vw, 58px); }
+.todayBrief { gap: 20px; }
+.todayHero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 26px 0 2px; }
+.todayHero h1 { font-size: clamp(34px, 5vw, 56px); }
 .todayHero .lead { margin-bottom: 0; }
-.todayStatus { display: inline-flex; align-items: center; justify-content: center; min-width: 100px; border: 1px solid var(--border); border-radius: 999px; padding: 9px 14px; font-size: 12px; font-weight: 900; letter-spacing: .08em; }
-.todayStatus.ok { color: var(--green); border-color: #2f7049; background: #10251a; }
-.todayStatus.waiting { color: var(--amber); border-color: #75602e; background: #2a230f; }
-.todayStatus.warning { color: var(--red); border-color: #7a3939; background: #291516; }
-.todayMetrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
-.todayMetrics .metric { min-height: 126px; }
-.todayMetrics .metric strong { font-size: 25px; }
-.todayRunStrip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 0; overflow: hidden; }
-.todayRunStrip > div { display: grid; gap: 4px; padding: 17px 19px; border-left: 1px solid var(--border); }
+.todaySystemStatus { display: flex; align-items: center; gap: 12px; max-width: 440px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: rgba(13,21,33,.75); }
+.todaySystemStatus > div { display: grid; gap: 3px; }
+.todaySystemStatus small { color: var(--muted); line-height: 1.35; }
+.todayStatus { display: inline-flex; align-items: center; justify-content: center; min-width: 92px; border: 1px solid var(--border); border-radius: 999px; padding: 8px 12px; font-size: 11px; font-weight: 900; letter-spacing: .08em; }
+.todayStatus.ready { color: var(--green); border-color: #2f7049; background: #10251a; }
+.todayStatus.waiting, .todayStatus.attention { color: var(--amber); border-color: #75602e; background: #2a230f; }
+.todayStatus.error { color: var(--red); border-color: #7a3939; background: #291516; }
+.todayGuardrail { color: var(--muted); font-size: 12px; }
+.todayQuickFacts { display: flex; flex-wrap: wrap; gap: 8px; }
+.todayQuickFacts span { padding: 7px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 11px; }
+.todayQuickFacts strong { color: var(--text); }
+.todayCandidateSection { margin-top: 0; }
+.todayCandidateList { display: grid; gap: 12px; }
+.todayCandidateCard { display: grid; gap: 13px; padding: 17px 18px; border: 1px solid var(--border); border-left: 4px solid var(--muted); border-radius: 12px; background: linear-gradient(135deg, rgba(20,32,49,.95), rgba(12,20,31,.95)); }
+.todayCandidateCard.promising { border-left-color: var(--green); }
+.todayCandidateCard.review_first { border-left-color: var(--red); }
+.todayCandidateCard.watch { border-left-color: var(--amber); }
+.todayCandidateTop { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.todayCandidateIdentity { display: flex; align-items: center; gap: 12px; }
+.todayCandidateIdentity > div { display: grid; gap: 2px; }
+.todayRank { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 10px; background: #0e1826; color: var(--accent); font-weight: 900; }
+.todayPriority { border: 1px solid var(--border); border-radius: 999px; padding: 5px 9px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.todayPriority.promising { color: var(--green); border-color: #2f7049; }
+.todayPriority.review_first { color: var(--red); border-color: #7a3939; }
+.todayPriority.watch { color: var(--amber); border-color: #75602e; }
+.todayWhy { display: grid; gap: 4px; }
+.todayWhy span { color: var(--accent); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
+.todayWhy strong { max-width: 1000px; font-size: 16px; line-height: 1.45; }
+.todayCandidateSignals { display: flex; flex-wrap: wrap; gap: 7px; }
+.todayCandidateSignals span { padding: 5px 8px; border-radius: 7px; background: #0f1928; color: var(--muted); font-size: 11px; text-transform: capitalize; }
+.todayCandidateSignals strong { color: var(--text); }
+.todayCandidateSignals .todayTraceSignal { opacity: .65; border: 1px dashed var(--border); }
+.todayCandidateDetail { padding-top: 2px; border-top: 1px solid var(--border); }
+.todayCandidateDetail > summary, .todayCompactDetails > summary, .todaySystemDetails > summary { cursor: pointer; color: var(--accent); font-size: 12px; font-weight: 800; }
+.todayCandidateDetail[open] > summary, .todayCompactDetails[open] > summary { margin-bottom: 12px; }
+.todayCandidateDetailGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.todayCandidateDetailGrid section { padding: 12px; border-radius: 9px; background: rgba(8,14,22,.65); }
+.todayCandidateDetailGrid h3 { margin: 0 0 7px; font-size: 13px; }
+.todayCandidateDetailGrid p, .todayCandidateDetailGrid ul { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.todayCandidateDetailGrid ul { display: grid; gap: 4px; padding-left: 17px; }
+.todayCandidateDetailGrid p + p { margin-top: 6px; }
+.todaySubtle { opacity: .72; }
+.todayStoredEvidence { margin-top: 10px; color: var(--muted); font-size: 11px; }
+.todayStoredEvidence > summary { cursor: pointer; }
+.todayStoredEvidence > div { margin-top: 8px; }
+.todayStoredEvidence ul { display: grid; gap: 4px; margin: 5px 0 0; padding-left: 18px; }
+.todayDetailLink { margin-top: 12px; }
+.todayRunStrip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.todayRunStrip > div { display: grid; gap: 4px; padding: 14px; border-left: 1px solid var(--border); }
 .todayRunStrip > div:first-child { border-left: 0; }
 .todayRunStrip span { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
-.todayRunStrip small, .todayTable small { display: block; margin-top: 3px; }
-.todayTable { padding: 4px 10px; }
-.todayTable table { min-width: 1020px; }
-.todayTable td { font-size: 12px; }
+.todayRunStrip small { display: block; margin-top: 3px; }
 .todayTag { display: inline-block; border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
-.todayTag.growth, .positiveTag { color: var(--green); border-color: #2f7049; }
-.todayTag.recall { color: var(--accent); border-color: #34618d; }
+.positiveTag { color: var(--green); border-color: #2f7049; }
 .negativeTag { color: var(--red); border-color: #7a3939; }
-.todayWarningList { display: flex; flex-wrap: wrap; gap: 5px; min-width: 150px; }
+.todayWarningList { display: flex; flex-wrap: wrap; gap: 5px; }
 .todayWarning { display: inline-block; border: 1px solid #75602e; border-radius: 999px; padding: 3px 7px; color: var(--amber); font-size: 9px; font-weight: 800; white-space: nowrap; }
 .todayWarning.critical { color: var(--red); border-color: #7a3939; }
 .todayTwoColumn { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
@@ -455,6 +491,9 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .todayReviewList a { align-self: center; white-space: nowrap; font-size: 12px; font-weight: 800; }
 .changeGroup { display: grid; gap: 7px; padding-top: 12px; border-top: 1px solid var(--border); }
 .changeGroup > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.todayChangeList { display: grid; gap: 6px; }
+.todayChangeList > div { display: flex; flex-wrap: wrap; gap: 5px 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 12px; }
+.todayChangeList small { color: var(--muted); }
 .todayQualityGrid, .todayMissedCounts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .todayQualityGrid span, .todayMissedCounts span { display: grid; gap: 2px; padding: 10px; border: 1px solid var(--border); border-radius: 9px; color: var(--muted); font-size: 10px; text-transform: uppercase; }
 .todayQualityGrid strong, .todayMissedCounts strong { color: var(--text); font-size: 17px; }
@@ -463,7 +502,10 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .todayOutcomeList > div { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 11px 12px; border: 1px solid var(--border); border-radius: 9px; }
 .todayOutcomeList small { grid-column: 1 / -1; }
 .todayOutcomeList span { color: var(--accent); font-size: 12px; font-weight: 800; }
-.todayMissedCounts { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.todayCompactLead { margin: 0; }
+.todayCompactDetails { padding-top: 8px; border-top: 1px solid var(--border); }
+.todaySystemDetails { padding: 15px 17px; }
+.todaySystemDetails[open] > summary { margin-bottom: 8px; }
 .todayMoveList { display: grid; gap: 0; }
 .todayMoveList > div { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 16px; align-items: center; padding: 10px 2px; border-top: 1px solid var(--border); }
 .todayMoveList small { grid-column: 1 / -1; }
@@ -473,7 +515,9 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 @media (max-width: 760px) {
   .pageStack { padding-top: 28px; }
   .todayHero { align-items: flex-start; flex-direction: column; }
-  .todayMetrics, .todayRunStrip, .todayTwoColumn, .todayQualityGrid, .todayMissedCounts { grid-template-columns: 1fr; }
+  .todaySystemStatus { align-items: flex-start; flex-direction: column; max-width: none; width: 100%; }
+  .todayCandidateTop { align-items: flex-start; flex-direction: column; }
+  .todayCandidateDetailGrid, .todayRunStrip, .todayTwoColumn, .todayQualityGrid { grid-template-columns: 1fr; }
   .todayRunStrip > div { border-top: 1px solid var(--border); border-left: 0; }
   .todayRunStrip > div:first-child { border-top: 0; }
   .todayReviewList article { align-items: flex-start; flex-direction: column; }
