@@ -460,6 +460,11 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .todayRankComparison > strong { font-size: 13px; line-height: 1.45; }
 .todayRankComparison > small { color: var(--muted); }
 .todayRankComparison.mismatch { border-color: rgba(190, 88, 61, .48); background: rgba(190, 88, 61, .09); }
+.todayInlineChanges { display: grid; gap: 5px; padding: 9px 12px; border-left: 3px solid var(--accent); background: rgba(74, 133, 204, .07); }
+.todayInlineChanges > span { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
+.todayInlineChanges > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.todayInlineChanges small { padding: 4px 7px; border-radius: 7px; background: #0f1928; color: var(--muted); }
+.todayInlineChanges small strong { color: var(--text); }
 .todayCandidateSignals { display: flex; flex-wrap: wrap; gap: 7px; }
 .todayCandidateSignals span { padding: 5px 8px; border-radius: 7px; background: #0f1928; color: var(--muted); font-size: 11px; text-transform: capitalize; }
 .todayCandidateSignals strong { color: var(--text); }

@@ -198,8 +198,13 @@ describe('Daily Research Brief read model', () => {
       repeatedTickers: ['SHARED'],
     });
     expect(brief.changes.repeated).toEqual([
-      expect.objectContaining({ ticker: 'SHARED', previousRank: 2, currentRank: 1, rankChange: 1 }),
+      expect.objectContaining({
+        ticker: 'SHARED', previousRank: 2, currentRank: 1, rankChange: 1,
+        changedFields: [{ field: 'rank', label: 'Rank', previousValue: '#2', currentValue: '#1' }],
+      }),
     ]);
+    expect(brief.topCandidates.find((candidate) => candidate.ticker === 'SHARED')?.inlineChanges)
+      .toEqual([{ field: 'rank', label: 'Rank', previousValue: '#2', currentValue: '#1' }]);
   });
 
   it('A8 annab latest collection failure korral ERROR staatuse', async () => {
@@ -434,6 +439,45 @@ describe('Daily Research Brief read model', () => {
       { kind: 'portfolio', label: 'Portfolio', href: '/portfolio' },
     ]);
     expect(byTicker.get('OWNEMPTY')?.ownershipBadges).toEqual([]);
+  });
+
+  it('A16 võrdleb inline muutusi ainult eelmise sama model_version canonical runiga', async () => {
+    const sharedId = await insertCompany('MODELPAIR');
+    const oldRun = await recordDiscoveryRun(
+      ['old same-model fixture'],
+      [makeDecisionInput({ companyId: sharedId, ticker: 'MODELPAIR', growthScore: 80 })],
+      new Date('2026-08-14T08:00:00.000Z'),
+      'rklb_daily',
+    );
+    const interveningRun = await recordDiscoveryRun(
+      ['intervening other-model fixture'],
+      [makeDecisionInput({ companyId: sharedId, ticker: 'MODELPAIR', growthScore: 10 })],
+      new Date('2026-08-15T08:00:00.000Z'),
+      'rklb_daily',
+    );
+    await pool.query(
+      `UPDATE discovery_runs SET model_version = 'rklb-discovery-other-test' WHERE id = $1`,
+      [interveningRun.runId],
+    );
+    const latestRun = await recordDiscoveryRun(
+      ['latest same-model fixture'],
+      [makeDecisionInput({ companyId: sharedId, ticker: 'MODELPAIR', growthScore: 85 })],
+      RUN_AT,
+      'rklb_daily',
+    );
+
+    const brief = await getTodayBrief(TODAY);
+
+    expect(brief.latestCanonicalRun?.id).toBe(latestRun.runId);
+    expect(brief.changes).toMatchObject({
+      available: true,
+      previousRunId: oldRun.runId,
+      previousDecisionDate: '2026-08-14',
+      modelVersionChanged: false,
+    });
+    expect(brief.topCandidates[0].inlineChanges).toEqual([
+      { field: 'growth', label: 'Fundamental Growth', previousValue: '80', currentValue: '85' },
+    ]);
   });
 
 });

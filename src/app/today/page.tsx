@@ -114,6 +114,15 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
         </div>
       )}
 
+      {candidate.inlineChanges.length > 0 && (
+        <div className="todayInlineChanges">
+          <span>Changed since the previous same-model snapshot</span>
+          <div>{candidate.inlineChanges.map((change) => (
+            <small key={change.field}><strong>{change.label}</strong> {change.previousValue} → {change.currentValue}</small>
+          ))}</div>
+        </div>
+      )}
+
       <div className="todayCandidateSignals">
         <span>Fundamental Growth <strong>{candidate.growthScore == null ? '—' : `${candidate.growthScore}/100`}</strong></span>
         <span>Health <strong>{candidate.healthScore == null ? '—' : `${candidate.healthScore}/100`}</strong></span>
@@ -255,7 +264,8 @@ export default async function TodayPage() {
             {brief.changes.modelVersionChanged && <div className="notice">Model version changed; interpret deltas cautiously.</div>}
             <div className="changeGroup"><strong>New</strong><div>{brief.changes.newIncludedTickers.length ? brief.changes.newIncludedTickers.map((ticker) => <span className="todayTag positiveTag" key={ticker}>{ticker}</span>) : <small>None</small>}</div></div>
             <div className="changeGroup"><strong>Removed</strong><div>{brief.changes.removedTickers.length ? brief.changes.removedTickers.map((ticker) => <span className="todayTag negativeTag" key={ticker}>{ticker}</span>) : <small>None</small>}</div></div>
-            <div className="todayChangeList">{brief.changes.repeated.map((change) => <div key={change.ticker}><strong>{change.ticker}</strong><span>Rank {change.previousRank ?? '—'} → {change.currentRank ?? '—'}</span>{change.growthScoreChange !== 0 && <small>Growth {change.previousGrowthScore ?? '—'} → {change.currentGrowthScore ?? '—'}</small>}{change.coverageScoreChange !== 0 && <small>Coverage {change.previousCoverageScore} → {change.currentCoverageScore}</small>}{!change.mandateChanged && change.currentMandateRelevance === 'partial' && <small>Still partial mandate</small>}{change.mandateChanged && <small>Mandate {humanValue(change.previousMandateRelevance)} → {humanValue(change.currentMandateRelevance)}</small>}{change.catalystChanged && <small>Catalyst {getCatalystStatusLabel(change.previousCatalystStatus)} → {getCatalystStatusLabel(change.currentCatalystStatus)}</small>}</div>)}</div>
+            <div className="todayChangeList">{brief.changes.repeated.filter((change) => change.changedFields.length > 0).map((change) => <div key={change.ticker}><strong>{change.ticker}</strong>{change.changedFields.map((field) => <small key={field.field}>{field.label} {field.previousValue} → {field.currentValue}</small>)}</div>)}</div>
+            {brief.changes.repeated.length > 0 && brief.changes.repeated.every((change) => change.changedFields.length === 0) && <small className="muted">Repeated candidates have no stored rank or evidence-field changes.</small>}
           </>}
         </article>
       </section>
