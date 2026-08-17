@@ -130,8 +130,18 @@ describe('collection -> canonical ticker provenance bridge', () => {
       collectionRunId,
     );
     const { rows } = await pool.query('SELECT collection_run_id FROM discovery_runs WHERE id = $1', [discovery.runId]);
+    const decision = await pool.query(
+      `SELECT d.company_id, d.collection_run_item_id, i.company_id AS item_company_id
+       FROM discovery_decisions d
+       JOIN collection_run_items i ON i.id = d.collection_run_item_id
+       WHERE d.run_id = $1 AND d.ticker = 'LINK'`,
+      [discovery.runId],
+    );
     expect(discovery.collectionRunId).toBe(collectionRunId);
     expect(Number(rows[0].collection_run_id)).toBe(collectionRunId);
+    expect(Number(decision.rows[0].company_id)).toBe(companyId);
+    expect(Number(decision.rows[0].collection_run_item_id)).toBeGreaterThan(0);
+    expect(decision.rows[0].item_company_id).toBeNull();
   });
 
   it('A9 manual run töötab ilma collection_run_id-ta', async () => {
