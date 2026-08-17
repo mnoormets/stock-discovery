@@ -593,6 +593,11 @@ async function enrichmentAttemptsToday(): Promise<number> {
   return Number(result.rows[0]?.attempts || 0);
 }
 
+function truncateEnrichmentError(error: string | null, limit = 500): string | null {
+  if (!error) return null;
+  return [...error].slice(0, limit).join('');
+}
+
 async function saveEnrichmentAttempt(
   companyId: number,
   status: 'success' | 'unavailable' | 'error',
@@ -616,7 +621,7 @@ async function saveEnrichmentAttempt(
        END,
        last_error = EXCLUDED.last_error,
        updated_at = now()`,
-    [companyId, status, error?.slice(0, 500) || null],
+    [companyId, status, truncateEnrichmentError(error)],
   );
 }
 

@@ -246,7 +246,7 @@ Auditi järel ootel collection hardening ja canonical cloud-history:
 - Lokaalsel `collect:daily` CLI-l on PostgreSQL advisory lock juba olemas; kaitstud HTTP `/api/collect` vajab enne paralleelsete worker'ite kasutamist sama locki või lease'i. Ledger ei ole lock ega takista paralleelset jooksu.
 - säilita job'i algus, lõpp, staatus, provider'ite loendurid ja piiratud veainfo, et ebaõnnestumine oleks UI-st või DB-st jälgitav;
 - **TOP 5 Core Tests on sisuliselt valmis** (vt [Automated Test Coverage](#automated-test-coverage-2026-08-13)). Esimene faas valmis **2026-08-12**: `1046f0e` isoleeritud Vitest testinfrastruktuur, `47aa895` score determinism, `0412148` canonical run idempotency, `286b11d` manual run key ja outcome'ide loomine, `2192e62` outcome'ide mõõtmine ja muutumatus, `b2ff0d6` outcome immutability, `6a9fc8f` score snapshot dedupe — testinfrastruktuur/isolatsioon, canonical run idempotency (20 testi), score determinism (24 testi), outcome immutability (13 testi) ja score snapshot dedupe (7 testi). **2026-08-13** lisandus enrichment-budget katvus: `74ff848` Make test schema snapshot order-independent (testinfra eeltingimus: `resetDb()` cache maha, `ensureSchema()` tabelikomplekt fikseeritud `globalSetup`-is) ja `aee6d75` Add enrichment budget and retry tests (35 testi). Kokku **136 testi, 100% roheline**. Enrichment-budget on nüüd testidega kaetud: 5 ettevõtet Tallinna päeva kohta; **Tallinna kalendripäeva piir, mitte 24-tunnine liuguraken**; limiidi clamp 1–20; `error` retry 1 päeva järel; `unavailable` 30-päeva aken; stale-facts 7-päeva haru; queue prioriteet; ühe tickeri vea taluvus;
-- **enrichment success-tee on samuti kaetud** (`ca6416c`, 22 testi failis `tests/db/enrichment-success.test.ts`): `enriched` loendur, `financial_facts` ridade päris kirjutamine CompanyFacts JSON-ist koos kõigi SEC väljade kaardistusega, `companies.sec_cik` täitmine, katvuse kasv, idempotentsus ning üheksa alamjuhtumit „CompanyFacts vastas 200, aga ekstraheeritavaid mõõdikuid pole → `unavailable`, mitte `error`". **Katmata jääb ainult `last_error` 500-märgiline kärpimine** — seda ei saa fetch-seami kaudu indutseerida, sest veateate genereerib `src/`;
+- **Enrichment success and error persistence are covered.** Existing success tests cover fact writes, `sec_cik`, coverage growth, idempotency and unavailable responses. The former `last_error` gap is now closed: a fetch-stubbed error longer than 500 characters passes through the real enrichment catch/status writer and proves exact Unicode-safe truncation.
 - versioonitud migratsioonid on **ehitatud ja golden source'ile rakendatud 2026-08-13**: `db/migrations/0001_baseline.sql`, runner `scripts/migrate.cjs` (`--status` / `--preflight` / `--conformance` / `--allow-discovery`), audit `scripts/schema-diff.cjs`; runbook [`db/migrations/README.md`](../db/migrations/README.md). Testibaas ehitatakse migratsioonidest ja D5 valvab, et runtime `ensure*` kutsed oleksid migreeritud skeemil no-op'id. **Järel on ainult puhastus:** hajutatud runtime `CREATE TABLE` / `ALTER TABLE` eemaldamine `src/`-st (18 `ensureSchema()` kutsekohta) ja otsus `db/init.sql` saatuse kohta — mõlemad eraldi slice'id, mis muudavad `src/` koodi;
 - auditeeri eraldi read-only vaated/päringud sama raw PostgreSQL `DATE` → JavaScript `Date` ajavööndimustri suhtes, mis tekitas `catalyst_linked_period_end` ühepäevase nihke. Kui rakendus käsitleb välja kuupäevana ilma kellaajata, eelista SQL-is `DATE::text` kuju, mitte JavaScript `Date` kaudu uuesti vormindamist. See on backlog'i audit, mitte praeguse UX V3 skoobis tehtav muudatus;
 - planeeri Next.js 14 EOL tõttu kontrollitud üleminek toetatud ja turvaparandustega versioonile koos regressioonitestidega;
@@ -612,7 +612,7 @@ Enrichment-testide seam on **`globalThis.fetch`**, mitte mooduli mock: `getSecId
 
 Ei testita (teadlikult, selle faasi skoobist väljas):
 
-- **`last_error` 500-märgiline kärpimine** — veateate genereerib `src/` (`SEC CompanyFacts vastas ${status}.`), seega üle 500 märgi pikka teadet ei saa fetch-seami kaudu indutseerida ilma `src/` muutmata;
+- **Completed: `last_error` 500-character truncation.** The SEC fixture can now throw an explicit provider error, allowing the real status writer to be tested without exporting private production functions. Truncation counts Unicode code points and cannot split a surrogate pair.
 - **advisory lock'i samaaegsus** — testid jooksevad järjestikku ühe ühenduse peal, seega `pg_try_advisory_lock` (session-level, `collect-daily.cjs`) ja `pg_advisory_xact_lock` (`src/lib/db.ts`) tegelikku vastastikust välistamist ei pingutata;
 - **välised provider'id päriselt** — Yahoo Finance, SEC CompanyFacts, ApeWisdom ja FMP; SEC-i kiht on `globalThis.fetch` stub'i taga ja ükski test ei võta päris võrguühendust;
 - **UI ja HTTP route'id** — sh `/api/collect` autoriseerimine ja vastuse kuju, server action'id;
@@ -786,6 +786,13 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-08-17 - Enrichment last_error truncation coverage
+
+- Located the branch in `src/lib/company-financials.ts`: `saveEnrichmentAttempt()` truncated with `error?.slice(0, 500)`. ASCII length was correct, but JavaScript code-unit slicing could split a surrogate pair at the boundary.
+- Added a minimal Unicode-safe helper using code-point iteration and retained the same 500-character/null semantics. No schema, retry, budget, queue or status behavior changed.
+- Extended only the SEC test fixture with an explicit thrown-error option. The DB regression sends 499 ASCII characters plus an emoji and suffix through the real enrichment error path, then proves 500 code points, an intact final emoji, exact truncation point and absent suffix in `financial_enrichment_status.last_error`.
+- Verification: typecheck and lint passed; targeted enrichment-budget tests passed 36/36; direct full Vitest runner passed 273/273 tests in 30 files against isolated `discovery_test`; the 21-page production build passed.
 
 ### 2026-08-17 - Market-Data Persistence Fix V2
 
