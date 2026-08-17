@@ -32,6 +32,7 @@ export function secTickerMap(entries: SecTickerEntry[]): Record<string, unknown>
 export interface CompanyFactsStub {
   status?: number;
   body?: unknown;
+  error?: Error;
 }
 
 // --- CompanyFacts KEHA ehitaja (success-path) ------------------------------
@@ -150,6 +151,7 @@ export function stubSecFetch(options: SecStubOptions): SecStub {
       // Stub'imata CIK annab 404 → `fetchCompanyFacts` viskab (rida 364) →
       // enrichment-tulemus on `error`. See on Slice 1 vaikimisi veatee.
       if (!stub) return json(404, { error: 'companyfacts not stubbed' });
+      if (stub.error) throw stub.error;
       return json(stub.status ?? 200, stub.body ?? {});
     }
 

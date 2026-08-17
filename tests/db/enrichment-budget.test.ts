@@ -311,6 +311,25 @@ describe('E4 — error retry, 1 päev', () => {
     expect(status.status).toBe('error');
     expect(String(status.last_error)).toContain('500');
   });
+
+  it('last_error truncates to 500 Unicode characters without splitting a surrogate pair', async () => {
+    const longMessage = `${'A'.repeat(499)}🚀TAIL`;
+    stubSecFetch({
+      tickerMap: TICKER_MAP,
+      companyFacts: { [paddedCik(100)]: { error: new Error(longMessage) } },
+    });
+    const id = await seedCompany('AAA');
+
+    const result = await enrichStoredCompanyFinancials();
+
+    expect(result.failed).toBe(1);
+    const status = await readEnrichmentStatus(id);
+    const stored = String(status.last_error);
+    expect(Array.from(stored)).toHaveLength(500);
+    expect(stored).toBe(`${'A'.repeat(499)}🚀`);
+    expect(stored.endsWith('🚀')).toBe(true);
+    expect(stored).not.toContain('TAIL');
+  });
 });
 
 describe('E5 — unavailable aken, 30 päeva', () => {
