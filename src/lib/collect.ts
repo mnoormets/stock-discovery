@@ -6,7 +6,7 @@ import { fetchSecSuspensions } from './sec';
 import { buildCandidates } from './discovery';
 import {
   saveSnapshot, saveCollectedCompanies, ensureSchema, upsertSecSuspensions,
-  getSecSuspendedSet, getMentionHistory,
+  getSecSuspendedSet, getMentionHistory, resolveCollectionCompanyIds,
 } from './db';
 import {
   BLACKLIST,
@@ -138,6 +138,15 @@ async function collectCore(collectionRunId: number) {
     console.error('Kogutud ettevõtete live-andmete salvestamine ebaõnnestus:', error);
   });
 
+  // Company identity provenance is not the same as candidate selection. A
+  // provider-resolved ticker may be filtered out later, and an unselected radar
+  // ticker may already have a companies row from an earlier workflow.
+  const companyIdByTicker = await resolveCollectionCompanyIds(
+    apeRows.map((row) => row.ticker),
+    fundamentals,
+  );
+  for (const [ticker, companyId] of savedCompanyIds) companyIdByTicker.set(ticker, companyId);
+
   // Ticker-level provenance is part of the collection audit trail. Record every
   // radar row, including rows that never reached the paid/limited lookup ring.
   // Failure is fatal to this collection run: a successful aggregate ledger row
@@ -185,7 +194,7 @@ async function collectCore(collectionRunId: number) {
       attentionRank: row.rank,
       growthRank: growthRank.get(row.ticker) ?? null,
       recallRank: recallRank.get(row.ticker) ?? null,
-      companyId: savedCompanyIds.get(row.ticker) ?? null,
+      companyId: companyIdByTicker.get(row.ticker) ?? null,
       skipReason,
       rawSignal: {
         source: 'apewisdom',

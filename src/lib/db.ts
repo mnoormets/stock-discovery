@@ -255,6 +255,67 @@ export async function saveCollectedCompanies(candidates: Candidate[]): Promise<M
   }
 }
 
+function normalizeCollectionTicker(value: string): string {
+  return value.trim().toUpperCase();
+}
+
+function hasUsableCollectionFundamentals(fundamental: Fundamentals): boolean {
+  return fundamental.price != null || fundamental.marketCap != null || fundamental.volume != null;
+}
+
+// Collection-item identity is broader than the social discovery candidate set.
+// Resolve existing observed tickers and persist identities returned by the
+// current provider lookup, but leave candidate snapshots and prices to the
+// existing candidate persistence path.
+export async function resolveCollectionCompanyIds(
+  observedTickers: Iterable<string>,
+  fundamentals: ReadonlyMap<string, Fundamentals>,
+): Promise<Map<string, number>> {
+  const observed = [...new Set([...observedTickers]
+    .map(normalizeCollectionTicker)
+    .filter(Boolean))];
+  const companyIds = new Map<string, number>();
+  if (observed.length === 0) return companyIds;
+
+  const observedSet = new Set(observed);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const existing = await client.query(
+      `SELECT id, upper(ticker) AS ticker
+       FROM companies
+       WHERE upper(ticker) = ANY($1::text[])
+       ORDER BY id`,
+      [observed],
+    );
+    for (const row of existing.rows) {
+      const ticker = String(row.ticker);
+      if (!companyIds.has(ticker)) companyIds.set(ticker, Number(row.id));
+    }
+
+    for (const fundamental of fundamentals.values()) {
+      const ticker = normalizeCollectionTicker(fundamental.ticker);
+      if (!ticker || !observedSet.has(ticker) || !hasUsableCollectionFundamentals(fundamental)) continue;
+      const companyId = await upsertCompany(client, {
+        ticker,
+        name: fundamental.name || null,
+        exchange: null,
+        quoteType: fundamental.isFund ? 'ETF' : null,
+        currency: fundamental.currency || null,
+        source: fundamental.source || 'collection',
+      });
+      companyIds.set(ticker, companyId);
+    }
+    await client.query('COMMIT');
+    return companyIds;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 // Idempotentne skeemi-migratsioon. Käivitatakse iga kogumise alguses, et
 // olemasolev (varem loodud) andmebaas saaks uued veerud/tabelid ilma reset'ita.
 export async function ensureSchema(): Promise<void> {
