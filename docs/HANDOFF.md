@@ -195,6 +195,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
+**Market-Data Persistence Fix V2:** future collection runs now persist available price, market cap, volume, currency and source for every usable current-run Yahoo/FMP fundamentals result, independently of `buildCandidates()` survival. The resolver reuses the existing five-minute deduplicating `insertPriceSnapshot()` writer, so candidate persistence and identity persistence do not create duplicate identical rows. This only benefits the bounded lookup-selected set (currently about 16/200 items per run); expanding `selectFundamentalLookupTickers()` is a separate decision. Exchange remains absent from `Fundamentals`, while sector/industry remain in the separate `assetProfile` classification pipeline. No historical rows were backfilled.
+
 **2026-08-17 Company Link Persistence Fix V1 update:** metadata root-cause auditi j�rgne code-path investigation kinnitas, et `saveCollectedCompanies(candidates)` sidus company identity persistence'i ekslikult social discovery kandidaadiks j��misega. Uus `resolveCollectionCompanyIds()` lahendab tulevasel collect'il eraldi k�ik olemasoleva `companies` tickeri-identiteediga radariread ning upsertib current-run Yahoo/FMP vastused, millel on p�ris price/market-cap/volume. `collection_run_items.company_id` kasutab seda laiemat tickeri-ID kaarti; `buildCandidates()`, kandidaatide snapshotid, ranking, canonical scoring ja scheduler ei muutunud. Ajaloolisi 200 item'i, sealhulgas 19 linkimata olemasolevat identity't ja 9 found-but-unpersisted rida, ei backfillitud ega muudetud. J�rgmine kontroll on esimese tulevase golden-source collect'i read-only metadata-root-cause v�rdlus; t��arvutis collect'i ei k�ivitata.
 
 **Current focus:** use `/today` as the daily research entrypoint and validate forward data through the research audit views before changing ranking or adding sources. Company identity resolution is no longer candidate-only for future collection runs. Historical item links remain immutable. The next check is a read-only `/research/metadata-root-cause` comparison after the first future golden-source collect; do not run collect on the work computer. Outcome views remain uninterpretable until real horizons mature.
@@ -784,6 +786,15 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-08-17 - Market-Data Persistence Fix V2
+
+- `resolveCollectionCompanyIds()` now calls the existing private `insertPriceSnapshot()` immediately after a usable current-run fundamentals identity is upserted. It persists only the available price, market cap, volume, currency and provider source; the existing five-minute identical-value dedupe remains the single write rule.
+- Social candidate rows and daily social snapshots remain candidate-only. `buildCandidates()`, ranking, scoring, canonical discovery, outcomes, API routing and scheduler behavior are unchanged.
+- DB regressions prove that a provider-resolved ticker filtered out of candidates gets its quote snapshot, an existing identity without current fundamentals gets no fabricated snapshot, unknown identity gets neither company nor price, and candidate+identity paths produce exactly one snapshot.
+- This is forward-only. Historical `collection_run_items` and `price_snapshots` were not repaired or backfilled. Only lookup-selected tickers benefit (about 16/200 in the observed run); the broader selection bottleneck remains a separate future slice.
+- Exchange is still out of the `Fundamentals` model. Sector and industry remain out of scope and continue through the limited Yahoo `assetProfile` classification enrichment, now indirectly eligible for more non-ETF identities because fresh prices can exist.
+- Verification: typecheck and lint passed; direct Vitest runner passed 272/272 tests in 30 files against isolated `discovery_test`; the 21-page production build passed. No real collection cycle was run on the work computer.
 
 ### 2026-08-17 - Company Link Persistence Fix V1
 

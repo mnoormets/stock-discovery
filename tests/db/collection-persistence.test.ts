@@ -69,13 +69,43 @@ describe('radar ticker persistence', () => {
       marketDataAttempted: true, marketDataFound: true, marketDataSource: 'yahoo', companyId,
     });
     expect(item.companyId).toBe(companyId);
-    expect((await pool.query('SELECT count(*)::int AS count FROM price_snapshots')).rows[0].count).toBe(0);
+    const snapshot = await pool.query(
+      `SELECT price::float8 AS price, market_cap::float8 AS market_cap,
+              volume::float8 AS volume, currency, source
+       FROM price_snapshots WHERE company_id = $1`,
+      [companyId],
+    );
+    expect(snapshot.rows).toEqual([{
+      price: 10, market_cap: 100_000_000_000, volume: null, currency: null, source: 'yahoo',
+    }]);
   });
 
   it('links an existing observed company without current fundamentals', async () => {
     const companyId = await insertCompany('KNOWN');
     const identities = await resolveCollectionCompanyIds(['known'], new Map());
     expect(identities.get('KNOWN')).toBe(companyId);
+    expect((await pool.query('SELECT count(*)::int AS count FROM price_snapshots WHERE company_id = $1', [companyId]))
+      .rows[0].count).toBe(0);
+  });
+
+  it('deduplicates candidate and identity-path snapshots within the same run', async () => {
+    const current = candidate({
+      ticker: 'BOTH', name: 'Both Inc.', price: 25, marketCap: 2_000_000_000,
+      volume: 500_000, currency: 'USD', fundamentalsSource: 'yahoo',
+    });
+    const candidateIds = await saveCollectedCompanies([current]);
+    const identities = await resolveCollectionCompanyIds(
+      ['BOTH'],
+      new Map([['BOTH', providerFundamentals('BOTH', {
+        price: 25, marketCap: 2_000_000_000, volume: 500_000, currency: 'USD',
+      })]]),
+    );
+    expect(identities.get('BOTH')).toBe(candidateIds.get('BOTH'));
+    const snapshots = await pool.query(
+      'SELECT count(*)::int AS count FROM price_snapshots WHERE company_id = $1',
+      [candidateIds.get('BOTH')],
+    );
+    expect(snapshots.rows[0].count).toBe(1);
   });
 
   it('leaves an unknown observed ticker unresolved and does not fabricate a company', async () => {
@@ -83,6 +113,7 @@ describe('radar ticker persistence', () => {
     expect(identities.has('UNKNOWN')).toBe(false);
     expect((await pool.query("SELECT count(*)::int AS count FROM companies WHERE ticker = 'UNKNOWN'"))
       .rows[0].count).toBe(0);
+    expect((await pool.query('SELECT count(*)::int AS count FROM price_snapshots')).rows[0].count).toBe(0);
   });
 
   it('ignores empty provider payloads and fundamentals outside the observed universe', async () => {

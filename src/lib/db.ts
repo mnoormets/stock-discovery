@@ -264,9 +264,9 @@ function hasUsableCollectionFundamentals(fundamental: Fundamentals): boolean {
 }
 
 // Collection-item identity is broader than the social discovery candidate set.
-// Resolve existing observed tickers and persist identities returned by the
-// current provider lookup, but leave candidate snapshots and prices to the
-// existing candidate persistence path.
+// Resolve existing observed tickers and persist identities plus available quote
+// snapshots returned by the current provider lookup. Social candidate snapshots
+// remain the responsibility of the candidate persistence path.
 export async function resolveCollectionCompanyIds(
   observedTickers: Iterable<string>,
   fundamentals: ReadonlyMap<string, Fundamentals>,
@@ -301,6 +301,14 @@ export async function resolveCollectionCompanyIds(
         name: fundamental.name || null,
         exchange: null,
         quoteType: fundamental.isFund ? 'ETF' : null,
+        currency: fundamental.currency || null,
+        source: fundamental.source || 'collection',
+      });
+      await insertPriceSnapshot(client, companyId, {
+        price: fundamental.price ?? null,
+        previousClose: null,
+        marketCap: fundamental.marketCap ?? null,
+        volume: fundamental.volume ?? null,
         currency: fundamental.currency || null,
         source: fundamental.source || 'collection',
       });
