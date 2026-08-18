@@ -12,9 +12,11 @@ describe('Timezone-safe date handling (F2, F5 fixes)', () => {
       }).format(now);
     }
 
+    // Simulates a server running in UTC timezone (the buggy behavior)
+    // Uses UTC methods to be deterministic regardless of test runner's actual TZ
     function todayLocal(now: Date): string {
       const pad = (n: number) => String(n).padStart(2, '0');
-      return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      return `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}`;
     }
 
     it('returns correct Tallinn date at UTC midnight', () => {
