@@ -27,11 +27,14 @@ import {
   type CollectionRunItemInput,
 } from './collection-run-items';
 
-// Tänase kuupäev "YYYY-MM-DD" (lokaalne, ilma UTC-nihketa).
+// Tänase kuupäev "YYYY-MM-DD" Europe/Tallinn ajavööndis.
 function today(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Tallinn',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
 }
 
 export function selectFundamentalLookupTickers(rows: ApeWisdomRow[]): {
