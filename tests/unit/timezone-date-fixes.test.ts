@@ -52,14 +52,9 @@ describe('Timezone-safe date handling (F2, F5 fixes)', () => {
     // Simulate the fixed filed_at handling
     function extractFiledAt(rawValue: unknown): string | null {
       if (rawValue == null) return null;
-      const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(rawValue));
-      return m ? m[1] : new Date(rawValue).toISOString().slice(0, 10);
-    }
-
-    // Simulate the buggy old behavior
-    function extractFiledAtBuggy(rawValue: unknown): string | null {
-      if (rawValue == null) return null;
-      return new Date(rawValue).toISOString().slice(0, 10);
+      const str = String(rawValue);
+      const m = /^(\d{4}-\d{2}-\d{2})/.exec(str);
+      return m ? m[1] : new Date(str).toISOString().slice(0, 10);
     }
 
     it('preserves YYYY-MM-DD string directly without timezone shift', () => {

@@ -1,0 +1,58 @@
+(()=>{var e={};e.id=527,e.ids=[527],e.modules={2934:e=>{"use strict";e.exports=require("next/dist/client/components/action-async-storage.external.js")},4580:e=>{"use strict";e.exports=require("next/dist/client/components/request-async-storage.external.js")},5869:e=>{"use strict";e.exports=require("next/dist/client/components/static-generation-async-storage.external.js")},399:e=>{"use strict";e.exports=require("next/dist/compiled/next-server/app-page.runtime.prod.js")},5900:e=>{"use strict";e.exports=require("pg")},4770:e=>{"use strict";e.exports=require("crypto")},6005:e=>{"use strict";e.exports=require("node:crypto")},8216:(e,i,r)=>{"use strict";r.r(i),r.d(i,{GlobalError:()=>n.a,__next_app__:()=>p,originalPathname:()=>u,pages:()=>o,routeModule:()=>m,tree:()=>l}),r(3150),r(2029),r(5866);var a=r(3191),t=r(8716),s=r(7922),n=r.n(s),d=r(5231),c={};for(let e in d)0>["default","tree","pages","GlobalError","originalPathname","__next_app__","routeModule"].indexOf(e)&&(c[e]=()=>d[e]);r.d(i,c);let l=["",{children:["missed-moves",{children:["__PAGE__",{},{page:[()=>Promise.resolve().then(r.bind(r,3150)),"/workspace/src/app/missed-moves/page.tsx"]}]},{}]},{layout:[()=>Promise.resolve().then(r.bind(r,2029)),"/workspace/src/app/layout.tsx"],"not-found":[()=>Promise.resolve().then(r.t.bind(r,5866,23)),"next/dist/client/components/not-found-error"]}],o=["/workspace/src/app/missed-moves/page.tsx"],u="/missed-moves/page",p={require:r,loadChunk:()=>Promise.resolve()},m=new a.AppPageRouteModule({definition:{kind:t.x.APP_PAGE,page:"/missed-moves/page",pathname:"/missed-moves",bundlePath:"",filename:"",appPaths:[]},userland:{loaderTree:l}})},1251:(e,i,r)=>{Promise.resolve().then(r.t.bind(r,2994,23)),Promise.resolve().then(r.t.bind(r,6114,23)),Promise.resolve().then(r.t.bind(r,9727,23)),Promise.resolve().then(r.t.bind(r,9671,23)),Promise.resolve().then(r.t.bind(r,1868,23)),Promise.resolve().then(r.t.bind(r,4759,23))},6217:(e,i,r)=>{Promise.resolve().then(r.t.bind(r,9404,23))},2461:(e,i,r)=>{Promise.resolve().then(r.t.bind(r,9404,23))},2029:(e,i,r)=>{"use strict";r.r(i),r.d(i,{default:()=>n,metadata:()=>s});var a=r(9510);r(5023);var t=r(7371);let s={title:"Stock Discovery",description:"Kontrollitavatel andmetel p\xf5hinev investeerimisj\xe4lgimise t\xf6\xf6riist."};function n({children:e}){return a.jsx("html",{lang:"et",children:(0,a.jsxs)("body",{children:[a.jsx("header",{className:"siteHeader",children:(0,a.jsxs)("nav",{className:"nav wrap",children:[a.jsx(t.default,{className:"brand",href:"/",children:"Stock Discovery"}),(0,a.jsxs)("div",{className:"navLinks",children:[a.jsx(t.default,{href:"/today",children:"Today"}),a.jsx(t.default,{href:"/scanner",children:"Sk\xe4nner"}),a.jsx(t.default,{href:"/watchlist",children:"Watchlist"}),a.jsx(t.default,{href:"/portfolio",children:"Portfell"}),a.jsx(t.default,{href:"/daily",children:"Daily Changes"}),a.jsx(t.default,{href:"/validation",children:"Validation"}),a.jsx(t.default,{href:"/frequency",children:"Frequency"}),a.jsx(t.default,{href:"/missed-moves",children:"Missed Moves"}),a.jsx(t.default,{href:"/backtest",children:"Backtest"}),a.jsx(t.default,{href:"/research/outcome-attribution",children:"Attribution"}),a.jsx(t.default,{href:"/research/outcome-coverage",children:"Coverage"}),a.jsx(t.default,{href:"/research/outcome-backfill-audit",children:"Backfill Audit"}),a.jsx(t.default,{href:"/research/discovery-quality",children:"Discovery Quality"}),a.jsx(t.default,{href:"/research/metadata-coverage",children:"Metadata Coverage"}),a.jsx(t.default,{href:"/research/metadata-root-cause",children:"Join Root Cause"}),a.jsx(t.default,{href:"/guide",children:"Kasutusjuhend"})]})]})}),e]})})}},3150:(e,i,r)=>{"use strict";r.r(i),r.d(i,{default:()=>l,dynamic:()=>n});var a=r(9510),t=r(7371),s=r(4552);let n="force-dynamic",d={included:"oli uurimisnimekirjas",excluded:"hinnati, j\xe4i v\xe4lja",radar_data_gap:"radaris, andmel\xfcnk",universe_gap:"universumi l\xfcnk"};function c(e,i){return i?new Intl.NumberFormat("et-EE",{style:"currency",currency:i,maximumFractionDigits:2}).format(e):`${e.toLocaleString("et-EE",{maximumFractionDigits:2})} (valuuta puudu)`}async function l(){let e=[],i="";try{e=await (0,s.pc)()}catch(e){i=e.message}return(0,a.jsxs)("main",{className:"wrap pageStack",children:[(0,a.jsxs)("section",{className:"hero compact",children:[a.jsx("p",{className:"eyebrow",children:"POINT-IN-TIME AUDIT \xb7 NOT A PREDICTION"}),a.jsx("h1",{children:"Suuremate liikumiste j\xe4relkontroll"}),a.jsx("p",{className:"lead",children:"N\xe4itab v\xe4hemalt 8% liikumisi salvestatud p\xe4evasnapshotide vahel ja k\xfcsib: kas ticker oli enne liikumist canonical hinnangus, ainult sotsiaalradaris v\xf5i \xfcldse universumist v\xe4ljas?"})]}),a.jsx("div",{className:"notice",children:"See vaade ei v\xe4ida, et liikumine oli ette ennustatav. S\xfcndmuste loendur kasutab ainult rakendusse selleks ajaks salvestatud Yahoo/SEC/earnings andmeid; null v\xf5ib t\xe4hendada allikal\xfcnka."}),i&&(0,a.jsxs)("div",{className:"notice danger",children:["J\xe4relkontrolli ei \xf5nnestunud laadida: ",i]}),!i&&0===e.length&&a.jsx("div",{className:"empty card",children:"Viimase 60 p\xe4eva salvestatud hinnapaarides pole v\xe4hemalt 8% liikumist. Audit hakkab t\xe4ituma uute p\xe4evasnapshotidega."}),e.length>0&&a.jsx("div",{className:"tableWrap card scannerTable",children:(0,a.jsxs)("table",{children:[a.jsx("thead",{children:(0,a.jsxs)("tr",{children:[a.jsx("th",{children:"Ticker"}),a.jsx("th",{children:"Liikumine"}),a.jsx("th",{children:"Enne → p\xe4rast"}),a.jsx("th",{children:"Katvus enne liikumist"}),a.jsx("th",{children:"Intervalli t\xf5endid"})]})}),a.jsx("tbody",{children:e.map(e=>(0,a.jsxs)("tr",{children:[(0,a.jsxs)("td",{children:[a.jsx(t.default,{className:"ticker",href:`/company/${encodeURIComponent(e.ticker)}`,children:e.ticker}),a.jsx("div",{className:"name",children:e.name||"Nimi puudub"})]}),a.jsx("td",{children:(0,a.jsxs)("strong",{className:e.changePercent>=0?"positive":"negative",children:[e.changePercent>=0?"+":"−",Math.abs(e.changePercent).toLocaleString("et-EE",{maximumFractionDigits:2}),"%"]})}),(0,a.jsxs)("td",{children:[c(e.previousPrice,e.currency)," → ",c(e.observedPrice,e.currency),(0,a.jsxs)("small",{children:[e.previousDate," → ",e.observedDate]})]}),(0,a.jsxs)("td",{children:[a.jsx("span",{className:"reviewLabel needs-review",children:d[e.priorCoverage]}),e.exclusionReasons.length>0&&a.jsx("small",{children:e.exclusionReasons.join("; ")})]}),a.jsx("td",{children:function(e){let i=[e.intervalNews?`${e.intervalNews} uudist`:null,e.intervalSecEvents?`${e.intervalSecEvents} SEC s\xfcndmust`:null,e.intervalEarnings?`${e.intervalEarnings} earnings-s\xfcndmust`:null].filter(Boolean);return i.length?i.join(" \xb7 "):"olemasolevates allikates s\xfcndmust ei leitud"}(e)})]},`${e.ticker}-${e.observedDate}`))})]})})]})}},6657:(e,i,r)=>{"use strict";function a(e){if(e instanceof Date){if(!Number.isFinite(e.getTime()))throw Error("Vigane DATE v\xe4\xe4rtus.");return e.toISOString().slice(0,10)}let i=String(e??"").trim(),r=/^(\d{4}-\d{2}-\d{2})/.exec(i);if(r)return r[1];let a=new Date(i);if(!Number.isFinite(a.getTime()))throw Error(`Vigane DATE v\xe4\xe4rtus: ${i||"(t\xfchi)"}`);return a.toISOString().slice(0,10)}r.d(i,{z:()=>a})},4552:(e,i,r)=>{"use strict";r.d(i,{pc:()=>d,zE:()=>c});var a=r(5748),t=r(6657),s=r(8447);async function n(e,i={}){let r=Math.max(1,Math.min(50,i.thresholdPercent??8)),a=Math.max(7,Math.min(365,i.lookbackDays??60)),{rows:n}=await e.query(`WITH daily AS (
+       SELECT DISTINCT ON (p.company_id, (p.captured_at AT TIME ZONE 'Europe/Tallinn')::date)
+         p.company_id,
+         c.ticker,
+         c.name,
+         COALESCE(p.currency, c.currency) AS currency,
+         (p.captured_at AT TIME ZONE 'Europe/Tallinn')::date AS price_date,
+         p.captured_at,
+         p.price
+       FROM price_snapshots p
+       JOIN companies c ON c.id = p.company_id
+       WHERE p.price IS NOT NULL AND p.price > 0
+         AND p.captured_at >= now() - ($2::int + 10) * interval '1 day'
+       ORDER BY p.company_id, (p.captured_at AT TIME ZONE 'Europe/Tallinn')::date,
+                p.captured_at DESC, p.id DESC
+     ), paired AS (
+       SELECT daily.*,
+              lag(price) OVER (PARTITION BY company_id ORDER BY price_date) AS previous_price,
+              lag(price_date) OVER (PARTITION BY company_id ORDER BY price_date) AS previous_date,
+              lag(captured_at) OVER (PARTITION BY company_id ORDER BY price_date) AS previous_captured_at
+       FROM daily
+     ), canonical_runs AS (
+       SELECT DISTINCT ON (decision_date) id, decision_date
+       FROM discovery_runs
+       WHERE run_type = $3 AND model_version = $4
+       ORDER BY decision_date, run_at DESC, id DESC
+     )
+     SELECT p.*,
+            d.id AS decision_id,
+            d.included AS decision_included,
+            d.exclusion_reasons,
+            EXISTS (
+              SELECT 1 FROM snapshots s
+              WHERE s.ticker = p.ticker
+                AND s.capture_date <= p.previous_date
+                AND s.capture_date >= p.previous_date - interval '30 days'
+            ) AS radar_seen_before_move,
+            (SELECT count(*)::int FROM news_items n
+             WHERE n.company_id = p.company_id
+               AND n.published_at > p.previous_captured_at
+               AND n.published_at <= p.captured_at) AS interval_news,
+            (SELECT count(*)::int FROM sec_events se
+             WHERE se.company_id = p.company_id
+               AND se.filed_at > p.previous_date
+               AND se.filed_at <= p.price_date) AS interval_sec_events,
+            (SELECT count(*)::int FROM earnings_events ee
+             WHERE ee.company_id = p.company_id
+               AND ee.event_at > p.previous_captured_at
+               AND ee.event_at <= p.captured_at) AS interval_earnings
+     FROM paired p
+     LEFT JOIN canonical_runs r ON r.decision_date = p.previous_date
+     LEFT JOIN discovery_decisions d ON d.run_id = r.id AND d.ticker = p.ticker
+     WHERE p.previous_price IS NOT NULL AND p.previous_price > 0
+       AND p.price_date >= (now() AT TIME ZONE 'Europe/Tallinn')::date - $2::int
+       AND p.price_date - p.previous_date BETWEEN 1 AND 7
+       AND abs(((p.price / p.previous_price) - 1) * 100) >= $1
+     ORDER BY p.price_date DESC, abs(((p.price / p.previous_price) - 1) * 100) DESC, p.ticker
+     LIMIT 100`,[r,a,s.t7,s.ff]);return n.map(e=>{var i;let r=!!e.radar_seen_before_move,a=null!=e.decision_id;return{ticker:String(e.ticker),name:e.name||null,currency:e.currency||null,previousDate:(0,t.z)(e.previous_date),observedDate:(0,t.z)(e.price_date),previousPrice:Number(e.previous_price),observedPrice:Number(e.price),changePercent:(Number(e.price)/Number(e.previous_price)-1)*100,priorCoverage:(i={decisionIncluded:a?!!e.decision_included:null,hadDecision:a,radarSeenBeforeMove:r}).hadDecision?i.decisionIncluded?"included":"excluded":i.radarSeenBeforeMove?"radar_data_gap":"universe_gap",exclusionReasons:Array.isArray(e.exclusion_reasons)?e.exclusion_reasons.map(String):[],radarSeenBeforeMove:r,intervalNews:Number(e.interval_news||0),intervalSecEvents:Number(e.interval_sec_events||0),intervalEarnings:Number(e.interval_earnings||0)}})}async function d(e={}){return await (0,a.aj)(),n(a.d_,e)}function c(e,i={}){return n(e,i)}},5023:()=>{}};var i=require("../../webpack-runtime.js");i.C(e);var r=e=>i(i.s=e),a=i.X(0,[276,707,748,447],()=>r(8216));module.exports=a})();
