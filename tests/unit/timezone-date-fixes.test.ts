@@ -13,9 +13,9 @@ describe('Timezone-safe date handling (F2, F5 fixes)', () => {
     }
 
     function todayLocal(now: Date): string {
-      const pad = (n: number) => String(n).padStart(2, '0');
-      return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}`;
+}
 
     it('returns correct Tallinn date at UTC midnight', () => {
       // 2026-08-17 00:00 UTC = 2026-08-17 03:00 Tallinn
