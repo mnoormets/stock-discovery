@@ -44,6 +44,7 @@ function dependencies(): CollectRouteDependencies {
       liveDataSaved: true,
       providers: {
         apewisdomRows: 0,
+        apewisdomUniqueRows: 0,
         tradestieRows: 0,
         tradestieFallback: false,
         secSuspensionsFetched: 0,

@@ -65,7 +65,7 @@ async function collectCore(collectionRunId: number) {
   let secFallback = false;
 
   // 1) Andmed sisse: ApeWisdom (kasv) + Tradestie (sentiment) + SEC (peatamised).
-  const [apeRows, tradestie, secItems] = await Promise.all([
+  const [ape, tradestie, secItems] = await Promise.all([
     fetchApeWisdom(2),
     fetchTradestie().catch((e) => {
       tradestieFallback = true;
@@ -78,6 +78,10 @@ async function collectCore(collectionRunId: number) {
       return [];
     }),
   ]);
+
+  // `fetchApeWisdom` tagastab duplikaadivabad read; `rawRowCount` säilitab
+  // toore ridade arvu, et `scanned` metrika tähendus ei muutuks.
+  const apeRows = ape.rows;
 
   // Salvesta SEC peatamised (akumuleerub) ja loe seni nähtud nimed.
   await upsertSecSuspensions(secItems);
@@ -214,7 +218,7 @@ async function collectCore(collectionRunId: number) {
 
   return {
     captureDate,
-    scanned: apeRows.length,
+    scanned: ape.rawRowCount,
     candidates: candidates.length,
     marketDataLookup: {
       growth: growthTickers.length,
@@ -225,7 +229,8 @@ async function collectCore(collectionRunId: number) {
     flagged: candidates.filter((c) => c.warnings.length > 0).length,
     liveDataSaved,
     providers: {
-      apewisdomRows: apeRows.length,
+      apewisdomRows: ape.rawRowCount,
+      apewisdomUniqueRows: apeRows.length,
       tradestieRows: tradestie.size,
       tradestieFallback,
       secSuspensionsFetched: secItems.length,

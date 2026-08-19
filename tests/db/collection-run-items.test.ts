@@ -167,4 +167,41 @@ describe('collection -> canonical ticker provenance bridge', () => {
       ) AS ok`);
     expect(rows[0].ok).toBe(true);
   });
+
+  // Batch-guard oli varem täiesti katmata: ükski test ei andnud
+  // `recordCollectionRunItems`-ile mitme-elemendilist massiivi. Just see guard
+  // tuvastas collection run’ide #4, #5 ja #6 duplikaadid. Juurpõhjus on nüüd
+  // `fetchApeWisdom`-is parandatud, kuid guard jääb teadlikult alles: see on
+  // teine kaitsekiht sama piirangu ees, mida jõustab ka DB
+  // (collection_run_items_run_ticker_key UNIQUE collection_run_id + ticker).
+  it('A11 kehtiv mitme-kirjeline batch salvestub tervikuna', async () => {
+    const runId = await startedRun();
+    const saved = await recordCollectionRunItems([
+      item(runId, 'AAA'),
+      item(runId, 'BBB'),
+      item(runId, 'CCC'),
+    ]);
+    expect(saved).toHaveLength(3);
+    expect((await getCollectionRunItems(runId)).map((row) => row.ticker).sort())
+      .toEqual(['AAA', 'BBB', 'CCC']);
+  });
+
+  it('A12 duplikaatne batch lükatakse tagasi ega salvesta ühtki rida', async () => {
+    const runId = await startedRun();
+    await expect(recordCollectionRunItems([
+      item(runId, 'AAA'),
+      item(runId, 'OPEN'),
+      item(runId, 'OPEN', { lookupBucket: 'recall', growthRank: null, recallRank: 2 }),
+    ])).rejects.toThrow(`Collection run item batch sisaldab duplikaati: ${runId}:OPEN.`);
+    // Guard jookseb ENNE transaktsiooni, seega ka esimene kehtiv kirje ei salvestu.
+    expect(await getCollectionRunItems(runId)).toHaveLength(0);
+  });
+
+  it('A13 guard võtmestab normaliseeritud tickeri järgi', async () => {
+    const runId = await startedRun();
+    await expect(recordCollectionRunItems([
+      item(runId, 'open'),
+      item(runId, ' OPEN '),
+    ])).rejects.toThrow(`Collection run item batch sisaldab duplikaati: ${runId}:OPEN.`);
+  });
 });
