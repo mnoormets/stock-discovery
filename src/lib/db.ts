@@ -930,7 +930,14 @@ export async function getDailyHistory(ticker: string): Promise<DailyHistory | nu
       form: row.form_type || 'SEC filing',
       description: row.description || null,
       url: row.url,
-      filedAt: row.filed_at ? new Date(row.filed_at).toISOString().slice(0, 10) : null,
+      // filed_at is a PostgreSQL DATE column; treat it as a calendar date in UTC
+      // to avoid timezone-induced day shifts when converting through JS Date.
+      filedAt: row.filed_at != null
+        ? (() => {
+            const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(row.filed_at));
+            return m ? m[1] : new Date(row.filed_at).toISOString().slice(0, 10);
+          })()
+        : null,
       discoveredAt: new Date(row.discovered_at).toISOString(),
     })),
     upcomingEarnings: earningsResult.rowCount
