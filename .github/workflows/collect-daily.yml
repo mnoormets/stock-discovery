@@ -1,0 +1,90 @@
+# Päevane canonical collect Neoni golden-source DB vastu.
+#
+# TRIGGER on TEADLIKULT ainult workflow_dispatch. `schedule:` plokki siin EI OLE:
+# see repo on privaatne GitHubi tasuta astmes, kus GitHubi enda cron ei käivitu,
+# ja `schedule:` plokk jätaks eksliku mulje, et workflow ajastab end ise. Päris
+# ajastus tuleb välisest tasuta cron-teenusest, mis kutsub workflow_dispatch
+# endpointi GitHubi API kaudu.
+#
+# Koduarvuti Windows Task Scheduler jääb varutriggeriks. Redundantsed käivitused
+# on ohutud, sest canonical run on Tallinna kalendripäeva kohta idempotentne
+# (`run_key = mudeliversioon:rklb_daily:Tallinna kuupäev`).
+name: collect-daily
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: ainult preflight ja plaan, ei kirjuta ühtki rida'
+        type: boolean
+        default: false
+
+# See workflow ei puutu repo sisu, seega vaikimisi antud kirjutusõigust ta ei vaja.
+permissions:
+  contents: read
+
+# Teine kaitsekiht Postgres advisory locki peal, mis on juba olemas nii
+# `scripts/collect-daily.cjs`-s kui `/api/collect`-s. cancel-in-progress: false,
+# sest pooleliolev collect ei tohi keskelt katkeda — teine käivitus ootab
+# järjekorras.
+concurrency:
+  group: collect-daily
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 22 vastab app Dockerfile'ile (`FROM node:22-slim`) ja README nõudele.
+      # `package.json`-is `engines` välja ei ole, seega versioon fikseeritakse siin.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # Fail-fast. Ilma DATABASE_URL-ita langeb `ensureLocalDatabaseUrl()`
+      # (`scripts/_ts-loader.cjs:49-52`) vaikselt tagasi vaikeväärtusele
+      # `localhost:5433/discovery`, mida runneril ei ole. Ilma selle kontrollita
+      # näeks puuduv secret välja nagu segadust tekitav ühendusviga, mitte nagu
+      # puuduv secret.
+      - name: Kontrolli, et NEON_DATABASE_URL secret on olemas
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          if [ -z "$NEON_DATABASE_URL" ]; then
+            echo "NEON_DATABASE_URL secret puudub või on tühi." >&2
+            exit 1
+          fi
+
+      # Secret'ite nimed on tuletatud päris `process.env` kasutusest kogu
+      # kogumise kooditeel:
+      #   DATABASE_URL    - src/lib/db.ts:13, scripts/_ts-loader.cjs:50 (kohustuslik)
+      #   SEC_USER_AGENT  - company-financials.ts:337,353,638; company-data.ts:77,141;
+      #                     sec.ts:45. Puudumisel jääb SEC enrichment vahele.
+      #   FMP_API_KEY     - collect.ts:104, backtest.ts:97-98. Valikuline varutee;
+      #                     kui secret'it ei ole, jääb väärtus tühjaks ja kood
+      #                     läheb Yahoo teed, täpselt nagu praegu lokaalselt.
+      # CRON_SECRET ja CLASSIFICATION_ENRICHMENT_LIMIT on TEADLIKULT väljas: neid
+      # loeb ainult `collect-route-handler.ts`, mille impordib üksnes HTTP route
+      # `src/app/api/collect/route.ts`. CLI seda kihti ei läbi.
+      - name: collect:daily
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          # Korrektsuse eeltingimus see ei ole — Tallinna kalendripäeva loogika
+          # kasutab eksplitsiitset `Intl` ja SQL `AT TIME ZONE` — aga hoiab
+          # runneri logid samas ajavööndis nagu Dockerfile:8 ja docker-compose.
+          TZ: Europe/Tallinn
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            npm run collect:daily -- --dry-run
+          else
+            npm run collect:daily
+          fi
