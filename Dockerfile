@@ -2,6 +2,11 @@
 # Personaalseks lokaalseks tööriistaks piisab dev-režiimist (kiirem, lihtsam mõista).
 FROM node:22-slim
 
+# Tallinna kalendripäev on äriloogika, mitte kuvaeelistus. docker-compose.yml
+# seab sama väärtuse; see rida hoiab image'i korrektseks ka siis, kui keegi
+# ehitab või käivitab selle compose'ist mööda.
+ENV TZ=Europe/Tallinn
+
 WORKDIR /app
 
 # Paigalda ainult sõltuvused (kiirem cache)
