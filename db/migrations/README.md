@@ -73,7 +73,7 @@ Kood `3` on eraldi koodiga just seetõttu, et skriptitud kasutuses ei tohi „mi
 ## How to apply baseline to golden-source DB
 
 > ⚠️ **HOIATUSED — loe enne igat sammu**
-> - Käivita **AINULT koduarvuti golden source DB vastu**. Tööarvuti lokaalne DB **ei ole** golden source; sellel migratsioone ei rakendata.
+> - Käivita **AINULT päris golden source DB vastu, mis on alates 2026-08-19 Neon** (tasuta tier, projekt `stock-discovery`, eu-central-1; `DATABASE_URL` failis `.env`). Tööarvuti lokaalne DB **ei ole** golden source; sellel migratsioone ei rakendata. Ka koduarvuti lokaalne `localhost:5433/discovery` **ei ole enam** golden source — see on külmutatud ajalooline snapshot ja sellele migratsioone samuti ei rakendata. **NB:** Neoni baasi nimi on `neondb`, mitte `discovery`, seega allpool kirjeldatud kaitstud-nime guard (`--allow-discovery`) **ei rakendu** päris golden source'ile — kinnita sihtbaas ise `--status` / `--preflight` väljundist enne apply'd.
 > - **Mitte enne värsket dump'i/backup'i.** Vt „Käivitamine uues arvutis" (`docs/HANDOFF.md`) `pg_dump -Fc` käsku.
 > - **Mitte enne, kui preflight näitab 0 duplikaati ja 0 vigast staatust.** `UNIQUE` ja `CHECK` **ebaõnnestuvad**, kui rikkuvad read on juba andmes.
 > - `--allow-discovery` on **ainus** viis kaitstud baasi rakendada. Ära kasuta seda kunagi kogemata tööarvutis.
