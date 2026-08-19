@@ -4,7 +4,7 @@
 //   npm run migrate -- --status                 # ainult raport, ei kirjuta midagi
 //   npm run migrate                             # rakendab rakendamata migratsioonid
 //   npm run migrate -- --database-url <url>     # eksplitsiitne sihtbaas
-//   npm run migrate -- --allow-discovery        # lubab "discovery" baasi (VAIKIMISI KEELATUD)
+//   npm run migrate -- --allow-golden-source    # lubab mitte-ajutise baasi (VAIKIMISI KEELATUD)
 //
 // Kasutus moodulina (nt tests/setup/global-setup.ts):
 //   const { runMigrations } = require('./scripts/migrate.cjs');
@@ -12,7 +12,8 @@
 //
 // Ohutuspõhimõtted:
 //   * Midagi ei käivitu automaatselt — app startup seda ei kutsu.
-//   * Vaikimisi KEELDUB baasist nimega "discovery" (dev / golden source).
+//   * Vaikimisi KEELDUB igast baasist, mis EI OLE ajutine (_test / _tmp),
+//     sh päris golden source'ist. Vt SCRATCH_DATABASE_PATTERN.
 //   * Iga migratsioon jookseb ÜHES transaktsioonis koos oma schema_migrations
 //     kirjega — pooleldi rakendatud olekut ei saa tekkida.
 //   * Advisory lock hoiab ära kaks samaaegset migratorit.
@@ -27,7 +28,24 @@ const { loadEnv, ensureLocalDatabaseUrl, repoRoot } = require('./_ts-loader.cjs'
 const root = repoRoot();
 const MIGRATIONS_DIR = path.join(root, 'db', 'migrations');
 const LOCK_NAME = 'stock-discovery:migrate';
-const PROTECTED_DATABASE = 'discovery';
+// Apply-kaitse on FAIL-CLOSED: ilma eksplitsiitse kinnituseta tohib
+// migratsioone rakendada AINULT baasi, mille nimi järgib dokumenteeritud
+// äraviskamiseks mõeldud baasi konventsiooni. Kõik muu nõuab lippu
+// --allow-golden-source.
+//
+// MIKS mitte kaitstud nimede nimekiri: varem oli siin
+// `PROTECTED_DATABASE = 'discovery'`, mis on default-allow — iga baas,
+// mida nimekirjas ei ole, oli vaikimisi migreeritav. Kui golden source
+// liikus 2026-08-19 lokaalsest Dockerist Neoni (baasi nimi `neondb`),
+// lakkas guard päris baasi kaitsmast ja kaitses ainult külmutatud
+// lokaalset koopiat — kaitse oli täpselt tagurpidi. Fail-closed ei saa
+// ümbernimetamisest (Neoni branch, uus projekt, uus host) vaikselt katki
+// minna, sest kaitse ei sõltu sellest, kas nimi on nimekirjas.
+//
+// `_tmp` katab allpool oleva TMP_SUFFIX konventsiooni ja runbookis
+// soovitatud `*_migration_tmp`; `_test` katab testharnessi baasi
+// `discovery_test` (tests/setup/global-setup.ts).
+const SCRATCH_DATABASE_PATTERN = /_(test|tmp)$/;
 
 // M1: konservatiivsed timeoutid AINULT migratsiooni ühendusel.
 // lock_timeout on lühike — kui app hoiab tabelil lukku, katkeb migratsioon
@@ -86,11 +104,16 @@ function assertNoExplicitTransaction(migration) {
   }
 }
 
-function assertDatabaseAllowed(dbName, allowDiscovery) {
-  if (dbName === PROTECTED_DATABASE && !allowDiscovery) {
+function isScratchDatabase(dbName) {
+  return SCRATCH_DATABASE_PATTERN.test(dbName);
+}
+
+function assertDatabaseAllowed(dbName, allowGoldenSource) {
+  if (!isScratchDatabase(dbName) && !allowGoldenSource) {
     throw new Error(
-      `KEELATUD: sihtbaas on "${dbName}". Migratsioone ei rakendata kaitstud baasi vastu ilma `
-      + '--allow-discovery liputa. Testimiseks kasuta ajutist baasi (nt *_migration_tmp).',
+      `KEELATUD: sihtbaas on "${dbName}", mis ei ole ajutine baas (_test / _tmp). `
+      + 'Migratsioone ei rakendata ilma --allow-golden-source liputa. '
+      + 'Testimiseks kasuta ajutist baasi (nt *_migration_tmp).',
     );
   }
 }
@@ -274,11 +297,11 @@ async function runPreflight(client, migrations, dbName, log, targetUrl) {
   const notes = [];
 
   log(`\n-- 1. Sihtandmebaas --`);
-  const isProtected = dbName === PROTECTED_DATABASE;
+  const isProtected = !isScratchDatabase(dbName);
   log(`  ${'andmebaas'.padEnd(34)} ${dbName}`);
   log(`  ${'kaitstud baas?'.padEnd(34)} ${isProtected ? 'JAH' : 'ei'}`
-    + (isProtected ? '   <-- apply NÕUAB --allow-discovery lippu' : ''));
-  if (isProtected) notes.push('Apply nõuab eksplitsiitset --allow-discovery lippu.');
+    + (isProtected ? '   <-- apply NÕUAB --allow-golden-source lippu' : ''));
+  if (isProtected) notes.push('Apply nõuab eksplitsiitset --allow-golden-source lippu.');
 
   log(`\n-- 2. Migratsioonide seis --`);
   const applied = await readApplied(client);
@@ -425,7 +448,7 @@ async function applyMigrations(client, migrations, log) {
  *
  * @param {object} options
  * @param {string} [options.databaseUrl]   sihtbaas; muidu DATABASE_URL / lokaalne vaikeväärtus
- * @param {boolean} [options.allowDiscovery] luba kaitstud "discovery" baas
+ * @param {boolean} [options.allowGoldenSource] luba mitte-ajutine baas (nt golden source)
  * @param {boolean} [options.statusOnly]   ainult raport, ei kirjuta midagi
  * @param {boolean} [options.preflight]    GO/NO-GO kontroll, ei kirjuta midagi
  * @param {boolean} [options.conformanceOnly] ainult conformance (siht vs baseline)
@@ -434,7 +457,7 @@ async function applyMigrations(client, migrations, log) {
 async function runMigrations(options = {}) {
   const {
     databaseUrl,
-    allowDiscovery = false,
+    allowGoldenSource = false,
     statusOnly = false,
     preflight = false,
     conformanceOnly = false,
@@ -472,7 +495,7 @@ async function runMigrations(options = {}) {
     }
 
     // Kaitse rakendub ALLES siin: --status tohib ka kaitstud baasi vaadata.
-    assertDatabaseAllowed(dbName, allowDiscovery);
+    assertDatabaseAllowed(dbName, allowGoldenSource);
     const result = await applyMigrations(client, migrations, log);
     return { ...result, migrations, databaseName: dbName };
   } finally {
@@ -480,7 +503,12 @@ async function runMigrations(options = {}) {
   }
 }
 
-module.exports = { runMigrations, readMigrations, checksum, MIGRATIONS_DIR };
+module.exports = {
+  runMigrations, readMigrations, checksum, MIGRATIONS_DIR,
+  // Eksporditud, et guardi saaks testida PUHTA funktsioonina ilma ühtki
+  // andmebaasi puudutamata — sh ilma päris golden source'iga ühendumata.
+  isScratchDatabase, assertDatabaseAllowed, SCRATCH_DATABASE_PATTERN,
+};
 
 // --- CLI ------------------------------------------------------------------
 // Jookseb AINULT otsekäivitusel; moodulina importimine ei käivita midagi.
@@ -491,10 +519,10 @@ if (require.main === module) {
   const statusOnly = args.includes('--status');
   const preflight = args.includes('--preflight');
   const conformanceOnly = args.includes('--conformance');
-  const allowDiscovery = args.includes('--allow-discovery');
+  const allowGoldenSource = args.includes('--allow-golden-source');
   // `--database-url` PEAB saama väärtuse. Ilma selle kontrollita langeks
   // puuduva argumendi korral sihtbaas vaikselt tagasi vaikeväärtusele ehk
-  // golden source'ile — ja koos `--allow-discovery`-ga tähendaks äralibisenud
+  // golden source'ile — ja koos `--allow-golden-source`-ga tähendaks äralibisenud
   // argument migratsiooni kaitstud baasi. Footgun osutab just ohtlikus suunas,
   // seega katkestame valjult.
   const urlFlagIndex = args.indexOf('--database-url');
@@ -504,7 +532,7 @@ if (require.main === module) {
     if (!value || value.startsWith('--')) {
       console.error(
         '\nmigrate ebaõnnestus: --database-url nõuab väärtust '
-        + '(nt --database-url postgres://discovery:discovery@localhost:5433/minu_tmp_db).\n'
+        + '(nt --database-url postgres://discovery:discovery@localhost:5433/minu_migration_tmp).\n'
         + '  Ilma väärtuseta oleks sihtbaas langenud tagasi vaikeväärtusele.\n',
       );
       process.exit(EXIT.ERROR);
@@ -521,7 +549,7 @@ if (require.main === module) {
   console.log(`  režiim: ${mode}`);
   console.log(`  DB: ${redact(databaseUrl || ensureLocalDatabaseUrl())}`);
 
-  runMigrations({ databaseUrl, allowDiscovery, statusOnly, preflight, conformanceOnly })
+  runMigrations({ databaseUrl, allowGoldenSource, statusOnly, preflight, conformanceOnly })
     .then((result) => {
       const readOnlyMode = statusOnly || preflight || conformanceOnly;
       if (!readOnlyMode && result.databaseName) console.log(`  sihtbaas: ${result.databaseName}`);

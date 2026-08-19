@@ -35,19 +35,19 @@ npm run migrate -- --status
 ```
 
 ```bash
-npm run migrate -- --database-url postgres://discovery:discovery@localhost:5433/minu_tmp_db
+npm run migrate -- --database-url postgres://discovery:discovery@localhost:5433/minu_migration_tmp
 ```
 
 | Lipp | Tähendus |
 |---|---|
 | *(puudub)* | Rakendab rakendamata migratsioonid `DATABASE_URL` sihtbaasi |
-| `--preflight` | **GO / NO-GO kontroll enne apply't.** Koondab ühte vaatesse: sihtbaas + kas nõuab `--allow-discovery`, `schema_migrations` seis, iga migratsiooni pending/applied/mismatch, `price_snapshots` duplikaadid, `investment_theses` vigased staatused **ja conformance**. **Read-only.** |
+| `--preflight` | **GO / NO-GO kontroll enne apply't.** Koondab ühte vaatesse: sihtbaas + kas nõuab `--allow-golden-source`, `schema_migrations` seis, iga migratsiooni pending/applied/mismatch, `price_snapshots` duplikaadid, `investment_theses` vigased staatused **ja conformance**. **Read-only.** |
 | `--conformance` | **Kas sihtbaas vastab baseline sihtskeemile?** Ehitab ajutise DB baseline'ist ja diffib selle sihtbaasi vastu: puuduvad tabelid, veerud, indeksid, piirangud + „üle" objektid. **Sihtbaasi suhtes read-only**; ajutine DB kustutatakse alati |
 | `--status` | Ainult raport (applied / pending / checksum mismatch). **Ei kirjuta midagi, ei loo `schema_migrations` tabelit.** Töötab ka kaitstud baasi vastu |
 | `--database-url <url>` | Eksplitsiitne sihtbaas; muidu `DATABASE_URL` või lokaalne vaikeväärtus |
-| `--allow-discovery` | **Ainus viis** rakendada baasi nimega `discovery` |
+| `--allow-golden-source` | **Ainus viis** rakendada baasi, mille nimi ei lõpe `_test` / `_tmp`-ga (nt golden source `neondb`) |
 
-**Kaitstud baas.** Runner **keeldub vaikimisi** baasist nimega `discovery` (dev / golden source). Ilma `--allow-discovery` liputa katkeb ta enne mistahes DDL-i. Testimiseks kasuta ajutist baasi, nt `*_migration_tmp`.
+**Kaitstud sihtbaas (fail-closed).** Runner **keeldub vaikimisi igast baasist**, mille nimi ei lõpe `_test` või `_tmp`-ga — sh päris golden source'ist Neonis (`neondb`). Ilma `--allow-golden-source` liputa katkeb ta enne mistahes DDL-i. Äraviskamiseks mõeldud baas läheb läbi ilma lipuga: `*_migration_tmp` käsitsi, testharnessi `discovery_test` ja conformance'i `schema_conformance_diff_tmp`. **Miks fail-closed:** varem oli kaitse nimekirja-põhine (`dbName === 'discovery'`), mis 2026-08-19 Neoni cutover'il pöördus tagurpidi — päris baas jäi kaitsmata ja kaitstud jäi ainult külmutatud lokaalne koopia. Fail-closed ei saa ümbernimetamisest (Neoni branch, uus projekt, uus host) vaikselt katki minna.
 
 **Advisory lock.** Kogu jooks on kaetud `pg_try_advisory_lock(hashtext('stock-discovery:migrate'))`-iga ühel pühendatud ühendusel; teine samaaegne migrator lõpetab puhtalt ilma rakendamata. Lukk vabastatakse alati (`finally`).
 
@@ -73,10 +73,10 @@ Kood `3` on eraldi koodiga just seetõttu, et skriptitud kasutuses ei tohi „mi
 ## How to apply baseline to golden-source DB
 
 > ⚠️ **HOIATUSED — loe enne igat sammu**
-> - Käivita **AINULT päris golden source DB vastu, mis on alates 2026-08-19 Neon** (tasuta tier, projekt `stock-discovery`, eu-central-1; `DATABASE_URL` failis `.env`). Tööarvuti lokaalne DB **ei ole** golden source; sellel migratsioone ei rakendata. Ka koduarvuti lokaalne `localhost:5433/discovery` **ei ole enam** golden source — see on külmutatud ajalooline snapshot ja sellele migratsioone samuti ei rakendata. **NB:** Neoni baasi nimi on `neondb`, mitte `discovery`, seega allpool kirjeldatud kaitstud-nime guard (`--allow-discovery`) **ei rakendu** päris golden source'ile — kinnita sihtbaas ise `--status` / `--preflight` väljundist enne apply'd.
+> - Käivita **AINULT päris golden source DB vastu, mis on alates 2026-08-19 Neon** (tasuta tier, projekt `stock-discovery`, eu-central-1; `DATABASE_URL` failis `.env`). Tööarvuti lokaalne DB **ei ole** golden source; sellel migratsioone ei rakendata. Ka koduarvuti lokaalne `localhost:5433/discovery` **ei ole enam** golden source — see on külmutatud ajalooline snapshot ja sellele migratsioone samuti ei rakendata. **NB:** guard on fail-closed, seega Neoni `neondb` nõuab `--allow-golden-source` lippu täpselt nagu iga teine mitte-ajutine baas. Kinnita sihtbaas siiski alati ise `--status` / `--preflight` väljundist enne apply'd.
 > - **Mitte enne värsket dump'i/backup'i.** Vt „Käivitamine uues arvutis" (`docs/HANDOFF.md`) `pg_dump -Fc` käsku.
 > - **Mitte enne, kui preflight näitab 0 duplikaati ja 0 vigast staatust.** `UNIQUE` ja `CHECK` **ebaõnnestuvad**, kui rikkuvad read on juba andmes.
-> - `--allow-discovery` on **ainus** viis kaitstud baasi rakendada. Ära kasuta seda kunagi kogemata tööarvutis.
+> - `--allow-golden-source` on **ainus** viis kaitstud baasi rakendada. Ära kasuta seda kunagi kogemata tööarvutis.
 > - Baseline on **mittehävitav**: ei ühtki `DROP`-i ega tüübimuutust. Olemasolevad andmed jäävad puutumata.
 > - **Peata enne apply't Task Scheduler ja app-konteiner.** Ajastatud `collect:daily` võib apply ajal ridu kirjutada ja `ADD CONSTRAINT` kukuks; lahtine app-ühendus võib DDL-i blokeerida (`lock_timeout` katkestaks migratsiooni).
 > - **Mitte apply'da, kui `--conformance` näitab puuduvaid veerge, mida baseline EI paranda.** Need on `NOT NULL` ilma defaultita ja vajavad eraldi repair-migratsiooni.
@@ -121,7 +121,7 @@ npm run migrate -- --conformance
 - `price_snapshots duplikaate` = **0**
 - `investment_theses vigaseid` = **0**
 - `0001_baseline` = **PENDING**
-- `kaitstud baas? JAH` → seega apply nõuab `--allow-discovery`
+- `kaitstud baas? JAH` → seega apply nõuab `--allow-golden-source`
 - conformance ei raporteeri **ühtki** puuduvat veergu, mida baseline ei paranda
 
 Kui verdikt on `NO-GO`, **peatu** ja lahenda blokeerijad. Ära lõdvenda baseline'i piiranguid selleks, et apply läbi läheks.
@@ -139,7 +139,7 @@ docker compose cp db:/tmp/pre-migration.dump ./pre-migration.dump
 ### APPLY
 
 ```bash
-npm run migrate -- --allow-discovery
+npm run migrate -- --allow-golden-source
 ```
 
 Oodatav väljund: `APPLY 0001_baseline ... OK (…ms)` ja `rakendatud 1, vahele jäetud 0`.
@@ -221,13 +221,13 @@ See kahesuunaline drift on nüüd **lahendatud**: baseline kirjeldab liitu ja te
 
 ## Teadaolevad piirid (koodiülevaatus 2026-08-13)
 
-Runner (`scripts/migrate.cjs`, 519 rida) vaadati rida-realt üle. Kaitsekihid on paigas: kaitstud baasi guard rakendub alles apply-teel (nii et `--status` / `--preflight` / `--conformance` töötavad ka `discovery` vastu), iga migratsioon jookseb koos oma `schema_migrations` kirjega ühes transaktsioonis, advisory lock vabastatakse `finally`-s, checksum normaliseeritakse reavahetuste osas ja `dropTmp` keeldub nimest, mis ei lõpe `_diff_tmp`-ga. Kolm piiri, mida tasub teada:
+Runner (`scripts/migrate.cjs`, 564 rida) vaadati rida-realt üle. Kaitsekihid on paigas: kaitstud baasi guard rakendub alles apply-teel (nii et `--status` / `--preflight` / `--conformance` töötavad ka `discovery` vastu), iga migratsioon jookseb koos oma `schema_migrations` kirjega ühes transaktsioonis, advisory lock vabastatakse `finally`-s, checksum normaliseeritakse reavahetuste osas ja `dropTmp` keeldub nimest, mis ei lõpe `_diff_tmp`-ga. Kolm piiri, mida tasub teada:
 
 1. **`--conformance` ei valideeri `BEGIN`/`COMMIT` keeldu.** Conformance rakendab migratsioonid ajutisse baasi ilma `assertNoExplicitTransaction` kontrollita, apply-tee teeb seda. Seega conformance võib „läbida" migratsiooni, mille apply hiljem tagasi lükkab. Mõju on väike (ajutine baas kustutatakse), aga valideerimine on ebaühtlane.
 2. **Kaks samaaegset `--conformance` / `--preflight` jooksu segavad üksteist.** Ajutise baasi nimi on fikseeritud (`schema_conformance_diff_tmp`) ja jooks alustab `DROP DATABASE … WITH (FORCE)`-ga, mis katkestab teise jooksu ühendused. Andmeohtu ei ole (sihtbaas on read-only), aga tulemus on segadust tekitav viga. Ära jooksuta kahte korraga.
 3. **`baselineRepairableColumns` regex on kitsas** — see loeb ainult `ALTER TABLE <tabel> ADD COLUMN IF NOT EXISTS <veerg>` kuju. Teistsuguse kirjapildi (nt skeemiga kvalifitseeritud tabelinimi) korral alahindab see parandatavaid veerge ja annab **valehäire NO-GO**. Viga on konservatiivses suunas, seega ohutu, kuid võib blokeerida legitiimse apply.
 
-Parandatud samas ülevaatuses: `--database-url` ilma väärtuseta langes varem vaikselt tagasi vaikimisi sihtbaasile ehk golden source'ile. Koos `--allow-discovery`-ga tähendanuks äralibisenud argument migratsiooni kaitstud baasi. Nüüd katkeb runner valjult exit-koodiga `1`.
+Parandatud samas ülevaatuses: `--database-url` ilma väärtuseta langes varem vaikselt tagasi vaikimisi sihtbaasile ehk golden source'ile. Koos `--allow-golden-source`-ga tähendanuks äralibisenud argument migratsiooni kaitstud baasi. Nüüd katkeb runner valjult exit-koodiga `1`.
 
 ## `db/init.sql` roll pärast baseline'i
 
