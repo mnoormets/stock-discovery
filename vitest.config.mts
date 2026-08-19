@@ -1,9 +1,17 @@
+import path from 'path';
 import { defineConfig } from 'vitest/config';
 
 // Testide konfiguratsioon. Tootmiskoodi see ei puutu: kogu andmebaasi isolatsioon
 // elab tests/setup kihis (test-DB loomine globalSetup'is + runtime-kontroll enne
 // iga testifaili).
 export default defineConfig({
+  // `@/` alias peab kattuma tsconfig.json "paths" seadega ("@/*": ["./src/*"]),
+  // muidu ei leia testid rakenduse mooduleid, mis impordivad `@/lib/...` kaudu.
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   test: {
     include: ['tests/**/*.test.ts'],
     globalSetup: ['tests/setup/global-setup.ts'],

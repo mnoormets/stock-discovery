@@ -18,9 +18,9 @@ loadEnv(root);
 const databaseUrl = ensureLocalDatabaseUrl();
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const LOCK_NAME = 'stock-discovery:collect-daily';
 
 const { pool } = loadTs(path.join(root, 'src/lib/db.ts'));
+const { COLLECTION_ADVISORY_LOCK_NAME: LOCK_NAME } = loadTs(path.join(root, 'src/lib/collection-lock.ts'));
 
 function section(title) { console.log(`\n-- ${title} --`); }
 function line(label, value, note = '') {
