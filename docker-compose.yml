@@ -22,7 +22,13 @@ services:
   app:
     build: .
     environment:
-      DATABASE_URL: postgres://discovery:discovery@db:5432/discovery
+      # Golden source on alates 2026-08-19 Neon, MITTE lokaalne `db` teenus.
+      # Varem oli siin kõvakodeeritud db:5432 URL, mis võitis .env-i ja pani
+      # konteineri vaikselt näitama külmutatud cutover-eelseid andmeid.
+      # `:?` on TEADLIK valik: tühi väärtus langeks src/lib/db.ts:12-14
+      # fallback'i tõttu tagasi täpselt sellele samale külmutatud baasile
+      # ja viga oleks jälle nähtamatu. Parem, kui konteiner katkeb valjult.
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL peab olema .env failis määratud (Neoni golden source)}
       TZ: Europe/Tallinn
       # Loetakse .env failist (compose interpoleerib automaatselt). Kui puudub → tühi.
       FMP_API_KEY: ${FMP_API_KEY:-}
@@ -38,7 +44,17 @@ services:
         condition: service_healthy
 
   # --- Ajastaja: kutsub iga päev kl 08:00 kogumise API-t ---
+  #
+  # EI KÄIVITU vaikimisi (`profiles`). Põhjus: päevast kadentsi tagab alates
+  # 2026-08-20 cron-job.org -> GitHub Actions ahel, mis ei sõltu ühestki
+  # lokaalsest masinast. Kuni app sihtis külmutatud lokaalset baasi, oli see
+  # ajastaja kahjutu; nüüd kirjutaks ta Neoni ja oleks kolmas päevane trigger
+  # (08:00 siin, 08:05 Windows Task Scheduler, 08:10 cron-job.org).
+  # Idempotentsus teeb selle ohutuks, aga vaikimisi ei ole seda vaja.
+  #
+  # Käsitsi käivitamiseks: docker compose --profile scheduler up -d
   scheduler:
+    profiles: ["scheduler"]
     build:
       context: ./scheduler
     environment:
