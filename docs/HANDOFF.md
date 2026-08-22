@@ -672,8 +672,9 @@ Social attention threshold + lookup capacity, kontrollitud tööarvutil **2026-0
 - Neonist loetud `collection_run_items.mention_count` näitas nelja eri capture-date'i latest-run valimis, et `MIN_MENTIONS 5 → 3` lisaks keskmiselt 24 mitte-blacklistitud eligible tickerit päevas. Päevad 2026-08-17/19/20 jõudsid simulatsioonis vana 60 lookup'i laeni; 2026-08-16 oli 16 eligible tickeriga selge madala tähelepanu erind;
 - `MIN_MENTIONS` langetati 3-ni ja growth lookup 40-lt 80-le; recall jäi 20 ning selector-loogikat, `buildCandidates()`-it, skoorimist, rankingut ja canonical discovery't ei muudetud. Uus regressioonitest lukustab 80+20=100 unikaalse lookup'i;
 - kontrollid: typecheck exit 0; lint exit 0; Vitest **318/318** (34 faili, eraldi `discovery_test`, 264,63 s); production build kompileeris 21/21 lehte. App käivitati ja restartiti pärast build'i;
-- post-restart smoke: `/today`, `/research/metadata-root-cause`, `/frequency` ja `/portfolio` HTTP 200; autentimata `POST /api/collect` HTTP 401. Päris collect'i ei käivitatud;
+- post-restart smoke: `/today`, `/research/metadata-root-cause`, `/frequency` ja `/portfolio` HTTP 200; autentimata `POST /api/collect` HTTP 401. Koodimuudatuse verifitseerimise ajal päris collect'i ei käivitatud;
 - lävi 3 on esimene evidence-based eksperiment, mitte steady-state otsus. Nelja kuupäeva valim on väike ja sisaldab üht selget erindit; 1-2 nädala pärast tuleb uute päevadega kontrollida threshold 2/3/5 jaotust, lookup saturation'it, Yahoo tabamusi ja kandidaatide kvaliteeti.
+- Esimene päris muutusejärgne Neoni collect 2026-08-22 (collection run #14, canonical run #44) skännis 200 rida, tegi 27/27 edukat Yahoo lookup'i ja andis 11 kandidaati. Mainimiste 5+ rühm andis 11 lookup'i / 3 kandidaati; uus 3-4 rühm andis 16 lookup'i / 8 kandidaati. Seega oleks vana lävi 5 selle päeva põhjal jätnud kõrvale enamiku lookup'e ja kandidaate; 80+20 lagi ei olnud siduv ning recall-ringi ei kasutatud.
 
 Price Context + Scenario Valuation V1, kontrollitud koduarvutil **2026-08-16**:
 
@@ -840,6 +841,13 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-08-22 - Esimene MIN_MENTIONS 3 päris golden-source collect
+
+- `npm run collect:daily` jooksis commit'i `7417bec` pealt Neoni `neondb` vastu ja lõpetas exit 0-ga. Docker Desktop töötas; lokaalne db oli healthy, kuid päris collect ei kirjutanud külmutatud lokaalsesse `discovery` baasi.
+- Collection run #14: `scanned 200`, raw mention-jaotus 5+ = 26, 3-4 = 20, 0-2 = 154; market-data lookup 27 growth + 0 recall = 27, Yahoo found 27/27, `candidates 11`. Tradestie ebaõnnestus ning ApeWisdom fallback töötas; FMP võti puudus.
+- Läve mõju samas immutable item-valimis: 5+ rühm andis 11 lookup'i ja 3 kandidaati, läve 3 poolt lisatud 3-4 rühm 16 lookup'i ja 8 kandidaati. Võrreldes varasema 16-23 lookup'i vahemikuga on 27 suurem, kuid 80 growth / 100 total cap ei olnud sellel madala tähelepanuga laupäeval lähedalgi täitumisele.
+- Canonical run #44 oli uus: 59 hinnatud, 5 kaasatud, 54 välistatud; SEC enrichment 5/5 ja classification enrichment 5/5 õnnestusid, candidate outcome'e loodi 25. Korduscollect'i ei tehtud.
 
 ### 2026-08-22 - Social attention threshold 3 + 100 lookup capacity
 
