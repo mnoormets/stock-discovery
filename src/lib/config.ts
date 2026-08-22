@@ -29,8 +29,9 @@ export const BLACKLIST = new Set([
 // Ülempiir turukapile: üle selle loeme "juba suureks/tuntuks" ($10 mld).
 export const MAX_MARKET_CAP = 10_000_000_000;
 
-// Alumine müralävi: alla selle mainimiste arvu on liiga vähe, et usaldada.
-export const MIN_MENTIONS = 5;
+// Tõendipõhine müralävi: 4 kuupäeva väikeses valimis lisas 5 → 3 keskmiselt
+// ~24 sobivat tickerit päevas; 2026-08-16 oli erandlikult madala tähelepanuga päev.
+export const MIN_MENTIONS = 3;
 
 // Mitu top-kandidaati aruandesse / dashboardile.
 export const TOP_N = 15;
@@ -47,11 +48,11 @@ export function looksLikeFundOrEtf(name: string): boolean {
   );
 }
 
-// Mitmele top-kandidaadile fundamentaale pärida (Yahoo + FMP varuvariant).
-// Hoiab FMP 250/päev limiiti — pärime ainult lootustandvamatele.
-export const FUND_LOOKUP_LIMIT = 40;
+// Kasvuringi fundamentaalpäringud (Yahoo + FMP varuvariant). Koos 20 recall-
+// tickeriga on lagi 100; kaks täisjooksu + SPY on ~202 FMP päringut (< 250/päev).
+export const FUND_LOOKUP_LIMIT = 80;
 
-// Recall-ring: kasvu järgi top-40 seast välja jäänud, kuid absoluutse tähelepanu
+// Recall-ring: kasvu järgi top-80 seast välja jäänud, kuid absoluutse tähelepanu
 // järgi tugevamad nimed. See sulgeb RDDT-laadse augu, kus mainimised langevad,
 // aga ticker on endiselt radaris. Kogu Yahoo töö jääb rangelt piiratuks.
 export const FUND_RECALL_LOOKUP_LIMIT = 20;

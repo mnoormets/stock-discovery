@@ -20,7 +20,7 @@ describe('DATE and missed-move audit boundaries', () => {
   });
 
   it('annab langeva, kuid endiselt tähelepanu saava tickeri recall-ringile', () => {
-    const rows: ApeWisdomRow[] = Array.from({ length: 40 }, (_, index) => ({
+    const rows: ApeWisdomRow[] = Array.from({ length: 80 }, (_, index) => ({
       rank: index + 1, ticker: `G${index}`, name: `Growth ${index}`,
       mentions: 10 + index, upvotes: 0, rank_24h_ago: null, mentions_24h_ago: 1,
     }));
@@ -31,7 +31,20 @@ describe('DATE and missed-move audit boundaries', () => {
     const selected = selectFundamentalLookupTickers(rows);
     expect(selected.growthTickers).not.toContain('RDDT');
     expect(selected.recallTickers).toContain('RDDT');
-    expect(selected.lookupTickers).toHaveLength(41);
+    expect(selected.lookupTickers).toHaveLength(81);
+  });
+
+  it('piirab fundamentaalpäringud 80 kasvu- ja 20 recall-tickeriga', () => {
+    const rows: ApeWisdomRow[] = Array.from({ length: 120 }, (_, index) => ({
+      rank: index + 1, ticker: `T${index}`, name: `Ticker ${index}`,
+      mentions: 10 + index, upvotes: 0, rank_24h_ago: null, mentions_24h_ago: 1,
+    }));
+
+    const selected = selectFundamentalLookupTickers(rows);
+    expect(selected.growthTickers).toHaveLength(80);
+    expect(selected.recallTickers).toHaveLength(20);
+    expect(selected.lookupTickers).toHaveLength(100);
+    expect(new Set(selected.lookupTickers)).toHaveLength(100);
   });
 });
 
