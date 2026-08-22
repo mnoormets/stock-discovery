@@ -32,6 +32,10 @@ const MIGRATED_TABLES = [
   'earnings_events',
   'financial_enrichment_status',
   'financial_facts',
+  'insider_filings',
+  'insider_reporting_owners',
+  'insider_transaction_footnotes',
+  'insider_transactions',
   'investment_theses',
   'news_items',
   'outcome_analysis_snapshots',
@@ -79,7 +83,7 @@ describe('D1 — test-andmebaasi isolatsioon (esimene värav)', () => {
 describe('D2 — migratsioonidest ehitatud tabelikomplekt', () => {
   // Assertitakse globalSetup'is fikseeritud hetkeseisu, MITTE jooksvat
   // `pg_tables` vastu: testibaas on failide vahel jagatud.
-  it('loob täpselt need 26 tabelit', () => {
+  it('loob täpselt need 30 tabelit', () => {
     expect(inject('migratedTables')).toEqual(MIGRATED_TABLES);
   });
 
@@ -122,6 +126,14 @@ describe('D4 — testibaas on ehitatud migratsioonidest', () => {
   it('0005_outcome_analysis_snapshots on rakendatud', () => {
     expect(inject('appliedMigrations')).toContain('0005_outcome_analysis_snapshots');
     expect(inject('migratedTables')).toContain('outcome_analysis_snapshots');
+  });
+
+  it('0006_insider_form4_persistence on rakendatud', () => {
+    expect(inject('appliedMigrations')).toContain('0006_insider_form4_persistence');
+    expect(inject('migratedTables')).toContain('insider_filings');
+    expect(inject('migratedTables')).toContain('insider_reporting_owners');
+    expect(inject('migratedTables')).toContain('insider_transactions');
+    expect(inject('migratedTables')).toContain('insider_transaction_footnotes');
   });
 
   it('schema_migrations tabel on olemas', async () => {

@@ -13,6 +13,8 @@
     "qa:under-recognition": "node scripts/under-recognition-qa.cjs",
     "collect:daily": "node scripts/collect-daily.cjs",
     "collect:status": "node scripts/collect-status.cjs",
+    "calibrate:form4": "node scripts/calibrate-form4.cjs",
+    "ingest:form4": "node scripts/ingest-form4.cjs",
     "schema:diff": "node scripts/schema-diff.cjs",
     "migrate": "node scripts/migrate.cjs",
     "test": "vitest run",

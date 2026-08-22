@@ -13,141 +13,19 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client } = require('pg');
 const { loadEnv, repoRoot, registerRepoModules } = require('./_ts-loader.cjs');
+const {
+  createSecClient,
+  extractOwnershipXml,
+  indexUrl,
+  latestIndexDates,
+  normalizeCik,
+  normalizeTicker,
+  parseFormIndex,
+  parseOwnershipXml,
+} = require('./_form4.cjs');
 
-const SEC_BASE = 'https://www.sec.gov';
-const SEC_TIMEOUT_MS = 10_000;
-const SEC_MIN_INTERVAL_MS = 200; // single-file sequence, at most 5 req/s
 const DEFAULT_DAYS = 3;
 const DEFAULT_MAX_FILINGS_PER_DAY = 200;
-
-function decodeXml(value) {
-  return String(value || '')
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)))
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .trim();
-}
-
-function element(xml, tag) {
-  const match = String(xml || '').match(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
-  return match ? match[1] : null;
-}
-
-function elements(xml, tag) {
-  return [...String(xml || '').matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'gi'))]
-    .map((match) => match[1]);
-}
-
-function textValue(xml, tag) {
-  const raw = element(xml, tag);
-  return raw == null ? null : decodeXml(raw.replace(/<[^>]+>/g, '')) || null;
-}
-
-function wrappedValue(xml, tag) {
-  const wrapper = element(xml, tag);
-  return wrapper == null ? null : textValue(wrapper, 'value');
-}
-
-function numberValue(value) {
-  if (value == null || String(value).trim() === '') return null;
-  const parsed = Number(String(value).replace(/,/g, ''));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function flagValue(value) {
-  return /^(1|true|yes)$/i.test(String(value || '').trim());
-}
-
-function normalizeCik(value) {
-  const digits = String(value || '').replace(/\D/g, '').replace(/^0+/, '');
-  return digits || null;
-}
-
-function normalizeTicker(value) {
-  const ticker = String(value || '').trim().toUpperCase();
-  if (!ticker || /^(NONE|N\/A|NA|NOT APPLICABLE)$/i.test(ticker)) return null;
-  return ticker;
-}
-
-function extractOwnershipXml(submission) {
-  return String(submission || '').match(/<ownershipDocument\b[^>]*>[\s\S]*?<\/ownershipDocument>/i)?.[0] || null;
-}
-
-function parseFormIndex(indexText) {
-  const rows = [];
-  for (const line of String(indexText || '').split(/\r?\n/)) {
-    const match = line.match(/^(4(?:\/A)?)\s{2,}(.+?)\s{2,}(\d+)\s+(\d{8})\s+(edgar\/data\/\d+\/\S+\.txt)\s*$/);
-    if (!match) continue;
-    rows.push({
-      form: match[1],
-      companyName: match[2].trim(),
-      cik: normalizeCik(match[3]),
-      filedDate: `${match[4].slice(0, 4)}-${match[4].slice(4, 6)}-${match[4].slice(6, 8)}`,
-      archivePath: match[5],
-      url: `${SEC_BASE}/Archives/${match[5]}`,
-    });
-  }
-  return rows;
-}
-
-function parseOwnershipXml(xml) {
-  const issuer = element(xml, 'issuer') || '';
-  const footnotes = new Map();
-  for (const match of String(element(xml, 'footnotes') || '').matchAll(/<footnote\b[^>]*\bid=["']([^"']+)["'][^>]*>([\s\S]*?)<\/footnote>/gi)) {
-    footnotes.set(match[1], decodeXml(match[2].replace(/<[^>]+>/g, ' ')));
-  }
-
-  const owners = elements(xml, 'reportingOwner').map((ownerXml) => {
-    const relationship = element(ownerXml, 'reportingOwnerRelationship') || '';
-    return {
-      cik: normalizeCik(textValue(ownerXml, 'rptOwnerCik')),
-      name: textValue(ownerXml, 'rptOwnerName'),
-      director: flagValue(textValue(relationship, 'isDirector')),
-      officer: flagValue(textValue(relationship, 'isOfficer')),
-      tenPercentOwner: flagValue(textValue(relationship, 'isTenPercentOwner')),
-      other: flagValue(textValue(relationship, 'isOther')),
-      officerTitle: textValue(relationship, 'officerTitle'),
-      otherText: textValue(relationship, 'otherText'),
-    };
-  });
-
-  const transactions = elements(xml, 'nonDerivativeTransaction').map((transactionXml, index) => {
-    const priceXml = element(transactionXml, 'transactionPricePerShare');
-    const priceFootnoteIds = priceXml
-      ? [...priceXml.matchAll(/<footnoteId\b[^>]*\bid=["']([^"']+)["'][^>]*\/?\s*>/gi)].map((match) => match[1])
-      : [];
-    const shares = numberValue(wrappedValue(transactionXml, 'transactionShares'));
-    const price = numberValue(wrappedValue(transactionXml, 'transactionPricePerShare'));
-    return {
-      index,
-      date: wrappedValue(transactionXml, 'transactionDate'),
-      code: textValue(element(transactionXml, 'transactionCoding') || '', 'transactionCode'),
-      acquiredDisposed: wrappedValue(transactionXml, 'transactionAcquiredDisposedCode'),
-      shares,
-      price,
-      priceFootnoteIds,
-      priceFootnotes: priceFootnoteIds.map((id) => footnotes.get(id)).filter(Boolean),
-      notional: shares != null && price != null ? shares * price : null,
-    };
-  });
-
-  return {
-    schemaVersion: textValue(xml, 'schemaVersion'),
-    documentType: textValue(xml, 'documentType'),
-    periodOfReport: textValue(xml, 'periodOfReport'),
-    issuerCik: normalizeCik(textValue(issuer, 'issuerCik')),
-    issuerName: textValue(issuer, 'issuerName'),
-    issuerTicker: normalizeTicker(textValue(issuer, 'issuerTradingSymbol')),
-    owners,
-    transactions,
-    footnotes,
-  };
-}
 
 function evenlySpacedSample(rows, limit) {
   if (!Number.isFinite(limit) || limit >= rows.length) return [...rows];
@@ -175,84 +53,6 @@ function distribution(values) {
     p90: percentile(sorted, 0.9),
     max: percentile(sorted, 1),
   };
-}
-
-function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function retryAfterMs(response) {
-  const value = response.headers.get('retry-after');
-  if (!value) return null;
-  const seconds = Number(value);
-  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
-  const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) ? Math.max(0, timestamp - Date.now()) : null;
-}
-
-function createSecClient(userAgent) {
-  let lastStartedAt = 0;
-  let requests = 0;
-  return {
-    get requestCount() { return requests; },
-    async text(url) {
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        const pacingWait = Math.max(0, SEC_MIN_INTERVAL_MS - (Date.now() - lastStartedAt));
-        if (pacingWait) await wait(pacingWait);
-        lastStartedAt = Date.now();
-        requests += 1;
-        try {
-          const response = await fetch(url, {
-            headers: {
-              'User-Agent': userAgent,
-              'Accept-Encoding': 'gzip, deflate',
-              Accept: 'text/plain, application/xml, text/xml, application/json',
-            },
-            signal: AbortSignal.timeout(SEC_TIMEOUT_MS),
-          });
-          if (response.ok) return response.text();
-          if (response.status !== 429 && response.status < 500) {
-            throw new Error(`SEC vastas ${response.status}: ${url}`);
-          }
-          const delay = retryAfterMs(response) ?? 1000 * (2 ** attempt);
-          if (attempt < 2) await wait(delay);
-          else throw new Error(`SEC vastas ${response.status} pärast 3 katset: ${url}`);
-        } catch (error) {
-          if (attempt >= 2) throw error;
-          await wait(1000 * (2 ** attempt));
-        }
-      }
-      throw new Error(`SEC päring ebaõnnestus: ${url}`);
-    },
-  };
-}
-
-function quarterFor(date) {
-  const month = Number(date.slice(5, 7));
-  return Math.ceil(month / 3);
-}
-
-function compactDate(date) {
-  return date.replace(/-/g, '');
-}
-
-async function latestIndexDates(sec, count) {
-  const now = new Date();
-  const year = now.getUTCFullYear();
-  const quarter = Math.ceil((now.getUTCMonth() + 1) / 3);
-  const url = `${SEC_BASE}/Archives/edgar/daily-index/${year}/QTR${quarter}/index.json`;
-  const listing = JSON.parse(await sec.text(url));
-  const items = listing?.directory?.item || [];
-  return items.map((item) => String(item.name || '').match(/^form\.(\d{4})(\d{2})(\d{2})\.idx$/))
-    .filter(Boolean)
-    .map((match) => `${match[1]}-${match[2]}-${match[3]}`)
-    .sort()
-    .reverse()
-    .slice(0, count);
-}
-
-function indexUrl(date) {
-  return `${SEC_BASE}/Archives/edgar/daily-index/${date.slice(0, 4)}/QTR${quarterFor(date)}/form.${compactDate(date)}.idx`;
 }
 
 async function readCompanyUniverse(databaseUrl) {
