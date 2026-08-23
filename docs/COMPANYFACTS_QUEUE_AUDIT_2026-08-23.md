@@ -144,7 +144,9 @@ Do not implement from this three-hour session. The meaningful choice is between:
 - a **bounded reserved quota** if predictable Form 4 latency is worth explicitly reducing general-queue capacity; and
 - a **source-neutral budget increase** if the goal is reducing the entire 120-row backlog and measured runtime/SEC load are acceptable.
 
-Before choosing a number, collect at least several daily observations of: new eligible entrants, attempts/success/unavailable/error, queue depth before/after, oldest never-attempted age, and Form 4-specific wait days. `financial_enrichment_status` stores only the latest attempt per company, so a durable per-run queue metric or attempt ledger would be needed for reliable history; current collection-run metrics do not include the enrichment result.
+The user is leaning toward the **source-neutral budget increase** because it addresses the complete 120-row backlog without provenance-specific allocation complexity. No number is approved. Before choosing one, collect 7–14 valid daily observations of new eligible entrants, attempts/success/unavailable/error, queue depth before/after, and oldest never-attempted age.
+
+The approved next step is still evidence gathering, not a budget change. [`docs/COMPANYFACTS_QUEUE_OBSERVATION_PLAN.md`](COMPANYFACTS_QUEUE_OBSERVATION_PLAN.md) specifies a no-migration proposal: paired standalone `BEGIN READ ONLY` snapshots around the existing scheduled collector, saved as bounded-retention workflow artifacts rather than database rows. `financial_enrichment_status` stores only the latest attempt per company and current collection-run metrics omit enrichment results, so the paired snapshots preserve the required short calibration series without changing the golden-source schema.
 
 ## Scope boundaries
 

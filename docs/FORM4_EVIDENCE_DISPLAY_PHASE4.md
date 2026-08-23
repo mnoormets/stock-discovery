@@ -1,6 +1,6 @@
 # SEC Form 4 Phase 4 — candidate-card evidence proposal
 
-Status: **design only; no UI, selector, persistence, scoring, ranking, or canonical-discovery change is implemented by this document.**
+Status: **approved design for a separate future implementation task; no UI, selector, persistence, scoring, ranking, or canonical-discovery change is implemented by this document.**
 
 Date: 2026-08-23
 
@@ -115,11 +115,15 @@ The useful catalyst pattern is structural: a typed read model, event date, raw d
 
 No migration is expected for this recommended design.
 
-## Open questions requiring user review
+## Approved design decisions — 2026-08-23
 
-1. **Joint-filing attribution:** the current normalized model associates each filing owner with every transaction in that filing. For multi-owner filings, that proves who reported the filing but may not prove which one individual executed a specific row. Recommendation: label them `Reporting owner(s)` rather than `Purchaser(s)` unless the XML/parser gains transaction-specific attribution. Calling each owner “the purchaser” would overstate the source.
-2. **Currency notation:** Form 4 stores the reported price numeric value but the current parser/model has no transaction-currency field. Recommendation: display `Reported price/share 42.10` and `Derived notional 210,500 (reported units)` unless the filing explicitly establishes currency; do not borrow Yahoo quote currency or silently prepend `$`.
-3. **Initial UI scope:** recommendation is `/today` canonical cards only. A simultaneous `/scanner` surface would require defining how manual/live scanner results obtain the same immutable collection provenance; otherwise defer it.
+- Use Option B: freeze the complete selected evidence in the future collection item's versioned `raw_signal.insider` snapshot. Do not render historical cards from live joins to the operational Form 4 tables.
+- Label filing participants `Reporting owner(s)`, not `Purchaser(s)`. The current normalized association proves who reported the filing but does not always prove transaction-specific execution in a joint filing.
+- Do not prepend `$`, borrow Yahoo quote currency, or otherwise imply a currency unless the filing explicitly establishes it. Numeric price and derived-notional values remain reported units when currency is unknown.
+- Limit V1 display to canonical candidate cards on `/today`.
+- Do not backfill run #16 or any other legacy collection item. Render the honest message `Detailed owner/share/price evidence was not captured for this historical collection item.` when the complete immutable payload was not captured.
+
+These decisions approve the design only. Phase 4 code requires a separate implementation task and authorization.
 
 ## Explicit non-goals
 
