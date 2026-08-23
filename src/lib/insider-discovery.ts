@@ -1,5 +1,6 @@
 import { pool } from './db';
 import { toDateOnly } from './date-only';
+import { looksLikeFundOrEtf } from './config';
 
 export const INSIDER_SELECTION_POLICY_VERSION = 'form4-insider-selection-v1';
 export const INSIDER_LOOKUP_LIMIT = 20;
@@ -118,21 +119,22 @@ export async function selectNotableInsiderIssuers(captureDateInput: string): Pro
        FROM qualifying
        GROUP BY issuer_cik, ticker
      )
-     SELECT *, count(*) OVER ()::int AS eligible_issuer_count
+     SELECT *
      FROM issuers
      ORDER BY max_derived_notional DESC, total_derived_notional DESC,
-              latest_accepted_at DESC NULLS LAST, ticker
-     LIMIT $3`,
-    [sourceFiledDate, INSIDER_NOTIONAL_THRESHOLD, INSIDER_LOOKUP_LIMIT],
+              latest_accepted_at DESC NULLS LAST, ticker`,
+    [sourceFiledDate, INSIDER_NOTIONAL_THRESHOLD],
   );
+
+  const eligibleIssuers = rows.filter((row) => !looksLikeFundOrEtf(String(row.issuer_name)));
 
   return {
     policyVersion: INSIDER_SELECTION_POLICY_VERSION,
     sourceFiledDate,
     sourceAgeDays,
     stale,
-    eligibleIssuerCount: rows[0]?.eligible_issuer_count == null ? 0 : Number(rows[0].eligible_issuer_count),
-    selectedIssuers: rows.map((row, index) => ({
+    eligibleIssuerCount: eligibleIssuers.length,
+    selectedIssuers: eligibleIssuers.slice(0, INSIDER_LOOKUP_LIMIT).map((row, index) => ({
       ticker: String(row.ticker),
       issuerCik: String(row.issuer_cik),
       issuerName: String(row.issuer_name),

@@ -43,7 +43,7 @@ export const APEWISDOM_FILTER = 'wallstreetbets';
 // isEtf/quoteType puudub (turvavõrk). Konservatiivne, et vältida valepositiive.
 export function looksLikeFundOrEtf(name: string): boolean {
   if (!name) return false;
-  return /\b(ETF|ETN|ETP)\b|\b[1-9]x\b|Direxion|ProShares|Leveraged|Ultra(Pro|Short)?|Bull\s*[1-9]?x|Bear\s*[1-9]?x|Index Fund|Trust ETF/i.test(
+  return /\b(ETF|ETN|ETP|Fund)\b|\b[1-9]x\b|Direxion|ProShares|Leveraged|Ultra(Pro|Short)?|Bull\s*[1-9]?x|Bear\s*[1-9]?x|Trust ETF/i.test(
     name,
   );
 }

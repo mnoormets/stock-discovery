@@ -3,6 +3,7 @@ import { toDateOnly } from '../../src/lib/date-only';
 import { classifyPriorCoverage } from '../../src/lib/missed-moves';
 import { mergeFundamentalLookupTickers, selectFundamentalLookupTickers } from '../../src/lib/collect';
 import { buildCandidates } from '../../src/lib/discovery';
+import { looksLikeFundOrEtf } from '../../src/lib/config';
 import type { ApeWisdomRow, Fundamentals } from '../../src/lib/types';
 
 describe('DATE and missed-move audit boundaries', () => {
@@ -59,6 +60,11 @@ describe('DATE and missed-move audit boundaries', () => {
       price: 170, currency: 'USD', volume: 1_000_000, source: 'yahoo',
     }]]);
     expect(buildCandidates([], new Map(), fundamentals, new Map(), new Set())).toEqual([]);
+  });
+
+  it('tuvastab suletud fondi nime, kuid mitte tavalist Funding-ettevõtet', () => {
+    expect(looksLikeFundOrEtf('High Income Securities Fund')).toBe(true);
+    expect(looksLikeFundOrEtf('Regional Management Funding Corp')).toBe(false);
   });
 });
 

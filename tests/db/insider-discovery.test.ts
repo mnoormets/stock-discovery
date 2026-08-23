@@ -12,6 +12,7 @@ beforeEach(resetDb);
 interface SignalOptions {
   ticker: string;
   sequence: number;
+  issuerName?: string;
   filedDate?: string;
   formType?: '4' | '4/A';
   notional?: number;
@@ -39,7 +40,7 @@ async function insertSignal(options: SignalOptions): Promise<void> {
      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'form4-xml-v1',$9,$10,'persisted',1,$7)
      RETURNING id`,
     [accession, formType, String(1000 + options.sequence), options.ticker,
-      `${options.ticker} Corp`, filedDate, `${filedDate}T12:00:00.000Z`,
+      options.issuerName || `${options.ticker} Corp`, filedDate, `${filedDate}T12:00:00.000Z`,
       `https://www.sec.gov/Archives/${accession}`, 'a'.repeat(64),
       formType === '4' ? 'not_applicable' : 'unresolved'],
   );
@@ -76,6 +77,10 @@ describe('form4-insider-selection-v1', () => {
     await insertSignal({ ticker: 'AMEND', sequence: 4, notional: 2_000_000, formType: '4/A' });
     await insertSignal({ ticker: 'DERIV', sequence: 5, notional: 2_000_000, securityKind: 'derivative' });
     await insertSignal({ ticker: 'SALE', sequence: 6, notional: 2_000_000, acquiredDisposedCode: 'D' });
+    await insertSignal({
+      ticker: 'PCF', sequence: 7, notional: 54_000,
+      issuerName: 'HIGH INCOME SECURITIES FUND',
+    });
 
     const selection = await selectNotableInsiderIssuers('2026-08-21');
     expect(selection).toMatchObject({
@@ -94,6 +99,10 @@ describe('form4-insider-selection-v1', () => {
     for (let index = 1; index <= 22; index += 1) {
       await insertSignal({ ticker: `I${String(index).padStart(2, '0')}`, sequence: index, notional: 50_000 + index });
     }
+    await insertSignal({
+      ticker: 'PCF', sequence: 23, notional: 1_000_000,
+      issuerName: 'HIGH INCOME SECURITIES FUND',
+    });
     const first = await selectNotableInsiderIssuers('2026-08-21');
     const second = await selectNotableInsiderIssuers('2026-08-21');
     expect(first).toEqual(second);
@@ -104,7 +113,7 @@ describe('form4-insider-selection-v1', () => {
     const counts = await pool.query(`SELECT
       (SELECT count(*)::int FROM insider_filings) AS filings,
       (SELECT count(*)::int FROM insider_transactions) AS transactions`);
-    expect(counts.rows[0]).toEqual({ filings: 22, transactions: 22 });
+    expect(counts.rows[0]).toEqual({ filings: 23, transactions: 23 });
   });
 
   it('avaldab sourceFiledDate vanuse ja ei vali üle viie päeva vanast on-demand allikast', async () => {
