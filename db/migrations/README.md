@@ -1,6 +1,6 @@
 # Migratsioonid — konventsioon ja rakendusjärjekord
 
-Staatus: **rakendatud.** Golden-source DB-s on migratsioonid `0001_baseline` kuni `0005_outcome_analysis_snapshots`; `schema_migrations` sisaldab 5 kirjet ja `--conformance` ütleb `VASTAB` (kontrollitud 2026-08-15). Testibaas ehitatakse migratsioonidest (`tests/setup/global-setup.ts`). Runner `scripts/migrate.cjs` on olemas ja **käsitsi käivitatav** — app startup ega `npm run check` seda ei kutsu. `ensureSchema()` jääb tootmises esialgu alles, kuid on migreeritud skeemil tõestatud **no-op** (vt „`ensureSchema()` staatus").
+Staatus: **0001–0006 golden source'is rakendatud; 0007 pending.** `0006_insider_form4_persistence` rakendus Neoni `neondb` golden source'ile 2026-08-23. `0007_insider_lookup_bucket` on rakendunud ainult migratsioonidest ehitatud ephemeral `discovery_test` baasi ning vajab enne Neoni apply'd eraldi kasutaja kinnitust. Runner `scripts/migrate.cjs` on olemas ja **käsitsi käivitatav** — app startup ega `npm run check` seda ei kutsu. `ensureSchema()` jääb tootmises esialgu alles, kuid on migreeritud skeemil tõestatud **no-op** (vt „`ensureSchema()` staatus").
 
 ## Failinime formaat
 

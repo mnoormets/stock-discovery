@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { toDateOnly } from '../../src/lib/date-only';
 import { classifyPriorCoverage } from '../../src/lib/missed-moves';
-import { selectFundamentalLookupTickers } from '../../src/lib/collect';
-import type { ApeWisdomRow } from '../../src/lib/types';
+import { mergeFundamentalLookupTickers, selectFundamentalLookupTickers } from '../../src/lib/collect';
+import { buildCandidates } from '../../src/lib/discovery';
+import type { ApeWisdomRow, Fundamentals } from '../../src/lib/types';
 
 describe('DATE and missed-move audit boundaries', () => {
   it('normaliseerib pg DATE objekti YYYY-MM-DD kujule', () => {
@@ -45,6 +46,19 @@ describe('DATE and missed-move audit boundaries', () => {
     expect(selected.recallTickers).toHaveLength(20);
     expect(selected.lookupTickers).toHaveLength(100);
     expect(new Set(selected.lookupTickers)).toHaveLength(100);
+  });
+
+  it('lisab insider lookupid unikaalse unionina social lookupide järele', () => {
+    expect(mergeFundamentalLookupTickers(['GROW', 'BOTH'], ['BOTH', 'FORM']))
+      .toEqual(['GROW', 'BOTH', 'FORM']);
+  });
+
+  it('ei lase insider-only fundamentaale buildCandidates social-skoorimisse', () => {
+    const fundamentals = new Map<string, Fundamentals>([['MRNA', {
+      ticker: 'MRNA', name: 'Moderna, Inc.', marketCap: 65_000_000_000,
+      price: 170, currency: 'USD', volume: 1_000_000, source: 'yahoo',
+    }]]);
+    expect(buildCandidates([], new Map(), fundamentals, new Map(), new Set())).toEqual([]);
   });
 });
 

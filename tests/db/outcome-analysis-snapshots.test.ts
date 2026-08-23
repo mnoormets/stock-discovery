@@ -39,7 +39,7 @@ async function insertQuality(runId: number): Promise<number> {
 
 async function fixture(options: {
   ticker?: string;
-  bucket?: 'growth' | 'recall';
+  bucket?: 'growth' | 'recall' | 'insider';
   withCollection?: boolean;
   withQuality?: boolean;
   growthScore?: number | null;
@@ -65,6 +65,7 @@ async function fixture(options: {
       companyId,
       growthRank: bucket === 'growth' ? 1 : null,
       recallRank: bucket === 'recall' ? 1 : null,
+      insiderRank: bucket === 'insider' ? 1 : null,
       rawSignal: { source: 'apewisdom' },
     });
     collectionItemId = item.id;
@@ -153,6 +154,13 @@ describe('Outcome Analysis Snapshot V1', () => {
     const saved = await recordOutcomeAnalysisSnapshot(f.outcomeId);
     expect(saved.winnerStatus).toBe('not_winner');
     expect(saved.benchmarkBeatStatus).toBe('beat');
+  });
+
+  it('A2b säilitab insider bucketi outcome snapshotis', async () => {
+    const f = await fixture({ bucket: 'insider' });
+    await measure(f.outcomeId, 3, 1, 2);
+    const saved = await recordOutcomeAnalysisSnapshot(f.outcomeId);
+    expect(saved.lookupBucket).toBe('insider');
   });
 
   it('A3 kasutab puuduvate otsusehetke sisendite puhul unknown väärtusi', async () => {

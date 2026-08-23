@@ -18,7 +18,7 @@ beforeEach(resetDb);
 async function createCanonicalFixture(options: {
   ticker?: string;
   runAt?: Date;
-  lookupBucket?: 'growth' | 'recall';
+  lookupBucket?: 'growth' | 'recall' | 'insider';
   mandate?: string | null;
   coverage?: number;
   quality?: boolean;
@@ -44,8 +44,9 @@ async function createCanonicalFixture(options: {
     previousMentionCount: 10,
     mentionGrowthPercent: 100,
     attentionRank: 2,
-    growthRank: options.lookupBucket === 'recall' ? null : 1,
+    growthRank: options.lookupBucket === 'recall' || options.lookupBucket === 'insider' ? null : 1,
     recallRank: options.lookupBucket === 'recall' ? 1 : null,
+    insiderRank: options.lookupBucket === 'insider' ? 1 : null,
     companyId,
   });
   await succeedCollectionRun(collection.id, {
@@ -55,8 +56,9 @@ async function createCanonicalFixture(options: {
     flagged: 0,
     liveDataSaved: true,
     marketDataLookup: {
-      growth: options.lookupBucket === 'recall' ? 0 : 1,
+      growth: options.lookupBucket === 'recall' || options.lookupBucket === 'insider' ? 0 : 1,
       recall: options.lookupBucket === 'recall' ? 1 : 0,
+      insider: options.lookupBucket === 'insider' ? 1 : 0,
       total: 1,
     },
   });
@@ -145,6 +147,18 @@ describe('Daily Research Brief read model', () => {
       expect.objectContaining({ code: 'recall_candidate', ticker: 'BRIEF' }),
     ]));
     expect(brief.status).toBe('attention');
+  });
+
+  it('A4b kuvab insider source pathi ja lookup meetrika eraldi', async () => {
+    await createCanonicalFixture({ lookupBucket: 'insider' });
+    const brief = await getTodayBrief(TODAY);
+
+    expect(brief.topCandidates[0]).toMatchObject({
+      ticker: 'BRIEF', lookupBucket: 'insider', sourcePathLabel: 'Notable insider purchase',
+    });
+    expect(brief.latestCollectionRun?.metrics).toMatchObject({
+      marketDataGrowth: 0, marketDataRecall: 0, marketDataInsider: 1, marketDataTotal: 1,
+    });
   });
 
   it('A5 märgib included not_relevant mandate kandidaadi inimese kontrolliks', async () => {

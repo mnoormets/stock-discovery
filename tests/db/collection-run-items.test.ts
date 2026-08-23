@@ -113,8 +113,23 @@ describe('collection -> canonical ticker provenance bridge', () => {
   });
 
   it('A7 growth võidab deterministlikult growth+recall konflikti', () => {
-    expect(resolveLookupBucket('BOTH', new Set(['BOTH']), new Set(['BOTH']))).toBe('growth');
-    expect(resolveLookupBucket('RECALL', new Set(), new Set(['RECALL']))).toBe('recall');
+    expect(resolveLookupBucket('ALL', new Set(['ALL']), new Set(['ALL']), new Set(['ALL']))).toBe('growth');
+    expect(resolveLookupBucket('RECALL', new Set(), new Set(['RECALL']), new Set(['RECALL']))).toBe('recall');
+    expect(resolveLookupBucket('INSIDER', new Set(), new Set(), new Set(['INSIDER']))).toBe('insider');
+  });
+
+  it('A7b salvestab insider bucketi ja ranki idempotentselt', async () => {
+    const runId = await startedRun();
+    const input = item(runId, 'FORM', {
+      lookupBucket: 'insider', mentionCount: null, previousMentionCount: null,
+      mentionGrowthPercent: null, attentionRank: null, growthRank: null,
+      recallRank: null, insiderRank: 4,
+      rawSignal: { source: 'sec-form4', policyVersion: 'form4-insider-selection-v1' },
+    });
+    const first = await recordCollectionRunItem(input);
+    const second = await recordCollectionRunItem(input);
+    expect(second).toEqual(first);
+    expect(first).toMatchObject({ lookupBucket: 'insider', insiderRank: 4, mentionCount: null });
   });
 
   it('A8 canonical discovery run viitab sama collection runile', async () => {

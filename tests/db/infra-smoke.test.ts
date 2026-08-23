@@ -136,6 +136,19 @@ describe('D4 — testibaas on ehitatud migratsioonidest', () => {
     expect(inject('migratedTables')).toContain('insider_transaction_footnotes');
   });
 
+  it('0007_insider_lookup_bucket on rakendatud', async () => {
+    expect(inject('appliedMigrations')).toContain('0007_insider_lookup_bucket');
+    const column = await pool.query(`SELECT is_nullable FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'collection_run_items' AND column_name = 'insider_rank'`);
+    expect(column.rows[0]).toEqual({ is_nullable: 'YES' });
+    const constraints = await pool.query(`SELECT conname, pg_get_constraintdef(oid) AS definition
+      FROM pg_constraint WHERE conname IN (
+        'collection_run_items_bucket_check', 'outcome_analysis_snapshots_bucket_check'
+      ) ORDER BY conname`);
+    expect(constraints.rows).toHaveLength(2);
+    expect(constraints.rows.every((row) => String(row.definition).includes("'insider'"))).toBe(true);
+  });
+
   it('schema_migrations tabel on olemas', async () => {
     const { rows } = await pool.query("SELECT to_regclass('public.schema_migrations') IS NOT NULL AS ok");
     expect(rows[0].ok).toBe(true);

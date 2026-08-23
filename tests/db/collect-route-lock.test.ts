@@ -38,7 +38,12 @@ function dependencies(): CollectRouteDependencies {
       captureDate: '2026-08-17',
       scanned: 0,
       candidates: 0,
-      marketDataLookup: { growth: 0, recall: 0, total: 0 },
+      marketDataLookup: { growth: 0, recall: 0, insider: 0, total: 0 },
+      insiderSignal: {
+        policyVersion: 'form4-insider-selection-v1' as const, sourceFiledDate: null,
+        sourceAgeDays: null, stale: true, eligibleIssuers: 0, selectedIssuers: 0,
+        overlapWithSocial: 0,
+      },
       secSuspensionsTracked: 0,
       flagged: 0,
       liveDataSaved: true,

@@ -26,6 +26,7 @@ import {
   resolveLookupBucket,
   type CollectionRunItemInput,
 } from './collection-run-items';
+import { selectNotableInsiderIssuers } from './insider-discovery';
 
 // Tänase kuupäev "YYYY-MM-DD" Europe/Tallinn ajavööndis.
 function today(): string {
@@ -57,6 +58,10 @@ export function selectFundamentalLookupTickers(rows: ApeWisdomRow[]): {
     .slice(0, FUND_RECALL_LOOKUP_LIMIT)
     .map((row) => row.ticker);
   return { growthTickers, recallTickers, lookupTickers: [...growthTickers, ...recallTickers] };
+}
+
+export function mergeFundamentalLookupTickers(socialTickers: string[], insiderTickers: string[]): string[] {
+  return [...new Set([...socialTickers, ...insiderTickers])];
 }
 
 async function collectCore(collectionRunId: number) {
@@ -93,7 +98,11 @@ async function collectCore(collectionRunId: number) {
   );
 
   // 3) Vali nii kasvu- kui recall-ring fundamentaalide jaoks.
-  const { growthTickers, recallTickers, lookupTickers } = selectFundamentalLookupTickers(preFiltered);
+  const socialSelection = selectFundamentalLookupTickers(preFiltered);
+  const { growthTickers, recallTickers } = socialSelection;
+  const insiderSelection = await selectNotableInsiderIssuers(captureDate);
+  const insiderTickers = insiderSelection.selectedIssuers.map((issuer) => issuer.ticker);
+  const lookupTickers = mergeFundamentalLookupTickers(socialSelection.lookupTickers, insiderTickers);
 
   // 4a) Proovi Yahoo esimesena.
   const fundamentals = await fetchFundamentals(lookupTickers);
@@ -149,7 +158,7 @@ async function collectCore(collectionRunId: number) {
   // provider-resolved ticker may be filtered out later, and an unselected radar
   // ticker may already have a companies row from an earlier workflow.
   const companyIdByTicker = await resolveCollectionCompanyIds(
-    apeRows.map((row) => row.ticker),
+    mergeFundamentalLookupTickers(apeRows.map((row) => row.ticker), insiderTickers),
     fundamentals,
   );
   for (const [ticker, companyId] of savedCompanyIds) companyIdByTicker.set(ticker, companyId);
@@ -161,55 +170,79 @@ async function collectCore(collectionRunId: number) {
   const preFilteredSet = new Set(preFiltered.map((row) => row.ticker));
   const growthSet = new Set(growthTickers);
   const recallSet = new Set(recallTickers);
+  const insiderSet = new Set(insiderTickers);
   const growthRank = new Map(growthTickers.map((ticker, index) => [ticker, index + 1]));
   const recallRank = new Map(recallTickers.map((ticker, index) => [ticker, index + 1]));
+  const insiderByTicker = new Map(insiderSelection.selectedIssuers.map((issuer) => [issuer.ticker, issuer]));
   const candidateByTicker = new Map(candidates.map((candidate) => [candidate.ticker, candidate]));
   const recallCandidateSet = new Set([...preFiltered]
     .sort((a, b) => b.mentions - a.mentions || a.rank - b.rank || a.ticker.localeCompare(b.ticker))
     .slice(0, FUND_RECALL_LOOKUP_LIMIT)
     .map((row) => row.ticker));
-  const items: CollectionRunItemInput[] = apeRows.map((row) => {
-    const bucket = resolveLookupBucket(row.ticker, growthSet, recallSet);
-    const selected = bucket === 'growth' || bucket === 'recall';
-    const fundamental = selected ? fundamentals.get(row.ticker) : undefined;
+  const apeByTicker = new Map(apeRows.map((row) => [row.ticker, row]));
+  const observedTickers = mergeFundamentalLookupTickers(apeRows.map((row) => row.ticker), insiderTickers);
+  const items: CollectionRunItemInput[] = observedTickers.map((ticker) => {
+    const row = apeByTicker.get(ticker);
+    const insider = insiderByTicker.get(ticker);
+    const bucket = resolveLookupBucket(ticker, growthSet, recallSet, insiderSet);
+    const selected = bucket === 'growth' || bucket === 'recall' || bucket === 'insider';
+    const fundamental = selected ? fundamentals.get(ticker) : undefined;
     const found = Boolean(fundamental && (
       fundamental.price != null || fundamental.marketCap != null || fundamental.volume != null
     ));
-    const candidate = candidateByTicker.get(row.ticker);
+    const candidate = candidateByTicker.get(ticker);
     let skipReason: string | null = null;
-    if (!preFilteredSet.has(row.ticker) || (selected && found && !candidate)) skipReason = 'filtered_out';
+    const socialBucket = bucket === 'growth' || bucket === 'recall';
+    if (bucket === 'not_selected' || (socialBucket && found && !candidate)) skipReason = 'filtered_out';
     else if (selected && !found) skipReason = 'no_market_data';
     else if (selected && fundamental?.price == null) skipReason = 'missing_price';
     else if (selected && fundamental?.marketCap == null) skipReason = 'missing_market_cap';
-    const previous = row.mentions_24h_ago;
-    const mentionGrowthPercent = previous == null
+    const previous = row?.mentions_24h_ago ?? null;
+    const mentionGrowthPercent = !row || previous == null
       ? null
       : previous > 0
         ? ((row.mentions - previous) / previous) * 100
         : row.mentions > 0 ? 100 : 0;
     return {
       collectionRunId,
-      ticker: row.ticker,
+      ticker,
+      firstSeenAt: row ? null : insider?.latestAcceptedAt ?? null,
       lookupBucket: bucket,
       selectedForMarketData: selected,
       marketDataAttempted: selected,
       marketDataFound: found,
       marketDataSource: selected ? (found ? fundamental?.source || 'unknown' : 'none') : null,
-      mentionCount: row.mentions,
+      mentionCount: row?.mentions ?? null,
       previousMentionCount: previous,
       mentionGrowthPercent,
-      attentionRank: row.rank,
-      growthRank: growthRank.get(row.ticker) ?? null,
-      recallRank: recallRank.get(row.ticker) ?? null,
-      companyId: companyIdByTicker.get(row.ticker) ?? null,
+      attentionRank: row?.rank ?? null,
+      growthRank: growthRank.get(ticker) ?? null,
+      recallRank: recallRank.get(ticker) ?? null,
+      insiderRank: insider?.insiderRank ?? null,
+      companyId: companyIdByTicker.get(ticker) ?? null,
       skipReason,
       rawSignal: {
-        source: 'apewisdom',
-        passedPreFilter: preFilteredSet.has(row.ticker),
+        source: row ? 'apewisdom' : 'sec-form4',
+        passedPreFilter: row ? preFilteredSet.has(ticker) : null,
         selectionPaths: {
-          growth: growthSet.has(row.ticker),
-          recallCandidate: recallCandidateSet.has(row.ticker),
+          growth: growthSet.has(ticker),
+          recallCandidate: recallCandidateSet.has(ticker),
+          insider: insiderSet.has(ticker),
         },
+        insider: insider ? {
+          policyVersion: insiderSelection.policyVersion,
+          sourceFiledDate: insiderSelection.sourceFiledDate,
+          issuerCik: insider.issuerCik,
+          issuerName: insider.issuerName,
+          maxDerivedNotional: insider.maxDerivedNotional,
+          totalDerivedNotional: insider.totalDerivedNotional,
+          roles: {
+            director: insider.hasDirector,
+            officer: insider.hasOfficer,
+            tenPercentOwner: insider.hasTenPercentOwner,
+          },
+          transactions: insider.transactions,
+        } : null,
       },
       warnings: candidate?.warnings ?? [],
     };
@@ -223,7 +256,17 @@ async function collectCore(collectionRunId: number) {
     marketDataLookup: {
       growth: growthTickers.length,
       recall: recallTickers.length,
+      insider: insiderTickers.filter((ticker) => !growthSet.has(ticker) && !recallSet.has(ticker)).length,
       total: lookupTickers.length,
+    },
+    insiderSignal: {
+      policyVersion: insiderSelection.policyVersion,
+      sourceFiledDate: insiderSelection.sourceFiledDate,
+      sourceAgeDays: insiderSelection.sourceAgeDays,
+      stale: insiderSelection.stale,
+      eligibleIssuers: insiderSelection.eligibleIssuerCount,
+      selectedIssuers: insiderSelection.selectedIssuers.length,
+      overlapWithSocial: insiderTickers.filter((ticker) => growthSet.has(ticker) || recallSet.has(ticker)).length,
     },
     secSuspensionsTracked: secNames.size,
     flagged: candidates.filter((c) => c.warnings.length > 0).length,
@@ -257,6 +300,7 @@ function collectionMetrics(result: Awaited<ReturnType<typeof collectCore>>): Col
     secSuspensionsTracked: result.secSuspensionsTracked,
     liveDataSaved: result.liveDataSaved,
     marketDataLookup: result.marketDataLookup,
+    insiderSignal: result.insiderSignal,
     providers: result.providers,
   };
 }

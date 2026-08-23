@@ -185,7 +185,7 @@ function coreFieldPlans(columns: MetadataSchemaColumn[]): FieldPlan[] {
 const COLLECTION_EXTRAS = new Set([
   'item_version', 'lookup_bucket', 'selected_for_market_data', 'market_data_attempted',
   'market_data_found', 'market_data_source', 'mention_count', 'previous_mention_count',
-  'mention_growth_percent', 'attention_rank', 'growth_rank', 'recall_rank', 'skip_reason',
+  'mention_growth_percent', 'attention_rank', 'growth_rank', 'recall_rank', 'insider_rank', 'skip_reason',
 ]);
 const COMPANY_EXTRAS = new Set([
   'name', 'quote_type', 'currency', 'source', 'sec_cik', 'classification_source',

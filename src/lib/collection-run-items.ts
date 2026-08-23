@@ -3,7 +3,7 @@ import { pool } from './db';
 
 export const COLLECTION_RUN_ITEM_VERSION = 'collection-run-item-v1';
 
-export type CollectionLookupBucket = 'growth' | 'recall' | 'not_selected' | 'unknown';
+export type CollectionLookupBucket = 'growth' | 'recall' | 'insider' | 'not_selected' | 'unknown';
 
 export interface CollectionRunItemInput {
   collectionRunId: number;
@@ -21,6 +21,7 @@ export interface CollectionRunItemInput {
   attentionRank?: number | null;
   growthRank?: number | null;
   recallRank?: number | null;
+  insiderRank?: number | null;
   companyId?: number | null;
   skipReason?: string | null;
   rawSignal?: Record<string, unknown>;
@@ -29,7 +30,7 @@ export interface CollectionRunItemInput {
 
 export interface CollectionRunItemRecord extends Required<Omit<CollectionRunItemInput,
   'firstSeenAt' | 'marketDataSource' | 'mentionCount' | 'previousMentionCount'
-  | 'mentionGrowthPercent' | 'attentionRank' | 'growthRank' | 'recallRank'
+  | 'mentionGrowthPercent' | 'attentionRank' | 'growthRank' | 'recallRank' | 'insiderRank'
   | 'companyId' | 'skipReason' | 'rawSignal' | 'warnings'>> {
   id: number;
   firstSeenAt: string | null;
@@ -41,13 +42,14 @@ export interface CollectionRunItemRecord extends Required<Omit<CollectionRunItem
   attentionRank: number | null;
   growthRank: number | null;
   recallRank: number | null;
+  insiderRank: number | null;
   companyId: number | null;
   skipReason: string | null;
   rawSignal: Record<string, unknown>;
   warnings: unknown[];
 }
 
-const BUCKETS = new Set<CollectionLookupBucket>(['growth', 'recall', 'not_selected', 'unknown']);
+const BUCKETS = new Set<CollectionLookupBucket>(['growth', 'recall', 'insider', 'not_selected', 'unknown']);
 
 function optionalText(value: string | null | undefined): string | null {
   if (value == null) return null;
@@ -124,6 +126,7 @@ function normalize(input: CollectionRunItemInput) {
     attentionRank: optionalInteger(input.attentionRank, 'attentionRank', 1),
     growthRank: optionalInteger(input.growthRank, 'growthRank', 1),
     recallRank: optionalInteger(input.recallRank, 'recallRank', 1),
+    insiderRank: optionalInteger(input.insiderRank, 'insiderRank', 1),
     companyId: optionalInteger(input.companyId, 'companyId', 1),
     skipReason: optionalText(input.skipReason),
     rawSignal: stableValue(rawSignal) as Record<string, unknown>,
@@ -150,6 +153,7 @@ function mapRow(row: any): CollectionRunItemRecord {
     attentionRank: row.attention_rank == null ? null : Number(row.attention_rank),
     growthRank: row.growth_rank == null ? null : Number(row.growth_rank),
     recallRank: row.recall_rank == null ? null : Number(row.recall_rank),
+    insiderRank: row.insider_rank == null ? null : Number(row.insider_rank),
     companyId: row.company_id == null ? null : Number(row.company_id),
     skipReason: row.skip_reason || null,
     rawSignal: row.raw_signal && typeof row.raw_signal === 'object' && !Array.isArray(row.raw_signal)
@@ -162,11 +166,11 @@ function terminalValue(item: ReturnType<typeof normalize> | CollectionRunItemRec
   const { collectionRunId, ticker, itemVersion, firstSeenAt, lookupBucket,
     selectedForMarketData, marketDataAttempted, marketDataFound, marketDataSource,
     mentionCount, previousMentionCount, mentionGrowthPercent, attentionRank, growthRank,
-    recallRank, companyId, skipReason, rawSignal, warnings } = item;
+    recallRank, insiderRank, companyId, skipReason, rawSignal, warnings } = item;
   return stableValue({ collectionRunId, ticker, itemVersion, firstSeenAt, lookupBucket,
     selectedForMarketData, marketDataAttempted, marketDataFound, marketDataSource,
     mentionCount, previousMentionCount, mentionGrowthPercent, attentionRank, growthRank,
-    recallRank, companyId, skipReason, rawSignal, warnings });
+    recallRank, insiderRank, companyId, skipReason, rawSignal, warnings });
 }
 
 async function insertOne(client: PoolClient, input: CollectionRunItemInput): Promise<CollectionRunItemRecord> {
@@ -174,15 +178,15 @@ async function insertOne(client: PoolClient, input: CollectionRunItemInput): Pro
   const params = [item.collectionRunId, item.ticker, item.itemVersion, item.firstSeenAt,
     item.lookupBucket, item.selectedForMarketData, item.marketDataAttempted, item.marketDataFound,
     item.marketDataSource, item.mentionCount, item.previousMentionCount, item.mentionGrowthPercent,
-    item.attentionRank, item.growthRank, item.recallRank, item.companyId, item.skipReason,
+    item.attentionRank, item.growthRank, item.recallRank, item.insiderRank, item.companyId, item.skipReason,
     JSON.stringify(item.rawSignal), JSON.stringify(item.warnings)];
   const inserted = await client.query(
     `INSERT INTO collection_run_items
       (collection_run_id, ticker, item_version, first_seen_at, lookup_bucket,
        selected_for_market_data, market_data_attempted, market_data_found,
        market_data_source, mention_count, previous_mention_count, mention_growth_percent,
-       attention_rank, growth_rank, recall_rank, company_id, skip_reason, raw_signal, warnings)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19::jsonb)
+       attention_rank, growth_rank, recall_rank, insider_rank, company_id, skip_reason, raw_signal, warnings)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19::jsonb,$20::jsonb)
      ON CONFLICT (collection_run_id, ticker) DO NOTHING
      RETURNING *`,
     params,
@@ -240,15 +244,15 @@ export async function getCollectionRunItems(collectionRunId: number): Promise<Co
   return rows.map(mapRow);
 }
 
-// Growth is the primary selection path and wins deterministically if future
-// selection logic ever places a ticker in both sets. Current selector makes the
-// two sets disjoint, but keeping this rule explicit protects historical meaning.
+// The source-path precedence is part of the immutable audit meaning.
 export function resolveLookupBucket(
   ticker: string,
   growthTickers: ReadonlySet<string>,
   recallTickers: ReadonlySet<string>,
+  insiderTickers: ReadonlySet<string> = new Set(),
 ): CollectionLookupBucket {
   if (growthTickers.has(ticker)) return 'growth';
   if (recallTickers.has(ticker)) return 'recall';
+  if (insiderTickers.has(ticker)) return 'insider';
   return 'not_selected';
 }

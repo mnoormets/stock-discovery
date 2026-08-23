@@ -55,6 +55,7 @@ export interface TodayCollectionRun {
     liveDataSaved: boolean | null;
     marketDataGrowth: number | null;
     marketDataRecall: number | null;
+    marketDataInsider: number | null;
     marketDataTotal: number | null;
   };
   errorMessage: string | null;
@@ -446,6 +447,7 @@ function scoreDescription(label: string, value: number | null): string | null {
 export function getSourcePathLabel(lookupBucket: string): string {
   if (lookupBucket === 'growth') return 'Growth screen';
   if (lookupBucket === 'recall') return 'Attention recall';
+  if (lookupBucket === 'insider') return 'Notable insider purchase';
   if (lookupBucket === 'not_selected') return 'Not selected for market lookup';
   return 'Stored research universe';
 }
@@ -640,6 +642,7 @@ function mapCollectionRun(row: any): TodayCollectionRun {
       liveDataSaved: booleanValue(metrics.liveDataSaved),
       marketDataGrowth: numberValue(lookup.growth),
       marketDataRecall: numberValue(lookup.recall),
+      marketDataInsider: numberValue(lookup.insider),
       marketDataTotal: numberValue(lookup.total),
     },
     errorMessage: row.error_message || null,
