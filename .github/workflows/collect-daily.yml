@@ -70,6 +70,9 @@ jobs:
       #   FMP_API_KEY     - collect.ts:104, backtest.ts:97-98. Valikuline varutee;
       #                     kui secret'it ei ole, jääb väärtus tühjaks ja kood
       #                     läheb Yahoo teed, täpselt nagu praegu lokaalselt.
+      #   HEALTHCHECKS_PING_URL - valikuline dead-man-switch heartbeat; CLI saadab
+      #                     GET-i ainult null-veaga jooksu ja kinnitatud tänase
+      #                     canonical run'i järel. Puudumisel jääb saatmata.
       # CRON_SECRET ja CLASSIFICATION_ENRICHMENT_LIMIT on TEADLIKULT väljas: neid
       # loeb ainult `collect-route-handler.ts`, mille impordib üksnes HTTP route
       # `src/app/api/collect/route.ts`. CLI seda kihti ei läbi.
@@ -78,6 +81,7 @@ jobs:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          HEALTHCHECKS_PING_URL: ${{ secrets.HEALTHCHECKS_PING_URL }}
           # Korrektsuse eeltingimus see ei ole — Tallinna kalendripäeva loogika
           # kasutab eksplitsiitset `Intl` ja SQL `AT TIME ZONE` — aga hoiab
           # runneri logid samas ajavööndis nagu Dockerfile:8 ja docker-compose.

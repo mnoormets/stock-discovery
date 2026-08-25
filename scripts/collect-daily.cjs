@@ -11,6 +11,7 @@
 
 const path = require('node:path');
 const { loadTs, loadEnv, ensureLocalDatabaseUrl, repoRoot, registerRepoModules } = require('./_ts-loader.cjs');
+const { sendHealthchecksPingIfComplete } = require('./_healthchecks.cjs');
 
 const root = repoRoot();
 registerRepoModules(root);
@@ -176,6 +177,18 @@ async function main() {
     if (errors.length) {
       section('Vead (job ei katkenud)');
       for (const e of errors) console.log(`  ! ${e}`);
+    }
+
+    const heartbeat = await sendHealthchecksPingIfComplete({
+      url: process.env.HEALTHCHECKS_PING_URL,
+      dryRun: DRY_RUN,
+      errors,
+      canonicalRun: run,
+      todayCanonical: after.today_canonical,
+    });
+    if (heartbeat.status !== 'skipped') {
+      section('Healthchecks heartbeat');
+      line('status', heartbeat.status === 'sent' ? `SENT (HTTP ${heartbeat.httpStatus})` : heartbeat.status);
     }
     return errors.length ? 1 : 0;
   } finally {

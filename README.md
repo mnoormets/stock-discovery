@@ -92,9 +92,12 @@ curl -X POST http://localhost:3005/api/collect \
 | `CRON_SECRET` | jah | `/api/collect` kaitse |
 | `SEC_USER_AGENT` | SEC jaoks | SEC EDGAR, CompanyFacts ja kauplemispeatamiste feed |
 | `FMP_API_KEY` | ei | Yahoo varuallikas radari fundamentaalidele |
+| `HEALTHCHECKS_PING_URL` | ei | `collect:daily` dead-man-switch heartbeat pärast kinnitatud edukat canonical run'i |
 | `TZ` | ei | Ajavöönd, vaikimisi Europe/Tallinn |
 
 Yahoo Finance, ApeWisdom ja Tradestie ei vaja selles prototüübis API-võtit, kuid nende avalikud liidesed võivad olla piiratud või muutuda.
+
+`HEALTHCHECKS_PING_URL` tuleb pärast Healthchecks.io check'i loomist lisada lokaalsesse `.env` faili ja GitHub Actionsi samanimelise repository secret'ina. CLI saadab sellele GET-päringu ainult siis, kui kõik collect'i sammud lõppesid veata ja tänase Tallinna päeva canonical run on andmebaasis kinnitatud (uus või idempotentselt taaskasutatud). Dry-run, osaline/ebaõnnestunud jooks ega puuduv canonical run heartbeat'i ei saada; heartbeat'i enda tõrge jääb hoiatuseks ega muuda edukat collection'it failure'iks.
 
 ## Kvaliteedikontroll
 
