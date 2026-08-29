@@ -62,6 +62,19 @@ jobs:
             exit 1
           fi
 
+      - name: CompanyFacts queue snapshot (before)
+        id: companyfacts_before
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          TZ: Europe/Tallinn
+        run: |
+          mkdir -p artifacts/companyfacts-queue
+          npm run observe:companyfacts -- \
+            --phase before \
+            --output artifacts/companyfacts-queue/before.json
+
       # Secret'ite nimed on tuletatud päris `process.env` kasutusest kogu
       # kogumise kooditeel:
       #   DATABASE_URL    - src/lib/db.ts:13, scripts/_ts-loader.cjs:50 (kohustuslik)
@@ -77,6 +90,7 @@ jobs:
       # loeb ainult `collect-route-handler.ts`, mille impordib üksnes HTTP route
       # `src/app/api/collect/route.ts`. CLI seda kihti ei läbi.
       - name: collect:daily
+        id: collect_daily
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
@@ -92,3 +106,39 @@ jobs:
           else
             npm run collect:daily
           fi
+
+      - name: CompanyFacts queue snapshot and paired report (after)
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          TZ: Europe/Tallinn
+        run: |
+          mkdir -p artifacts/companyfacts-queue
+          args=(
+            --phase after
+            --output artifacts/companyfacts-queue/after.json
+            --report artifacts/companyfacts-queue/observation.json
+            --ndjson artifacts/companyfacts-queue/observation.ndjson
+            --collector-status "${{ steps.collect_daily.outcome }}"
+          )
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            args+=(--collector-mode dry_run)
+          else
+            args+=(--collector-mode live)
+          fi
+          if [ -f artifacts/companyfacts-queue/before.json ]; then
+            args+=(--before artifacts/companyfacts-queue/before.json)
+          fi
+          npm run observe:companyfacts -- "${args[@]}"
+
+      - name: Upload CompanyFacts queue observation
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: companyfacts-queue-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/companyfacts-queue/
+          if-no-files-found: warn
+          retention-days: 30

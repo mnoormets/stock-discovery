@@ -1,6 +1,6 @@
 # CompanyFacts queue observation plan
 
-Status: **proposal only; no observer, schedule, workflow, queue, or budget change is implemented by this document.**
+Status: **implemented as a standalone read-only observer and non-blocking GitHub Actions artifact capture; no queue, budget, migration, or database-write change.**
 
 Date: 2026-08-23
 
@@ -10,7 +10,7 @@ The current preference is a source-neutral increase to `DAILY_FINANCIAL_ENRICHME
 
 ## Recommended no-migration observer
 
-A later, separately approved implementation should add a standalone report command, for example `scripts/report-companyfacts-queue.cjs`. It would:
+The approved implementation adds `scripts/report-companyfacts-queue.cjs` and `npm run observe:companyfacts`. It:
 
 - open one database connection and execute every query inside `BEGIN TRANSACTION READ ONLY`, followed by `ROLLBACK`;
 - issue only `SELECT` statements and make no SEC, Yahoo, or other network request;
@@ -18,7 +18,7 @@ A later, separately approved implementation should add a standalone report comma
 - emit a versioned `companyfacts-queue-observation-v1` JSON document to stdout or a caller-supplied local file;
 - report the database name and observation time, but never log `DATABASE_URL` or credentials.
 
-This needs no schema migration and writes no database rows. A report file or CI artifact is calibration telemetry outside the golden source, not a new application data source.
+This needs no schema migration and writes no database rows. A report file or CI artifact is calibration telemetry outside the golden source, not a new application data source. The current schema does not store a lifetime per-company attempt count, so the artifact emits `attemptCount: null` plus `attemptCountAvailability: "not_stored"`; it does preserve exact paired-window attempts and the stored `consecutiveFailures` value rather than inventing history.
 
 ## Paired daily capture
 
@@ -29,7 +29,7 @@ The most useful lightweight arrangement is two snapshots around the existing sch
 3. Combine both snapshots and the collector exit status into one dated JSON/NDJSON report.
 4. Upload that report as a private workflow artifact with a bounded retention period, such as 30 days.
 
-This is orchestration around the existing command, not a production-pipeline rewrite. If changing the scheduled workflow is undesirable, the same pair can be run by a local scheduled task and saved outside the repository. Either implementation still requires separate review; this document does not create the script or schedule.
+This is orchestration around the existing command, not a production-pipeline rewrite. Both observer steps and artifact upload use `continue-on-error: true`; a telemetry failure cannot block collection or retroactively fail a successful collector. Each observer step also has `timeout-minutes: 1`, while the PostgreSQL pool uses a 10-second connection timeout and 30-second statement timeout, so a hung observation cannot consume the workflow's full 10-minute job budget before `collect:daily` runs. The after step uses `if: always()` so collector failures remain represented as partial observations. Artifacts are private workflow artifacts retained for 30 days.
 
 ## Required observation fields
 
@@ -72,3 +72,19 @@ A higher source-neutral budget becomes evidence-supported only if arrivals and o
 - no Form 4 priority or reserved capacity;
 - no `collect:daily`, ingestion, or other Neon write is authorized by this proposal;
 - no scoring, ranking, `buildCandidates()`, or canonical-discovery change.
+
+## Implemented commands and artifacts
+
+The workflow writes these files under `artifacts/companyfacts-queue/`:
+
+- `before.json` and `after.json`: versioned point-in-time snapshots;
+- `observation.json`: paired result with collector outcome, validity, deltas, interval attempts, and observed entrants;
+- `observation.ndjson`: before, after, and paired-summary records for later multi-day analysis.
+
+The before form is:
+
+```bash
+npm run observe:companyfacts -- --phase before --output artifacts/companyfacts-queue/before.json
+```
+
+The after form adds `--before`, `--collector-status`, `--collector-mode`, `--report`, and `--ndjson`. Direct execution only reads the configured database inside `BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY` and ends with `ROLLBACK`; it makes no provider request. Connections fail after 10 seconds and individual statements after 30 seconds; the workflow independently terminates either observer step after one minute.
