@@ -22,6 +22,7 @@ async function createCanonicalFixture(options: {
   mandate?: string | null;
   coverage?: number;
   quality?: boolean;
+  rawSignal?: Record<string, unknown>;
 } = {}) {
   const ticker = options.ticker || 'BRIEF';
   const runAt = options.runAt || RUN_AT;
@@ -48,6 +49,7 @@ async function createCanonicalFixture(options: {
     recallRank: options.lookupBucket === 'recall' ? 1 : null,
     insiderRank: options.lookupBucket === 'insider' ? 1 : null,
     companyId,
+    rawSignal: options.rawSignal,
   });
   await succeedCollectionRun(collection.id, {
     captureDate: runAt.toISOString().slice(0, 10),
@@ -161,6 +163,52 @@ describe('Daily Research Brief read model', () => {
     });
   });
 
+  it('A4c growth precedence säilitab Form 4 evidence ning ei muuda canonical otsuse välju', async () => {
+    const fixture = await createCanonicalFixture({
+      lookupBucket: 'growth',
+      rawSignal: {
+        insider: {
+          evidenceVersion: 'form4-card-evidence-v1',
+          policyVersion: 'form4-insider-selection-v1',
+          sourceFiledDate: '2026-08-15',
+          transactions: [{
+            transactionId: '1', accessionNumber: '0000000000-26-000001', formType: '4',
+            filedDate: '2026-08-15', transactionDate: '2026-08-14', securityTitle: 'Common Stock',
+            shares: '2000', reportedPricePerShare: '30', derivedNotional: '60000',
+            derivedNotionalMethod: 'transaction_shares_x_transaction_price_per_share',
+            filingUrl: 'https://www.sec.gov/Archives/filing.xml', rule10b51: null,
+            owners: [{
+              ownerName: 'Director Owner', ownerCik: null, isDirector: true, isOfficer: false,
+              isTenPercentOwner: false, isOther: false, hasNoDeclaredRole: false,
+              officerTitle: null, otherText: null,
+            }],
+          }],
+        },
+      },
+    });
+    const decisionBefore = await pool.query(
+      `SELECT included, candidate_rank, growth_score, health_score, coverage_score,
+              catalyst_status, catalyst_evidence_status
+       FROM discovery_decisions WHERE run_id = $1`,
+      [fixture.runId],
+    );
+
+    const candidate = (await getTodayBrief(TODAY)).topCandidates[0];
+    const decisionAfter = await pool.query(
+      `SELECT included, candidate_rank, growth_score, health_score, coverage_score,
+              catalyst_status, catalyst_evidence_status
+       FROM discovery_decisions WHERE run_id = $1`,
+      [fixture.runId],
+    );
+
+    expect(candidate).toMatchObject({
+      ticker: 'BRIEF', lookupBucket: 'growth', sourcePathLabel: 'Growth screen',
+      rank: 1, growthScore: 80, healthScore: 70, coverageScore: 90,
+      insiderEvidence: { state: 'complete' },
+    });
+    expect(decisionAfter.rows).toEqual(decisionBefore.rows);
+  });
+
   it('A5 märgib included not_relevant mandate kandidaadi inimese kontrolliks', async () => {
     await createCanonicalFixture({ mandate: 'not_relevant' });
     const brief = await getTodayBrief(TODAY);
@@ -181,6 +229,114 @@ describe('Daily Research Brief read model', () => {
     await getTodayBrief(TODAY);
 
     expect(await rowCounts()).toEqual(before);
+  });
+
+  it('A6b loeb immutable insider evidence v1 payloadi lossless stringidena ja READ ONLY', async () => {
+    await createCanonicalFixture({
+      lookupBucket: 'insider',
+      rawSignal: {
+        insider: {
+          evidenceVersion: 'form4-card-evidence-v1',
+          policyVersion: 'form4-insider-selection-v1',
+          sourceFiledDate: '2026-08-15',
+          transactions: [{
+            transactionId: '90071992547409931234',
+            accessionNumber: '0000000000-26-000001',
+            formType: '4',
+            filedDate: '2026-08-15',
+            transactionDate: '2026-08-14',
+            securityTitle: 'Common Stock',
+            shares: '12345678901234567890.123400',
+            reportedPricePerShare: '0.000000123456789',
+            derivedNotional: '1524157875.171452454170987650',
+            derivedNotionalMethod: 'transaction_shares_x_transaction_price_per_share',
+            filingUrl: 'https://www.sec.gov/Archives/edgar/data/1/filing.xml',
+            rule10b51: false,
+            owners: [{
+              ownerName: 'Multi Role Owner',
+              ownerCik: '0000000001',
+              isDirector: true,
+              isOfficer: true,
+              isTenPercentOwner: true,
+              isOther: true,
+              hasNoDeclaredRole: false,
+              officerTitle: 'Chief Executive Officer',
+              otherText: 'Trustee',
+            }],
+          }],
+        },
+      },
+    });
+    const before = await rowCounts();
+
+    const candidate = (await getTodayBrief(TODAY)).topCandidates[0];
+
+    expect(candidate.insiderEvidence).toEqual({
+      state: 'complete',
+      evidenceVersion: 'form4-card-evidence-v1',
+      policyVersion: 'form4-insider-selection-v1',
+      sourceFiledDate: '2026-08-15',
+      transactions: [expect.objectContaining({
+        transactionId: '90071992547409931234',
+        shares: '12345678901234567890.123400',
+        reportedPricePerShare: '0.000000123456789',
+        derivedNotional: '1524157875.171452454170987650',
+        owners: [expect.objectContaining({
+          ownerName: 'Multi Role Owner',
+          isDirector: true,
+          isOfficer: true,
+          isTenPercentOwner: true,
+          isOther: true,
+          officerTitle: 'Chief Executive Officer',
+          otherText: 'Trustee',
+        })],
+      })],
+    });
+    expect(await rowCounts()).toEqual(before);
+  });
+
+  it('A6c märgib legacy insider payloadi fail-closed olekusse', async () => {
+    await createCanonicalFixture({
+      ticker: 'LEGACY',
+      lookupBucket: 'insider',
+      rawSignal: { insider: { policyVersion: 'form4-insider-selection-v1', sourceFiledDate: '2026-08-15' } },
+    });
+    const legacyCandidate = (await getTodayBrief(TODAY)).topCandidates[0];
+    expect(legacyCandidate).toMatchObject({
+      ticker: 'LEGACY',
+      insiderEvidence: {
+        state: 'legacy',
+        evidenceVersion: null,
+        sourceFiledDate: '2026-08-15',
+        transactions: [],
+      },
+    });
+
+  });
+
+  it('A6d märgib malformed insider payloadi fail-closed olekusse', async () => {
+    await createCanonicalFixture({
+      ticker: 'BROKEN',
+      lookupBucket: 'insider',
+      rawSignal: {
+        insider: {
+          evidenceVersion: 'form4-card-evidence-v1',
+          policyVersion: 'form4-insider-selection-v1',
+          sourceFiledDate: '2026-08-15',
+          transactions: [{ shares: 50000 }],
+        },
+      },
+    });
+
+    const malformedCandidate = (await getTodayBrief(TODAY)).topCandidates[0];
+    expect(malformedCandidate).toMatchObject({
+      ticker: 'BROKEN',
+      insiderEvidence: {
+        state: 'malformed',
+        evidenceVersion: 'form4-card-evidence-v1',
+        transactions: [],
+      },
+    });
   });
 
   it('A7 võrdleb viimase kahe canonical päeva new/removed/repeated tickereid', async () => {

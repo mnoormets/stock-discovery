@@ -3,6 +3,7 @@ import { toDateOnly } from './date-only';
 import { looksLikeFundOrEtf } from './config';
 
 export const INSIDER_SELECTION_POLICY_VERSION = 'form4-insider-selection-v1';
+export const INSIDER_CARD_EVIDENCE_VERSION = 'form4-card-evidence-v1';
 export const INSIDER_LOOKUP_LIMIT = 20;
 export const INSIDER_NOTIONAL_THRESHOLD = 50_000;
 export const INSIDER_SOURCE_MAX_AGE_DAYS = 5;
@@ -10,10 +11,29 @@ export const INSIDER_SOURCE_MAX_AGE_DAYS = 5;
 export interface NotableInsiderTransaction {
   transactionId: string;
   accessionNumber: string;
+  formType: string;
+  filedDate: string;
   transactionDate: string | null;
   securityTitle: string | null;
-  derivedNotional: number;
+  shares: string | null;
+  reportedPricePerShare: string | null;
+  derivedNotional: string | null;
+  derivedNotionalMethod: string | null;
+  filingUrl: string;
   rule10b51: boolean | null;
+  owners: NotableInsiderOwner[];
+}
+
+export interface NotableInsiderOwner {
+  ownerName: string;
+  ownerCik: string | null;
+  isDirector: boolean;
+  isOfficer: boolean;
+  isTenPercentOwner: boolean;
+  isOther: boolean;
+  hasNoDeclaredRole: boolean;
+  officerTitle: string | null;
+  otherText: string | null;
 }
 
 export interface NotableInsiderIssuer {
@@ -83,11 +103,28 @@ export async function selectNotableInsiderIssuers(captureDateInput: string): Pro
   const { rows } = await pool.query(
     `WITH qualifying AS (
        SELECT f.issuer_cik, upper(f.issuer_ticker) AS ticker, f.issuer_name,
-              f.accession_number, f.accepted_at,
+              f.accession_number, f.form_type, f.filed_date, f.accepted_at,
+              coalesce(f.sec_primary_document_url, f.sec_submission_url) AS filing_url,
               t.id AS transaction_id, t.transaction_date, t.security_title,
-              t.derived_notional, t.rule_10b5_1,
+              t.transaction_shares::text AS transaction_shares,
+              t.transaction_price_per_share::text AS transaction_price_per_share,
+              t.derived_notional, t.derived_notional::text AS derived_notional_text,
+              t.derived_notional_method, t.rule_10b5_1,
               t.filing_has_director_owner, t.filing_has_officer_owner,
-              t.filing_has_ten_percent_owner
+              t.filing_has_ten_percent_owner,
+              (SELECT jsonb_agg(jsonb_build_object(
+                 'ownerName', owner.owner_name,
+                 'ownerCik', owner.owner_cik,
+                 'isDirector', owner.is_director,
+                 'isOfficer', owner.is_officer,
+                 'isTenPercentOwner', owner.is_ten_percent_owner,
+                 'isOther', owner.is_other,
+                 'hasNoDeclaredRole', owner.has_no_declared_role,
+                 'officerTitle', owner.officer_title,
+                 'otherText', owner.other_text
+               ) ORDER BY owner.owner_row_key)
+               FROM insider_reporting_owners owner
+               WHERE owner.filing_id = f.id) AS owners
        FROM insider_filings f
        JOIN insider_transactions t ON t.filing_id = f.id
        WHERE f.filed_date = $1::date
@@ -111,10 +148,17 @@ export async function selectNotableInsiderIssuers(captureDateInput: string): Pro
               jsonb_agg(jsonb_build_object(
                 'transactionId', transaction_id::text,
                 'accessionNumber', accession_number,
+                'formType', form_type,
+                'filedDate', filed_date,
                 'transactionDate', transaction_date,
                 'securityTitle', security_title,
-                'derivedNotional', derived_notional,
-                'rule10b51', rule_10b5_1
+                'shares', transaction_shares,
+                'reportedPricePerShare', transaction_price_per_share,
+                'derivedNotional', derived_notional_text,
+                'derivedNotionalMethod', derived_notional_method,
+                'filingUrl', filing_url,
+                'rule10b51', rule_10b5_1,
+                'owners', coalesce(owners, '[]'::jsonb)
               ) ORDER BY derived_notional DESC, transaction_id) AS transactions
        FROM qualifying
        GROUP BY issuer_cik, ticker
@@ -149,10 +193,31 @@ export async function selectNotableInsiderIssuers(captureDateInput: string): Pro
         ? row.transactions.map((transaction: Record<string, unknown>) => ({
           transactionId: String(transaction.transactionId),
           accessionNumber: String(transaction.accessionNumber),
+          formType: String(transaction.formType),
+          filedDate: String(transaction.filedDate),
           transactionDate: transaction.transactionDate == null ? null : String(transaction.transactionDate),
           securityTitle: transaction.securityTitle == null ? null : String(transaction.securityTitle),
-          derivedNotional: Number(transaction.derivedNotional),
+          shares: transaction.shares == null ? null : String(transaction.shares),
+          reportedPricePerShare: transaction.reportedPricePerShare == null
+            ? null : String(transaction.reportedPricePerShare),
+          derivedNotional: transaction.derivedNotional == null ? null : String(transaction.derivedNotional),
+          derivedNotionalMethod: transaction.derivedNotionalMethod == null
+            ? null : String(transaction.derivedNotionalMethod),
+          filingUrl: String(transaction.filingUrl),
           rule10b51: transaction.rule10b51 == null ? null : Boolean(transaction.rule10b51),
+          owners: Array.isArray(transaction.owners)
+            ? transaction.owners.map((owner: Record<string, unknown>) => ({
+              ownerName: String(owner.ownerName),
+              ownerCik: owner.ownerCik == null ? null : String(owner.ownerCik),
+              isDirector: Boolean(owner.isDirector),
+              isOfficer: Boolean(owner.isOfficer),
+              isTenPercentOwner: Boolean(owner.isTenPercentOwner),
+              isOther: Boolean(owner.isOther),
+              hasNoDeclaredRole: Boolean(owner.hasNoDeclaredRole),
+              officerTitle: owner.officerTitle == null ? null : String(owner.officerTitle),
+              otherText: owner.otherText == null ? null : String(owner.otherText),
+            }))
+            : [],
         }))
         : [],
     })),

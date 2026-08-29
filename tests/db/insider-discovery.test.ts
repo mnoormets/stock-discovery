@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { pool } from '../../src/lib/db';
 import {
+  INSIDER_CARD_EVIDENCE_VERSION,
   INSIDER_LOOKUP_LIMIT,
   INSIDER_SELECTION_POLICY_VERSION,
   selectNotableInsiderIssuers,
@@ -22,6 +23,19 @@ interface SignalOptions {
   securityKind?: 'non_derivative' | 'derivative';
   transactionCode?: string;
   acquiredDisposedCode?: 'A' | 'D';
+  shares?: string;
+  price?: string;
+  primaryDocumentUrl?: string;
+  owners?: Array<{
+    cik: string;
+    name: string;
+    director?: boolean;
+    officer?: boolean;
+    tenPercentOwner?: boolean;
+    other?: boolean;
+    officerTitle?: string;
+    otherText?: string;
+  }>;
 }
 
 async function insertSignal(options: SignalOptions): Promise<void> {
@@ -30,30 +44,44 @@ async function insertSignal(options: SignalOptions): Promise<void> {
   const director = options.director ?? true;
   const officer = options.officer ?? false;
   const tenPercentOwner = options.tenPercentOwner ?? false;
+  const owners = options.owners || [{
+    cik: String(9000 + options.sequence), name: `Owner ${options.sequence}`,
+    director, officer, tenPercentOwner,
+  }];
+  const filingHasDirector = owners.some((owner) => owner.director === true);
+  const filingHasOfficer = owners.some((owner) => owner.officer === true);
+  const filingHasTenPercentOwner = owners.some((owner) => owner.tenPercentOwner === true);
+  const filingHasOther = owners.some((owner) => owner.other === true);
+  const filingHasNoRole = owners.some((owner) => !owner.director && !owner.officer && !owner.tenPercentOwner && !owner.other);
   const accession = `0000000001-26-${String(options.sequence).padStart(6, '0')}`;
   const filing = await pool.query(
     `INSERT INTO insider_filings (
        accession_number, form_type, issuer_cik, issuer_ticker, issuer_name,
-       filed_date, accepted_at, sec_submission_url, parser_version,
+       filed_date, accepted_at, sec_submission_url, sec_primary_document_url, parser_version,
        ownership_xml_sha256, amendment_link_status, ingestion_status,
        ingestion_attempt_count, ingested_at
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'form4-xml-v1',$9,$10,'persisted',1,$7)
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'form4-xml-v1',$10,$11,'persisted',1,$7)
      RETURNING id`,
     [accession, formType, String(1000 + options.sequence), options.ticker,
       options.issuerName || `${options.ticker} Corp`, filedDate, `${filedDate}T12:00:00.000Z`,
-      `https://www.sec.gov/Archives/${accession}`, 'a'.repeat(64),
+      `https://www.sec.gov/Archives/${accession}`, options.primaryDocumentUrl || null, 'a'.repeat(64),
       formType === '4' ? 'not_applicable' : 'unresolved'],
   );
   const filingId = Number(filing.rows[0].id);
-  await pool.query(
-    `INSERT INTO insider_reporting_owners (
-       filing_id, owner_row_key, owner_cik, owner_name, is_director, is_officer,
-       is_ten_percent_owner, is_other
-     ) VALUES ($1,'owner:1',$2,$3,$4,$5,$6,false)`,
-    [filingId, String(9000 + options.sequence), `Owner ${options.sequence}`,
-      director, officer, tenPercentOwner],
-  );
+  for (const [index, owner] of owners.entries()) {
+    await pool.query(
+      `INSERT INTO insider_reporting_owners (
+         filing_id, owner_row_key, owner_cik, owner_name, is_director, is_officer,
+         is_ten_percent_owner, is_other, officer_title, other_text
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [filingId, `owner:${index + 1}`, owner.cik, owner.name,
+        owner.director || false, owner.officer || false, owner.tenPercentOwner || false,
+        owner.other || false, owner.officerTitle || null, owner.otherText || null],
+    );
+  }
   const notional = options.notional ?? 75_000;
+  const shares = options.shares || String(notional);
+  const price = options.price || '1';
   await pool.query(
     `INSERT INTO insider_transactions (
        filing_id, transaction_row_key, security_kind, transaction_date,
@@ -62,10 +90,11 @@ async function insertSignal(options: SignalOptions): Promise<void> {
        reporting_owner_count, filing_has_director_owner, filing_has_officer_owner,
        filing_has_ten_percent_owner, filing_has_other_owner,
        filing_has_owner_without_declared_role
-     ) VALUES ($1,'transaction:1',$2,$3,'Common Stock',$4,$5,$6,1,1,$7,$8,$9,false,false)`,
+     ) VALUES ($1,'transaction:1',$2,$3,'Common Stock',$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
     [filingId, options.securityKind || 'non_derivative', filedDate,
-      options.transactionCode || 'P', options.acquiredDisposedCode || 'A', notional,
-      director, officer, tenPercentOwner],
+      options.transactionCode || 'P', options.acquiredDisposedCode || 'A', shares, price,
+      owners.length, filingHasDirector, filingHasOfficer, filingHasTenPercentOwner,
+      filingHasOther, filingHasNoRole],
   );
 }
 
@@ -128,5 +157,51 @@ describe('form4-insider-selection-v1', () => {
       sourceFiledDate: '2026-08-17', sourceAgeDays: 6, stale: true,
       eligibleIssuerCount: 0, selectedIssuers: [],
     });
+  });
+
+  it('freezes lossless decimal facts, filing provenance, and every reporting-owner role', async () => {
+    await insertSignal({
+      ticker: 'PRECISE', sequence: 30,
+      shares: '9007199254740993.125', price: '2.5',
+      primaryDocumentUrl: 'https://www.sec.gov/Archives/primary.xml',
+      owners: [
+        {
+          cik: '1111111', name: 'Multi Role Owner', director: true, officer: true,
+          tenPercentOwner: true, officerTitle: 'Chief Financial Officer',
+        },
+        { cik: '2222222', name: 'Other Owner', other: true, otherText: 'Trustee' },
+        { cik: '3333333', name: 'No Declared Role' },
+      ],
+    });
+
+    const selection = await selectNotableInsiderIssuers('2026-08-21');
+    const transaction = selection.selectedIssuers[0].transactions[0];
+    expect(INSIDER_CARD_EVIDENCE_VERSION).toBe('form4-card-evidence-v1');
+    expect(transaction).toMatchObject({
+      formType: '4', filedDate: '2026-08-21', transactionDate: '2026-08-21',
+      securityTitle: 'Common Stock',
+      shares: '9007199254740993.125',
+      reportedPricePerShare: '2.5',
+      derivedNotional: '22517998136852482.8125',
+      derivedNotionalMethod: 'transaction_shares_x_transaction_price_per_share',
+      filingUrl: 'https://www.sec.gov/Archives/primary.xml',
+    });
+    expect(transaction.owners).toEqual([
+      {
+        ownerName: 'Multi Role Owner', ownerCik: '1111111', isDirector: true,
+        isOfficer: true, isTenPercentOwner: true, isOther: false,
+        hasNoDeclaredRole: false, officerTitle: 'Chief Financial Officer', otherText: null,
+      },
+      {
+        ownerName: 'Other Owner', ownerCik: '2222222', isDirector: false,
+        isOfficer: false, isTenPercentOwner: false, isOther: true,
+        hasNoDeclaredRole: false, officerTitle: null, otherText: 'Trustee',
+      },
+      {
+        ownerName: 'No Declared Role', ownerCik: '3333333', isDirector: false,
+        isOfficer: false, isTenPercentOwner: false, isOther: false,
+        hasNoDeclaredRole: true, officerTitle: null, otherText: null,
+      },
+    ]);
   });
 });

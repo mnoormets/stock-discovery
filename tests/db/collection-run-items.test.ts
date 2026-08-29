@@ -124,12 +124,45 @@ describe('collection -> canonical ticker provenance bridge', () => {
       lookupBucket: 'insider', mentionCount: null, previousMentionCount: null,
       mentionGrowthPercent: null, attentionRank: null, growthRank: null,
       recallRank: null, insiderRank: 4,
-      rawSignal: { source: 'sec-form4', policyVersion: 'form4-insider-selection-v1' },
+      rawSignal: {
+        source: 'sec-form4',
+        insider: {
+          evidenceVersion: 'form4-card-evidence-v1',
+          policyVersion: 'form4-insider-selection-v1',
+          transactions: [{
+            transactionId: '9007199254740993', shares: '9007199254740993.125',
+            reportedPricePerShare: '2.5', derivedNotional: '22517998136852482.8125',
+            owners: [{
+              ownerName: 'Role Owner', isDirector: true, isOfficer: true,
+              isTenPercentOwner: true, isOther: false, hasNoDeclaredRole: false,
+            }],
+          }],
+        },
+      },
     });
     const first = await recordCollectionRunItem(input);
     const second = await recordCollectionRunItem(input);
     expect(second).toEqual(first);
     expect(first).toMatchObject({ lookupBucket: 'insider', insiderRank: 4, mentionCount: null });
+    expect(first.rawSignal).toEqual(input.rawSignal);
+  });
+
+  it('A7c preserves a legacy insider payload without adding evidence fields or backfilling it', async () => {
+    const runId = await startedRun();
+    const legacySignal = {
+      source: 'sec-form4',
+      insider: {
+        policyVersion: 'form4-insider-selection-v1',
+        transactions: [{ transactionId: '16', derivedNotional: 54_000 }],
+      },
+    };
+    const saved = await recordCollectionRunItem(item(runId, 'LEGACY', {
+      lookupBucket: 'insider', mentionCount: null, previousMentionCount: null,
+      mentionGrowthPercent: null, attentionRank: null, growthRank: null,
+      recallRank: null, insiderRank: 16, rawSignal: legacySignal,
+    }));
+    expect(saved.rawSignal).toEqual(legacySignal);
+    expect((saved.rawSignal.insider as Record<string, unknown>).evidenceVersion).toBeUndefined();
   });
 
   it('A8 canonical discovery run viitab sama collection runile', async () => {

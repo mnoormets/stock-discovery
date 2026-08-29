@@ -18,6 +18,7 @@ import {
   type RklbAdjacentRankExplanation,
   type RklbRankFactors,
 } from './rklb-ranking';
+import { parseTodayInsiderEvidence, type TodayInsiderEvidence } from './today-insider-evidence';
 
 export type TodayBriefStatus = 'ready' | 'waiting' | 'attention' | 'error';
 export type TodayQualityStatus = 'ok' | 'warning' | 'unknown';
@@ -173,6 +174,7 @@ export interface TodayCandidate {
   ownershipBadges: TodayCandidateOwnershipBadge[];
   inlineChanges: TodayCandidateInlineChange[];
   catalystSummary: TodayCatalystSummary;
+  insiderEvidence: TodayInsiderEvidence | null;
 }
 
 export type TodayCandidatePriority = 'review_first' | 'promising' | 'watch' | 'low_priority';
@@ -814,7 +816,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
                 d.catalyst_detail,
                 d.catalyst_at, d.catalyst_url, d.reasons, d.risks, d.unknowns, d.criteria,
                 d.sector, d.collection_run_item_id,
-                c.name AS company_name, i.lookup_bucket
+                c.name AS company_name, i.lookup_bucket, i.raw_signal
          FROM discovery_decisions d
          LEFT JOIN companies c ON c.id = d.company_id
          LEFT JOIN collection_run_items i ON i.id = d.collection_run_item_id
@@ -970,6 +972,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
             novelty: row.catalyst_novelty || null,
             thesisRelevance: row.catalyst_thesis_relevance || null,
           }),
+          insiderEvidence: parseTodayInsiderEvidence(row.raw_signal),
         };
         return { ...candidate, researchSummary: buildCandidateResearchSummary(candidate) };
       });

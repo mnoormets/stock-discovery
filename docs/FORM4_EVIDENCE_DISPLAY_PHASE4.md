@@ -1,6 +1,6 @@
 # SEC Form 4 Phase 4 — candidate-card evidence proposal
 
-Status: **approved design for a separate future implementation task; no UI, selector, persistence, scoring, ranking, or canonical-discovery change is implemented by this document.**
+Status: **Implemented and verified through Slice 4. The V1 UI is `/today`-only; scoring, ranking, canonical discovery, migrations, and historical rows are unchanged.**
 
 Date: 2026-08-23
 
@@ -13,9 +13,8 @@ The initial surface is assumed to be the canonical candidate card on `/today`, b
 ## Confirmed current architecture
 
 - `insider_filings`, `insider_reporting_owners`, `insider_transactions`, transaction footnotes, and `insider_transaction_owner_evidence` already persist every required normalized fact. The evidence view has one transaction/reporting-owner pair and exposes owner name; separate director, officer, 10%-owner, other, and no-declared-role flags; officer title; shares; price; derived notional/method; accession; dates; and SEC URLs.
-- Phase 3 freezes an `insider` object in `collection_run_items.raw_signal`. It currently contains policy/source date, issuer identity, aggregate notionals, aggregate role flags, and selected transaction IDs/accessions/dates/security titles/derived notionals/10b5-1 flags.
-- The current snapshot does **not** contain reporting-owner names, per-owner role fields, shares, reported price per share, filing URL, or the derived-notional method. Therefore run #16 cannot be rendered with the complete requested fact set from its immutable collection snapshot.
-- `today-brief.ts` already joins `discovery_decisions.collection_run_item_id` to `collection_run_items`, but currently selects only `lookup_bucket`, not `raw_signal`. Catalyst evidence is carried through a typed read model and rendered inside the candidate card with an event date and primary-source link.
+- Future Phase 4 collection items freeze a versioned `insider` object in `collection_run_items.raw_signal` with the complete selected transaction and reporting-owner facts. Historical snapshots such as run #16 remain unchanged and do not gain fields from live Form 4 tables.
+- `today-brief.ts` joins `discovery_decisions.collection_run_item_id` to `collection_run_items`, reads `raw_signal` inside its existing read-only transaction, and exposes only a strictly parsed `TodayInsiderEvidence` subtree. Legacy and malformed payloads fail closed without throwing.
 - A candidate may have Form 4 evidence even when bucket precedence labels it `growth` or `recall`; the evidence condition is `raw_signal.insider != null`, not `lookup_bucket === 'insider'`.
 
 ## Alternatives
@@ -108,12 +107,26 @@ The useful catalyst pattern is structural: a typed read model, event date, raw d
 
 ## Proposed implementation slices after review
 
-1. Extend the Phase 3 selector query and `raw_signal.insider` snapshot contract; add persistence/legacy tests.
-2. Add the strict `TodayInsiderEvidence` parser/read model and DB-level read-only tests.
-3. Add a small reusable raw-fact component and render it on `/today`; add missing-data and multi-role UI tests.
-4. Run the full verification chain, production build/restart, and read-only smoke checks. Do not backfill historical rows or run a production collect without separate approval.
+1. **Implemented:** extend the Phase 3 selector query and `raw_signal.insider` snapshot contract; add persistence/legacy tests.
+2. **Implemented:** add the strict `TodayInsiderEvidence` parser/read model and DB-level read-only tests.
+3. **Implemented:** add a small reusable raw-fact component and render it on `/today`; add missing-data and multi-role UI tests.
+4. **Implemented:** run the full verification chain, production build/restart, and read-only smoke checks. No historical rows were backfilled and no production collect was run.
 
 No migration is expected for this recommended design.
+
+## Slice 1 implementation — 2026-08-26
+
+Future collection items with Form 4 evidence now freeze `evidenceVersion: "form4-card-evidence-v1"`. Each selected transaction contains accession/form/filed/transaction dates, security title, lossless string shares, lossless string reported price per share, lossless string derived notional, explicit derivation method, preferred primary-document URL with submission-URL fallback, 10b5-1 state, and every structured reporting owner with all independent role flags and role text.
+
+The selector policy itself remains `form4-insider-selection-v1`: original Form 4 only, non-derivative `P+A`, director/officer required, derived notional strictly above 50,000, source freshness gate, fund exclusion, and maximum 20 issuers. Selection ordering and all aggregate issuer fields are unchanged. Existing unversioned payloads are neither mutated nor backfilled; the read model identifies them as legacy and the card renders the approved historical-item message.
+
+## Slices 2–4 implementation — 2026-08-27
+
+`today-insider-evidence.ts` validates the complete V1 subtree without converting decimal strings to JavaScript numbers. Required role flags, original Form 4, dates, the known derivation method, and an HTTPS SEC filing URL are structural guards. Missing insider evidence returns `null`; unversioned evidence is `legacy`; invalid or unknown-version evidence is `malformed`; neither partial state exposes transaction rows.
+
+`Form4PurchaseEvidence` renders raw facts only inside the existing expanded `/today` candidate evidence area. It shows `Reporting owner(s)` and every applicable role label, preserves reported numeric strings, displays missing values as `unknown`, adds no currency symbol, and links safely to the frozen SEC URL. Complete snapshots include the on-demand-ingestion source-date caveat. Legacy and malformed snapshots show `Detailed owner/share/price evidence was not captured for this historical collection item.` with no live-table fallback.
+
+Focused Slice 2 verification passed 26/26 tests; focused Slice 3 verification passed 32/32 tests. Final verification passed typecheck, lint, 376/376 tests across 43 files, and the 21/21-page production build. The app was restarted after the build and read-only smoke checks returned HTTP 200 for `/` and `/today`.
 
 ## Approved design decisions — 2026-08-23
 
@@ -123,7 +136,7 @@ No migration is expected for this recommended design.
 - Limit V1 display to canonical candidate cards on `/today`.
 - Do not backfill run #16 or any other legacy collection item. Render the honest message `Detailed owner/share/price evidence was not captured for this historical collection item.` when the complete immutable payload was not captured.
 
-These decisions approve the design only. Phase 4 code requires a separate implementation task and authorization.
+These approved decisions are implemented in Phase 4 V1.
 
 ## Explicit non-goals
 

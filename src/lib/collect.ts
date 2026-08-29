@@ -26,7 +26,7 @@ import {
   resolveLookupBucket,
   type CollectionRunItemInput,
 } from './collection-run-items';
-import { selectNotableInsiderIssuers } from './insider-discovery';
+import { INSIDER_CARD_EVIDENCE_VERSION, selectNotableInsiderIssuers } from './insider-discovery';
 
 // Tänase kuupäev "YYYY-MM-DD" Europe/Tallinn ajavööndis.
 function today(): string {
@@ -230,6 +230,7 @@ async function collectCore(collectionRunId: number) {
           insider: insiderSet.has(ticker),
         },
         insider: insider ? {
+          evidenceVersion: INSIDER_CARD_EVIDENCE_VERSION,
           policyVersion: insiderSelection.policyVersion,
           sourceFiledDate: insiderSelection.sourceFiledDate,
           issuerCik: insider.issuerCik,

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Form4PurchaseEvidence from '@/components/Form4PurchaseEvidence';
 import {
   getCatalystStatusLabel,
   getTodayBrief,
@@ -218,6 +219,7 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
             {!candidate.provenanceKnown && <p className="todaySubtle">Source path is not linked to a collection item; this is a traceability note, not a thesis warning.</p>}
           </section>
         </div>
+        {candidate.insiderEvidence && <Form4PurchaseEvidence evidence={candidate.insiderEvidence} />}
         {hasStoredEvidence && (
           <details className="todayStoredEvidence">
             <summary>Stored decision evidence (verbatim)</summary>

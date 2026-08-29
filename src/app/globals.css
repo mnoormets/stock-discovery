@@ -570,6 +570,22 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .todayCandidateDetailGrid p, .todayCandidateDetailGrid ul { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .todayCandidateDetailGrid ul { display: grid; gap: 4px; padding-left: 17px; }
 .todayCandidateDetailGrid p + p { margin-top: 6px; }
+.todayInsiderEvidence { display: grid; gap: 11px; margin-top: 10px; padding: 14px; border: 1px solid var(--border); border-left: 3px solid #6b5f8d; border-radius: 9px; background: rgba(8,14,22,.65); }
+.todayInsiderEvidence h3 { margin: 0; font-size: 14px; }
+.todayEvidenceVersion { color: var(--muted); font-size: 11px; }
+.todayInsiderTransactions { display: grid; gap: 10px; }
+.todayInsiderTransactions > article { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.todayInsiderFacts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.todayInsiderFacts div { display: grid; gap: 3px; }
+.todayInsiderFacts dt { color: var(--muted); font-size: 10px; }
+.todayInsiderFacts dd { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
+.todayReportingOwners { display: grid; gap: 7px; }
+.todayReportingOwners > strong { font-size: 12px; }
+.todayReportingOwner { display: grid; gap: 5px; padding: 9px; border-radius: 7px; background: #0f1928; }
+.todayReportingOwner > span { font-size: 12px; font-weight: 700; }
+.todayReportingOwner > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.todayReportingOwner b { padding: 3px 6px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 10px; font-weight: 700; }
+.todayInsiderFiling { margin: 0; color: var(--muted); font-size: 11px; }
 .todaySubtle { opacity: .72; }
 .todayStoredEvidence { margin-top: 10px; color: var(--muted); font-size: 11px; }
 .todayStoredEvidence > summary { cursor: pointer; }
@@ -636,7 +652,7 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .todayHero { align-items: flex-start; flex-direction: column; }
   .todaySystemStatus { align-items: flex-start; flex-direction: column; max-width: none; width: 100%; }
   .todayCandidateTop { align-items: flex-start; flex-direction: column; }
-  .todayCandidateDetailGrid, .todayRunStrip, .todayTwoColumn, .todayQualityGrid, .todayPriceGrid, .todayScenarioGrid, .todayTechnicalDetails dl { grid-template-columns: 1fr; }
+  .todayCandidateDetailGrid, .todayRunStrip, .todayTwoColumn, .todayQualityGrid, .todayPriceGrid, .todayScenarioGrid, .todayTechnicalDetails dl, .todayInsiderFacts { grid-template-columns: 1fr; }
   .todaySubsectionHeading, .todayHistoryNotice, .todayRunUpNotice { align-items: flex-start; flex-direction: column; }
   .todayRunStrip > div { border-top: 1px solid var(--border); border-left: 0; }
   .todayRunStrip > div:first-child { border-top: 0; }
