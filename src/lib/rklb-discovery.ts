@@ -18,7 +18,12 @@ import {
   recordDataQualitySnapshot,
   RequiredDataQualitySnapshotError,
 } from './data-quality-snapshots';
-import { compareRklbRankFactors } from './rklb-ranking';
+import { compareRklbRankFactors, countSupportedRankingCriteria } from './rklb-ranking';
+import { selectCanonicalCandidatesByMarketCapTier } from './market-cap-tiers';
+import {
+  MARKET_CAP_TIER_CANDIDATES_PER_TIER,
+  MARKET_CAP_TIER_POLICY_VERSION,
+} from './config';
 
 export type DiscoveryCriterionStatus = 'supported' | 'uncertain' | 'missing';
 
@@ -97,21 +102,20 @@ interface EvaluatedCompany {
   dataQuality: DataQualitySummary;
 }
 
-const MAX_KNOWN_MARKET_CAP = 75_000_000_000;
 const STRONG_SCALE_MAX = 25_000_000_000;
 const MICRO_CAP_LIMIT = 100_000_000;
 const LOW_VOLUME_LIMIT = 200_000;
-const MAX_CANDIDATES = 5;
 
 const RULES = [
   'Growth vähemalt 65.',
   'Coverage vähemalt 70.',
-  'Teadaolev market cap kuni 75 miljardit.',
+  `Turukapital jagatakse ${MARKET_CAP_TIER_POLICY_VERSION} järgi lower/middle/upper tier'iks.`,
   'Catalyst ei ole kaasamise eeltingimus: catalyst evidence mõjutab ainult järjestust ja nähtavat tõendit.',
   'Catalyst evidence tier: material_new_evidence > weak_or_unconfirmed > scheduled_only / collection_gap > none_recorded.',
   'Materiaalne uus tõend nõuab primaarallikat, kvantifitseeritud muutust, teadaolevat suunda ja uut infot; pealkiri ega planeeritud kuupäev ei kvalifitseeru.',
   'RKLB ise on võrdlusnäidis ja jäetakse tulemustest välja.',
-  'Maksimaalselt viis kõrgeima reeglipõhise järjestusega kandidaati.',
+  `Igast turukapitalitier'ist valitakse kuni ${MARKET_CAP_TIER_CANDIDATES_PER_TIER} kandidaati; vabu kohti ei laenata tier'ide vahel.`,
+  'Puuduva või vigase market capiga ettevõte ei saa canonical tier-kohta.',
 ];
 
 function formatBillions(value: number): string {
@@ -235,8 +239,8 @@ async function marketEvidence(): Promise<Map<string, MarketEvidence>> {
 // Järjestus jääb leksikograafiline ja koondskoorita. Catalyst evidence tier on
 // üks aste, mitte kaalutud punkt ega kaasamisfilter.
 function candidateOrder(a: EvaluatedCompany, b: EvaluatedCompany): number {
-  const supportedA = a.criteria.filter((criterion) => criterion.status === 'supported').length;
-  const supportedB = b.criteria.filter((criterion) => criterion.status === 'supported').length;
+  const supportedA = countSupportedRankingCriteria(a.criteria);
+  const supportedB = countSupportedRankingCriteria(b.criteria);
   return compareRklbRankFactors({
     ticker: a.evidence.ticker,
     supportedCriteriaCount: supportedA,
@@ -363,9 +367,6 @@ export async function getRklbDiscoveryCandidates(
     if (!growth) exclusions.push('Growth skoor puudub.');
     else if (growth.score < 65) exclusions.push(`Growth ${growth.score}/100 jääb alla 65 lävendi.`);
     if (scores.coverage.score < 70) exclusions.push(`Coverage ${scores.coverage.score}/100 jääb alla 70 lävendi.`);
-    if (evidence.marketCap != null && evidence.marketCap > MAX_KNOWN_MARKET_CAP) {
-      exclusions.push(`Market cap ${formatBillions(evidence.marketCap)} ületab 75 miljardi piiri.`);
-    }
     const topGrowthReasons = getTopScoreReasons(growth, 2);
     evaluated.push({
       financials: financial, evidence, growth, health: scores.financialHealth,
@@ -388,11 +389,19 @@ export async function getRklbDiscoveryCandidates(
     });
   }
 
-  const eligible = evaluated.filter((item) => item.exclusionReasons.length === 0).sort(candidateOrder);
-  const selected = eligible.slice(0, MAX_CANDIDATES);
+  const eligible = evaluated.filter((item) => item.exclusionReasons.length === 0);
+  const tierSelection = selectCanonicalCandidatesByMarketCapTier(
+    eligible,
+    (item) => item.evidence.marketCap,
+    candidateOrder,
+  );
+  const selected = [...tierSelection.selected].sort(candidateOrder);
   const selectedRank = new Map(selected.map((item, index) => [item.evidence.ticker, index + 1]));
-  for (const item of eligible.slice(MAX_CANDIDATES)) {
-    item.exclusionReasons.push('Läbis baasfiltrid, kuid jäi viie kõrgeima järjestusega kandidaadi piirist välja.');
+  for (const item of tierSelection.overCapacity) {
+    item.exclusionReasons.push(`Läbis baasfiltrid, kuid jäi oma turukapitalitier'i ${MARKET_CAP_TIER_CANDIDATES_PER_TIER} koha piirist välja.`);
+  }
+  for (const item of tierSelection.unknownMarketCap) {
+    item.exclusionReasons.push('Market cap puudub või on vigane; canonical tier-kohta ei määrata.');
   }
   const decisions = evaluated.map((item) => {
     const rank = selectedRank.get(item.evidence.ticker) ?? null;

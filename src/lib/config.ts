@@ -1,10 +1,9 @@
 // Kõik "keeratavad nupud" ühes kohas, et oleks lihtne häälestada.
 
 // Suured tuntud nimed, mille tahame ALATI välja filtreerida (must nimekiri).
-// TÄHTIS: see on TURVAVÕRK. Peamine suurte nimede filter on dünaamiline
-// turukapi-piir (Yahoo kaudu, vt MAX_MARKET_CAP). Kui Yahoo on maas / rate-limitib,
-// pole turukappi teada ja suured nimed lipsaksid muidu läbi — see nimekiri katab
-// levinuimad WSB mega-cap'id, et tööriist degradeeruks graatsiliselt.
+// TÄHTIS: see on sotsiaalse sisendi turvavõrk. Turukapital ei ole enam
+// buildCandidates() kaasamisfilter, kuid see nimekiri katab endiselt levinuimad
+// WSB mega-cap'id ja hoovaga ETF-id.
 export const BLACKLIST = new Set([
   // klassikalised mega-cap tech
   'NVDA', 'TSLA', 'MSFT', 'AAPL', 'AMZN', 'GOOGL', 'GOOG', 'META',
@@ -26,8 +25,18 @@ export const BLACKLIST = new Set([
   'GME', 'AMC', 'BB', 'NOK',
 ]);
 
-// Ülempiir turukapile: üle selle loeme "juba suureks/tuntuks" ($10 mld).
-export const MAX_MARKET_CAP = 10_000_000_000;
+// Sotsiaalse discovery skoori väiksema turukapi komponendi log-skaala ülemine
+// ankur. See EI OLE kaasamispiir: sellest suurem turukapital saab lihtsalt selle
+// komponendi eest null punkti.
+export const SOCIAL_MARKET_CAP_SCORE_MAX = 10_000_000_000;
+
+// Päris lookup-andmete P25/P75 põhjal lukustatud canonical tier policy.
+// Piirid on täisarvulised ja tahtlikult inklusiivsed/eksklusiivsed, et ükski
+// teadaolev turukapital ei langeks kahe tier'i vahele.
+export const MARKET_CAP_TIER_POLICY_VERSION = 'market-cap-tier-policy-v1';
+export const MARKET_CAP_TIER_LOWER_MAX_EXCLUSIVE = 1_791_164_000;
+export const MARKET_CAP_TIER_UPPER_MIN_INCLUSIVE = 48_338_040_832;
+export const MARKET_CAP_TIER_CANDIDATES_PER_TIER = 2;
 
 // Tõendipõhine müralävi: 4 kuupäeva väikeses valimis lisas 5 → 3 keskmiselt
 // ~24 sobivat tickerit päevas; 2026-08-16 oli erandlikult madala tähelepanuga päev.

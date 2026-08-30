@@ -1,7 +1,7 @@
 import type { ApeWisdomRow, TradestieRow, Fundamentals, Candidate } from './types';
 import { normalizeCompanyName } from './sec';
 import {
-  BLACKLIST, MAX_MARKET_CAP, MIN_MENTIONS, looksLikeFundOrEtf,
+  BLACKLIST, SOCIAL_MARKET_CAP_SCORE_MAX, MIN_MENTIONS, looksLikeFundOrEtf,
   SPIKE_GROWTH_THRESHOLD, SPIKE_LOW_BASE, SPIKE_ABS_MENTIONS,
   LOW_VOLUME_THRESHOLD, MICRO_CAP_THRESHOLD,
   PENALTY_SEC, PENALTY_SPIKE, PENALTY_LOW_LIQ, SUSTAIN_BONUS_MAX,
@@ -92,7 +92,7 @@ function scoreCandidate(
   let capPart = 12;
   if (fund?.marketCap && fund.marketCap > 0) {
     const lo = Math.log10(50_000_000);
-    const hi = Math.log10(MAX_MARKET_CAP);
+    const hi = Math.log10(SOCIAL_MARKET_CAP_SCORE_MAX);
     const c = Math.log10(fund.marketCap);
     capPart = clamp((hi - c) / (hi - lo), 0, 1) * 25;
   }
@@ -165,9 +165,8 @@ export function buildCandidates(
     if (ape.mentions < MIN_MENTIONS) continue;        // FILTER 2: müralävi
 
     const fund = fundamentals.get(ape.ticker);
-    if (fund?.marketCap && fund.marketCap > MAX_MARKET_CAP) continue; // FILTER 3: liiga suur
 
-    // FILTER 4: ETF-id / fondid (pole ettevõtted). Tuvasta fundamentaali
+    // FILTER 3: ETF-id / fondid (pole ettevõtted). Tuvasta fundamentaali
     // isEtf/quoteType järgi, muidu nimemustri järgi (turvavõrk).
     const fundName = fund?.name || ape.name || '';
     if (fund?.isFund || looksLikeFundOrEtf(fundName)) continue;

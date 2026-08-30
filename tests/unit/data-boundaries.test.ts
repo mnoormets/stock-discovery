@@ -62,6 +62,20 @@ describe('DATE and missed-move audit boundaries', () => {
     expect(buildCandidates([], new Map(), fundamentals, new Map(), new Set())).toEqual([]);
   });
 
+  it('ei kasuta enam 10 miljardi turukappi social discovery hard ceilingina', () => {
+    const row: ApeWisdomRow = {
+      rank: 1, ticker: 'LARGE', name: 'Large Company', mentions: 20,
+      upvotes: 10, rank_24h_ago: 2, mentions_24h_ago: 10,
+    };
+    const fundamentals = new Map<string, Fundamentals>([['LARGE', {
+      ticker: 'LARGE', name: 'Large Company', marketCap: 100_000_000_000,
+      price: 50, currency: 'USD', volume: 1_000_000, source: 'yahoo',
+    }]]);
+
+    expect(buildCandidates([row], new Map(), fundamentals, new Map(), new Set())
+      .map((candidate) => candidate.ticker)).toEqual(['LARGE']);
+  });
+
   it('tuvastab suletud fondi nime, kuid mitte tavalist Funding-ettevõtet', () => {
     expect(looksLikeFundOrEtf('High Income Securities Fund')).toBe(true);
     expect(looksLikeFundOrEtf('Regional Management Funding Corp')).toBe(false);

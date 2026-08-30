@@ -3,10 +3,10 @@ import { ensureSchema, pool } from './db';
 import type { DiscoveryCriterion } from './rklb-discovery';
 import { recordMissingOutcomeAnalysisSnapshots } from './outcome-analysis-snapshots';
 
-// Kaasamisreegel muutus Catalyst Evidence V2-ga: catalyst ei ole enam hard
-// gate. Versioon tõuseb, et frequency/persistence ei võrdleks v1 ja v2 run'e
-// ühe loona.
-export const DISCOVERY_MODEL_VERSION = 'rklb-discovery-v2';
+// V3 eemaldab market-cap hard ceiling'id, valib kuni kaks kandidaati igast
+// versioned market-cap tier'ist ning jätab scale-kriteeriumi järjestusloendusest
+// välja. Frequency/persistence ei tohi võrrelda eri kaasamisreegleid ühe loona.
+export const DISCOVERY_MODEL_VERSION = 'rklb-discovery-v3';
 export const DEFAULT_BENCHMARK_SYMBOL = 'SPY';
 export const OUTCOME_HORIZONS = ['1w', '2w', '1m', '3m', '6m'] as const;
 export type OutcomeHorizon = (typeof OUTCOME_HORIZONS)[number];

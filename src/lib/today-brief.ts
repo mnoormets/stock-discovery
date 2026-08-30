@@ -14,6 +14,7 @@ import {
 import { buildScenarioValuation, type ScenarioValuation } from './scenario-valuation';
 import type { ValuationEvidenceInput, ValuationInputMetric } from './valuation-evidence';
 import {
+  countSupportedRankingCriteria,
   explainAdjacentRklbRanks,
   type RklbAdjacentRankExplanation,
   type RklbRankFactors,
@@ -308,7 +309,10 @@ function stringArray(value: unknown): string[] {
 }
 
 function supportedCriteriaCount(value: unknown): number {
-  return arrayValue(value).filter((item) => objectValue(item).status === 'supported').length;
+  return countSupportedRankingCriteria(arrayValue(value).map((item) => ({
+    id: String(objectValue(item).id || ''),
+    status: String(objectValue(item).status || ''),
+  })));
 }
 
 function candidateRankFactors(candidate: TodayCandidate): RklbRankFactors {

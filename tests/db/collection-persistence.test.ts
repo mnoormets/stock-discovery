@@ -51,14 +51,14 @@ describe('radar ticker persistence', () => {
     expect(rows[0]).toEqual({ companies: 1, prices: 1, currency: 'USD' });
   });
 
-  it('links usable provider identity even when discovery filtering removes the ticker', async () => {
+  it('keeps large-cap social candidates eligible and links their provider identity', async () => {
     const row = radar('LARGE');
     const fund = providerFundamentals('LARGE', { marketCap: 100_000_000_000 });
     const candidates = buildCandidates([row], new Map(), new Map([['LARGE', fund]]), new Map(), new Set());
-    expect(candidates).toEqual([]);
+    expect(candidates.map((candidate) => candidate.ticker)).toEqual(['LARGE']);
 
     const candidateIds = await saveCollectedCompanies(candidates);
-    expect(candidateIds.size).toBe(0);
+    expect(candidateIds.size).toBe(1);
     const identities = await resolveCollectionCompanyIds(['LARGE'], new Map([['LARGE', fund]]));
     const companyId = identities.get('LARGE');
     expect(companyId).toBeTypeOf('number');

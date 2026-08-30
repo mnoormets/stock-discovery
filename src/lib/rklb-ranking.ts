@@ -32,6 +32,19 @@ export interface RklbAdjacentRankExplanation {
   factors: RklbRankFactorComparison[];
 }
 
+export interface RklbCriterionForRanking {
+  id: string;
+  status: string;
+}
+
+// Scale remains visible evidence, but market-cap size must not receive a second
+// ranking advantage after candidates have already been separated into cap tiers.
+export function countSupportedRankingCriteria(
+  criteria: readonly RklbCriterionForRanking[],
+): number {
+  return criteria.filter((criterion) => criterion.id !== 'scale' && criterion.status === 'supported').length;
+}
+
 export const RKLB_RANK_FACTOR_ORDER: ReadonlyArray<{
   key: RklbRankFactorKey;
   label: string;
