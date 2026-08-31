@@ -38,6 +38,16 @@ export const MARKET_CAP_TIER_LOWER_MAX_EXCLUSIVE = 1_791_164_000;
 export const MARKET_CAP_TIER_UPPER_MIN_INCLUSIVE = 48_338_040_832;
 export const MARKET_CAP_TIER_CANDIDATES_PER_TIER = 2;
 
+// Paper strategy on eraldi mõõtmisleping, mitte ostusoovitus ega discovery
+// skoor. Iga canonical valik saab mõlemas strateegias sama fikseeritud USD
+// rahavoo; tasu peegeldab Lightyeari USA aktsiate avalikku hinnakirja.
+export const PAPER_STRATEGY_POLICY_VERSION = 'paper-strategy-v1';
+export const PAPER_STRATEGY_ORDER_NOTIONAL_USD = 100;
+export const PAPER_STRATEGY_COMMISSION_RATE = 0.001;
+export const PAPER_STRATEGY_COMMISSION_MIN_USD = 0.1;
+export const PAPER_STRATEGY_COMMISSION_MAX_USD = 1;
+export const PAPER_STRATEGY_EXIT_FAILURE_RUNS = 3;
+
 // Tõendipõhine müralävi: 4 kuupäeva väikeses valimis lisas 5 → 3 keskmiselt
 // ~24 sobivat tickerit päevas; 2026-08-16 oli erandlikult madala tähelepanuga päev.
 export const MIN_MENTIONS = 3;

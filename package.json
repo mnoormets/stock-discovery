@@ -17,6 +17,7 @@
     "calibrate:market-cap-tiers": "node scripts/calibrate-market-cap-tiers.cjs",
     "calibrate:form4": "node scripts/calibrate-form4.cjs",
     "ingest:form4": "node scripts/ingest-form4.cjs",
+    "paper:strategy": "node scripts/paper-strategy.cjs",
     "schema:diff": "node scripts/schema-diff.cjs",
     "migrate": "node scripts/migrate.cjs",
     "test": "vitest run",

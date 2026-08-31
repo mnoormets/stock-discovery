@@ -1,0 +1,42 @@
+# Captures hypothetical fills and daily marks from fresh US regular-session
+# Yahoo quotes. This workflow never sends an order to a broker.
+#
+# It is workflow_dispatch-only for the same private-repo/free-tier reason as
+# collect-daily.yml. A separate external trigger must call it shortly after
+# 09:30 America/New_York; the script still fails closed on marketState/time.
+name: paper-strategy-execute
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: paper-strategy-execute
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Kontrolli, et NEON_DATABASE_URL secret on olemas
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          if [ -z "$NEON_DATABASE_URL" ]; then
+            echo "NEON_DATABASE_URL secret puudub või on tühi." >&2
+            exit 1
+          fi
+      - name: Capture fresh paper fills and marks
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          TZ: America/New_York
+        run: npm run paper:strategy -- execute

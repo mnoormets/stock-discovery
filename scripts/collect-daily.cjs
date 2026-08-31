@@ -81,6 +81,7 @@ async function main() {
       console.log('  3. enrichStoredCompanyFinancials() -> kuni 5 ettevotet/Tallinna paev -> financial_facts');
       console.log('  4. enrichCompanyClassifications()  -> companies.sector/industry');
       console.log(`  5. getRklbDiscoveryCandidates({runType:'rklb_daily', collectionRunId}) -> ${before.today_canonical ? 'taaskasutab tanast canonical run i' : 'LOOB tanase canonical run i'}`);
+      console.log('  5b. recordPaperStrategySignals()   -> salvestab ainult versioned paper-policy intents (kui 0008 on rakendatud)');
       console.log('  6. refreshCandidateOutcomes()      -> moodab outcome id, mille target_at on kaes');
       console.log('\n  Dry-run ei kutsunud uhtegi kirjutavat funktsiooni. Ridu ei lisatud.');
       return 0;
@@ -99,6 +100,7 @@ async function main() {
     const classification = loadTs(path.join(root, 'src/lib/company-classification.ts'));
     const discovery = loadTs(path.join(root, 'src/lib/rklb-discovery.ts'));
     const validation = loadTs(path.join(root, 'src/lib/discovery-validation.ts'));
+    const paperStrategy = loadTs(path.join(root, 'src/lib/paper-strategy-store.ts'));
 
     section('1. runCollection');
     const collected = await step('runCollection', () => collect.runCollection());
@@ -153,6 +155,27 @@ async function main() {
     }
     const outcomesAfterDiscovery = (await counters()).outcomes;
     line('created candidate_outcomes', outcomesAfterDiscovery - outcomesBeforeDiscovery);
+
+    section('5b. paper strategy signals');
+    if (!run) {
+      line('status', 'SKIPPED', '(canonical run puudub)');
+    } else if (!(await paperStrategy.paperStrategySchemaAvailable())) {
+      line('status', 'SKIPPED', '(migration 0008 pole rakendatud)');
+    } else {
+      try {
+        const paper = await paperStrategy.recordPaperStrategySignals(run.runId);
+        line('runId', `#${paper.runId}`);
+        line('decisions', paper.decisions);
+        line('inserted orders', paper.insertedOrders);
+        line('existing orders', paper.existingOrders);
+        line('pending / skipped', `${paper.pendingOrders} / ${paper.skippedOrders}`);
+        line('exit orders', paper.insertedExitOrders);
+      } catch (error) {
+        // Paper mõõtmise tõrge ei tohi muuta edukat collection/discovery jooksu
+        // ebaõnnestunuks ega takistada Healthchecks heartbeat'i.
+        console.warn(`  ! paper-strategy signalid jäid salvestamata: ${error.message}`);
+      }
+    }
 
     section('6. refreshCandidateOutcomes');
     const refreshed = await step('refreshCandidateOutcomes', () => validation.refreshCandidateOutcomes());

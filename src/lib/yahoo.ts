@@ -5,6 +5,16 @@ const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+export interface YahooExecutionQuote {
+  ticker: string;
+  price: number | null;
+  currency: string | null;
+  marketState: string | null;
+  marketTime: string | null;
+  source: 'yahoo';
+  raw: Record<string, unknown>;
+}
+
 // Yahoo Finance (yahoo-finance2 npm, võtmeta): hind + turukapitalisatsioon.
 // Yahoo rate-limitib agressiivselt, seega: väikesed pakid + viivitus + kordus.
 export async function fetchFundamentals(tickers: string[]): Promise<Map<string, Fundamentals>> {
@@ -61,4 +71,44 @@ export async function fetchFundamentals(tickers: string[]): Promise<Map<string, 
   }
 
   return map;
+}
+
+/**
+ * Small, bounded quote read for paper execution. Unlike the discovery lookup,
+ * this preserves market state and quote time so a stale/closed-market value
+ * cannot be mistaken for an executable price.
+ */
+export async function fetchExecutionQuotes(tickers: string[]): Promise<Map<string, YahooExecutionQuote>> {
+  const normalized = [...new Set(tickers.map((ticker) => ticker.trim().toUpperCase()).filter(Boolean))];
+  const result = new Map<string, YahooExecutionQuote>();
+  if (normalized.length === 0) return result;
+
+  const quotes: any = await yahooFinance.quote(normalized);
+  const rows: any[] = Array.isArray(quotes) ? quotes : [quotes];
+  for (const quote of rows) {
+    if (!quote?.symbol) continue;
+    const ticker = String(quote.symbol).toUpperCase();
+    const marketDate = quote.regularMarketTime instanceof Date
+      ? quote.regularMarketTime
+      : quote.regularMarketTime == null ? null : new Date(quote.regularMarketTime);
+    const marketTime = marketDate != null && Number.isFinite(marketDate.getTime())
+      ? marketDate.toISOString()
+      : null;
+    result.set(ticker, {
+      ticker,
+      price: typeof quote.regularMarketPrice === 'number' ? quote.regularMarketPrice : null,
+      currency: typeof quote.currency === 'string' ? quote.currency : null,
+      marketState: typeof quote.marketState === 'string' ? quote.marketState : null,
+      marketTime,
+      source: 'yahoo',
+      raw: {
+        symbol: ticker,
+        regularMarketPrice: typeof quote.regularMarketPrice === 'number' ? quote.regularMarketPrice : null,
+        currency: typeof quote.currency === 'string' ? quote.currency : null,
+        marketState: typeof quote.marketState === 'string' ? quote.marketState : null,
+        regularMarketTime: marketTime,
+      },
+    });
+  }
+  return result;
 }

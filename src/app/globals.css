@@ -21,6 +21,12 @@ a:hover { text-decoration: underline; }
 .brand { flex: 0 0 auto; color: var(--text); font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
 .navLinks { display: flex; flex: 1 1 auto; min-width: 0; flex-wrap: wrap; justify-content: flex-end; gap: 8px 18px; }
 .navLinks a { color: var(--muted); }
+.navMore { position: relative; color: var(--muted); }
+.navMore summary { cursor: pointer; list-style: none; }
+.navMore summary::-webkit-details-marker { display: none; }
+.navMore > div { position: absolute; right: 0; top: calc(100% + 10px); z-index: 20; display: grid; min-width: 220px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); box-shadow: 0 16px 36px rgba(0,0,0,.35); }
+.navMore > div a { padding: 7px 9px; border-radius: 6px; }
+.navMore > div a:hover { background: var(--panel-2); text-decoration: none; }
 .pageStack { display: grid; gap: 24px; padding-top: 48px; padding-bottom: 72px; }
 .hero { max-width: 880px; padding: 28px 0 8px; }
 .hero.compact { padding-bottom: 0; }
@@ -114,6 +120,12 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .metric { min-height: 120px; display: flex; flex-direction: column; gap: 8px; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); }
 .metric span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
 .metric strong { font-size: 22px; }
+.paperStrategySection { display: grid; gap: 12px; padding: 18px 0 22px; border-top: 1px solid var(--border); }
+.paperStrategySection:first-of-type { border-top: 0; }
+.paperStrategySection h3, .paperStrategySection p, .paperBook h3 { margin: 0; }
+.paperBookGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.paperBook { display: grid; gap: 14px; }
+.paperBook .backtestMetrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .positive { color: var(--green); }
 .negative { color: var(--red); }
 .financialGrid { margin-top: 16px; }
@@ -658,6 +670,7 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .todayRunStrip > div:first-child { border-top: 0; }
   .todayReviewList article { align-items: flex-start; flex-direction: column; }
   .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions, .urDimensions, .coverageSummaryGrid, .backfillSummaryGrid, .qualityOverviewGrid, .qualityMetadataGrid, .metadataSummaryGrid, .rootCauseSummaryGrid, .rootCauseLargestGrid { grid-template-columns: 1fr; }
+  .paperBookGrid, .paperBook .backtestMetrics { grid-template-columns: 1fr; }
   .dataQualityTop, .catalystTop, .valuationTop, .underRecognitionTop { flex-direction: column; }
   .dataQualityBadges { justify-content: flex-start; }
   .rklbCandidateTop { display: grid; }

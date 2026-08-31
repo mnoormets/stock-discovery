@@ -39,6 +39,8 @@ const MIGRATED_TABLES = [
   'investment_theses',
   'news_items',
   'outcome_analysis_snapshots',
+  'paper_strategy_marks',
+  'paper_strategy_orders',
   'portfolio_positions',
   'price_snapshots',
   'research_briefs',
@@ -83,7 +85,7 @@ describe('D1 — test-andmebaasi isolatsioon (esimene värav)', () => {
 describe('D2 — migratsioonidest ehitatud tabelikomplekt', () => {
   // Assertitakse globalSetup'is fikseeritud hetkeseisu, MITTE jooksvat
   // `pg_tables` vastu: testibaas on failide vahel jagatud.
-  it('loob täpselt need 30 tabelit', () => {
+  it('loob täpselt need 32 tabelit', () => {
     expect(inject('migratedTables')).toEqual(MIGRATED_TABLES);
   });
 
@@ -147,6 +149,12 @@ describe('D4 — testibaas on ehitatud migratsioonidest', () => {
       ) ORDER BY conname`);
     expect(constraints.rows).toHaveLength(2);
     expect(constraints.rows.every((row) => String(row.definition).includes("'insider'"))).toBe(true);
+  });
+
+  it('0008_paper_strategy on rakendatud ilma brokeri või discovery skeemi muutmata', () => {
+    expect(inject('appliedMigrations')).toContain('0008_paper_strategy');
+    expect(inject('migratedTables')).toContain('paper_strategy_orders');
+    expect(inject('migratedTables')).toContain('paper_strategy_marks');
   });
 
   it('schema_migrations tabel on olemas', async () => {

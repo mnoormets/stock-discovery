@@ -33,6 +33,7 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 - `/today` on read-only Daily Research Brief: latest canonical run, collection status, top kandidaadid, provenance, data quality, review-itemid, päevamuutus, missed moves ja järgmised outcome-kuupäevad ühel hommikusel research-vaatel. See ei ole trading recommendation.
 - `/validation` mõõdab kaasatud kandidaatide tegelikku hinnamuutust eraldi 1 nädala, 2 nädala, 1 kuu, 3 kuu ja 6 kuu horisondil ning näitab keskmist, mediaani, võitjaid, kaotajaid, parimat ja halvimat tulemust.
 - `/backtest` loeb ainult salvestatud point-in-time discovery run'e ja outcome'e, võrdleb mõõdetud kandidaate SPY benchmark'iga ning kuvab excess return'i ainult siis, kui mõlemad hinnad on päriselt olemas.
+- `/performance` on versioned Paper Strategy V1 mõõtmisvaade: iga canonical valik saab `$100` all-picks baseline'i ning läbipaistvate business/freshness/run-up väravatega entry-aware paralleelvariandi. Mõlemal on sama rahavoo SPY book; hypothetical fill nõuab Yahoo `REGULAR` turuseisu ja kuni 20 minuti vanust USD quote'i. See ei saada brokerile ordereid.
 - Sector-relative Ranking võrdleb Growth, Financial Health, Coverage ja market cap'i olemasoleva Yahoo sector/industry grupi sees; alla viie võrreldava ettevõtte korral percentile'i ei kuvata.
 - Rakenduses ja failis `docs/USER_GUIDE.md` on uue kasutaja töövoogu selgitav kasutusjuhend.
 - Portfelli CRUD: ticker, kogus, keskmine ostuhind, tees, ajahorisont, staatus ja märkmed.
@@ -125,6 +126,7 @@ npm run build
 - Coverage Score on Growth ja Financial Health mudelite kaalutud sisendikatte keskmine. Growth/Health edetabelites kuvatakse vähemalt 70 coverage ettevõtted enne madalama kattega tulemusi, et üksiku komponendi kõrge skoor ei oleks eksitav.
 - Score-mudeli versioon on salvestatud iga snapshotiga. Valemi muutmisel tuleb versiooni tõsta, et eri valemitega tulemusi ei võrreldaks vaikimisi sama ajaloona.
 - Rakendus ei sisalda optsioonianalüüsi, ajaloolist ümbervalikut ega automaatset kauplemist.
+- Paper Strategy ei ole automaatne kauplemine: `paper_strategy_orders` on ainult hüpoteetiline ledger. V1 modelleerib USA aktsiaorderi 0,1% komisjoni (min $0.10, max $1), kuid mitte makse, dividende, FX-i, slippage'it ega Lightyeari tegelikku täitmist. `paper-strategy-execute` workflow on teadlikult ainult `workflow_dispatch`; enne live-vaatlusperioodi vajab see eraldi välist 09:30-järgset America/New_York triggerit ja `0008` Neoni apply kinnitust.
 - Validation on forward outcome tracking, mitte täielik ajalooline backtest: see kogub tulemusi alates salvestatud discovery jooksudest ega rekonstrueeri minevikku tänaste andmetega.
 - Backtest V1 on salvestatud forward outcome'ide aus koondvaade, mitte tõend strateegia toimivuse ega tulevase tootluse kohta.
 - SEC enrichment'i päevane eelarve on vaikimisi viis katset Tallinna kalendripäeva kohta. `unavailable` tickerit proovitakse uuesti kõige varem 30 päeva ja transient `error` tickerit järgmisel päeval.
