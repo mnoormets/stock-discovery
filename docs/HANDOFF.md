@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-08-31
+Uuendatud: 2026-09-01
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -66,7 +66,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - `/validation` värskendab `candidate_outcomes` tulemusi 1n, 2n, 1k, 3k ja 6k horisondil ning kuvab iga horisondi statistika ja jooksude auditivaate. Koondstatistika kasutab alates 2026-08-12 ainult canonical (`rklb_daily`) jooksu; jooksude ajalugu kuvab endiselt kõiki run'e (audit).
 - `/backtest` kasutab ainult salvestatud discovery run'e ja outcome'e, võrdleb kandidaadi tootlust fikseeritud SPY benchmark'iga ning näitab puuduva benchmark'i korral excess return'i `unknown` olekuna. Koondnäitajad kasutavad alates 2026-08-12 ainult canonical jooksu; run-level detail kuvab kõiki run'e.
 - Paper Strategy V1 on lokaalselt ehitatud eraldi mõõtmiskihina, mitte discovery skoori ega brokeri integratsioonina. `paper-strategy-v1` külmutab iga canonical valiku kohta `$100` all-picks baseline'i ja paralleelse entry-aware otsuse; mõlema rahavoo kohta tekib sama `$100` SPY benchmark-order. Entry-aware nõuab Growth ≥65, Health ≥65, Coverage ≥70, sama collection run'i current market-data kinnitust, piisavat/partial price history't ning recent-run-up puudumist. Hypothetical täitmine nõuab Yahoo `REGULAR` market state'i, explicit USD-d ja kuni 20 minuti vanust quote'i. EXIT tekib ainult pärast kolme järjestikust current-collection-confirmed canonical fundamentaalset failure'it; top-listist kadumine üksi ei müü.
-- `/performance` kuvab Paper Strategy V1 app-vs-SPY rahavood, filled/pending/skipped loendurid, open positions, markide ajatemplid ja P/L-i ainult täieliku mark-katte korral. Puuduv mark jääb `unknown`. V1 ei arvesta makse, dividende, FX-i ega slippage'it ning ei saada ühtki päris orderit. Migratsioon `0008_paper_strategy` on rakendatud ainult ephemeral `discovery_test` baasi; Neonile ei ole seda rakendatud ega seal paper-ridu loodud.
+- `/performance` kuvab Paper Strategy V1 app-vs-SPY rahavood, filled/pending/skipped loendurid, open positions, markide ajatemplid ja P/L-i ainult täieliku mark-katte korral. Puuduv mark jääb `unknown`. V1 ei arvesta makse, dividende, FX-i ega slippage'it ning ei saada ühtki päris orderit. Migratsioon `0008_paper_strategy` rakendus Neoni golden source'ile 2026-09-01; collect'i, paper-signaali CLI-d ega execution workflow'd apply järel käsitsi ei käivitatud.
 - `/frequency` (Discovery Frequency V1) kuvab canonical `rklb_daily` jooksude põhjal, kui järjekindlalt sama ticker jooksva mudeliversiooni piires kaasati: kaasamiste arv, 5/10/20 päeva aknad, jooksev streak, esimene/viimane kaasamine + rank'i muutus, `included/excluded/absent` timeline ning persistence (`stale_evidence` vs `evolving_evidence`). Käsitsi `rklb` jooksud ei osale kunagi; alla viie canonical päeva kuvab loendurid, aga märgib, et tõlgendada ei tohi.
 - `/missed-moves` on read-only point-in-time järelkontroll: vähemalt 8% liikumised eri Tallinna kauplemispäevade viimaste salvestatud hinnasnapshotide vahel seotakse liikumisele eelnenud canonical otsuse, varasema sotsiaalradari nähtavuse ning samasse intervalli salvestatud Yahoo/SEC/earnings sündmustega. Vaade eristab `included`, `excluded`, `radar_data_gap` ja `universe_gap`; see ei nimeta tagantjärele liikumist ennustatavaks.
 - Päevane collection säilitab nüüd `companies` tabelis ka sotsiaalradaris nähtud tickeri, millele Yahoo/FMP turuandmeid ei tagastanud; hinnasnapshot tekib endiselt ainult päris turuandmest. `MIN_MENTIONS = 3`; kasvu järgi top-80 kõrval küsitakse olemasolevast Yahoo/FMP kihist kuni 20 absoluutse tähelepanu põhist recall-tickerit, et langevate mainimistega RDDT-laadne nimi ei kaoks enne fundamentaalpäringut.
@@ -204,7 +204,7 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**Paper Strategy V1 — valmis review'ks, production activation ootel:** lokaalne kood katab canonical signalid, korduva tickeri uue päevase `$100` buy-intent'i, all-picks ja entry-aware poliitika, sama rahavoo SPY benchmark'i, värske regular-session execution capture'i, päevased markid, kolme värske fundamentaalse failure'i EXIT-i ja `/performance` vaate. See ei muutnud `buildCandidates()`, Growth/Health/Coverage arvutust ega canonical tier/rankingut. `0008` on Neonil teadlikult rakendamata; `paper-strategy-execute.yml` on ainult `workflow_dispatch`, sest private/free repo välist cron-trigger vajab eraldi loomist America/New_York turu avanemise järel. Enne 2–4 nädala paper-vaatlust: review diff → Neoni read-only `--status`/`--preflight` → eraldi apply kinnitus → välise triggeri loomine → esimese päris fill'i ja `/performance` smoke. Ükski neist production sammudest pole selles sessioonis tehtud.
+**Paper Strategy V1 — skeem live, esimene signal/fill vaatlus ootel:** lokaalne kood katab canonical signalid, korduva tickeri uue päevase `$100` buy-intent'i, all-picks ja entry-aware poliitika, sama rahavoo SPY benchmark'i, värske regular-session execution capture'i, päevased markid, kolme värske fundamentaalse failure'i EXIT-i ja `/performance` vaate. See ei muutnud `buildCandidates()`, Growth/Health/Coverage arvutust ega canonical tier/rankingut. `0008` rakendus Neonile 2026-09-01 pärast read-only status/preflight `GO` kontrolli; järel-status näitas 8/8 applied ning conformance `VASTAB`. `paper-strategy-execute.yml` on endiselt ainult `workflow_dispatch`, sest private/free repo välist cron-trigger vajab eraldi loomist America/New_York turu avanemise järel. Järgmised production tõendid on järgmise automaatse collect'i idempotentne signal capture ning seejärel eraldi kinnitatud esimene regular-session execution + `/performance` smoke.
 
 **Market-Data Persistence Fix V2:** future collection runs persist available price, market cap, volume, currency and source for every usable current-run Yahoo/FMP fundamentals result, independently of `buildCandidates()` survival. The resolver reuses the existing five-minute deduplicating `insertPriceSnapshot()` writer, so candidate persistence and identity persistence do not create duplicate identical rows. The former 16/200 observation was a low-attention `MIN_MENTIONS = 5` day, not a 40+20 selector-cap hit; the evidence-based first experiment is now `MIN_MENTIONS = 3` with an 80+20 lookup ceiling. Exchange remains absent from `Fundamentals`, while sector/industry remain in the separate `assetProfile` classification pipeline. No historical rows were backfilled.
 
@@ -230,8 +230,8 @@ Catalyst-otsuse jaoks on nüüd olemas kirjalik disain [`docs/CATALYST_EVIDENCE_
 
 ### NOW - järgmine töö
 
-- review Paper Strategy V1 diff ja läbipaistvad entry-aware läved (Growth 65 / Health 65 / Coverage 70 / current collection / not-overheated). Need on versioned policy, mitte uus score ega canonical filter;
-- ära rakenda `0008_paper_strategy` Neonile enne kasutaja eraldi kinnitust. Enne apply'd näita Neon `npm run migrate -- --status` ja `--preflight`, seejärel oota täpset `--allow-golden-source` luba;
+- `0008_paper_strategy` on Neonil rakendatud; ära käivita käsitsi uut collect'i ega paper execution'it ilma eraldi kinnituse ja täpse käsu näitamiseta. Järgmine unattended collect loob idempotentselt canonical signalid, kuid ei täida order'eid;
+- kontrolli pärast järgmist automaatset collect'i read-only päringuga signalite arvu, all-picks/entry-aware skip-jaotust, SPY paaride täielikkust ja kordusjooksu idempotentsust enne esimese execution'i lubamist;
 - pärast schema apply'd loo eraldi external `workflow_dispatch` trigger umbes 09:35 `America/New_York` kohaliku aja järgi. Fikseeritud Tallinna kellaaega ei kasutata DST tõttu; execution-script kontrollib lisaks Yahoo `marketState=REGULAR` ja quote vanust;
 - käivita 2–4 nädala paper-periood alles pärast üht päris end-to-end fill/mark/UI smoke'i. Selle aja jooksul ei muudeta poliitikat üksikute tulemuste järgi; võrdle all-picks ja entry-aware book'i sama cash-flow SPY vastu ning dokumenteeri stale/unknown/deferred juhtumid;
 - V1 teadlikud piirid: maksud, dividendid, FX, slippage, pühade ametlik market calendar, brokeri täitmisdetailid ja päris orderid puuduvad. Need tuleb lisada ainult siis, kui paper-andmed näitavad, et need muudavad otsust, mitte enne;
@@ -871,6 +871,13 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-01 - Paper Strategy V1 schema live on Neon
+
+- Enne production apply'd näitas Neoni read-only `npm run migrate -- --status` täpselt üht pending migratsiooni (`0008_paper_strategy`) ning `--preflight` verdict'i `GO`: 7 olemasolevat migratsiooni, 0 andme-eelduse viga, 96 oodatud puuduvat objekti ja 0 baseline'i-välist lisaobjekti.
+- Kasutaja eksplitsiitse kinnituse järel rakendas `npm run migrate -- --allow-golden-source` ainult `0008_paper_strategy` migratsiooni 244 ms-ga; `0001–0007` jäid checksum-klapiga `SKIP` olekusse.
+- Järel-`--status` näitas `schema_migrations` tabelis 8 kirjet ja 0 pending migratsiooni. Read-only `--conformance` leidis 0 puuduvat tabelit, veergu, indeksit ja piirangut ning 0 baseline'i-välist objekti: verdict `VASTAB`.
+- Apply järel ei käivitatud collect'i, `paper-strategy signal`/`execute` CLI-d ega workflow'd. Seega see samm aktiveeris ainult skeemi; esimese päris canonical signal capture'i, hypothetical fill'i ja `/performance` live-smoke'i tõendid on endiselt eraldi järgmised sammud. Brokeri integratsiooni ega päris ordereid ei ole.
 
 ### 2026-08-31 - Paper Strategy V1 local vertical slice (production activation pending)
 
