@@ -16,6 +16,7 @@
     "observe:companyfacts": "node scripts/report-companyfacts-queue.cjs",
     "calibrate:market-cap-tiers": "node scripts/calibrate-market-cap-tiers.cjs",
     "calibrate:form4": "node scripts/calibrate-form4.cjs",
+    "calibrate:nasdaq-listings": "node scripts/calibrate-nasdaq-listings.cjs",
     "ingest:form4": "node scripts/ingest-form4.cjs",
     "paper:strategy": "node scripts/paper-strategy.cjs",
     "schema:diff": "node scripts/schema-diff.cjs",

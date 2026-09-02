@@ -1,0 +1,40 @@
+name: nasdaq-listing-observation
+
+# Private/free repository scheduling is external. cron-job.org will call this
+# workflow_dispatch endpoint during the US morning after the workflow is live.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nasdaq-listing-observation
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Capture Nasdaq listing observation
+        timeout-minutes: 1
+        run: npm run calibrate:nasdaq-listings -- --artifact-dir artifacts/nasdaq-listings
+
+      - name: Upload Nasdaq listing observation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nasdaq-listing-observation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/nasdaq-listings/
+          if-no-files-found: error
+          retention-days: 30
