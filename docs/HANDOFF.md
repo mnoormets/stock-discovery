@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-09-01
+Uuendatud: 2026-09-02
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -204,7 +204,7 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**Paper Strategy V1 — skeem live, esimene signal/fill vaatlus ootel:** lokaalne kood katab canonical signalid, korduva tickeri uue päevase `$100` buy-intent'i, all-picks ja entry-aware poliitika, sama rahavoo SPY benchmark'i, värske regular-session execution capture'i, päevased markid, kolme värske fundamentaalse failure'i EXIT-i ja `/performance` vaate. See ei muutnud `buildCandidates()`, Growth/Health/Coverage arvutust ega canonical tier/rankingut. `0008` rakendus Neonile 2026-09-01 pärast read-only status/preflight `GO` kontrolli; järel-status näitas 8/8 applied ning conformance `VASTAB`. `paper-strategy-execute.yml` on endiselt ainult `workflow_dispatch`, sest private/free repo välist cron-trigger vajab eraldi loomist America/New_York turu avanemise järel. Järgmised production tõendid on järgmise automaatse collect'i idempotentne signal capture ning seejärel eraldi kinnitatud esimene regular-session execution + `/performance` smoke.
+**Paper Strategy V1 — esimene päris hüpoteetiline fill kontrollitud, scheduler loodud:** 2026-09-02 canonical run #59 signalidest täideti USA regular-session'i ajal 12 all-picks orderit (6 appi instrumenti + samade rahavoogude 6 SPY benchmark-orderit), loodi 7 tickeri marki ning 0 orderit deferred. Kõik execution quote'id olid Yahoo, explicit USD, `REGULAR` ja alla 20 minuti vanad; kohe järgnenud kordusjooks leidis 0 pending orderit, tegi 0 fill'i ja 0 marki. Neonile suunatud production `/performance` smoke vastas 200 ning näitas 6/0/0 filled/pending/skipped baseline'i, 600,60 $ cash-in'i ja 600,00 $ hetkeväärtust mõlemas book'is; −0,60 $ on ainult modelleeritud 0,1% komisjon, mitte turuliikumise järeldus. Entry-aware jäi 0/0/6, sest immutable signal-time reeglid ei olnud täidetud. Brokeri integratsiooni ega päris orderit ei ole. `paper-strategy-execute.yml` jääb teadlikult ainult `workflow_dispatch` workflow'ks, kuid cron-job.org `stock-discovery paper-strategy-execute` on nüüd enabled ja dispatch'ib seda iga päev 09:35 `America/New_York`; TEST RUN sai GitHubilt 204 ning Actions run #1 lõpetas success'iga. Esimene päris unattended scheduled käivitus on endiselt eraldi järgmise päeva kontrollpunkt.
 
 **Market-Data Persistence Fix V2:** future collection runs persist available price, market cap, volume, currency and source for every usable current-run Yahoo/FMP fundamentals result, independently of `buildCandidates()` survival. The resolver reuses the existing five-minute deduplicating `insertPriceSnapshot()` writer, so candidate persistence and identity persistence do not create duplicate identical rows. The former 16/200 observation was a low-attention `MIN_MENTIONS = 5` day, not a 40+20 selector-cap hit; the evidence-based first experiment is now `MIN_MENTIONS = 3` with an 80+20 lookup ceiling. Exchange remains absent from `Fundamentals`, while sector/industry remain in the separate `assetProfile` classification pipeline. No historical rows were backfilled.
 
@@ -230,10 +230,8 @@ Catalyst-otsuse jaoks on nüüd olemas kirjalik disain [`docs/CATALYST_EVIDENCE_
 
 ### NOW - järgmine töö
 
-- `0008_paper_strategy` on Neonil rakendatud; ära käivita käsitsi uut collect'i ega paper execution'it ilma eraldi kinnituse ja täpse käsu näitamiseta. Järgmine unattended collect loob idempotentselt canonical signalid, kuid ei täida order'eid;
-- kontrolli pärast järgmist automaatset collect'i read-only päringuga signalite arvu, all-picks/entry-aware skip-jaotust, SPY paaride täielikkust ja kordusjooksu idempotentsust enne esimese execution'i lubamist;
-- pärast schema apply'd loo eraldi external `workflow_dispatch` trigger umbes 09:35 `America/New_York` kohaliku aja järgi. Fikseeritud Tallinna kellaaega ei kasutata DST tõttu; execution-script kontrollib lisaks Yahoo `marketState=REGULAR` ja quote vanust;
-- käivita 2–4 nädala paper-periood alles pärast üht päris end-to-end fill/mark/UI smoke'i. Selle aja jooksul ei muudeta poliitikat üksikute tulemuste järgi; võrdle all-picks ja entry-aware book'i sama cash-flow SPY vastu ning dokumenteeri stale/unknown/deferred juhtumid;
+- kontrolli 2026-09-03 esimese päris unattended paper execution'i järel cron-job.org history't, GitHub Actions run'i ja Neoni ledgerit: tänase canonical run'i signalid, all-picks/entry-aware skip-jaotus, SPY paaride täielikkus, fill/deferred põhjused ja markide värskus peavad omavahel klappima;
+- lase seejärel 2–4 nädala paper-perioodil muutmata poliitikaga joosta. Võrdle all-picks ja entry-aware book'i sama cash-flow SPY vastu ning dokumenteeri stale/unknown/deferred juhtumid; ära tee üksikute päevade põhjal ranking- ega threshold-muudatusi;
 - V1 teadlikud piirid: maksud, dividendid, FX, slippage, pühade ametlik market calendar, brokeri täitmisdetailid ja päris orderid puuduvad. Need tuleb lisada ainult siis, kui paper-andmed näitavad, et need muudavad otsust, mitte enne;
 
 Kasuta uut auditikihti päris forward-andmetel enne uue allika või rankingureegli lisamist:
@@ -871,6 +869,14 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-02 - Paper Strategy V1 first live hypothetical fill
+
+- Kasutaja kinnitatud `npm run paper:strategy -- execute` jooksis Neoni golden source'i vastu 2026-09-02 kell 17:57 Tallinn / 10:57 New York, s.t USA regular session'i ajal. Tulemus: `pendingOrders: 12`, `filledOrders: 12`, `deferredOrders: 0`, `markedTickers: 7`, `reasons: {}`.
+- Canonical run #59 kuus tickerit olid `SNDK`, `CIEN`, `ELF`, `BW`, `CRDO` ja `WTI`. Iga all-picks signal sai ühe `$100` strategy buy-fill'i ja ühe `$100` SPY benchmark buy-fill'i; mõlema book'i gross oli 600 $, tasu 0,60 $. Kõik quote'id olid Yahoo `USD` / `REGULAR`; seitse marki katsid kuut signaaltickerit ja SPY-d.
+- Vahetu kordusjooks tõestas execution idempotentsust: `pendingOrders: 0`, `filledOrders: 0`, `deferredOrders: 0`, `markedTickers: 0`. Järgnenud `BEGIN READ ONLY` audit leidis run #59 jaoks endiselt 12 filled ja 12 skipped buy-rida, täitmisminutis 7 marki ning 0 duplikaatset order-identity gruppi.
+- Õige Neoni `DATABASE_URL`-iga production `/performance` vastas HTTP 200, näitas kõiki kuut tickerit ja baseline'i 6/0/0 olekut. Esimene local smoke kasutas Nexti `.env.local` prioriteedi tõttu ekslikult külmutatud lokaalset `discovery` baasi ja näitas schema-missing state'i; server taaskäivitati protsessi tasemel Neoni URL-iga ning õige smoke läbis. Ühtki collect'i, migratsiooni, brokeri orderit ega muud production pipeline'i write'i selles kontrollis ei tehtud.
+- Cron-job.org job `stock-discovery paper-strategy-execute` klooniti olemasolevast collect-job'ist, suunati `paper-strategy-execute.yml/dispatches` endpointi ning salvestati enabled olekus iga päev 09:35 `America/New_York`. Request jäi POST + `{"ref":"main"}`; cron-job failure-teavitus on sisse lülitatud pärast üht failure'it. TEST RUN sai GitHubilt `204 No Content` 1,68 sekundiga ja lõi GitHub Actions run #1 (`33676273191`), mis lõpetas `Success` 32 sekundiga; execution output oli idempotentselt 0 pending / 0 filled / 0 deferred / 0 marki. Cronjobs list näitas järgmist jooksu 2026-09-03 kell 16:35 Tallinn. Esimene päris unattended scheduled run ning paper-execution'i sõltumatu dead-man alerting jäävad eraldi kontrollpunktideks.
 
 ### 2026-09-01 - Paper Strategy V1 schema live on Neon
 
