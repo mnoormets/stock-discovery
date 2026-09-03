@@ -106,7 +106,7 @@ describe('CompanyFacts queue observation CLI', () => {
     expect(workflow).toContain('CompanyFacts queue snapshot and paired report (after)');
     expect(workflow).toContain('observation.ndjson');
     expect(workflow).toContain('retention-days: 30');
-    expect(workflow.match(/continue-on-error: true/g)).toHaveLength(3);
+    expect(workflow.match(/continue-on-error: true/g)).toHaveLength(4);
     expect(workflow.match(/^\s+timeout-minutes: 1\s*$/gm)).toHaveLength(2);
     expect(workflow).toContain('if: always()');
   });

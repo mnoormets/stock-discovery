@@ -1,7 +1,9 @@
-// On-demand SEC Form 4 ingestion. This script is not scheduled and does not
-// import collect.ts, discovery.ts, scoring or ranking code.
+// SEC Form 4 ingestion. This script does not import collect.ts, discovery.ts,
+// scoring or ranking code. Exact ranges remain available for on-demand use;
+// the bounded rolling-range flags are used by the scheduled workflow.
 //
 // Usage: npm run ingest:form4 -- --from 2026-08-19 --to 2026-08-21
+//        npm run ingest:form4 -- --recent-days 7 --fail-on-filing-error
 
 const { Pool } = require('pg');
 const { ensureLocalDatabaseUrl, loadEnv, repoRoot, registerRepoModules } = require('./_ts-loader.cjs');
@@ -19,15 +21,61 @@ const {
 } = require('./_form4-persistence.cjs');
 
 const INGESTION_LOCK = 'stock-discovery:form4-ingest';
+const CONNECTION_TIMEOUT_MS = 10_000;
+const STATEMENT_TIMEOUT_MS = 30_000;
 
-function parseArgs(argv) {
-  const options = { from: null, to: null };
+function addDateDays(date, days) {
+  return new Date(Date.parse(`${date}T12:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+}
+
+function dateInTimeZone(now, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+
+function recentCompletedUsDateRange(days, now = new Date()) {
+  if (!Number.isInteger(days) || days < 1 || days > 31) {
+    throw new Error('--recent-days peab olema täisarv vahemikus 1...31.');
+  }
+  const todayNewYork = dateInTimeZone(now, 'America/New_York');
+  const to = addDateDays(todayNewYork, -1);
+  return { from: addDateDays(to, -(days - 1)), to };
+}
+
+function ingestionPoolConfig(connectionString) {
+  return {
+    connectionString,
+    connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
+    statement_timeout: STATEMENT_TIMEOUT_MS,
+  };
+}
+
+function assertNoFilingFailures(metrics, enabled) {
+  if (!enabled) return;
+  const failureCount = metrics.fetchFailed + metrics.parseFailed + metrics.persistFailed;
+  if (failureCount > 0) throw new Error(`Form 4 ingestion lõpetas ${failureCount} filing-veaga.`);
+}
+
+function parseArgs(argv, now = new Date()) {
+  const options = { from: null, to: null, recentDays: null, failOnFilingError: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     const value = argv[index + 1];
     if (arg === '--from') { options.from = value; index += 1; }
     else if (arg === '--to') { options.to = value; index += 1; }
+    else if (arg === '--recent-days') { options.recentDays = Number(value); index += 1; }
+    else if (arg === '--fail-on-filing-error') options.failOnFilingError = true;
     else throw new Error(`Tundmatu argument: ${arg}`);
+  }
+  if (options.recentDays != null) {
+    if (options.from || options.to) throw new Error('--recent-days ja explicit --from/--to ei tohi olla koos.');
+    return { ...recentCompletedUsDateRange(options.recentDays, now), failOnFilingError: options.failOnFilingError };
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(options.from || '') || !/^\d{4}-\d{2}-\d{2}$/.test(options.to || '')) {
     throw new Error('--from ja --to on kohustuslikud kujul YYYY-MM-DD.');
@@ -41,7 +89,7 @@ function parseArgs(argv) {
   }
   const calendarDays = Math.floor((toTime - fromTime) / 86_400_000) + 1;
   if (calendarDays > 31) throw new Error('Form 4 ingestion on piiratud 31 kalendripäevaga ühe jooksu kohta.');
-  return options;
+  return { from: options.from, to: options.to, failOnFilingError: options.failOnFilingError };
 }
 
 async function ingestDateRange({ pool, sec, from, to, log = console.log }) {
@@ -112,7 +160,7 @@ async function main(argv = process.argv.slice(2)) {
   ensureLocalDatabaseUrl();
   if (!process.env.SEC_USER_AGENT) throw new Error('SEC_USER_AGENT puudub.');
   const options = parseArgs(argv);
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool(ingestionPoolConfig(process.env.DATABASE_URL));
   const lockClient = await pool.connect();
   let locked = false;
   try {
@@ -129,6 +177,7 @@ async function main(argv = process.argv.slice(2)) {
     console.log('Pipeline isolation: no collect/discovery/scoring/ranking integration');
     const metrics = await ingestDateRange({ pool, sec, ...options });
     console.log(JSON.stringify({ ...metrics, secRequests: sec.requestCount }, null, 2));
+    assertNoFilingFailures(metrics, options.failOnFilingError);
     return metrics;
   } finally {
     if (locked) await lockClient.query(`SELECT pg_advisory_unlock(hashtext($1))`, [INGESTION_LOCK]);
@@ -137,7 +186,15 @@ async function main(argv = process.argv.slice(2)) {
   }
 }
 
-module.exports = { ingestDateRange, parseArgs };
+module.exports = {
+  CONNECTION_TIMEOUT_MS,
+  STATEMENT_TIMEOUT_MS,
+  assertNoFilingFailures,
+  ingestDateRange,
+  ingestionPoolConfig,
+  parseArgs,
+  recentCompletedUsDateRange,
+};
 
 if (require.main === module) {
   main().catch((error) => {

@@ -34,7 +34,7 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +61,20 @@ jobs:
             echo "NEON_DATABASE_URL secret puudub või on tühi." >&2
             exit 1
           fi
+
+      # Idempotentne rolling catch-up lõpeb eelmise New Yorgi kalendripäevaga.
+      # continue-on-error hoiab põhicollecti SEC ajutise tõrke korral töös; eraldi
+      # lõpuvärav muudab workflow siiski punaseks, et Form 4 auk ei kaoks vaikselt.
+      - name: Ingest recent SEC Form 4 filings
+        id: form4_ingest
+        if: ${{ inputs.dry_run != true }}
+        continue-on-error: true
+        timeout-minutes: 15
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          TZ: Europe/Tallinn
+        run: npm run ingest:form4 -- --recent-days 7 --fail-on-filing-error
 
       - name: CompanyFacts queue snapshot (before)
         id: companyfacts_before
@@ -142,3 +156,9 @@ jobs:
           path: artifacts/companyfacts-queue/
           if-no-files-found: warn
           retention-days: 30
+
+      - name: Fail workflow when Form 4 ingestion failed
+        if: ${{ always() && inputs.dry_run != true && steps.form4_ingest.outcome == 'failure' }}
+        run: |
+          echo "SEC Form 4 ingestion failed; collect:daily was still allowed to run." >&2
+          exit 1

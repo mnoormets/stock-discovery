@@ -83,7 +83,7 @@ curl -X POST http://localhost:3005/api/collect \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
 
-Üks edukas päevatöö salvestab radariettevõtete hinnad, SPY benchmark'i, kuni viis puuduva või aegunud SEC CompanyFactsi katvusega ettevõtet, canonical discovery snapshot'i, selle point-in-time andmekvaliteedi kirje ning valminud candidate outcome'id. Põhikogumise lifecycle ja providerimõõdikud salvestatakse `collection_runs` tabelisse. Enrichment- või discovery alamfaasi viga logitakse ja tagastatakse eraldi staatusena; canonical discovery järel ebaõnnestunud kvaliteedisnapshot teeb discovery sammu kriitiliselt ebaõnnestunuks, kuid juba committed run jääb auditisse alles.
+Automaatne GitHub Actions päevatöö teeb enne põhikogumist idempotentse SEC Form 4 rolling catch-up'i eelmise seitsme USA kalendripäeva kohta. Form 4 tõrge ei jäta sotsiaalset põhikogumist vahele, kuid muudab workflow lõpus failure'iks, et allikaauk ei jääks vaikseks; dry-run Form 4 ingestion'it ei käivita. Üks edukas põhikogumine salvestab radariettevõtete hinnad, SPY benchmark'i, kuni viis puuduva või aegunud SEC CompanyFactsi katvusega ettevõtet, canonical discovery snapshot'i, selle point-in-time andmekvaliteedi kirje ning valminud candidate outcome'id. Põhikogumise lifecycle ja providerimõõdikud salvestatakse `collection_runs` tabelisse. Enrichment- või discovery alamfaasi viga logitakse ja tagastatakse eraldi staatusena; canonical discovery järel ebaõnnestunud kvaliteedisnapshot teeb discovery sammu kriitiliselt ebaõnnestunuks, kuid juba committed run jääb auditisse alles.
 
 ## Keskkonnamuutujad
 
