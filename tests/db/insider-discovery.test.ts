@@ -159,6 +159,23 @@ describe('form4-insider-selection-v1', () => {
     });
   });
 
+  it('ignores a newer source date until every registered accession is persisted', async () => {
+    await insertSignal({ ticker: 'COMPLETE', sequence: 40, filedDate: '2026-08-20' });
+    await insertSignal({ ticker: 'PARTIAL', sequence: 41, filedDate: '2026-08-21' });
+    await pool.query(
+      `INSERT INTO insider_filings (
+         accession_number, form_type, issuer_cik, issuer_name, filed_date,
+         sec_submission_url, amendment_link_status, ingestion_status,
+         ingestion_attempt_count, last_attempted_at
+       ) VALUES ('0000000001-26-999999','4','999999','Pending Corp','2026-08-21',
+                 'https://www.sec.gov/Archives/pending','not_applicable','discovered',1,now())`,
+    );
+
+    const selection = await selectNotableInsiderIssuers('2026-08-21');
+    expect(selection).toMatchObject({ sourceFiledDate: '2026-08-20', sourceAgeDays: 1, stale: false });
+    expect(selection.selectedIssuers.map((issuer) => issuer.ticker)).toEqual(['COMPLETE']);
+  });
+
   it('freezes lossless decimal facts, filing provenance, and every reporting-owner role', async () => {
     await insertSignal({
       ticker: 'PRECISE', sequence: 30,

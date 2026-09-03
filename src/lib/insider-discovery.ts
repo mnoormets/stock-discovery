@@ -69,8 +69,14 @@ export async function selectNotableInsiderIssuers(captureDateInput: string): Pro
   const captureDate = toDateOnly(captureDateInput);
   const sourceResult = await pool.query(
     `SELECT max(filed_date) AS source_filed_date
-     FROM insider_filings
-     WHERE form_type = '4' AND ingestion_status = 'persisted' AND filed_date <= $1::date`,
+       FROM (
+         SELECT filed_date
+           FROM insider_filings
+          WHERE filed_date <= $1::date
+          GROUP BY filed_date
+         HAVING bool_and(ingestion_status = 'persisted')
+            AND bool_or(form_type = '4')
+       ) complete_source_dates`,
     [captureDate],
   );
   const sourceFiledDate = sourceResult.rows[0]?.source_filed_date

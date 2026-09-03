@@ -14,11 +14,11 @@ describe('scheduled Form 4 ingestion workflow integration', () => {
   });
 
   it('bounds ingestion but allows core collection before surfacing a workflow failure', () => {
-    expect(workflow).toMatch(/name: Ingest recent SEC Form 4 filings[\s\S]*?continue-on-error: true[\s\S]*?timeout-minutes: 15/);
+    expect(workflow).toMatch(/name: Ingest recent SEC Form 4 filings[\s\S]*?continue-on-error: true[\s\S]*?timeout-minutes: 40/);
     const collect = workflow.indexOf('name: collect:daily');
     const failureGate = workflow.indexOf('name: Fail workflow when Form 4 ingestion failed');
     expect(failureGate).toBeGreaterThan(collect);
     expect(workflow).toContain("steps.form4_ingest.outcome == 'failure'");
-    expect(workflow).toContain('timeout-minutes: 25');
+    expect(workflow).toContain('timeout-minutes: 55');
   });
 });

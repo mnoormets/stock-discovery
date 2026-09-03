@@ -62,6 +62,29 @@ function assertNoFilingFailures(metrics, enabled) {
   if (failureCount > 0) throw new Error(`Form 4 ingestion lõpetas ${failureCount} filing-veaga.`);
 }
 
+function uniqueIndexRows(rows) {
+  return [...new Map(rows.map((row) => [row.accessionNumber, row])).values()];
+}
+
+async function registerIndexAttemptsAtomically(pool, rows, recordAttempt = recordFilingAttempt) {
+  const client = await pool.connect();
+  let began = false;
+  try {
+    await client.query('BEGIN');
+    began = true;
+    const attempts = [];
+    for (const row of rows) attempts.push({ row, attempt: await recordAttempt(client, row) });
+    await client.query('COMMIT');
+    began = false;
+    return attempts;
+  } catch (error) {
+    if (began) await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 function parseArgs(argv, now = new Date()) {
   const options = { from: null, to: null, recentDays: null, failOnFilingError: false };
   for (let index = 0; index < argv.length; index += 1) {
@@ -75,7 +98,11 @@ function parseArgs(argv, now = new Date()) {
   }
   if (options.recentDays != null) {
     if (options.from || options.to) throw new Error('--recent-days ja explicit --from/--to ei tohi olla koos.');
-    return { ...recentCompletedUsDateRange(options.recentDays, now), failOnFilingError: options.failOnFilingError };
+    return {
+      ...recentCompletedUsDateRange(options.recentDays, now),
+      failOnFilingError: options.failOnFilingError,
+      newestFirst: true,
+    };
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(options.from || '') || !/^\d{4}-\d{2}-\d{2}$/.test(options.to || '')) {
     throw new Error('--from ja --to on kohustuslikud kujul YYYY-MM-DD.');
@@ -89,14 +116,21 @@ function parseArgs(argv, now = new Date()) {
   }
   const calendarDays = Math.floor((toTime - fromTime) / 86_400_000) + 1;
   if (calendarDays > 31) throw new Error('Form 4 ingestion on piiratud 31 kalendripäevaga ühe jooksu kohta.');
-  return { from: options.from, to: options.to, failOnFilingError: options.failOnFilingError };
+  return {
+    from: options.from,
+    to: options.to,
+    failOnFilingError: options.failOnFilingError,
+    newestFirst: false,
+  };
 }
 
-async function ingestDateRange({ pool, sec, from, to, log = console.log }) {
-  const dates = await indexDatesInRange(sec, from, to);
+async function ingestDateRange({ pool, sec, from, to, newestFirst = false, log = console.log }) {
+  const availableDates = await indexDatesInRange(sec, from, to);
+  const dates = newestFirst ? [...availableDates].reverse() : availableDates;
   const metrics = {
     dates,
     indexed: 0,
+    distinctAccessions: 0,
     persisted: 0,
     skipped: 0,
     fetchFailed: 0,
@@ -108,10 +142,12 @@ async function ingestDateRange({ pool, sec, from, to, log = console.log }) {
   };
   for (const date of dates) {
     const rows = parseFormIndex(await sec.text(indexUrl(date)));
+    const distinctRows = uniqueIndexRows(rows);
     metrics.indexed += rows.length;
-    log(`${date}: ${rows.length} Form 4/4A filingut`);
-    for (const [position, indexRow] of rows.entries()) {
-      const attempt = await recordFilingAttempt(pool, indexRow);
+    metrics.distinctAccessions += distinctRows.length;
+    log(`${date}: ${rows.length} Form 4/4A indeksirida; ${distinctRows.length} unikaalset accession'it`);
+    const prepared = await registerIndexAttemptsAtomically(pool, distinctRows);
+    for (const [position, { row: indexRow, attempt }] of prepared.entries()) {
       if (attempt.skipped) {
         metrics.skipped += 1;
         continue;
@@ -145,8 +181,8 @@ async function ingestDateRange({ pool, sec, from, to, log = console.log }) {
         await markFilingFailure(pool, indexRow.accessionNumber, 'persist_failed', error);
         metrics.persistFailed += 1;
       }
-      if ((position + 1) % 50 === 0 || position + 1 === rows.length) {
-        log(`  ${position + 1}/${rows.length}; persisted ${metrics.persisted}; skipped ${metrics.skipped}; failures ${metrics.fetchFailed + metrics.parseFailed + metrics.persistFailed}`);
+      if ((position + 1) % 50 === 0 || position + 1 === prepared.length) {
+        log(`  ${position + 1}/${prepared.length}; persisted ${metrics.persisted}; skipped ${metrics.skipped}; failures ${metrics.fetchFailed + metrics.parseFailed + metrics.persistFailed}`);
       }
     }
   }
@@ -194,6 +230,8 @@ module.exports = {
   ingestionPoolConfig,
   parseArgs,
   recentCompletedUsDateRange,
+  registerIndexAttemptsAtomically,
+  uniqueIndexRows,
 };
 
 if (require.main === module) {
