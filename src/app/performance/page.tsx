@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import PaperSignalEvidence from '@/components/PaperSignalEvidence';
 import {
+  getPaperBookStatus,
   getPaperPerformanceDashboard,
   type PaperBookPerformance,
 } from '@/lib/paper-performance';
@@ -41,9 +43,9 @@ function valueClass(value: number | null): string {
 }
 
 function BookCard({ book, label }: { book: PaperBookPerformance; label: string }) {
-  const empty = book.filledOrders === 0 && book.pendingOrders === 0 && book.skippedOrders === 0;
-  const statusLabel = empty ? 'no positions' : book.valuationComplete ? 'valued' : 'mark missing';
-  const statusClass = empty ? 'closed' : book.valuationComplete ? 'active' : 'watch';
+  const status = getPaperBookStatus(book);
+  const statusLabel = status.replace('_', ' ');
+  const statusClass = status === 'valued' ? 'active' : status === 'pending' || status === 'mark_missing' ? 'watch' : 'closed';
   return <article className="card paperBook">
     <div className="sectionHeading"><h3>{label}</h3><span className={`pill ${statusClass}`}>{statusLabel}</span></div>
     <dl className="backtestMetrics">
@@ -86,14 +88,15 @@ export default async function PerformancePage() {
       </section>
       <section className="section">
         <div className="sectionHeading"><div><p className="eyebrow">IMMUTABLE SIGNAL CONTEXT</p><h2>Viimased paper-orderid</h2></div><Link href="/backtest">Ava horisondi-backtest</Link></div>
-        <div className="card tableWrap"><table><thead><tr><th>Signal</th><th>Poliitika</th><th>Book</th><th>Order</th><th>Status</th><th>Täitmine</th><th>Selgitus</th></tr></thead>
+        <div className="card tableWrap"><table><thead><tr><th>Signal</th><th>Poliitika</th><th>Book</th><th>Order</th><th>Status</th><th>Täitmine</th><th>Business + market</th><th>Selgitus</th></tr></thead>
           <tbody>{dashboard.recentOrders.length ? dashboard.recentOrders.map((order) => <tr key={order.id}>
             <td><strong>{order.signalTicker}</strong><small>{dateTime(order.signalAt)}</small></td>
             <td>{order.strategy}</td><td>{order.book === 'benchmark' ? 'SPY benchmark' : order.instrumentTicker}</td>
             <td>{order.side.toUpperCase()} {order.grossUsd == null ? '$100 intent' : usd(order.grossUsd)}</td>
             <td>{order.status}</td><td>{order.executionPrice == null ? '—' : `${usd(order.executionPrice)} · ${dateTime(order.executedAt)}`}</td>
+            <td><PaperSignalEvidence evidence={order.evidence} /></td>
             <td className="muted">{order.skipReason ?? '—'}</td>
-          </tr>) : <tr><td colSpan={7} className="muted">Paper-signaale pole veel salvestatud.</td></tr>}</tbody>
+          </tr>) : <tr><td colSpan={8} className="muted">Paper-signaale pole veel salvestatud.</td></tr>}</tbody>
         </table></div>
       </section>
       <aside className="card antiCheat"><h3>V1 aususe reeglid</h3><ul><li>Täitmine toimub ainult Yahoo <code>REGULAR</code> turuseisus ja kuni 20 minuti vanuse quote’iga.</li><li>Komisjon: 0,1%, minimaalselt $0.10 ja maksimaalselt $1 orderi kohta; maksud, dividendid ja FX ei ole V1-s modelleeritud.</li><li>Baseline ei varja stale signaali, kuid stale hind ei saa olla execution hind.</li><li>EXIT vajab kolme järjestikust tänase market data kinnitusega fundamentaalset läbikukkumist; top-listist kadumine üksi ei müü.</li></ul></aside>

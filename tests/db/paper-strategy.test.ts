@@ -184,6 +184,11 @@ describe('paper strategy signal ledger', () => {
     expect(dashboard.books.every((book) => book.investedUsd === 100.1)).toBe(true);
     expect(dashboard.books.every((book) => book.profitUsd != null
       && Math.abs(book.profitUsd + 0.1) < 1e-9)).toBe(true);
+    expect(dashboard.recentOrders).toHaveLength(4);
+    expect(dashboard.recentOrders.every((order) => order.evidence.state === 'captured')).toBe(true);
+    expect(dashboard.recentOrders.every((order) => order.evidence.businessState === 'strong')).toBe(true);
+    expect(dashboard.recentOrders.every((order) => order.evidence.marketSetupState === 'not_overheated')).toBe(true);
+    expect(dashboard.recentOrders.every((order) => order.evidence.freshnessState === 'current_collection_confirmed')).toBe(true);
     expect(afterRead.rows[0]).toEqual(beforeRead.rows[0]);
   });
 

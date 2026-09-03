@@ -1,6 +1,21 @@
 import { pool } from './db';
 import { PAPER_STRATEGY_POLICY_VERSION } from './config';
-import type { PaperStrategyKey } from './paper-strategy';
+import {
+  PAPER_STRATEGY_SNAPSHOT_VERSION,
+  type PaperBusinessState,
+  type PaperFreshnessState,
+  type PaperMarketSetupState,
+  type PaperStrategyKey,
+} from './paper-strategy';
+
+export interface PaperSignalEvidence {
+  state: 'captured' | 'unknown';
+  version: string | null;
+  businessState: PaperBusinessState | 'unknown';
+  marketSetupState: PaperMarketSetupState;
+  freshnessState: PaperFreshnessState | 'unknown';
+  reasons: string[];
+}
 
 export interface PaperBookPerformance {
   strategy: PaperStrategyKey;
@@ -34,6 +49,7 @@ export interface PaperPerformanceOrder {
   grossUsd: number | null;
   feeUsd: number | null;
   skipReason: string | null;
+  evidence: PaperSignalEvidence;
 }
 
 export interface PaperPerformanceDashboard {
@@ -42,6 +58,14 @@ export interface PaperPerformanceDashboard {
   generatedAt: string;
   books: PaperBookPerformance[];
   recentOrders: PaperPerformanceOrder[];
+}
+
+export type PaperBookStatus = 'no_positions' | 'pending' | 'valued' | 'mark_missing';
+
+export function getPaperBookStatus(book: Pick<PaperBookPerformance,
+  'filledOrders' | 'pendingOrders' | 'valuationComplete'>): PaperBookStatus {
+  if (book.filledOrders === 0) return book.pendingOrders > 0 ? 'pending' : 'no_positions';
+  return book.valuationComplete ? 'valued' : 'mark_missing';
 }
 
 function value(value: unknown): number {
@@ -53,6 +77,35 @@ function nullableValue(input: unknown): number | null {
   if (input == null) return null;
   const parsed = Number(input);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isObject(input: unknown): input is Record<string, unknown> {
+  return input != null && typeof input === 'object' && !Array.isArray(input);
+}
+
+/** Reads only the immutable V1 buy-signal snapshot and fails closed otherwise. */
+export function parsePaperSignalEvidence(input: unknown): PaperSignalEvidence {
+  const unknown: PaperSignalEvidence = {
+    state: 'unknown',
+    version: null,
+    businessState: 'unknown',
+    marketSetupState: 'unknown',
+    freshnessState: 'unknown',
+    reasons: [],
+  };
+  if (!isObject(input) || input.version !== PAPER_STRATEGY_SNAPSHOT_VERSION) return unknown;
+  if (input.businessState !== 'strong' && input.businessState !== 'mixed') return unknown;
+  if (!['not_overheated', 'overheated', 'unknown'].includes(String(input.marketSetupState))) return unknown;
+  if (!['current_collection_confirmed', 'not_current_collection'].includes(String(input.freshnessState))) return unknown;
+  if (!Array.isArray(input.reasons) || !input.reasons.every((reason) => typeof reason === 'string')) return unknown;
+  return {
+    state: 'captured',
+    version: PAPER_STRATEGY_SNAPSHOT_VERSION,
+    businessState: input.businessState,
+    marketSetupState: input.marketSetupState as PaperMarketSetupState,
+    freshnessState: input.freshnessState as PaperFreshnessState,
+    reasons: input.reasons,
+  };
 }
 
 export async function getPaperPerformanceDashboard(): Promise<PaperPerformanceDashboard> {
@@ -74,7 +127,8 @@ export async function getPaperPerformanceDashboard(): Promise<PaperPerformanceDa
     pool.query(
       `SELECT id, strategy_key, book_key, signal_ticker, instrument_ticker,
               side, status, signal_at, executed_at, execution_price,
-              executed_quantity, gross_usd, fee_usd, skip_reason
+              executed_quantity, gross_usd, fee_usd, skip_reason,
+              eligibility_snapshot
        FROM paper_strategy_orders
        WHERE policy_version = $1
        ORDER BY signal_at DESC, id DESC`,
@@ -170,6 +224,7 @@ export async function getPaperPerformanceDashboard(): Promise<PaperPerformanceDa
       grossUsd: nullableValue(row.gross_usd),
       feeUsd: nullableValue(row.fee_usd),
       skipReason: row.skip_reason || null,
+      evidence: parsePaperSignalEvidence(row.eligibility_snapshot),
     })),
   };
 }

@@ -126,6 +126,12 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .paperBookGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .paperBook { display: grid; gap: 14px; }
 .paperBook .backtestMetrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.paperSignalEvidence { display: grid; min-width: 250px; gap: 7px; }
+.paperEvidenceGrid { display: grid; grid-template-columns: repeat(2, minmax(110px, 1fr)); gap: 7px; }
+.paperEvidenceGrid > span { display: grid; gap: 2px; padding: 8px; border-radius: 8px; background: #162235; }
+.paperEvidenceGrid small { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.paperEvidenceReasons summary { cursor: pointer; color: var(--accent); font-size: 12px; font-weight: 700; }
+.paperEvidenceReasons ul { margin: 7px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
 .positive { color: var(--green); }
 .negative { color: var(--red); }
 .financialGrid { margin-top: 16px; }
