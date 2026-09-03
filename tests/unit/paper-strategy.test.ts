@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   assessPaperExecutionQuote,
+  derivePaperBusinessState,
+  derivePaperMarketSetupState,
   evaluatePaperStrategies,
   paperCommissionUsd,
   type PaperSignalInput,
@@ -43,6 +45,13 @@ function signal(overrides: Partial<PaperSignalInput> = {}): PaperSignalInput {
 }
 
 describe('paper-strategy-v1 signal policy', () => {
+  it('exports the exact business and market states reused by read-only surfaces', () => {
+    expect(derivePaperBusinessState(signal())).toBe('strong');
+    expect(derivePaperBusinessState(signal({ healthScore: 64 }))).toBe('mixed');
+    expect(derivePaperMarketSetupState(priceContext())).toBe('not_overheated');
+    expect(derivePaperMarketSetupState(priceContext({ historyStatus: 'insufficient' }))).toBe('unknown');
+  });
+
   it('keeps the all-picks baseline eligible even when current data is missing', () => {
     const [baseline, entryAware] = evaluatePaperStrategies(signal({
       currentCollectionConfirmed: false,

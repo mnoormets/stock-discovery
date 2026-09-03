@@ -555,6 +555,12 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .todayCandidateSignals span { padding: 5px 8px; border-radius: 7px; background: #0f1928; color: var(--muted); font-size: 11px; text-transform: capitalize; }
 .todayCandidateSignals strong { color: var(--text); }
 .todayCandidateSignals .todayTraceSignal { opacity: .65; border: 1px dashed var(--border); }
+.todaySituationSummary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.todaySituationAxis { display: grid; gap: 4px; min-width: 0; padding: 10px 11px; border: 1px solid var(--border); border-radius: 9px; background: #0f1928; }
+.todaySituationAxis > span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.todaySituationAxis > strong { font-size: 15px; }
+.todaySituationAxis > small { color: var(--muted); line-height: 1.4; }
+.todaySituationSummary > p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 11px; }
 .todayCandidateDetail { padding-top: 2px; border-top: 1px solid var(--border); }
 .todayCandidateDetail > summary, .todayCompactDetails > summary, .todaySystemDetails > summary { cursor: pointer; color: var(--accent); font-size: 12px; font-weight: 800; }
 .todayCandidateDetail[open] > summary, .todayCompactDetails[open] > summary { margin-bottom: 12px; }
@@ -670,7 +676,7 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .todayHero { align-items: flex-start; flex-direction: column; }
   .todaySystemStatus { align-items: flex-start; flex-direction: column; max-width: none; width: 100%; }
   .todayCandidateTop { align-items: flex-start; flex-direction: column; }
-  .todayCandidateDetailGrid, .todayRunStrip, .todayTwoColumn, .todayQualityGrid, .todayPriceGrid, .todayScenarioGrid, .todayTechnicalDetails dl, .todayInsiderFacts { grid-template-columns: 1fr; }
+  .todayCandidateDetailGrid, .todayRunStrip, .todayTwoColumn, .todayQualityGrid, .todayPriceGrid, .todayScenarioGrid, .todayTechnicalDetails dl, .todayInsiderFacts, .todaySituationSummary { grid-template-columns: 1fr; }
   .todaySubsectionHeading, .todayHistoryNotice, .todayRunUpNotice { align-items: flex-start; flex-direction: column; }
   .todayRunStrip > div { border-top: 1px solid var(--border); border-left: 0; }
   .todayRunStrip > div:first-child { border-top: 0; }

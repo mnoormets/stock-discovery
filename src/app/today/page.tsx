@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import CandidateSituationSummary from '@/components/CandidateSituationSummary';
 import Form4PurchaseEvidence from '@/components/Form4PurchaseEvidence';
 import {
   getCatalystStatusLabel,
@@ -105,6 +106,13 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
         <span>Why research this today?</span>
         <strong>{summary.headline}</strong>
       </div>
+
+      <CandidateSituationSummary
+        growthScore={candidate.growthScore}
+        healthScore={candidate.healthScore}
+        coverageScore={candidate.coverageScore}
+        priceContext={candidate.priceContext}
+      />
 
       {candidate.rankComparisonToNext && (
         <div className={`todayRankComparison ${candidate.rankComparisonToNext.consistentWithComparator ? '' : 'mismatch'}`}>

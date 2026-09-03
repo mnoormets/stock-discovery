@@ -58,7 +58,9 @@ export interface PaperExecutionQuoteAssessment {
   reason: string | null;
 }
 
-function businessState(input: PaperSignalInput): PaperBusinessState {
+export function derivePaperBusinessState(
+  input: Pick<PaperSignalInput, 'growthScore' | 'healthScore' | 'coverageScore'>,
+): PaperBusinessState {
   return input.growthScore != null
     && input.growthScore >= 65
     && input.healthScore != null
@@ -68,7 +70,7 @@ function businessState(input: PaperSignalInput): PaperBusinessState {
     : 'mixed';
 }
 
-function marketSetupState(context: CandidatePriceContext): PaperMarketSetupState {
+export function derivePaperMarketSetupState(context: CandidatePriceContext): PaperMarketSetupState {
   if (context.historyStatus === 'insufficient') return 'unknown';
   return context.recentRunUp ? 'overheated' : 'not_overheated';
 }
@@ -78,8 +80,8 @@ function baseEvaluation(input: PaperSignalInput, strategy: PaperStrategyKey): Om
     version: PAPER_STRATEGY_SNAPSHOT_VERSION,
     policyVersion: PAPER_STRATEGY_POLICY_VERSION,
     strategy,
-    businessState: businessState(input),
-    marketSetupState: marketSetupState(input.priceContext),
+    businessState: derivePaperBusinessState(input),
+    marketSetupState: derivePaperMarketSetupState(input.priceContext),
     freshnessState: input.currentCollectionConfirmed
       ? 'current_collection_confirmed'
       : 'not_current_collection',
