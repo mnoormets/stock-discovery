@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import CandidateSituationSummary from '@/components/CandidateSituationSummary';
 import Form4PurchaseEvidence from '@/components/Form4PurchaseEvidence';
+import { getPriceTrackingSummary } from '@/lib/price-tracking';
 import {
   getCatalystStatusLabel,
   getTodayBrief,
@@ -112,6 +113,7 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
         healthScore={candidate.healthScore}
         coverageScore={candidate.coverageScore}
         priceContext={candidate.priceContext}
+        priceCapturedAt={candidate.priceCapturedAt}
       />
 
       {candidate.rankComparisonToNext && (
@@ -249,6 +251,7 @@ function EmptyBrief({ error }: { error: string }) {
 export default async function TodayPage() {
   let brief: TodayBrief;
   try { brief = await getTodayBrief(); } catch (error) { return <EmptyBrief error={(error as Error).message} />; }
+  const tracking = await getPriceTrackingSummary().catch(() => ({ available: false, waiting: 0, rows: [] }));
 
   const collection = brief.latestCollectionRun;
   const quality = brief.dataQuality;
@@ -266,6 +269,16 @@ export default async function TodayPage() {
       </section>
 
       <div className="todayGuardrail">High scores mean “research further”, never “buy”. This page is read-only and does not refresh data or place orders.</div>
+      <section className="card">
+        <h2>Continued price tracking</h2>
+        <p>Open holdings, active/watchlist research and outstanding outcome horizons are checked separately from discovery. Up to 50 symbols per New York day, including SPY. These follow-up prices do not rewrite the daily snapshot above.</p>
+        {tracking.available && <p>{tracking.waiting} eligible symbols still awaiting a check today. A quote gap is retried on the next day; it never becomes a zero price.</p>}
+        {!tracking.available ? <p>Tracking unavailable; migration 0009 is required or the database could not be read.</p>
+          : tracking.rows.length === 0 ? <p>No tracking attempts recorded yet.</p>
+            : <details><summary>Latest batch: {tracking.rows.length} symbols · {tracking.rows.filter((row) => !['saved', 'unchanged'].includes(row.status)).length} quote gaps · {formatDateTime(tracking.rows[0].attempted_at.toISOString())}</summary>
+              <ul>{tracking.rows.map((row) => <li key={row.ticker}><strong>{row.ticker}</strong>: {row.status} · {row.reasons.join(', ')} · market time {row.market_at ? formatDateTime(row.market_at.toISOString()) : 'unknown'}</li>)}</ul>
+            </details>}
+      </section>
 
       <section className="todayQuickFacts" aria-label="Research brief summary">
         <span><strong>{canonical?.includedCount ?? 0}</strong> research candidates</span>

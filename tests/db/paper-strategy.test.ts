@@ -52,8 +52,68 @@ async function canonicalRun(options: { ticker?: string; healthScore?: number } =
 }
 
 describe('paper strategy signal ledger', () => {
+  it('marks held stocks and SPY on a later day with no new orders, without changing fills', async () => {
+    await recordPaperStrategySignals(await canonicalRun());
+    const quote = (ticker: string, price: number, marketTime: string): YahooExecutionQuote => ({
+      ticker, price, currency: 'USD', marketState: 'REGULAR', marketTime, source: 'yahoo', raw: {},
+    });
+    await executePendingPaperOrders({
+      now: new Date('2026-08-31T14:00:00Z'),
+      quoteFetcher: async () => new Map([
+        ['ELF', quote('ELF', 100, '2026-08-31T13:59:00Z')],
+        ['SPY', quote('SPY', 500, '2026-08-31T13:59:00Z')],
+      ]),
+    });
+    const before = (await pool.query('SELECT * FROM paper_strategy_orders ORDER BY id')).rows;
+    let requested: string[] = [];
+    const now = new Date('2026-09-01T14:00:00Z');
+    const quoteFetcher = async (tickers: string[]) => {
+      requested = tickers;
+      return new Map([
+        ['ELF', quote('ELF', 110, '2026-09-01T13:59:00Z')],
+        ['SPY', quote('SPY', 505, '2026-09-01T13:59:00Z')],
+      ]);
+    };
+    const result = await executePendingPaperOrders({ now, quoteFetcher });
+    expect(requested.sort()).toEqual(['ELF', 'SPY']);
+    expect(result).toMatchObject({ pendingOrders: 0, filledOrders: 0, markedTickers: 2 });
+    expect((await executePendingPaperOrders({ now, quoteFetcher })).markedTickers).toBe(0);
+    expect((await pool.query('SELECT * FROM paper_strategy_orders ORDER BY id')).rows).toEqual(before);
+    const book = (await getPaperPerformanceDashboard(now)).books.find(
+      (item) => item.strategy === 'all_picks_baseline' && item.book === 'strategy',
+    )!;
+    expect(book.currentValueUsd).toBe(110);
+    expect(book.profitUsd).toBeCloseTo(9.9);
+
+    await executePendingPaperOrders({
+      now: new Date('2026-09-02T14:00:00Z'),
+      quoteFetcher: async () => new Map([['SPY', quote('SPY', 510, '2026-09-02T13:59:00Z')]]),
+    });
+    const stale = (await getPaperPerformanceDashboard(new Date('2026-09-02T14:00:00Z'))).books.find(
+      (item) => item.strategy === 'all_picks_baseline' && item.book === 'strategy',
+    )!;
+    expect(stale.valuationComplete).toBe(false);
+    expect(stale.profitUsd).toBeNull();
+    expect(stale.valuationIssues).toContain('ELF: mark date differs from SPY.');
+
+    // Same-date quotes must also be close in time; missing and non-USD marks
+    // cannot turn a partial portfolio into a reported return.
+    await pool.query(`INSERT INTO paper_strategy_marks (ticker, price, currency, market_time, marked_at, source, quote_payload)
+      VALUES ('ELF', 110, 'USD', '2026-09-02T13:38:00Z', '2026-09-02T14:00:00Z', 'yahoo', '{}')`);
+    const readBook = async () => (await getPaperPerformanceDashboard(new Date('2026-09-02T14:00:00Z')))
+      .books.find((item) => item.strategy === 'all_picks_baseline' && item.book === 'strategy')!;
+    expect((await readBook()).valuationIssues).toContain('ELF: mark time differs from SPY by more than 20 minutes.');
+    await pool.query(`INSERT INTO paper_strategy_marks (ticker, price, currency, market_time, marked_at, source, quote_payload)
+      VALUES ('ELF', 110, 'EUR', '2026-09-02T13:40:00Z', '2026-09-02T14:00:00Z', 'yahoo', '{}')`);
+    expect((await readBook()).currentValueUsd).toBeNull();
+    expect((await readBook()).valuationIssues).toContain('ELF: valid USD mark missing.');
+    const outdated = (await getPaperPerformanceDashboard(new Date('2026-09-08T14:00:00Z')))
+      .books.find((item) => item.strategy === 'all_picks_baseline' && item.book === 'strategy')!;
+    expect(outdated.valuationIssues).toContain('SPY: recent reference mark unavailable.');
+  });
+
   it('keeps an empty portfolio valuation unknown instead of inventing zero P/L', async () => {
-    const dashboard = await getPaperPerformanceDashboard();
+    const dashboard = await getPaperPerformanceDashboard(new Date('2026-08-31T14:00:00Z'));
     expect(dashboard.available).toBe(true);
     expect(dashboard.books).toHaveLength(4);
     expect(dashboard.books.every((book) => book.investedUsd === 0)).toBe(true);
@@ -174,7 +234,7 @@ describe('paper strategy signal ledger', () => {
       `SELECT (SELECT count(*)::int FROM paper_strategy_orders) AS orders,
               (SELECT count(*)::int FROM paper_strategy_marks) AS marks`,
     );
-    const dashboard = await getPaperPerformanceDashboard();
+    const dashboard = await getPaperPerformanceDashboard(now);
     const afterRead = await pool.query(
       `SELECT (SELECT count(*)::int FROM paper_strategy_orders) AS orders,
               (SELECT count(*)::int FROM paper_strategy_marks) AS marks`,

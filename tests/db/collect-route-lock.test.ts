@@ -31,6 +31,7 @@ function request(): Request {
 
 function dependencies(): CollectRouteDependencies {
   return {
+    collectTrackedPrices: vi.fn(async () => ({ attempted: 0, saved: 0, unchanged: 0, missing: 0, stale: 0, invalid: 0, failed: 0, deferred: 0 })),
     // Kogu `runCollection` tagastuskuju, mitte cast: nii jääb test seotuks
     // päris tüübiga ja katkeb valjult, kui kuju muutub.
     runCollection: vi.fn(async () => ({

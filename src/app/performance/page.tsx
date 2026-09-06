@@ -45,18 +45,21 @@ function valueClass(value: number | null): string {
 function BookCard({ book, label }: { book: PaperBookPerformance; label: string }) {
   const status = getPaperBookStatus(book);
   const statusLabel = status.replace('_', ' ');
-  const statusClass = status === 'valued' ? 'active' : status === 'pending' || status === 'mark_missing' ? 'watch' : 'closed';
+  const statusClass = status === 'valued' ? 'active' : status === 'pending' || status === 'valuation_incomplete' ? 'watch' : 'closed';
   return <article className="card paperBook">
     <div className="sectionHeading"><h3>{label}</h3><span className={`pill ${statusClass}`}>{statusLabel}</span></div>
     <dl className="backtestMetrics">
       <div><dt>Rahavoog sisse</dt><dd>{usd(book.investedUsd)}</dd></div>
-      <div><dt>Hetkeväärtus</dt><dd>{usd(book.currentValueUsd)}</dd></div>
+      <div><dt>Väärtus markide ajal</dt><dd>{usd(book.currentValueUsd)}</dd></div>
       <div><dt>P/L</dt><dd className={valueClass(book.profitUsd)}>{usd(book.profitUsd)}</dd></div>
       <div><dt>Tootlus</dt><dd className={valueClass(book.returnPercent)}>{percent(book.returnPercent)}</dd></div>
       <div><dt>Avatud tickerid</dt><dd>{book.openPositions}</dd></div>
       <div><dt>Filled / pending / skipped</dt><dd>{book.filledOrders} / {book.pendingOrders} / {book.skippedOrders}</dd></div>
     </dl>
     <small>Markide vahemik: {dateTime(book.oldestMarkAt)} → {dateTime(book.newestMarkAt)}. Puuduv mark jääb unknown, mitte 0.</small>
+    {book.valuationIssues.length > 0 && <ul className="riskText" aria-label="Valuation issues">
+      {book.valuationIssues.map((issue) => <li key={issue}>{issue}</li>)}
+    </ul>}
   </article>;
 }
 
@@ -77,6 +80,7 @@ export default async function PerformancePage() {
     {dashboard?.available && <>
       <section className="section">
         <div className="sectionHeading"><div><p className="eyebrow">{dashboard.policyVersion}</p><h2>Kaks poliitikat, sama raha</h2></div><span className="muted">Seis: {dateTime(dashboard.generatedAt)}</span></div>
+        <p className="muted">Valuation uses USD marks from the same New York date as SPY, within 20 minutes of its mark. Recency allows one elapsed New York weekday; weekends add no days and holidays are not inferred. Incomplete valuation stays unknown. Frozen signal-time labels below preserve the original policy assessment.</p>
         {STRATEGIES.map((strategy) => {
           const actual = dashboard.books.find((book) => book.strategy === strategy.key && book.book === 'strategy')!;
           const benchmark = dashboard.books.find((book) => book.strategy === strategy.key && book.book === 'benchmark')!;

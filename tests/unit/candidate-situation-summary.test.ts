@@ -31,12 +31,34 @@ function render(overrides: Partial<Parameters<typeof CandidateSituationSummary>[
     growthScore: 80,
     healthScore: 75,
     coverageScore: 90,
+    priceCapturedAt: '2026-09-03T12:00:00.000Z',
     priceContext: priceContext(),
     ...overrides,
   }));
 }
 
 describe('CandidateSituationSummary', () => {
+  it('does not give BW or ELF a green setup from an old decision price', () => {
+    for (const capturedAt of ['2026-08-18T21:10:11.863Z', '2026-08-26T05:11:26.150Z']) {
+      const html = render({
+        priceCapturedAt: capturedAt,
+        priceContext: priceContext({ asOf: '2026-09-06T05:28:45.025Z', historyStatus: 'partial' }),
+      });
+      expect(html).toContain('Current setup unknown');
+      expect(html).toContain('Stored price is stale');
+      expect(html).not.toContain('Not overheated');
+    }
+  });
+
+  it('identifies partial windows without an unqualified positive setup', () => {
+    const html = render({ priceContext: priceContext({
+      historyStatus: 'partial', threeMonthReturnPercent: null, sixMonthReturnPercent: null,
+    }) });
+    expect(html).toContain('Partial history');
+    expect(html).toContain('Assessed windows: 1 month');
+    expect(html).not.toContain('Not overheated');
+  });
+
   it('shows strong business and a separate not-overheated market state', () => {
     const html = render();
     expect(html).toContain('Business');

@@ -8,9 +8,11 @@ import { enrichCompanyClassifications } from '@/lib/company-classification';
 import { getRklbDiscoveryCandidates } from '@/lib/rklb-discovery';
 import { RequiredDataQualitySnapshotError } from '@/lib/data-quality-snapshots';
 import { pool } from '@/lib/db';
+import { collectTrackedPrices } from '@/lib/price-tracking';
 import { releaseCollectionLock, tryAcquireCollectionLock } from '@/lib/collection-lock';
 
 export interface CollectRouteDependencies {
+  collectTrackedPrices: typeof collectTrackedPrices;
   runCollection: typeof runCollection;
   refreshCandidateOutcomes: typeof refreshCandidateOutcomes;
   collectDefaultBenchmarkPrice: typeof collectDefaultBenchmarkPrice;
@@ -20,6 +22,7 @@ export interface CollectRouteDependencies {
 }
 
 const defaultDependencies: CollectRouteDependencies = {
+  collectTrackedPrices,
   runCollection,
   refreshCandidateOutcomes,
   collectDefaultBenchmarkPrice,
@@ -134,9 +137,11 @@ export async function handleCollectRequest(
         error: message,
       };
     }
+    const priceTracking = await dependencies.collectTrackedPrices();
     const outcomeUpdates = await dependencies.refreshCandidateOutcomes();
+    const trackingComplete = !(priceTracking.failed || priceTracking.missing || priceTracking.invalid || priceTracking.stale || priceTracking.deferred);
     return NextResponse.json({
-      ok: true,
+      ok: trackingComplete,
       ...result,
       benchmarkCaptured,
       financialEnrichment,
@@ -145,7 +150,8 @@ export async function handleCollectRequest(
       classificationEnrichmentError,
       dailyDiscovery,
       outcomeUpdates,
-    });
+      priceTracking,
+    }, { status: trackingComplete ? 200 : 503 });
   } catch (err) {
     console.error('Kogumine ebaõnnestus:', err);
     return NextResponse.json(

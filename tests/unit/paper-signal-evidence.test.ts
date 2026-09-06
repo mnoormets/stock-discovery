@@ -70,6 +70,6 @@ describe('paper book status', () => {
   it('distinguishes pending orders, complete marks, and missing marks', () => {
     expect(getPaperBookStatus({ filledOrders: 0, pendingOrders: 2, valuationComplete: true })).toBe('pending');
     expect(getPaperBookStatus({ filledOrders: 1, pendingOrders: 0, valuationComplete: true })).toBe('valued');
-    expect(getPaperBookStatus({ filledOrders: 1, pendingOrders: 0, valuationComplete: false })).toBe('mark_missing');
+    expect(getPaperBookStatus({ filledOrders: 1, pendingOrders: 0, valuationComplete: false })).toBe('valuation_incomplete');
   });
 });

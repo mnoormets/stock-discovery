@@ -1,5 +1,6 @@
 import { pool } from './db';
 import { toDateOnly } from './date-only';
+import { priceObservationRecency } from './price-observation';
 import { CANONICAL_RUN_TYPE } from './discovery-validation';
 import {
   getMissedMoveAuditsReadOnly,
@@ -84,6 +85,7 @@ export interface TodayDataQuality {
 }
 
 export type TodayCandidateWarningCode =
+  | 'stale_price'
   | 'low_coverage'
   | 'not_relevant_mandate'
   | 'partial_mandate'
@@ -163,6 +165,7 @@ export interface TodayCandidate {
   sourcePathLabel: string;
   provenanceKnown: boolean;
   decisionPrice: number | null;
+  priceCapturedAt: string | null;
   currency: string | null;
   priceContext: CandidatePriceContext;
   scenarioValuation: ScenarioValuation;
@@ -556,7 +559,7 @@ export function buildCandidateResearchSummary(
   candidate: Omit<TodayCandidate, 'researchSummary'>,
 ): TodayCandidateResearchSummary {
   const warningCodes = new Set(candidate.warnings.map((warning) => warning.code));
-  const reviewFirst = ['not_relevant_mandate', 'negative_fcf', 'dilution_warning', 'low_coverage']
+  const reviewFirst = ['not_relevant_mandate', 'negative_fcf', 'dilution_warning', 'low_coverage', 'stale_price']
     .some((code) => warningCodes.has(code as TodayCandidateWarningCode));
   const watch = candidate.lookupBucket === 'recall'
     || warningCodes.has('partial_mandate')
@@ -811,6 +814,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
         `SELECT d.id, d.company_id, d.ticker, d.candidate_rank, d.growth_score,
                 d.health_score, d.coverage_score, d.decision_price, d.currency,
                 d.market_cap, d.score_snapshot_id, s.payload AS score_payload,
+                COALESCE(p.market_at, p.captured_at) AS price_captured_at,
                 d.catalyst_status, d.catalyst_evidence_status, d.catalyst_evidence_tier,
                 d.catalyst_materiality, d.catalyst_mandate_relevance,
                 d.catalyst_event_kind, d.catalyst_source_kind, d.catalyst_direction,
@@ -825,6 +829,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
          LEFT JOIN companies c ON c.id = d.company_id
          LEFT JOIN collection_run_items i ON i.id = d.collection_run_item_id
          LEFT JOIN company_score_snapshots s ON s.id = d.score_snapshot_id
+         LEFT JOIN price_snapshots p ON p.id = d.price_snapshot_id AND p.company_id = d.company_id
          WHERE d.run_id = $1 AND d.included = true
          ORDER BY d.candidate_rank NULLS LAST, d.ticker`,
         [latestCanonicalRun.id],
@@ -922,6 +927,10 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           observations: companyId == null ? [] : pricesByCompany.get(companyId) || [],
         });
         const warnings = candidateWarnings(row, qualityMetrics);
+        const priceCapturedAt = row.price_captured_at ? new Date(row.price_captured_at).toISOString() : null;
+        if (priceObservationRecency(priceCapturedAt, latestCanonicalRun.runAt) === 'stale') {
+          warnings.push({ code: 'stale_price', label: 'Stale decision price; current setup unknown' });
+        }
         if (priceContext.recentRunUp) {
           warnings.push({ code: 'recent_run_up', label: 'Recent run-up; review entry price' });
         }
@@ -954,6 +963,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           sourcePathLabel: getSourcePathLabel(lookupBucket),
           provenanceKnown: Boolean(row.collection_run_item_id && row.lookup_bucket && row.lookup_bucket !== 'unknown'),
           decisionPrice,
+          priceCapturedAt,
           currency: row.currency || null,
           priceContext,
           scenarioValuation: buildScenarioValuation(
@@ -1211,14 +1221,16 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
         });
       }
       for (const warning of candidate.warnings.filter((item) => (
-        item.code === 'negative_fcf' || item.code === 'dilution_warning' || item.code === 'missing_sector'
+        item.code === 'negative_fcf' || item.code === 'dilution_warning' || item.code === 'missing_sector' || item.code === 'stale_price'
       ))) {
         watchItems.push({
           code: warning.code,
           severity: warning.code === 'missing_sector' ? 'warning' : 'critical',
           ticker: candidate.ticker,
           title: `${candidate.ticker}: ${warning.label}`,
-          detail: warning.code === 'missing_sector'
+          detail: warning.code === 'stale_price'
+            ? `Decision price observed at ${candidate.priceCapturedAt}; obtain a recent quote before assessing the current setup.`
+            : warning.code === 'missing_sector'
             ? 'Peer and sector-relative context may be incomplete.'
             : 'Treat this as a core risk to verify in the stored filing evidence.',
           href: `/company/${encodeURIComponent(candidate.ticker)}`,

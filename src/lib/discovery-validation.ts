@@ -415,6 +415,7 @@ export async function refreshCandidateOutcomes(now = new Date()): Promise<number
        FROM price_snapshots
        WHERE company_id = $1 AND price IS NOT NULL
          AND captured_at >= $2 AND captured_at < $2::timestamptz + interval '7 days'
+         AND (market_at IS NULL OR market_at >= $2)
        ORDER BY captured_at ASC, id ASC LIMIT 1`,
       [Number(row.company_id), new Date(row.target_at).toISOString()],
     );
@@ -481,6 +482,7 @@ export async function refreshCandidateOutcomes(now = new Date()): Promise<number
        WHERE c.ticker = $1 AND p.price IS NOT NULL
          AND p.captured_at >= $2
          AND p.captured_at < $2::timestamptz + interval '7 days'
+         AND (p.market_at IS NULL OR p.market_at >= $2)
        ORDER BY p.captured_at ASC, p.id ASC LIMIT 1`,
       [symbol, new Date(row.target_at).toISOString()],
     );

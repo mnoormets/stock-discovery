@@ -43,6 +43,7 @@ const MIGRATED_TABLES = [
   'paper_strategy_orders',
   'portfolio_positions',
   'price_snapshots',
+  'price_tracking_attempts',
   'research_briefs',
   'schema_migrations',
   'sec_events',
@@ -85,7 +86,7 @@ describe('D1 — test-andmebaasi isolatsioon (esimene värav)', () => {
 describe('D2 — migratsioonidest ehitatud tabelikomplekt', () => {
   // Assertitakse globalSetup'is fikseeritud hetkeseisu, MITTE jooksvat
   // `pg_tables` vastu: testibaas on failide vahel jagatud.
-  it('loob täpselt need 32 tabelit', () => {
+  it('loob täpselt need 33 tabelit', () => {
     expect(inject('migratedTables')).toEqual(MIGRATED_TABLES);
   });
 

@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-09-03
+Uuendatud: 2026-09-07
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -27,6 +27,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Rakendus ei anna ostu- ega müügisoovitusi.
 
 ## Praegune töötav seis
+
+- **2026-09-07 implementation checkpoint:** canonical discovery is v3; Form 4 hotfix is on local/remote main. Local fixes request marks for all open paper holdings, withhold incomplete/misaligned valuations and qualify stale/partial Today setups. Continued research/outcome price tracking is implemented; migration 0009 is applied to Neon and the first 18-symbol Yahoo batch is persisted. Code publication and unattended tracking evidence remain outstanding; verification is recorded below.
 
 - Next.js 14.2.35, PostgreSQL ja Docker Compose; rakendus pordil `3005`.
 - Yahoo Finance hinnad, uudised, earnings ja analüütikute konsensus.
@@ -101,6 +103,9 @@ Viimati kontrollitud päris skoorid:
 Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala kattega tulemusi, et üksiku komponendi kõrge skoor poleks eksitav.
 
 ## Tehtud verstapostid
+
+- **2026-09-06:** completed a repository, read-only Neon and live Today/Performance review focused on personal investing. Reconciled the current roadmap with delivered features and recorded concrete, still-unfixed measurement defects.
+- **2026-09-06 follow-up:** implemented the first price-integrity slice locally: held-position quote requests, honest valuation availability and stale/partial Today labels. Discovery selection and frozen signal eligibility remain unchanged; no missed historical price is fabricated. See the latest verification entry for evidence and remaining publication work.
 
 - Collection Runs Ledger (`0002_collection_runs_ledger`):
   - iga põhikogumise katse saab enne väliseid providerikutsed oma `running` rea;
@@ -205,133 +210,52 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**Paper Strategy V1 — päris unattended täitmine kontrollitud:** 2026-09-03 kell 16:35 Tallinn dispatch'is cron-job.org workflow ning GitHub Actions run #2 lõpetas success'iga 43 sekundiga. Execution leidis 12 pending orderit, täitis kõik 12 (6 appi instrumenti + 6 sama rahavoo SPY benchmark-orderit), jättis 0 pending/deferred orderit ja uuendas 7 tickeri marki. Neoni ledgeri read-only `/performance` kontroll näitas mõlemas all-picks book'is 12/0/0 filled/pending/skipped ning värskeid 16:35 marke; entry-aware jäi ausalt 0/0/12. Brokeri integratsiooni ega päris orderit ei ole.
+**2026-09-06 review: the user confirmed that the objective is better personal investing results.** The implementation remains a research tool; a score is not an instruction to buy. The evidence-backed review and proposed fixes are in [ASTRA_REVIEW_2026-09-06.md](ASTRA_REVIEW_2026-09-06.md).
 
-**Nasdaq new-listing radar — unattended DB-vaba observation kontrollitud:** 2026-09-03 kell 16:35 Tallinn dispatch'is cron-job.org workflow ning GitHub Actions run #2 lõpetas success'iga 41 sekundiga ja säilitas 73,3 KB artifact'i. Raport leidis 7 jooksva päeva sündmust (4 Add / 3 Delete); üks Add (`JONE`) oli lookup-ready, ülejäänud kolm Add'i jäid instrumendi või primary-listingu kontrolli taha. Raport kinnitas `Database: not connected; no writes`. `Add` on endiselt ainult sündmusevihje ning radar pole production discovery'ga ühendatud.
+The last three core collections (#30–32, 4–6 September) succeeded; canonical v3 runs #62–64 evaluated 119/124/129 companies and selected six each. Registered Form 4 dates 31 August–4 September are persisted and the latest collection used fresh 4 September insider evidence. The completion-safe Form 4 hotfix is already committed and visible on remote main at b5f3290; it is not awaiting push. Paper execution through 4 September is reflected in 18 filled stock buys and 18 SPY buys. Nasdaq observation remains a separate, DB-free calibration; this session did not inspect its latest remote artifacts.
 
-**Market-Data Persistence Fix V2:** future collection runs persist available price, market cap, volume, currency and source for every usable current-run Yahoo/FMP fundamentals result, independently of `buildCandidates()` survival. The resolver reuses the existing five-minute deduplicating `insertPriceSnapshot()` writer, so candidate persistence and identity persistence do not create duplicate identical rows. The former 16/200 observation was a low-attention `MIN_MENTIONS = 5` day, not a 40+20 selector-cap hit; the evidence-based first experiment is now `MIN_MENTIONS = 3` with an 80+20 lookup ceiling. Exchange remains absent from `Fundamentals`, while sector/industry remain in the separate `assetProfile` classification pipeline. No historical rows were backfilled.
+**The immediate constraint is dependable forward measurement.** The review found BW's research price stuck on 18 August and ELF's on 26 August, plus missing paper marks for CRDO/FIVE. The first local fix includes all open paper holdings and withholds incomplete valuations. Continued tracking now independently appends Yahoo research prices for holdings, active/watch research and outstanding canonical horizons; 18 real quotes were received at 00:04 Tallinn on 7 September, with their actual Friday market times preserved. These observations can feed future research and eligible outcome endpoints without rewriting snapshot #64 or filling old missing windows. Today still shows the original decision-linked setup and a separate tracking panel. Remote scheduled execution requires publication of the local changes.
 
-**2026-08-17 Company Link Persistence Fix V1 update:** metadata root-cause auditi j�rgne code-path investigation kinnitas, et `saveCollectedCompanies(candidates)` sidus company identity persistence'i ekslikult social discovery kandidaadiks j��misega. Uus `resolveCollectionCompanyIds()` lahendab tulevasel collect'il eraldi k�ik olemasoleva `companies` tickeri-identiteediga radariread ning upsertib current-run Yahoo/FMP vastused, millel on p�ris price/market-cap/volume. `collection_run_items.company_id` kasutab seda laiemat tickeri-ID kaarti; `buildCandidates()`, kandidaatide snapshotid, ranking, canonical scoring ja scheduler ei muutunud. Ajaloolisi 200 item'i, sealhulgas 19 linkimata olemasolevat identity't ja 9 found-but-unpersisted rida, ei backfillitud ega muudetud. J�rgmine kontroll on esimese tulevase golden-source collect'i read-only metadata-root-cause v�rdlus; t��arvutis collect'i ei k�ivitata.
+Entry-aware has skipped all 30 stock signals: 14 for missing history, 12 for history plus current-collection confirmation, and four for confirmation alone. Do not lower gates merely to make it trade. The current v3 policy has seven canonical days, 42 selected decisions across eight tickers, and no measured horizons. Previous-model canonical outcomes have only 26 measured observations across three distinct stocks, with 45 missing outcomes. Separate versions/horizons and repair measurement coverage before drawing strategy conclusions.
 
-**Current focus:** the Healthchecks.io dead-man switch is live and the full unattended 2026-08-26 chain is proven: cron-job.org dispatch 08:10:31 → GitHub Actions run #7 success → collection run #20 → canonical run #49 reused → Healthchecks event #2 at 08:13 Tallinn. CompanyFacts Phase 3.5 calibration telemetry is implemented: the workflow captures non-blocking paired `BEGIN ... READ ONLY` queue snapshots around every collector run and retains JSON/NDJSON artifacts for 30 days. The budget remains five and queue ordering is unchanged; collect 7–14 valid observations before choosing a new limit. Form 4 Phase 4 V1 is implemented, and the daily workflow includes a bounded seven-USA-calendar-day rolling ingestion before `collect:daily`. The first live run proved core-collection isolation and heartbeat delivery but exposed that one 904-row EDGAR day exceeds the original 15-minute step limit. A verified hotfix processes newest dates first, atomically pre-registers every distinct accession for a date and lets selection use only fully persisted dates; it still requires commit/push before the next automated run. Collection metrics and the card expose source date/staleness context and must not imply historical or daily EDGAR completeness. Observe the `MIN_MENTIONS = 3` experiment for one to two weeks, then remeasure mention-count distribution, eligible rows, lookup saturation and market-data success; the four-date calibration sample is too small for a steady-state conclusion. Outcome views remain uninterpretable until real horizons mature.
-
-**Market-cap tier policy/core Phase 1 implemented:** `market-cap-tier-policy-v1` uses the measured successful-lookup P25/P75 edges exactly: lower `< 1,791,164,000`, middle `1,791,164,000...48,338,040,831`, upper `>= 48,338,040,832`. Canonical selection takes up to two independently ranked companies from each tier, never borrows empty capacity and gives missing/invalid market cap no tier slot. The social `$10B` and canonical `$75B` hard ceilings are removed; the former `$10B` value remains only as the social score's logarithmic small-cap anchor. `scaleCriterion` remains visible evidence but is excluded from the supported-criteria ranking count to avoid rewarding company size twice after tiering. This changes the canonical model contract to `rklb-discovery-v3`; no migration, persisted tier column, UI grouping or production run is part of Phase 1.
-
-**Outcome baseline before passive observation:** 2026-08-30 read-only Neon snapshotis oli 605 `candidate_outcomes` rida, neist 34 measured (31 distinct otsust, 6 tickerit, 16 run'i), 530 pending ja 41 missing. Measured valimis oli 5 positiivset ja 29 negatiivset tootlust; keskmine excess return sama akna SPY vastu oli **−1,99 protsendipunkti** (mediaan −4,29 pp). Ainult 2 measured rida olid salvestatud social provenance'iga, 32 jäid legacy/unknown provenance'iks ning **insider-only bucket'il oli 0 outcome-rida ja 0 measured outcome'i**. Valim on liiga väike, korduvate tickeritega ja ilma ühegi 1m/3m/6m measured tulemuseta, seega selle põhjal ei muudeta policy't, rankingut ega budget'it. Järgmine sisuline checkpoint on 2–4 nädala pärast, kui rohkem 1m outcome'e on päriselt küpsenud; vahepeal jätkub ainult tõestatud unattended daily collection ja passiivne outcome'ide küpsemine.
-
-RDDT audit näitas kahte eri probleemi: ticker oli sotsiaalradaris olemas, kuid langeva mention-growth'i tõttu ei jõudnud piiratud fundamentaalpäringusse; samal ajal puudus rakendusel indeksi lisamise ametlik sündmuseallikas. Esimene auk on nüüd parandatud olemasoleva Yahoo/FMP kihiga. Teine vajab eraldi kasutaja otsust uue versioonitud allika kohta; tasuta mudelite kataloog ei ole selle asendus.
-
-Catalyst hard gate on asendatud structured evidence field'iga. Discovery mudeliversioon on `rklb-discovery-v2`, seega v1 canonical päevajooksud ja v2 jooksud ei ole üks frequency-seeria: persistence-loendur algab uuesti 2026-08-12 canonical run'ist #17.
-
-`docs/FUNNEL_AUDIT.md` read-only audit näitas, et suurim vahetu bottleneck ei ole scheduler ega cloud DB, vaid radari sisenduniversumi ja otsustusfunneli tõendamata kvaliteet. Selle järel tehtud [`docs/RESEARCH_SPRINT_2026-08-11.md`](RESEARCH_SPRINT_2026-08-11.md) manual cohort andis päris Thesis Builderi otsused: API `ready`, BW ja HIMS `researching`, CAKE ja ACHR `rejected`. `ready` tähendab kaitstavat ning falsifitseeritavat teesi, mitte ostusoovitust.
-
-Sprint kinnitas kaks hüpoteesi. Catalyst hard gate tekitas research false negative'e: BW-l oli päris Q2/backlog/Base Electron catalyst ning CAKE-l earnings/comparable-sales/unit-opening evidence, kuigi collector märkis catalyst'i puuduvaks. Coverage on endiselt completeness/presence; uus kiht teeb BW 100 Coverage + 2021 debt vastuolu nüüd nähtavaks. Järgmine samm ei ole uus provider: kasuta warning'uid järgmises manual research otsuses ja otsusta seejärel eraldi, kas catalyst hard gate muuta structured evidence field'iks.
-
-Catalyst-otsuse jaoks on nüüd olemas kirjalik disain [`docs/CATALYST_EVIDENCE_V2.md`](CATALYST_EVIDENCE_V2.md): see on ainult disain, koodi, filtreid, skeemi ega provider'eid selle põhjal veel ei muudetud. Ehitamise eelduseks jääb sama cohort'i kasutamine märgistatud testhulgana.
+The user's five current in-app theses were last revised on 11 August. The next product experiment should use the existing Thesis Builder for a small set of dated decisions, with company-specific expectations, downside, invalidation, and review triggers. The fixed bear/base/bull sensitivity is not evidence of mispricing.
 
 ## Roadmap
 
 ### NOW - järgmine töö
 
-- kogu Nasdaq observeriga 5–10 päris kauplemispäeva artifact'id enne persistence'i või production lookup-bucket'i ehitamist. Mõõda source creation time'i, Add → directory-confirmation viidet, instrument/status jaotust ning daily lookup-ready arvu; tasuta current-file allikas ei tõesta IPO-t ega võimalda ajaloolist backfilli;
-- kontrolli 2026-09-03 esimese päris unattended paper execution'i järel cron-job.org history't, GitHub Actions run'i ja Neoni ledgerit: tänase canonical run'i signalid, all-picks/entry-aware skip-jaotus, SPY paaride täielikkus, fill/deferred põhjused ja markide värskus peavad omavahel klappima;
-- lase seejärel 2–4 nädala paper-perioodil muutmata poliitikaga joosta. Võrdle all-picks ja entry-aware book'i sama cash-flow SPY vastu ning dokumenteeri stale/unknown/deferred juhtumid; ära tee üksikute päevade põhjal ranking- ega threshold-muudatusi;
-- V1 teadlikud piirid: maksud, dividendid, FX, slippage, pühade ametlik market calendar, brokeri täitmisdetailid ja päris orderid puuduvad. Need tuleb lisada ainult siis, kui paper-andmed näitavad, et need muudavad otsust, mitte enne;
-
-Kasuta uut auditikihti päris forward-andmetel enne uue allika või rankingureegli lisamist:
-
-- review ja commit/push Form 4 rolling-ingestion workflow eraldi. Push aktiveerib järgmise cron-job.org dispatch'i kaudu Neon-write'i, seega esimene live workflow run vajab kasutaja eraldi kinnitust ja järelkontrolli;
-- pärast esimest production automation run'i kontrolli ingestion'i persisted/skipped/failure loendreid ning collecti `insiderSignal.sourceFiledDate/sourceAgeDays/stale/eligibleIssuers/selectedIssuers/overlapWithSocial` ja `marketDataLookup.insider/total` väljundit. Seitsmepäevane rolling catch-up ei ole ajaloolise EDGAR täielikkuse lubadus ning stale/source date peab jääma nähtavaks;
-
-- kasuta `/today` vaadet hommikul või pärast collecti research entrypoint'ina; `READY` = tänane snapshot + edukas collect + oluliste candidate-warningute puudumine, `WAITING` = tänane snapshot puudub, `ATTENTION` = kandidaat või missed-move vajab inimese kontrolli, `ERROR` = latest collection ebaõnnestus. Universe health ei muuda üksi primaarstaatust punaseks ega välista kandidaati;
-- kasuta kandidaadi `Price Context` plokki entry-risk'i kontrollina, mitte uue rankingureeglina. 1/3/6 kuu return vajab sihtkuupäeva ±7 päeva salvestatud vaatlust ja 52n high/low vähemalt aasta alguspunkti ±14 päeva; puuduv katvus peab jääma `Insufficient price history`. Recent run-up on review-signaal lävedel 1k ≥20%, 3k ≥35% või 6k ≥50%, mitte automaatne välistus;
-- loe Bear/Base/Bull plokki mehaanilise sensitivity'na: Bear eeldab fundamentaali −20% ja valuation'i −20%, Base muutumatut fundamentaali/multiple'it, Bull mõlemat +20%. Ära nimeta neid price target'iteks ega kalibreeri rankingut nende järgi; järgmine võimalik V2 on kasutaja muudetavad eeldused või forward guidance ainult eraldi allika/point-in-time otsusega;
-- kontrolli, et järgmine daily collect loob esimese `data_quality_snapshots` rea, tickeritaseme `collection_run_items` read ja uue canonical run'i `collection_run_id` seose; tänasele enne 0003/0004 integratsiooni loodud run #29-le backfilli ega hilist seost ei tehtud;
-- kui esimene outcome muutub päriselt `measured` olekusse, kontrolli et `outcome_analysis_snapshots` rida tekib automaatselt; legacy `analysis_scope=unknown` read jäävad auditeeritavaks, kuid canonical summary'st välja. Ära kalibreeri rankingut enne mitme horisondi piisavat valimit;
-- kasuta `/research/outcome-attribution` vaadet alles siis, kui bucketites on päris mõõdetud valim; `n < 5` on nähtav low-sample hoiatus ja ei tohi muutuda rankingureegli põhjenduseks. Vaade poolib eri candidate-horizon vaatlused ning kirjeldab seost, mitte põhjuslikkust ega prognoosi;
-- kontrolli enne attribution'i tõlgendamist `/research/outcome-coverage` vaadet: headline on teadlikult distinct measured ticker / kõik collection item read, kuid run- ja age-tabel näitavad item-level completion'it. Null või madal coverage tähendab, et süsteem peab ootama outcome-horisontide täitumist, mitte tegema varajast strateegiajäreldust;
-- kasuta `/research/outcome-backfill-audit` vaadet enne ühegi snapshot-backfill write-job'i disaini. Järgmine soovitatud samm on oodata, kuni päris collection item'id muutuvad vähemalt 30 päeva vanuseks, ja kontrollida, kas 7-päevastes baseline/target akendes on kohalikud hinnad. Write-path'i võib kavandada alles siis, kui audit näitab päriselt `Eligible for backfill`; puuduvat ajalugu ei tohi välisest tänasest hinnast sünteesida;
-- kasuta `/research/discovery-quality` vaadet pärast uusi collection run'e, et näha duplicate discovery't ja collection composition'i. Praeguse ühe 200-item run'i puhul on korduvuse analüüs veel sisuliselt null ning sector/market-cap/score katvus ainult 14–16 item'i; ära tõlgenda teadmata 92% universumit sektori- ega cap-eelistusena. Paranda esmalt olemasoleva pipeline'i metadata säilimist/ühendamist eraldi auditi järel, uusi allikaid lisamata;
-- kasuta `/research/metadata-coverage` väljaloendit koos `/research/metadata-root-cause` funneliga järgmise paranduse scope'i määramiseks. Audit leidis, et 16/200 item'it valiti lookupiks ning kõigil 16 tehti edukas market-data lookup, kuid 9-l pole current company identity't ja ainult 7-l on valid persisted item-company link; lisaks on 19 unselected item'il company identity juba olemas. Järgmine slice peab eraldi auditeerima collect persistence'i täpset kooditeed enne parandust — selles audit-slice'is ei muudetud write-path'i;
-- kontrolli järgmise viie päevase collecti `marketDataLookup.growth/recall/total` loendureid ning kas recall-ring annab päris hinnasnapshotte nimedele, mis growth top-80-st välja jäid;
-- kontrolli 1-2 nädala pärast uuesti `MIN_MENTIONS = 3` mõju: kalibratsioon kasutas ainult nelja kuupäeva ning 2026-08-16 oli selge madala tähelepanu erind. Võrdle uusi päevi lävedel 2/3/5, tegelikku 80+20 lookup'i täitumist, Yahoo tabamusi ja kandidaadikvaliteeti enne, kui 3 nimetada steady-state läveks;
-- kasuta SEC Form 4 Phase 2 Neonisse salvestatud 2026-08-19...21 role-aware valimit järgmise notable-policy kalibreerimiseks. Phase 3 peab kasutama role-aware persisted evidence'i: ära tõlgenda suurt 10% owner'i tehingut automaatselt juhtkonna conviction'ina, ära loo dollar-only notable-policy't ning ära ühenda Form 4 andmeid collect/discovery/scoring/ranking/UI-ga enne eraldi kasutaja otsust;
-- vaata `/missed-moves` iga vähemalt 8% liikumise puhul eraldi, kas põhjus oli `universe_gap`, `radar_data_gap`, nähtav välistamisreegel või olemasolev sündmus; ära kalibreeri läve ühe RDDT näite järgi;
-- lisa uus ametlik indeksimuutuste või ettevõtte IR allikas ainult eraldi provenance-, rate-limit- ja point-in-time otsusega; ClawLabsAI `free-ai-models` on mudelikataloog, mitte sündmuseallikas ega search pipeline;
-- ära lisa tasuta LLM-i päevasesse kriitilisse collecti enne, kui deterministlik providerikiht, timeout/fallback, prompt-versioon, allikaviited ja hinnapiir on eraldi disainitud.
-
-Kasuta Data Freshness + Period Alignment V1 ja Catalyst Evidence V2 päris research-kihina enne järgmise valemi või filtri muutmist:
-
-- kontrolli API, BW, CAKE, HIMS ja ACHR olemasolevad teesiotsused uue evidence-ploki kõrval üle;
-- dokumenteeri, kas warning muutis inimese tõlgendust või ainult kinnitas juba teadaolevat riski;
-- kalibreeri 550 päeva stale-, 120 päeva good-alignment- ja 730 päeva poor-alignment piire ainult päris näidete põhjal;
-- kalibreeri catalyst V2 läved (revenue 25%/5%, kasumi-rahavoo 20%, mandaadi 25%/10% ja 25 mld / 3 mld piirid) ainult päris otsuste põhjal; jälgi eraldi, kas `quantified_minor` + `mandate not_relevant` kombinatsioon (CAKE muster) toodab liiga palju madala väärtusega kandidaate;
-- vaata, kas `mandate_relevance` peaks mõjutama järjestust; praegu see ainult kirjeldab ja ei muuda rank'i;
-- jätka viie päris teesi 12 kuu checkpoint'ide jälgimist; ära kustuta neid integration-test andmetena.
-
-Auditi järel ootel collection hardening ja canonical cloud-history:
-
-- Lokaalsel `collect:daily` CLI-l on PostgreSQL advisory lock juba olemas; kaitstud HTTP `/api/collect` vajab enne paralleelsete worker'ite kasutamist sama locki või lease'i. Ledger ei ole lock ega takista paralleelset jooksu.
-- säilita job'i algus, lõpp, staatus, provider'ite loendurid ja piiratud veainfo, et ebaõnnestumine oleks UI-st või DB-st jälgitav;
-- **TOP 5 Core Tests on sisuliselt valmis** (vt [Automated Test Coverage](#automated-test-coverage-2026-08-13)). Esimene faas valmis **2026-08-12**: `1046f0e` isoleeritud Vitest testinfrastruktuur, `47aa895` score determinism, `0412148` canonical run idempotency, `286b11d` manual run key ja outcome'ide loomine, `2192e62` outcome'ide mõõtmine ja muutumatus, `b2ff0d6` outcome immutability, `6a9fc8f` score snapshot dedupe — testinfrastruktuur/isolatsioon, canonical run idempotency (20 testi), score determinism (24 testi), outcome immutability (13 testi) ja score snapshot dedupe (7 testi). **2026-08-13** lisandus enrichment-budget katvus: `74ff848` Make test schema snapshot order-independent (testinfra eeltingimus: `resetDb()` cache maha, `ensureSchema()` tabelikomplekt fikseeritud `globalSetup`-is) ja `aee6d75` Add enrichment budget and retry tests (35 testi). Kokku **136 testi, 100% roheline**. Enrichment-budget on nüüd testidega kaetud: 5 ettevõtet Tallinna päeva kohta; **Tallinna kalendripäeva piir, mitte 24-tunnine liuguraken**; limiidi clamp 1–20; `error` retry 1 päeva järel; `unavailable` 30-päeva aken; stale-facts 7-päeva haru; queue prioriteet; ühe tickeri vea taluvus;
-- **Enrichment success and error persistence are covered.** Existing success tests cover fact writes, `sec_cik`, coverage growth, idempotency and unavailable responses. The former `last_error` gap is now closed: a fetch-stubbed error longer than 500 characters passes through the real enrichment catch/status writer and proves exact Unicode-safe truncation.
-- versioonitud migratsioonid on **ehitatud ja golden source'ile rakendatud 2026-08-13**: `db/migrations/0001_baseline.sql`, runner `scripts/migrate.cjs` (`--status` / `--preflight` / `--conformance` / `--allow-golden-source`), audit `scripts/schema-diff.cjs`; runbook [`db/migrations/README.md`](../db/migrations/README.md). Testibaas ehitatakse migratsioonidest ja D5 valvab, et runtime `ensure*` kutsed oleksid migreeritud skeemil no-op'id. **Järel on ainult puhastus:** hajutatud runtime `CREATE TABLE` / `ALTER TABLE` eemaldamine `src/`-st (18 `ensureSchema()` kutsekohta) ja otsus `db/init.sql` saatuse kohta — mõlemad eraldi slice'id, mis muudavad `src/` koodi;
-- auditeeri eraldi read-only vaated/päringud sama raw PostgreSQL `DATE` → JavaScript `Date` ajavööndimustri suhtes, mis tekitas `catalyst_linked_period_end` ühepäevase nihke. Kui rakendus käsitleb välja kuupäevana ilma kellaajata, eelista SQL-is `DATE::text` kuju, mitte JavaScript `Date` kaudu uuesti vormindamist. See on backlog'i audit, mitte praeguse UX V3 skoobis tehtav muudatus;
-- planeeri Next.js 14 EOL tõttu kontrollitud üleminek toetatud ja turvaparandustega versioonile koos regressioonitestidega;
-- koduarvuti on Neoni suunatud; **tööarvuti app tuleb sama `DATABASE_URL` vastu suunata** (täitmata). Lokaalsed Docker DB-d jäävad testi-isolatsiooniks ja taastekeskkonnaks, mitte golden source'iks;
-- enne UI avalikku deploy'd lisa autentimine ja autoriseerimine portfelli, Watchlisti, Thesis Builderi ning kirjutavate server action'ite/API-de ette.
-
-Pärast keskse kogumise käivitamist jätkub päris forward-valimi kasvatamine ja Backtest V1 kvaliteedi jälgimine:
-
-- jälgi päevase `/api/collect` vastusest `financialUniverse`, `coveredAfter`, `enriched`, `failed`, `dailyRemaining` ja discovery `evaluatedCount` väärtusi;
-- lase kuni viiesel SEC enrichment-batch'il kasvatada skooritavat universumit vähemalt 20 ettevõtte või 70% katvuseni;
-- kontrolli, et iga Tallinna päeva kohta tekib maksimaalselt üks `rklb_daily` run ning käsitsi refresh ei muuda canonical snapshot'i;
-- kasuta forward-valimi tõeallikana ainult keskset canonical DB-d; kodu- ja tööarvuti eraldi PostgreSQL volume'ite tulemusi ei tohi vaikimisi üheks looks pidada;
-- kontrolli, et päevane kogumine salvestab SPY hinnasnapshotid järjepidevalt;
-- lase 1n/2n/1k/3k/6k outcome'idel päriselt täituda;
-- jälgi eraldi kandidaatide, mõõdetud outcome'ide ja benchmark'iga outcome'ide valimi suurust;
-- kasuta rakendust 1-2 nädalat päris töövoona: lisa põhjendatud ideed Watchlisti ja kirjuta vähemalt paar tegelikku, mõõdetava 12 kuu kontrollpunktiga teesi;
-- ära tee väikese 1n/2n valimi põhjal strateegiajäreldusi;
-- vaata pärast vähemalt viit ja eelistatult kümmet eri otsusekuupäeva, kas sama ticker püsib valimis ning kas süsteem leidis midagi, mida tasub päriselt uurida;
-- ära tõlgenda frequency't enne, kui vähemalt 20 ettevõttel või vähemalt 70%-l canonical kogutud universumist on arvutatav SEC/score katvus; UI peab näitama iga päeva evaluated-universumi suurust;
-- järgmine analüütiline laiendus on discovery frequency/persistence; max drawdown ja jaotus mudeliversiooni/Coverage vahemiku järgi tulevad alles piisava outcome-valimi järel.
+- Publish the implemented bounded price tracking and observe its forward coverage. Schema and the first 18-symbol live batch are in Neon; code remains local until committed/pushed. Do not treat old missing observations as backfilled or remote scheduling as upgraded before publication.
+- Keep the current discovery and paper policies collecting forward evidence while those correctness issues are addressed. Weekend repeated purchase intents remain the documented V1 behavior until a separately versioned policy is chosen.
+- Use three current thesis reviews to test whether the app improves actual decisions. Capture what changed, source evidence, assumptions needed to justify the price, invalidation and the next review trigger. This is a recommendation, not a claim that the reviews have been written.
 
 ### NEXT
 
-- Discovery Frequency V1 on **ehitatud 2026-08-12** (`/frequency`, [`docs/DISCOVERY_FREQUENCY_PROVENANCE.md`](DISCOVERY_FREQUENCY_PROVENANCE.md)); kasutab ainult canonical `rklb_daily` jooksu. Koos sellega rakendus canonical-only aggregation layer `/validation` ja `/backtest` koondnäitajatele (Tase 0 read-side filter, skeemi ei muudetud). Tõlgendus jääb ootama vähemalt 5 (eelistatult 10) canonical päevajooksu ning vähemalt 20 ettevõtte või 70% SEC/score katvust; UI kuvab loendurid ausalt, aga märgib alla läve, et järeldusi teha ei tohi. Sisu:
-  - mitu eri canonical otsusepäeva viimase 5/10/20 päeva jooksul ticker kaasati;
-  - praegune järjestikuste kaasatud päevade streak;
-  - esimene ja viimane kaasamise kuupäev ning rank'i muutus;
-  - erista `evaluated but excluded` päev päevast, mil tickerit universumis üldse ei hinnatud;
-  - näita, kas püsimine tuli sama vana evidence'i jätkumisest või uutest/muutunud snapshot'idest.
-- Fikseeritud horisondid 6 kuud, 1 aasta ja 3 aastat; mitte ideaalne tagantjärele tipuhind.
-- Mõõdikud: mediaantootlus, hit rate, ületootlus benchmark'i suhtes, max drawdown ja valimi suurus; tulemused mudeliversiooni ja Coverage vahemiku kaupa.
-- Enne backtesti tuleb fikseerida universum, benchmark ja otsuse hetke andmete säilitamise reegel.
-- Catalyst evidence'i võimalikud järgmised sammud alles pärast päris kasutamist: kasutaja `assessed_by = 'user'` hinnangu UI, `primary_ir` katvus (nõuab eraldi otsust allika kohta) ja mandate-relevance eraldi versioonitud objektina teise preset'i jaoks.
-- Thesis Evidence Engine: olemasolevad SEC/uudise/earnings/score signaalid teesi poolt ja vastu.
-- Ülevaatuse kuupäev ja „mis muutus pärast eelmist ülevaatust?”.
+- Company-specific, versioned valuation assumptions and reverse-valuation questions within the existing thesis workflow; distinguish user assumptions from reported SEC facts and mechanical sensitivity.
+- Model-version/horizon-separated results, distinct ticker/decision counts and missing-outcome coverage. Do not count repeated daily picks as independent bets or pool v2 performance into a claim about v3.
+- A separately versioned, capital-constrained paper experiment only after defining cash, position/concentration limits, repeated-signal treatment, order expiry and exits. Preserve V1 as the original baseline.
+- Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing the five-company budget, queue order or adding production listing discovery.
+- Repair the host-startup configuration trap: Next's .env.local still overrides .env with the frozen local database unless DATABASE_URL is set explicitly. Docker's explicit Neon environment is verified. Add a reliable target check rather than relying on remembered launch instructions.
 
 ### LATER
 
-- Under-recognition proxy + Challenger-vs-incumbent tõlgenduskiht — disain: [`docs/UNDER_RECOGNITION_AND_CHALLENGER.md`](UNDER_RECOGNITION_AND_CHALLENGER.md) (ainult disain, mitte implementatsioon; sisaldab § 4.1 under-recognition cohort validation'it API/BW/HIMS/CAKE/ACHR peal — API strong, BW partial, ülejäänud no). Kaks evidence-vektorit olemasolevate kihtide peal (Growth/Health/Catalyst/Freshness/Frequency), mitte koondskoor; `unknown` lubatud kõikjal, challenger nõuab falsifitseeritavat checkpointi. Ehitamine eeldab vähemalt 5 (eelistatult 10) canonical päevajooksu, sest frequency-trend ja hinnareaktsiooni signaalid vajavad canonical aegrida; vahepealne lubatud samm on ainult point-in-time salvestus ilma järjestust muutmata. EI sisalda themes, strategic investors, insider trading, dividend, smart-money, valuation ega momentum mooduleid.
-- Nasdaqi uute noteeringute radar ametliku võtmeta Nasdaq Trader symbol directory põhjal; vajab idempotentset universumi ajalugu (`first_seen_at`, `last_seen_at`, listing status), test issue/ETF filtreid ning uute tickerite enrichment'i olemasoleva SEC/Yahoo kihiga.
-- Teesi eelduste täitumise analüüs: hea protsess vs õnnelik tulemus.
-- Valuation Score alles pärast läbipaistva valuation-mudeli ja piisava coverage'i valmimist.
-- Avalik web-deploy alles pärast kasutaja autentimist ja kirjutusõiguste piiramist.
-
-Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte ja siis kehtinud score-versiooni. Retrospektiivset tulemust ei tohi konstrueerida tänaste või restated SEC faktidega. Nii väldime look-ahead ja survivorship bias'i.
+- Broaden discovery only when tracked results and research rejection reasons demonstrate a specific gap. No additional external source without the user's explicit decision.
+- Supported Next.js upgrade as a separate tested change; authentication/authorization before public exposure. Public deployment and subscriptions are not the present objective.
+- Thesis outcome analysis, portfolio drawdown and business-driver concentration views when the underlying observations and portfolio policy are dependable.
+- Runtime schema-creation cleanup and other maintenance as independent slices, preserving the migrated-schema contract and golden-source safeguards.
 
 ### Teadlikult mitte praegu
 
-- Tasuline AI või massiline AI-analüüs.
-- Options-moodul.
-- Uus analüütikute konsensuse moodul.
-- Kogu turu täismahus scanner.
-- Läbipaistmatu „järgmise RKLB tõenäosus 1–10” koondskoor.
-- Automaatne ostu- või müügisoovitus.
-- Perfect-hindsight müügiaja optimeerimine.
+- No opaque combined score, automatic buy/sell recommendation, hindsight exit optimization, new paid data source, options module or mass AI analysis.
+- Do not rebuild already completed Catalyst Evidence V2, Discovery Frequency, outcome audit views, Neon cutover, collection locking, Form 4 ingestion or Paper Strategy V1. Their completion evidence remains below.
+- A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- **2026-09-07 continued tracking:** `0009_price_tracking` adds nullable quote `market_at`, a quote-deduplication index and a separate daily attempt ledger. `captured_at` stays the receipt timestamp; no historical rows are rewritten. Existing Yahoo quotes only, positive finite USD price and the documented one-weekday recency heuristic; closed-market observations are allowed for research. Queue membership is active/watch portfolio status, positive net paper holdings, or canonical unmeasured horizons before target + seven days; SPY is included as benchmark. Fifty symbols per New York day across retries, SPY first then oldest attempt, chunks of eight. A failure consumes that symbol's daily attempt and remains visible until a later attempt. Quotes are collected after the canonical snapshot, before outcome refresh, and never create discovery collection items. Tracked endpoint quotes must reach the outcome's target in both receipt and market time. Frozen decisions, paper eligibility and measured outcomes remain unchanged. Legacy prices without market time retain their original contract.
+
+- **2026-09-06 implementation:** paper quote requests union pending orders with positive net holdings per policy/strategy/book. Read-side valuation requires valid USD marks, the same New York date as SPY and at most 20 minutes of timestamp separation. Observation recency permits one elapsed New York weekday; weekends add no weekdays and holidays are not inferred. This conservative display heuristic is not an exchange calendar. Original execution freshness, discovery v3 and frozen paper-strategy-v1 eligibility remain unchanged. Today timestamps come from each decision's referenced price snapshot, never from a subsequently fetched quote. No migration or historical rewrite.
+
+- **2026-09-06 review clarification:** the initial review changed documentation only; the subsequent implementation is described above. Discovery v3 and paper-strategy-v1 remain unchanged; data-integrity fixes must preserve immutable history or explicitly version changed contracts. The external scheduler remains in place because it is working. The historical blanket claim that GitHub Free/private repositories cannot schedule Actions is not supported by current GitHub documentation; retain the observed earlier failure as an incident, not a platform rule (sources in the review).
 
 - Company detail on DB-first; aeglased live-värskendused toimuvad võimalusel taustal.
 - **Write-on-read on teadlik, kuid dokumenteeritud risk.** Mitu GET-vaadet kirjutavad andmebaasi: `/company/[ticker]` ja `/thesis/[positionId]` käivitavad üle kuue tunni vanuse andmestiku korral taustal SEC CompanyFactsi värskenduse (kirjutab `companies` ja `financial_facts`) ning salvestavad score-snapshot'i; `/scanner`, `/watchlist` ja `/daily` salvestavad score-snapshot'e; `/scanner?preset=rklb` salvestab terve `rklb` discovery run'i, `discovery_decisions` read, `catalyst_events` ja `catalyst_assessments`, kuid **alates 2026-08-12 (Provenance samm 1) ei loo enam `candidate_outcomes` ridu** — need tekivad ainult canonical run'idest; `/validation` ja `/backtest` käivitavad `refreshCandidateOutcomes()` (ainult mõõdab olemasolevaid). Lehe avamine ei tohi kunagi olla ainus põhjus, miks andmestik või valim muutub.
@@ -433,35 +357,19 @@ Backtesti kuupäeval `t` tohib kasutada ainult selleks hetkeks avaldatud fakte j
 
 ## Avatud sõltuvused ja otsused
 
-- Score-alerti 10 punkti lävi vajab ajaloolise valimi kasvades kalibreerimist.
-- Backtesti benchmark: lai turg, vastav sektor või mõlemad.
-- 2026-08-11 auditi alguses oli sector ja industry olemas 0/24 ettevõttel. Pärast päris AAPL DB-first taustavärskendust oli olemasoleva Yahoo provider'i katvus 1/24; klassifikatsiooni ei backfillita väljamõeldud väärtustega.
-- Uute Nasdaqi tickerite radari eelistatud tasuta feed on ametlik Nasdaq Trader `nasdaqlisted.txt`; enne ehitamist tuleb fikseerida noteeringu lisandumise/muutumise reeglid ja ETF/test issue filtrid.
-- Canonical forward-validation DB on **SULETUD** (Neon cutover 2026-08-19). Arvutitest sõltumatu ajastus taastati 2026-08-25 pärast kuuepäevase vaikse augu avastamist, kuid seda ei loeta enam täielikult suletuks enne failure notification'ite päris kontrolli. Järelevalve lahtised otsad:
-  - **Fine-grained PAT aegub 2027-08-20.** 2026-08-25 GitHubi token detail näitas `cron-job-org-collect-daily` tokenit aktiivse ja viimase nädala jooksul kasutatuna, repo scope'i ainult `mnoormets/stock-discovery` ning repository permission'it `Actions: Read and write` (`Metadata: Read`, user permission'e 0). Tokeni kehtivus ei tõesta, et väline scheduled job ise eksisteerib või töötab.
-  - **Kadentsi sõltumatu dead-man alert on aktiivne.** Healthchecks.io check `stock-discovery collect-daily` ootab pingi iga päev `0 8 * * *` Europe/Tallinn järgi ja kasutab 2 tunni grace'i, seega eduka signaali puudumisel läheb alert välja kell 10:00 Tallinn. 2026-08-26 päris CLI collect tõestas `SENT (HTTP 200)` ja dashboardi `Last Ping` muutuse `Never` → päris timestamp. See kaitse ei vaja, et GitHub Actions või cron-job.org suudaks omaenda failure'i raporteerida; signaliseerimata puudumine ongi failure. GitHubi ja cron-job.org enda notification'id jäävad kasulikeks täiendavateks kihtideks ning vajavad eraldi kontrolli.
-  - NB ajalooline täpsustus: varasem kirje loetles vajalike secret'ite hulgas ekslikult ka `CRON_SECRET`-i; koodi jälgimine näitas, et seda loeb ainult `collect-route-handler.ts`, mille impordib üksnes HTTP route, seega CLI teel ei ole seda vaja.
-- Koduarvuti scheduler ei ole **lõplik** canonical lahendus: ülesanne nõuab sisselogitud kasutajat, Docker Desktopi ja töötavat masinat; `WakeToRun = false`. 2026-08-21 logon/start-when-available katse katkestas pärast 240 sekundit, sest Docker Desktop ei käivitunud, ning 2026-08-24 oli arvuti 00:33-st kuni 2026-08-25 18:59-ni täielikult väljas, mistõttu 08:05 trigger ei käivitunud. `-StartWhenAvailable` vähendab riski, kuid ei taasta eelmise Tallinna päeva immutable canonical snapshot'i ja ilma alert'ita võivad päevad endiselt vaikselt kaduda.
-- Kiiraudit leidis, et repo ei sisalda automaattestide komplekti, skeemi loomine/muutmine on hajutatud `db/init.sql` ja runtime teekide vahel ning rakendusel puudub kasutaja autentimine. Need on enne avalikku deploy'd P0/P1 töö, mitte uue research-provider'i lisamise põhjus.
-- Next.js 14 haru ei ole enam aktiivselt toetatud; versiooniuuendus tuleb teha eraldi kontrollitud tööna, mitte segada seda collection reliability muudatustega.
-- Funnel-auditi püsiv snapshot oli 42 rida, kuigi varasem collect-loendur näitas 43; puuduvat 43. rida ei rekonstrueeritud ega fabritseeritud.
-- Viimase snapshot'i 42 tickerist oli 31-l hind/market cap, 10-l SEC/score, 0-l sector/industry ning ainult kahel persisted `quote_type`; universumi kvaliteeti ei saa hinnata ainult toore ticker-count'i järgi.
-- Coverage Score mõõdab praegu komponendi olemasolu, mitte sisendi värskust. Audit leidis ARR revenue 2011/2010, BW debt 2021 ja PLUG debt 2024 segatuna uuemate 2026 faktidega; neid skoore ei tohi käsitleda võrdselt värske ja joondatud CAKE evidence'iga.
-- Praeguse auditi põhjal on catalyst hard gate tõenäoliselt liiga karm; `BW` ja `CAKE` välistati ainult katalüsaatori puudumise tõttu. Koodi ei muudeta enne manual research sprinti.
-- Catalyst Evidence V2 on 2026-08-12 seisuga ainult disain ([`docs/CATALYST_EVIDENCE_V2.md`](CATALYST_EVIDENCE_V2.md)). Praegune `catalystCriterion` boolean gate jääb tootesse kuni eraldi ehitamisotsuseni; disaini olemasolu ei ole luba filtreid muuta.
-- Catalyst V2 lahtised küsimused enne ehitamist: kes annab `thesis_relevance` väärtuse enne teesi olemasolu; kuidas tuvastada `primary_ir` allikat ilma uue provider'ita, kui ainus tee on `news_items` pealkiri koos `sec_events` filing'uga; kas 45/30/14 päeva aknad kehtivad edaspidi ainult `scheduled_window` ja novelty kohta; kust tuleb `linked_fact_ids` seos, mis ei tohi olla pealkirja sõnesobitus.
-- Catalyst counterfactual: immutable run oleks hard gate'ita lisanud BW ja CAKE; tänaste post-enrichment score'idega läbivad muud baasfiltrid BW, CAKE, API, HR ja PLUG, kuid ühelgi neist pole stored catalyst'it.
-- Freshnessi range 2 aasta piir leidis 60 olemasolevast core metricust kaks vana sisendit: ARR revenue 2011 ja BW debt 2021. PLUG debt 2024 ei ületa veel kaht aastat, kuid jääb ettevõtte uusimast score-sisendist 675 päeva maha.
-- Coverage, Freshness ja Period Alignment peavad jääma eraldi mõisteteks: completeness ei tohi vaikimisi tähendada, et kõik score-komponendid on värsked ja samast aruandeperioodist.
-- Data-quality V1 läved on läbipaistvad heuristikad, mitte tõestatud investeerimisvalem. Need vajavad järgmise manual research cohort'i järel kalibreerimist.
-- V1 arvutab kvaliteedi praeguse ettevõtte financial summary põhjal. Ajaloolise Thesis/Validation vaate jaoks eraldi muutumatu data-quality snapshot'i püsiv salvestamine on teadlikult lahendamata järgmine traceability-otsus; olemasolevaid score snapshot'e ei backfillitud ega kirjutatud ümber.
-- SEC enrichment'i algne päevane batch-size on päris runtime'is kontrollitud väärtusega 5; seda võib muuta ainult logide, kestuse ja katvuse põhjal, mitte eesmärgiga teha korraga piiramatut masspäringut.
-- Sector-relative valimi katvus kasvab ainult siis, kui olemasolev provider tagastab ettevõtte kohta sector/industry väärtuse; väikese grupi korral percentile teadlikult puudub.
-- Moat ja mispricing jäävad kasutaja väideteks, kuni neile on seotud kontrollitav tõend.
-- **Andmete provenance on hetkel ainult tuletatav, mitte salvestatud.** `financial_facts` ei säilita, milline voog rea kirjutas: sama `saveFacts` funktsiooni kasutavad nii päevane collector kui company detaili taustavärskendus ja `companies.source` jääb esimese kirjutaja väärtuseks. Praegused kaudsed tunnused on ainult heuristikad: `financial_enrichment_status` rea puudumine tähendab, et collector pole seda tickerit kunagi proovinud (2026-08-12 seisuga AAPL, TSM, RKLB ja ACHR), ning `max(financial_facts.updated_at)` hilisem kui `last_success_at` tähendab, et faktid on hiljem mõne teise voo poolt üle kirjutatud (BW ja PLUG). Tulevane otsus: lisada `financial_facts` (või eraldi ingest-ledger'isse) `source_flow` väli `collector` / `company_view` / `thesis_view` eristusega. Migratsiooni selle auditiga teadlikult ei tehtud.
-- Canonical `rklb_daily` universum ei ole collectori logi põhjal üksi taastuv: kui inimene avas enne päevast collecti mõne company detaili, sisaldab canonical snapshot ka selle sirvimise käigus rikastatud fakte. See on „as known at the time” mõttes korrektne, kuid seda ei tohi esitada puhta automaatse kogumise tulemusena.
-- **Outcome-valimi manual write-on-read saaste on nüüd tõkestatud mõlemal poolel** ([`docs/DISCOVERY_FREQUENCY_PROVENANCE.md`](DISCOVERY_FREQUENCY_PROVENANCE.md)). 2026-08-12 seisuga oli 205-st `candidate_outcomes` reast 180 pärit manual `rklb` scanneri leheavamisest ja 25 canonical `rklb_daily` run'idest. Provenance on tuletatav ahelas `candidate_outcomes.decision_id → discovery_decisions.run_id → discovery_runs.run_type`. **Ehitatud (samm 1):** `recordDiscoveryRun` loob `candidate_outcomes` ainult canonical run'idest; manual `rklb` jooks säilitab `discovery_runs` + `discovery_decisions` auditi, aga ei tekita enam uusi outcome-ridu — leheavamine ei kasvata enam valimit. **Ehitatud (samm 2):** `/validation`, `/backtest` ja `/frequency` koondnäitajad kasutavad `CANONICAL_RUN_TYPE` read-side filtrit. Skeemi ei muudetud, ajaloolisi outcome'e ei puudutatud, midagi ei backfillitud ega kustutatud; olemasolev 180 manual rida jääb alles ainult üksiku run'i auditisse. **Veel lahtine (teadlikult):** samm 3 — `counts_for_stats` veergu ei lisatud (pole enam kriitiline, kuna saaste on nii kirjutamise kui lugemise poolel tõkestatud).
-- Skeemi loomine on jagatud `db/init.sql` ja runtime `ensureSchema()` vahel: `catalyst_events`, `catalyst_assessments` ja `discovery_decisions` catalyst-veerud tekivad ainult runtime'is. See töötab nii puhta init'i kui olemasoleva DB upgrade'i korral, kuid versioonitud migratsioonide koondamine jääb endiselt lahtiseks tööks.
+Current as of 2026-09-06; earlier calibration observations and superseded plans are preserved in dated session entries and supporting design documents.
+
+- Verified open defects: continued quote collection for selected/held names, stale/partial market-setup labels, and marks for held tickers without new orders. See the review's acceptance criteria.
+- Outcome sample coverage and maturity remain insufficient for a strategy conclusion. Canonical v3 has no measured horizon yet; prior versions must remain separate.
+- Historical prices must not be invented or silently backfilled. Reusing existing paper marks for outcome measurement requires a provenance and immutability design before implementation.
+- Capital, risk tolerance, concentration limits and intended holding period must be established before a portfolio-policy experiment; this review did not receive those user constraints.
+- CompanyFacts daily budget remains five, and MIN_MENTIONS remains three. Inspect accumulated observations before retuning either.
+- Nasdaq listing observation is implemented but is not production discovery. Its latest artifact series was not reviewed in this session.
+- Authentication/authorization and supported Next.js remain prerequisites for any public deployment. Automated tests, versioned migrations and API/CLI advisory locking already exist; they are not unbuilt blockers.
+- Neon remains the sole canonical database. Host .env.local still targets the frozen local discovery database; use the explicit verified Docker environment pending a startup fix. Tests use only the isolated local discovery_test database.
+- Healthchecks protects core collection completion; paper execution needs independent absence/failure visibility. Registered filing persistence does not prove historical EDGAR completeness. Fine-grained scheduler PAT expiry remains recorded as 2027-08-20; expiry and notifications were not rechecked today.
+- Benchmark for current experiments is SPY. Sector benchmarks, business-driver concentration and a finite-cash paper policy are separate possible improvements, not changes made here.
+- financial_facts write-flow provenance and non-versioned sector/restatement limitations remain open. Existing immutable snapshots must not be reinterpreted as stronger historical evidence than they contain.
 
 ## Käivitamine uues arvutis
 
@@ -659,6 +567,8 @@ Piirangud, mida tuleb teadvustada:
 
 ## Automated Test Coverage (2026-08-17)
 
+**Latest implementation recheck, 2026-09-07:** 461/461 tests in 57 files, nine migrations, isolated local `discovery_test`. The detailed inventory below is historical and is not a complete list of the current suite. Tests cover held-paper-mark continuity, stale/partial setup presentation and continued research/outcome tracking, including daily budget, deduplication and receipt/market timestamp boundaries. Remote publication and unattended tracking observation remain outstanding.
+
 Vitest, **354 testi, 39 faili** (mõõdetud 2026-08-25). Käivitamine konteineris `docker compose run --rm -T app npm test` või hostil `npm test` (hostil on `TEST_DATABASE_URL` kohustuslik, vt „Praegune töötav seis"). Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja jooksu lõpus kustutab; Neoni golden source'i ei puudutata. **Testibaasi skeem ehitatakse versioonitud migratsioonidest** (`scripts/migrate.cjs`), seega iga jooks valideerib ühtlasi runnerit ja migratsioone `0001–0007` koos `schema_migrations` raamatupidamisega. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
 
 Peamised kaetud funktsioonid ja töövood:
@@ -698,6 +608,117 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-09-07 — continued price tracking
+
+Migration 0009 and the first live Yahoo batch are applied; code is not committed/pushed. Isolated tracking/HTTP-lock tests passed 8/8. The initial full run passed 460 tests and failed only the schema inventory, which still expected 32 tables; updated that explicit list to include `price_tracking_attempts` (33 tables) and reran the full suite. The final run passed 461/461 in 57 files. Teardown left zero `discovery_test` or conformance scratch databases.
+
+Actual verification output (all final checks exit 0):
+
+```text
+> stock-discovery@0.1.0 typecheck
+> node node_modules/typescript/bin/tsc --noEmit
+> stock-discovery@0.1.0 lint
+> node node_modules/next/dist/bin/next lint
+✔ No ESLint warnings or errors
+ ✓ Compiled successfully
+ ✓ Generating static pages (22/22)
+ Container stock-discovery-app-1 Started
+ APPLY    0009_price_tracking ... OK (111 ms)
+ VERDIKT: VASTAB
+FIRST {"attempted":18,"saved":18,"unchanged":0,"missing":0,"stale":0,"invalid":0,"failed":0,"deferred":0}
+REPEAT {"attempted":0,"saved":0,"unchanged":0,"missing":0,"stale":0,"invalid":0,"failed":0,"deferred":0}
+/today HTTP 200 tracking section true
+/performance HTTP 200 tracking section false
+ Test Files  57 passed (57)
+      Tests  461 passed (461)
+   Start at  00:05:10
+   Duration  352.26s (transform 6.82s, setup 4.56s, import 10.93s, tests 309.47s, environment 8ms)
+```
+
+The Performance route intentionally has no tracking section. Browser smoke expanded Today's tracking panel: 18 saved / zero gaps / zero waiting, actual 4 September market times, while the 6 September canonical decision cards retained their original evidence and the new Tallinn day correctly showed Waiting. Read-only fingerprints before and after the live tracking check matched for all decisions, orders and outcomes (see session log). No temporary integration rows were inserted into Neon. The real 18 quote observations and attempt rows are intentional application data.
+
+### 2026-09-06 — price integrity implementation
+
+Local implementation only; not committed or pushed. No schema migration, production collector or paper execution was run. The app was rebuilt in Docker and restarted before browser/HTTP smoke. Initial reproductions failed for all three intended defects. A later full run had 456 passes and one failure in the new test fixture because it attempted to mutate an immutable mark; the fixture was corrected to append later observations with all required timestamps. The subsequent full run passed all 457 tests, including all eight paper DB tests. All commands below ran in the Docker app; the suite used isolated local `discovery_test` with eight migrations.
+
+Actual successful terminal excerpts (all exit 0):
+
+```text
+> stock-discovery@0.1.0 typecheck
+> node node_modules/typescript/bin/tsc --noEmit
+
+> stock-discovery@0.1.0 lint
+> node node_modules/next/dist/bin/next lint
+✔ No ESLint warnings or errors
+
+ Test Files  56 passed (56)
+      Tests  457 passed (457)
+   Start at  19:01:56
+   Duration  253.16s (transform 5.85s, setup 4.37s, import 10.33s, tests 221.56s, environment 6ms)
+
+> stock-discovery@0.1.0 build
+> node node_modules/next/dist/bin/next build
+ ✓ Compiled successfully
+ ✓ Generating static pages (22/22)
+ Container stock-discovery-app-1 Started
+ remaining_test_databases
+--------------------------
+                        0
+(1 row)
+```
+
+Runtime evidence: Today snapshot #64 retains ELF's `2026-08-26T05:11:26.150Z` and BW's `2026-08-18T21:10:11.863Z` decision-linked observations, displays `Current setup unknown` and a stale-price review warning, and preserves the underlying partial price history. Performance displays `VALUATION INCOMPLETE` with stock value/P&L/return unknown, `FIVE: mark date differs from SPY.` and `CRDO: mark is stale or its timestamp is invalid.` SPY's own marked P/L remains $6.92, explicitly as of its mark. Frozen signal-time labels remain the original historical assessments. Both pages were inspected in the browser, including the expanded ELF evidence and the portfolio card layout.
+
+Actual post-restart HTTP/database output (read-only Neon; identical fingerprints before and after reads):
+
+```text
+/today HTTP 200 bytes 159685
+/performance HTTP 200 bytes 145894
+discovery_decisions {"rows":2035,"fingerprint":"9b8a0d1c5db118d355cdce7da9318098"} UNCHANGED
+paper_strategy_orders {"rows":120,"fingerprint":"c9dfb3b2b34518081dd30409271d96cd"} UNCHANGED
+paper_strategy_marks {"rows":21,"fingerprint":"35d53da6f67039c75fee1ef4782bbb0b"} UNCHANGED
+candidate_outcomes {"rows":815,"fingerprint":"76c1bbb5a697f4fc0d23dfecb53b25fb"} UNCHANGED
+```
+
+The isolated DB test proves a later-day holding mark updates with no new order, repeated execution inserts zero duplicate marks, and every original fill remains byte-for-byte unchanged. It also checks a missing stock quote, mismatched dates, more than 20 minutes of separation, non-USD marks and an unavailable recent SPY reference. Unit tests cover partial/stale setup presentation, weekends, New York date boundaries, DST, invalid/missing/future timestamps. This does not prove a new live Yahoo execution: it is Sunday, old missing observations remain missing, and remote scheduling has not received these local changes.
+
+### 2026-09-06 — repository and investing-workflow review
+
+Documentation-only review on local/remote `main` at `b5f3290`; no application code changed. Typecheck and lint ran on the Windows host; the full suite used the explicit isolated local `TEST_DATABASE_URL`; production build ran in the mounted Docker app. App restarted after the build, before the final HTTP smoke. Real terminal excerpts:
+
+```text
+> stock-discovery@0.1.0 typecheck
+> node node_modules/typescript/bin/tsc --noEmit
+
+> stock-discovery@0.1.0 lint
+> node node_modules/next/dist/bin/next lint
+
+✔ No ESLint warnings or errors
+
+ Test Files  55 passed (55)
+      Tests  443 passed (443)
+   Start at  14:35:32
+   Duration  435.05s (transform 2.74s, setup 6.25s, import 13.32s, tests 391.14s, environment 6ms)
+
+ ✓ Compiled successfully
+ ✓ Generating static pages (22/22)
+
+ Container stock-discovery-app-1 Restarting
+ Container stock-discovery-app-1 Started
+
+GET /today: HTTP 200; 155486 bytes
+GET /performance: HTTP 200; 145031 bytes
+GET /guide: HTTP 200; 14310 bytes
+Unauthenticated POST /api/collect: HTTP 401
+
+ remaining_test_databases
+--------------------------
+                        0
+(1 row)
+```
+
+Typecheck/lint command sequence, full suite, Docker build, restart and smoke commands returned exit 0. `git diff --check` found no whitespace errors (only Git's LF/CRLF conversion notice). Existing tests passed while the review reproduced stale/partial green market labels and mixed-age paper marks in the real UI; these findings need new regressions and remain unfixed. No new production research data or test fixtures were created on Neon. Core collection, canonical decisions, Form 4 persistence, paper ledger and thesis timestamps were inspected with `BEGIN TRANSACTION READ ONLY` queries. The initial host dev server used the frozen local DB because of `.env.local`; it was stopped and the final Docker app's explicit Neon target was verified. Remote workflow logs, latest Nasdaq artifacts and notification delivery were not rechecked.
 
 Social attention threshold + lookup capacity, kontrollitud tööarvutil **2026-08-22**:
 
@@ -873,6 +894,31 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-07 — continued research-price tracking
+
+- Implemented separate tracking eligibility/provenance, a shared 50-symbol daily budget with oldest-attempt fairness, quote deduplication, failure status and a read-only Today panel. Both collect entrypoints call tracking after canonical selection and before outcomes; incomplete tracking is visible as HTTP 503 / CLI failure.
+- Applied migration `0009_price_tracking` to Neon after preflight GO, zero duplicate prices/invalid thesis statuses and a fresh backup. Apply: 111 ms; subsequent conformance: `VASTAB`, zero missing/extra objects. Backup `pre-0009-price-tracking-20260906.dump`: 4,277,219 bytes, 320 TOC entries, SHA-256 `2984454645939bb52ab6bb77720a8bc5cc46a733b4241d6eaacb7663731886b1`; pg_restore list succeeded. No backup was committed.
+- Live Yahoo batch at `2026-09-06T21:04:54.811Z`–`21:04:59.873Z` saved all 18 eligible symbols, no missing/stale/invalid/failed/deferred items. Market timestamps are `2026-09-04T20:00:00Z`–`20:00:03Z`. Immediate repeat attempted/saved zero; no repeated quote inflated history.
+- Fingerprints remained unchanged for 2,035 discovery decisions (`9b8a0d1c5db118d355cdce7da9318098`), 120 paper orders (`c9dfb3b2b34518081dd30409271d96cd`) and 815 outcomes (`76c1bbb5a697f4fc0d23dfecb53b25fb`). This live check collected research quotes only; no historical reconstruction, outcome refresh or paper/broker execution was run.
+- Build passed and app restarted before browser smoke. Today visibly shows 18 symbols / 0 quote gaps / 0 waiting and the expandable market dates; snapshot #64 stays unchanged. Standard test details below. No commit or push; unattended remote tracking is not yet verified.
+
+### 2026-09-06 — first price-integrity fixes
+
+- User requested continuing the review's next steps for personal investing. Implemented a bounded first slice: include positive net paper holdings in Yahoo quote requests, expose valuation problems before showing returns, and prevent stale/partial Today setup reassurance.
+- Kept paper-strategy-v1 gates, original fills, discovery decisions and outcomes intact. Added a documented read-side weekday recency heuristic and timestamp alignment with SPY; no new provider or schema.
+- Reproduced the three original defects in tests. Corrected a fixture-only immutability violation during the standard suite. Verified the later-day/no-new-order case and duplicate-mark idempotency in the isolated database.
+- Rebuilt and restarted Docker; inspected Today and Performance visually and through HTTP. Read-only Neon fingerprints confirmed unchanged 2,035 decisions, 120 orders, 21 marks and 815 outcomes.
+- Updated README, current state, technical decisions and roadmap. Broader research/outcome tracking and publication to the remote scheduler remain explicitly outstanding. No commit/push or production execution was performed.
+
+### 2026-09-06 — Astra project and personal-investing review
+
+- User clarified that making money means improving their own investing results. Reviewed product direction, current source, remote HEAD, read-only Neon evidence and live Today/Performance UI; wrote [ASTRA_REVIEW_2026-09-06.md](ASTRA_REVIEW_2026-09-06.md).
+- Confirmed the last three core collections and canonical runs; recent registered Form 4 dates are persisted and fresh insider evidence is being selected. The completion-safe hotfix is already on local/remote main, superseding the older awaiting-push note.
+- Verified disconnected price histories, green Not overheated labels based on stale/partial input, and missing paper-mark updates for held stocks without pending orders. Documented exact examples and acceptance criteria; no runtime fix or policy change is claimed.
+- Quantified the empty entry-aware strategy, missing outcomes and narrow prior-model measured sample. Recommended correctness repairs, continuous tracking and three current thesis reviews before further discovery expansion or score tuning.
+- Reconciled current focus, Now/Next/Later and open dependencies with delivered features. Preserved existing constraints: no new provider, immutable history, explicit future policy versions, no broker orders.
+- Verification: host typecheck/lint; full isolated suite 443/443 in 55 files; Docker production build 22/22; app restart; Today/Performance/Guide 200 and unauthenticated collect 401; test DB removed. Only the review and master document changed; no commit/push was performed.
 
 ### 2026-09-03 - Form 4 daily rolling-ingestion automation and first live run
 

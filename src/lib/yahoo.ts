@@ -107,6 +107,8 @@ export async function fetchExecutionQuotes(tickers: string[]): Promise<Map<strin
         currency: typeof quote.currency === 'string' ? quote.currency : null,
         marketState: typeof quote.marketState === 'string' ? quote.marketState : null,
         regularMarketTime: marketTime,
+        marketCap: typeof quote.marketCap === 'number' && Number.isFinite(quote.marketCap) ? quote.marketCap : null,
+        regularMarketVolume: typeof quote.regularMarketVolume === 'number' && Number.isFinite(quote.regularMarketVolume) ? quote.regularMarketVolume : null,
       },
     });
   }

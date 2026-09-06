@@ -303,7 +303,17 @@ export async function executePendingPaperOrders(options: {
      WHERE status = 'pending'
      ORDER BY signal_at, id`,
   );
-  const tickers = [...new Set(pending.rows.map((row) => String(row.instrument_ticker)))];
+  const held = await pool.query(
+    `SELECT instrument_ticker
+     FROM paper_strategy_orders
+     WHERE status = 'filled'
+     GROUP BY policy_version, strategy_key, book_key, instrument_ticker
+     HAVING sum(CASE WHEN side = 'buy' THEN executed_quantity ELSE -executed_quantity END) > 1e-12`,
+  );
+  // Marks must continue after a company leaves the daily shortlist. Net within
+  // each book so a closed book cannot offset a holding in another strategy.
+  const tickers = [...new Set([...pending.rows, ...held.rows]
+    .map((row) => String(row.instrument_ticker)))].sort();
   const quotes = await quoteFetcher(tickers);
   const reasons: Record<string, string> = {};
   let filledOrders = 0;

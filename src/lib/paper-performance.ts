@@ -1,5 +1,6 @@
 import { pool } from './db';
 import { PAPER_STRATEGY_POLICY_VERSION } from './config';
+import { newYorkPriceDate, priceObservationRecency } from './price-observation';
 import {
   PAPER_STRATEGY_SNAPSHOT_VERSION,
   type PaperBusinessState,
@@ -30,6 +31,7 @@ export interface PaperBookPerformance {
   returnPercent: number | null;
   openPositions: number;
   valuationComplete: boolean;
+  valuationIssues: string[];
   oldestMarkAt: string | null;
   newestMarkAt: string | null;
 }
@@ -60,12 +62,12 @@ export interface PaperPerformanceDashboard {
   recentOrders: PaperPerformanceOrder[];
 }
 
-export type PaperBookStatus = 'no_positions' | 'pending' | 'valued' | 'mark_missing';
+export type PaperBookStatus = 'no_positions' | 'pending' | 'valued' | 'valuation_incomplete';
 
 export function getPaperBookStatus(book: Pick<PaperBookPerformance,
   'filledOrders' | 'pendingOrders' | 'valuationComplete'>): PaperBookStatus {
   if (book.filledOrders === 0) return book.pendingOrders > 0 ? 'pending' : 'no_positions';
-  return book.valuationComplete ? 'valued' : 'mark_missing';
+  return book.valuationComplete ? 'valued' : 'valuation_incomplete';
 }
 
 function value(value: unknown): number {
@@ -108,8 +110,8 @@ export function parsePaperSignalEvidence(input: unknown): PaperSignalEvidence {
   };
 }
 
-export async function getPaperPerformanceDashboard(): Promise<PaperPerformanceDashboard> {
-  const generatedAt = new Date().toISOString();
+export async function getPaperPerformanceDashboard(now = new Date()): Promise<PaperPerformanceDashboard> {
+  const generatedAt = now.toISOString();
   const availability = await pool.query(
     "SELECT to_regclass('public.paper_strategy_orders') IS NOT NULL AS available",
   );
@@ -135,15 +137,21 @@ export async function getPaperPerformanceDashboard(): Promise<PaperPerformanceDa
       [PAPER_STRATEGY_POLICY_VERSION],
     ),
     pool.query(
-      `SELECT DISTINCT ON (ticker) ticker, price, market_time
+      `SELECT DISTINCT ON (ticker) ticker, price, currency, market_time
        FROM paper_strategy_marks
        ORDER BY ticker, market_time DESC, id DESC`,
     ),
   ]);
   const latestMarks = new Map(marksResult.rows.map((row) => [String(row.ticker), {
-    price: value(row.price),
+    price: nullableValue(row.price),
+    currency: String(row.currency),
     marketTime: new Date(row.market_time).toISOString(),
   }]));
+  const benchmarkMark = latestMarks.get('SPY');
+  const validMark = (mark: typeof benchmarkMark) => mark != null && mark.price != null
+    && mark.price > 0 && mark.currency === 'USD';
+  const referenceAvailable = validMark(benchmarkMark)
+    && priceObservationRecency(benchmarkMark!.marketTime, generatedAt) === 'recent';
   const keys: PaperStrategyKey[] = ['all_picks_baseline', 'entry_aware'];
   const books: PaperBookPerformance[] = [];
 
@@ -168,12 +176,28 @@ export async function getPaperPerformanceDashboard(): Promise<PaperPerformanceDa
         }
       }
       const open = [...positions.entries()].filter(([, quantity]) => quantity > 1e-12);
-      const missingMarks = open.filter(([ticker]) => !latestMarks.has(ticker));
-      const valuationComplete = missingMarks.length === 0;
+      const valuationIssues: string[] = [];
+      if (open.length > 0 && !referenceAvailable) {
+        valuationIssues.push('SPY: recent reference mark unavailable.');
+      }
+      for (const [ticker] of open) {
+        const mark = latestMarks.get(ticker);
+        if (!validMark(mark)) {
+          valuationIssues.push(`${ticker}: valid USD mark missing.`);
+        } else if (priceObservationRecency(mark!.marketTime, generatedAt) !== 'recent') {
+          valuationIssues.push(`${ticker}: mark is stale or its timestamp is invalid.`);
+        } else if (referenceAvailable && newYorkPriceDate(mark!.marketTime) !== newYorkPriceDate(benchmarkMark!.marketTime)) {
+          valuationIssues.push(`${ticker}: mark date differs from SPY.`);
+        } else if (referenceAvailable && Math.abs(new Date(mark!.marketTime).getTime()
+          - new Date(benchmarkMark!.marketTime).getTime()) > 20 * 60_000) {
+          valuationIssues.push(`${ticker}: mark time differs from SPY by more than 20 minutes.`);
+        }
+      }
+      const valuationComplete = valuationIssues.length === 0;
       const currentValueUsd = filled.length === 0
         ? null
         : valuationComplete
-          ? open.reduce((sum, [ticker, quantity]) => sum + quantity * latestMarks.get(ticker)!.price, 0)
+          ? open.reduce((sum, [ticker, quantity]) => sum + quantity * latestMarks.get(ticker)!.price!, 0)
           : null;
       const profitUsd = currentValueUsd == null
         ? null
@@ -198,6 +222,7 @@ export async function getPaperPerformanceDashboard(): Promise<PaperPerformanceDa
         returnPercent,
         openPositions: open.length,
         valuationComplete,
+        valuationIssues,
         oldestMarkAt: marks[0] ?? null,
         newestMarkAt: marks.at(-1) ?? null,
       });

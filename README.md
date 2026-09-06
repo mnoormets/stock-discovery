@@ -43,6 +43,10 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 Kui allikas andmeid ei anna, kuvab rakendus `No data available yet`.
 
+Price integrity: Today shows the decision-linked price observation time; stale observations make the current setup unknown, and partial history is labelled explicitly. Paper execution also refreshes open holdings without new orders. Performance withholds value/P&L when USD marks are missing, stale, or differ from SPY by date or more than 20 minutes. Read-side recency allows one elapsed New York weekday (weekends excluded; holidays not inferred). Frozen signal evidence and the original paper eligibility policy remain unchanged.
+
+Continued price tracking runs after the canonical snapshot and before outcome measurement in both daily collection entrypoints. It uses Yahoo quotes for active/watchlist positions, open paper holdings and canonical picks with unmeasured horizons whose seven-day observation windows have not ended, plus SPY. The cap is 50 symbols per New York day; repeated runs share that budget and older attempts receive priority. Only finite positive USD prices with recent, non-future market timestamps are saved. Closed-market quotes may be research observations, never paper fills. `price_tracking_attempts` records each symbol's reason and result separately from discovery items. `price_snapshots.captured_at` records receipt time; `market_at` records quote time, and repeating the same quote cannot manufacture another observation. Outcome endpoints require both receipt and market time to reach the target. Today displays the latest tracking batch and remaining queue. Migration `0009_price_tracking` is required; incomplete tracking returns HTTP 503 / CLI failure while preserving completed collection work.
+
 ## Kohalik käivitamine Dockeriga
 
 1. Kopeeri `.env.example` failiks `.env`.

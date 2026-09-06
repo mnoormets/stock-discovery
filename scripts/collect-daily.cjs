@@ -82,6 +82,7 @@ async function main() {
       console.log('  4. enrichCompanyClassifications()  -> companies.sector/industry');
       console.log(`  5. getRklbDiscoveryCandidates({runType:'rklb_daily', collectionRunId}) -> ${before.today_canonical ? 'taaskasutab tanast canonical run i' : 'LOOB tanase canonical run i'}`);
       console.log('  5b. recordPaperStrategySignals()   -> salvestab ainult versioned paper-policy intents (kui 0008 on rakendatud)');
+      console.log('  5c. collectTrackedPrices()        -> bounded Yahoo follow-up prices, separate tracking provenance (0009 required)');
       console.log('  6. refreshCandidateOutcomes()      -> moodab outcome id, mille target_at on kaes');
       console.log('\n  Dry-run ei kutsunud uhtegi kirjutavat funktsiooni. Ridu ei lisatud.');
       return 0;
@@ -101,6 +102,7 @@ async function main() {
     const discovery = loadTs(path.join(root, 'src/lib/rklb-discovery.ts'));
     const validation = loadTs(path.join(root, 'src/lib/discovery-validation.ts'));
     const paperStrategy = loadTs(path.join(root, 'src/lib/paper-strategy-store.ts'));
+    const priceTracking = loadTs(path.join(root, 'src/lib/price-tracking.ts'));
 
     section('1. runCollection');
     const collected = await step('runCollection', () => collect.runCollection());
@@ -174,6 +176,15 @@ async function main() {
         // Paper mõõtmise tõrge ei tohi muuta edukat collection/discovery jooksu
         // ebaõnnestunuks ega takistada Healthchecks heartbeat'i.
         console.warn(`  ! paper-strategy signalid jäid salvestamata: ${error.message}`);
+      }
+    }
+
+    section('5c. continued price tracking');
+    const tracked = await step('collectTrackedPrices', () => priceTracking.collectTrackedPrices());
+    if (tracked) {
+      line('tracking', JSON.stringify(tracked));
+      if (tracked.failed || tracked.missing || tracked.invalid || tracked.stale || tracked.deferred) {
+        errors.push('Price tracking incomplete; inspect price_tracking_attempts.');
       }
     }
 
