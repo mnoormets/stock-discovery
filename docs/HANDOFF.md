@@ -28,7 +28,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
-- **2026-09-07 implementation checkpoint:** canonical discovery is v3; Form 4 hotfix is on local/remote main. Local fixes request marks for all open paper holdings, withhold incomplete/misaligned valuations and qualify stale/partial Today setups. Continued research/outcome price tracking is implemented; migration 0009 is applied to Neon and the first 18-symbol Yahoo batch is persisted. Code publication and unattended tracking evidence remain outstanding; verification is recorded below.
+- **2026-09-07 implementation checkpoint:** canonical discovery is v3; Form 4 hotfix is on local/remote main. Published fixes request marks for all open paper holdings, withhold incomplete/misaligned valuations and qualify stale/partial Today setups. Continued research/outcome price tracking is implemented; migration 0009 is applied to Neon and the first 18-symbol Yahoo batch is persisted. Code is published on origin/main at aaf537c; unattended tracking evidence remains outstanding. Three dated thesis-review drafts are complete in THESIS_REVIEW_2026-09-07.md; saved thesis versions remain unchanged.
 
 - Next.js 14.2.35, PostgreSQL ja Docker Compose; rakendus pordil `3005`.
 - Yahoo Finance hinnad, uudised, earnings ja analüütikute konsensus.
@@ -104,8 +104,10 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Tehtud verstapostid
 
+- **2026-09-07 publication and review:** price-tracking/integrity code pushed and remote SHA verified at `aaf537c4dd6bb862a9f52f438e3df0ccb5e6c8f4`. Three source-backed thesis-review drafts completed; no thesis statuses or database records changed.
+
 - **2026-09-06:** completed a repository, read-only Neon and live Today/Performance review focused on personal investing. Reconciled the current roadmap with delivered features and recorded concrete, still-unfixed measurement defects.
-- **2026-09-06 follow-up:** implemented the first price-integrity slice locally: held-position quote requests, honest valuation availability and stale/partial Today labels. Discovery selection and frozen signal eligibility remain unchanged; no missed historical price is fabricated. See the latest verification entry for evidence and remaining publication work.
+- **2026-09-06 follow-up:** implemented the first price-integrity slice locally: held-position quote requests, honest valuation availability and stale/partial Today labels. Discovery selection and frozen signal eligibility remain unchanged; no missed historical price is fabricated. Published on main at aaf537c on 7 September; see the verification entry for evidence.
 
 - Collection Runs Ledger (`0002_collection_runs_ledger`):
   - iga põhikogumise katse saab enne väliseid providerikutsed oma `running` rea;
@@ -214,19 +216,19 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 The last three core collections (#30–32, 4–6 September) succeeded; canonical v3 runs #62–64 evaluated 119/124/129 companies and selected six each. Registered Form 4 dates 31 August–4 September are persisted and the latest collection used fresh 4 September insider evidence. The completion-safe Form 4 hotfix is already committed and visible on remote main at b5f3290; it is not awaiting push. Paper execution through 4 September is reflected in 18 filled stock buys and 18 SPY buys. Nasdaq observation remains a separate, DB-free calibration; this session did not inspect its latest remote artifacts.
 
-**The immediate constraint is dependable forward measurement.** The review found BW's research price stuck on 18 August and ELF's on 26 August, plus missing paper marks for CRDO/FIVE. The first local fix includes all open paper holdings and withholds incomplete valuations. Continued tracking now independently appends Yahoo research prices for holdings, active/watch research and outstanding canonical horizons; 18 real quotes were received at 00:04 Tallinn on 7 September, with their actual Friday market times preserved. These observations can feed future research and eligible outcome endpoints without rewriting snapshot #64 or filling old missing windows. Today still shows the original decision-linked setup and a separate tracking panel. Remote scheduled execution requires publication of the local changes.
+**The immediate constraint is dependable forward measurement.** The review found BW's research price stuck on 18 August and ELF's on 26 August, plus missing paper marks for CRDO/FIVE. The published fix includes all open paper holdings and withholds incomplete valuations. Continued tracking now independently appends Yahoo research prices for holdings, active/watch research and outstanding canonical horizons; 18 real quotes were received at 00:04 Tallinn on 7 September, with their actual Friday market times preserved. These observations can feed future research and eligible outcome endpoints without rewriting snapshot #64 or filling old missing windows. Today still shows the original decision-linked setup and a separate tracking panel. Code publication is verified at aaf537c on origin/main. The next unattended run using that code remains unverified.
 
 Entry-aware has skipped all 30 stock signals: 14 for missing history, 12 for history plus current-collection confirmation, and four for confirmation alone. Do not lower gates merely to make it trade. The current v3 policy has seven canonical days, 42 selected decisions across eight tickers, and no measured horizons. Previous-model canonical outcomes have only 26 measured observations across three distinct stocks, with 45 missing outcomes. Separate versions/horizons and repair measurement coverage before drawing strategy conclusions.
 
-The user's five current in-app theses were last revised on 11 August. The next product experiment should use the existing Thesis Builder for a small set of dated decisions, with company-specific expectations, downside, invalidation, and review triggers. The fixed bear/base/bull sensitivity is not evidence of mispricing.
+The user's five current in-app theses were last revised on 11 August. Three separate dated review drafts for API, BW and HIMS are complete in [THESIS_REVIEW_2026-09-07.md](THESIS_REVIEW_2026-09-07.md), with stored fact IDs, source checks, assumptions and review triggers. They do not overwrite or adopt new saved convictions. BW's current debt and HIMS's investment/FCF reconciliation exist in the SEC filings but are absent from normalized app metrics. Address those coverage/definition gaps before company-specific valuation. The fixed bear/base/bull sensitivity is not evidence of mispricing.
 
 ## Roadmap
 
 ### NOW - järgmine töö
 
-- Publish the implemented bounded price tracking and observe its forward coverage. Schema and the first 18-symbol live batch are in Neon; code remains local until committed/pushed. Do not treat old missing observations as backfilled or remote scheduling as upgraded before publication.
+- Observe forward coverage from the published bounded price tracking (origin/main aaf537c). Schema and the first 18-symbol live batch are in Neon; unattended execution of the new code remains to be observed. Old missing observations are not backfilled.
 - Keep the current discovery and paper policies collecting forward evidence while those correctness issues are addressed. Weekend repeated purchase intents remain the documented V1 behavior until a separately versioned policy is chosen.
-- Use three current thesis reviews to test whether the app improves actual decisions. Capture what changed, source evidence, assumptions needed to justify the price, invalidation and the next review trigger. This is a recommendation, not a claim that the reviews have been written.
+- Reproduce and repair valuation-input coverage using the completed three-thesis review: BW debt selection and HIMS investment deductions from the existing SEC source. Keep company-defined FCF distinct from generic derived FCF; preserve all historical snapshots. API liquidity/ADS-unit reconciliation remains a research blocker.
 
 ### NEXT
 
@@ -894,6 +896,14 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-07 — publication and three thesis-review drafts
+
+- Committed 24 verified files as `aaf537c Track research prices continuously and qualify stale valuations`; pushed main (`b5f3290..aaf537c`) and confirmed `git ls-remote origin refs/heads/main` matches the full local SHA. Post-commit `git diff --stat` was empty. Personal dumps and other untracked files were excluded.
+- Read-only Neon review of API/BW/HIMS saved theses, latest financial facts and new Yahoo price snapshots produced [THESIS_REVIEW_2026-09-07.md](THESIS_REVIEW_2026-09-07.md). Explicit SQL date formatting confirmed periods without timezone conversion.
+- SEC source checks found BW current debt/preferred claims and HIMS negative company-defined H1 FCF; normalized database coverage remains incomplete. API SEC directory was accessible but full filing fetch exceeded the browser size limit. No new external provider, write-on-read route or database mutation was used.
+- Draft reviews are complete; user conviction/status remains unchanged. Next implementation focus is existing-source financial input coverage and definitions, followed by versioned valuation assumptions. Unattended tracking remains unverified.
+- Documentation-only follow-up: `git diff --check` used for validation; no code changed after the previously recorded 57 files / 461 tests, typecheck, lint, build and runtime/database checks. Earlier no-push entries below describe their historical session checkpoints, superseded by this publication.
 
 ### 2026-09-07 — continued research-price tracking
 
