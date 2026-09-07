@@ -5,6 +5,11 @@ function latest(contextSources: BriefSource[], metric: string): BriefSource | un
   return contextSources.find((source) => source.type === 'financial' && source.data.metric === metric && source.data.role === 'latest');
 }
 
+function sameBalanceDate(first: BriefSource, second: BriefSource): boolean {
+  return typeof first.data.periodEnd === 'string'
+    && first.data.periodEnd === second.data.periodEnd;
+}
+
 export const financialSignals: SignalDetector = (context) => {
   const whatChanged = [];
   const catalysts = [];
@@ -30,7 +35,7 @@ export const financialSignals: SignalDetector = (context) => {
   const debtValue = asNumber(debt?.data.value);
   if (cash && cashValue != null) whatChanged.push(fact(`Cash balance on ${formatCompact(cashValue, cash.data.unit)}.`, cash.id));
   if (debt && debtValue != null) whatChanged.push(fact(`SEC-i põhine debt on ${formatCompact(debtValue, debt.data.unit)}.`, debt.id));
-  if (cash && debt && cashValue != null && debtValue != null) {
+  if (cash && debt && cashValue != null && debtValue != null && sameBalanceDate(cash, debt)) {
     if (cashValue >= debtValue) catalysts.push(inference('Raha ja ekvivalendid katavad SEC-is raporteeritud võla.', cash.id, debt.id));
     if (debtValue > cashValue * 2) risks.push(inference('SEC-is raporteeritud võlg ületab raha enam kui kaks korda; kontrolli tähtaegu ja intressikulu.', cash.id, debt.id));
   }

@@ -177,6 +177,15 @@ describe('B6 — cash/debt piirväärtused on lukus', () => {
     expect(scores.financialHealth?.components).toHaveLength(1);
     expect(scores.financialHealth?.components[0].id).toBe('cash_debt');
   });
+
+  it('eri bilansipäevade cash ja debt jätavad komponendi ausalt välja', () => {
+    const scores = calculateCompanyScores(makeFinancials({
+      cash: { value: 500, latest: { periodEnd: '2026-06-30' } },
+      debt: { value: 250, latest: { periodEnd: '2021-12-31' } },
+    }));
+    expect(scores.financialHealth).toBeNull();
+    expect(scores.coverage.components[1].detail).toBe('0/5 komponenti');
+  });
 });
 
 describe('B7 — lokaliseeritud stringid ei kuulu determinismi lubadusse', () => {

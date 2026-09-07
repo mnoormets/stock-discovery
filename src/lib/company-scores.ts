@@ -1,6 +1,6 @@
 import type { CompanyFinancialSummary, FinancialMetricSummary } from './company-financials';
 
-export const SCORE_VERSION = 'scores-v1';
+export const SCORE_VERSION = 'scores-v2';
 
 export type CompanyScoreKind = 'growth' | 'financial_health' | 'coverage';
 
@@ -122,11 +122,11 @@ function flowHealth(summary: FinancialMetricSummary, label: string): { score: nu
 }
 
 function cashDebtComponent(financials: CompanyFinancialSummary): ScoreComponent | null {
-  const cash = financials.metrics.cash?.latest.value;
-  const debt = financials.metrics.debt?.latest.value;
-  if (cash == null || debt == null) return null;
-  if (debt <= 0) return { id: 'cash_debt', label: 'Cash / debt', score: 100, weight: 30, detail: 'Raporteeritud võlg puudub või on null' };
-  const ratio = cash / debt;
+  const cash = financials.metrics.cash?.latest;
+  const debt = financials.metrics.debt?.latest;
+  if (!cash || !debt || cash.periodEnd !== debt.periodEnd) return null;
+  if (debt.value <= 0) return { id: 'cash_debt', label: 'Cash / debt', score: 100, weight: 30, detail: 'Raporteeritud võlg puudub või on null' };
+  const ratio = cash.value / debt.value;
   let score: number;
   if (ratio >= 2) score = 100;
   else if (ratio >= 1) score = 80 + (ratio - 1) * 20;

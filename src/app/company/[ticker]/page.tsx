@@ -10,6 +10,7 @@ import { normalizeTicker } from '@/lib/investment';
 import { getSectorRelativeStats } from '@/lib/sector-relative';
 import SectorRelativeEvidence from '@/components/SectorRelativeEvidence';
 import DataQualityEvidence from '@/components/DataQualityEvidence';
+import ReviewedBalanceSheet from '@/components/ReviewedBalanceSheet';
 import ValuationEvidence from '@/components/ValuationEvidence';
 import UnderRecognitionEvidenceBlock from '@/components/UnderRecognitionEvidence';
 import CatalystEvidence from '@/components/CatalystEvidence';
@@ -233,7 +234,7 @@ export default async function CompanyPage({ params }: { params: { ticker: string
         <DataQualityEvidence summary={dataQuality} />
         <SectorRelativeEvidence stats={sectorRelative} />
         {trackedScores.current && <ScoreHistory current={trackedScores.current} history={trackedScores.history} />}
-        <p className="muted scoreIntro">Growth kaalub revenue, net income’i, operating cash flow ja free cash flow YoY muutusi. Financial Health kaalub rahavoogude märki ja trendi, cash/debt suhet, kasumlikkust ning aktsiate arvu muutust. Coverage näitab nende kahe mudeli kaalutud sisendikatet. Skoor ei ole ostu- ega müügisoovitus.</p>
+        <p className="muted scoreIntro">Growth kaalub revenue, net income’i, operating cash flow ja free cash flow YoY muutusi. Financial Health kaalub rahavoogude märki ja trendi, sama bilansipäeva cash/debt suhet, kasumlikkust ning aktsiate arvu muutust. Coverage näitab nende kahe mudeli kaalutud sisendikatet. Skoor ei ole ostu- ega müügisoovitus.</p>
       </section>
 
       <ResearchBrief initialState={briefState} />
@@ -267,7 +268,7 @@ export default async function CompanyPage({ params }: { params: { ticker: string
                     {metric === 'free_cash_flow' && <small>{summary.latest.tag.includes('PaymentsForSoftware')
                       ? 'OCF − property, equipment and intangible purchases − software investment'
                       : 'OCF − property and equipment investment'}</small>}
-                    {metric === 'shares_outstanding' && summary.latest.form === '20-F' && <small>Reported ordinary shares; ADS conversion and fully diluted shares are not established.</small>}
+                    {metric === 'shares_outstanding' && summary.latest.form === '20-F' && <small>Reported ordinary shares, not an ADS or fully diluted count. See any dated reconciliation below for a verified conversion.</small>}
                     <a href={summary.latest.sourceUrl} target="_blank" rel="noreferrer">SEC algallikas{summary.latest.derived ? ' · tuletatud' : ''}</a>
                   </div>
                 );
@@ -278,6 +279,7 @@ export default async function CompanyPage({ params }: { params: { ticker: string
         )}
       </section>
 
+      <ReviewedBalanceSheet ticker={ticker} />
       <section className="section">
         <div className="sectionHeading">
           <div><p className="eyebrow">VALUATION EVIDENCE · NOT A SCORE</p><h2>Mille vastu ma seda hinnastan?</h2></div>

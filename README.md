@@ -13,7 +13,7 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 - SEC EDGARi viimased avaldused ja tasuta CompanyFactsi finantsajalugu (revenue, net income, OCF, tuletatud FCF, cash, debt ja shares outstanding), kui `SEC_USER_AGENT` on seadistatud.
 - PostgreSQL-ist kohe avanev ettevõtte detailvaade; aegunud live-andmed värskendatakse taustal.
 - Tasuta modulaarse signaalimootoriga Research Brief ettevõtte hinnamuutustest, finantsidest, katalüsaatoritest ja riskidest koos allikaviidetega.
-- Läbipaistvad 0–100 Growth ja Financial Health skoorid koos komponentide, kaalude ja andmekattega; fundamentaalne edetabel on mõlema skoori järgi sorditav.
+- Läbipaistvad 0–100 Growth ja Financial Health skoorid koos komponentide, kaalude ja andmekattega; cash/debt komponent nõuab sama bilansipäeva. Fundamentaalne edetabel on mõlema skoori järgi sorditav.
 - Eraldi Coverage Score ning versioonitud score-snapshotid: iga tulemus säilitab kasutatud SEC fact ID-d, perioodid, komponendid ja input-hashi.
 - Coverage'ist eraldi Data Freshness + Period Alignment plokk näitab iga score-sisendi perioodi, perioodiliiki, vanust, SEC fact ID-d ja algallikat ning eraldi `fresh/mixed/stale/unknown` ja `good/warning/poor/unknown` olekuid; skoore ega filtreid see ei muuda.
 - Watchlist kasutab olemasolevat portfelli `watch` staatust ning aitab Growth, Financial Health ja Coverage skooride järgi uusi uurimisideid leida.

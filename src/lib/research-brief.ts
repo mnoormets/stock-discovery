@@ -44,7 +44,7 @@ interface ResearchInput {
   reason: string | null;
 }
 
-const GENERATOR_VERSION = 'signals-v2';
+const GENERATOR_VERSION = 'signals-v3';
 const generations = new Map<string, Promise<StoredResearchBrief>>();
 
 function asNumber(value: unknown): number | null {

@@ -28,6 +28,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-09-07 balance reconciliation:** [BW_API_RECONCILIATION_2026-09-07.md](BW_API_RECONCILIATION_2026-09-07.md) documents and displays a dated SEC bridge: BW $276.843m borrowings, $308.634m cash and separate preferred/lease claims; API $361.655m broad liquidity, $100.316m borrowings and the 1 ADS = 4 ordinary-share conversion. `scores-v2` and `signals-v3` now require identical cash/debt balance dates, so BW's stale 2021 debt no longer produces a current cash/debt score or brief claim. Earlier score snapshots and brief records remain versioned historical evidence.
+
 - **2026-09-07 financial-input corrections:** HIMS investment deductions now combine disclosed productive-asset purchases and software from the same filing/period when the standard PPE metric is absent. Derived H1 FCF is -$15.161m (Neon fact #21375). API ordinary shares refreshed to 349,264,771 at 2025-12-31 (#21616), explicitly not an ADS or fully diluted count. Valuation Evidence v2 withholds EV/Sales for mismatched, stale, future or unknown cash/debt dates. BW current total debt remains unavailable in CompanyFacts; partial secured debt is not substituted. Verification: 58 files / 468 tests passed; typecheck, lint, 12 valuation QA cases, build and post-restart UI/database checks passed. Published on `main` at `717b2a9`.
 
 - **2026-09-07 implementation checkpoint:** canonical discovery is v3; Form 4 hotfix is on local/remote main. Published fixes request marks for all open paper holdings, withhold incomplete/misaligned valuations and qualify stale/partial Today setups. Continued research/outcome price tracking is implemented; migration 0009 is applied to Neon and the first 18-symbol Yahoo batch is persisted. Code is published on origin/main at aaf537c; unattended tracking evidence remains outstanding. Three dated thesis-review drafts are complete in THESIS_REVIEW_2026-09-07.md; saved thesis versions remain unchanged.
@@ -106,7 +108,7 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Tehtud verstapostid
 
-- **2026-09-07 financial corrections:** verified HIMS same-filing investment/FCF extraction, refreshed API ordinary shares, and introduced the v2 EV/Sales date guard. Repeated live refreshes were idempotent and saved theses/decisions/outcomes/orders stayed unchanged. BW total debt and API broader liquidity/ADS conversion remain research gaps; code is published on `main`.
+- **2026-09-07 financial corrections:** verified HIMS same-filing investment/FCF extraction, refreshed API ordinary shares, and introduced the v2 EV/Sales date guard. Repeated live refreshes were idempotent and saved theses/decisions/outcomes/orders stayed unchanged. The later dated BW/API reconciliation closes the BW total-debt and API liquidity/ADS-definition research gaps; normalized CompanyFacts remain unchanged by design.
 
 - **2026-09-07 publication and review:** price-tracking/integrity code pushed and remote SHA verified at `aaf537c4dd6bb862a9f52f438e3df0ccb5e6c8f4`. Three source-backed thesis-review drafts completed; no thesis statuses or database records changed.
 
@@ -224,7 +226,7 @@ The last three core collections (#30–32, 4–6 September) succeeded; canonical
 
 Entry-aware has skipped all 30 stock signals: 14 for missing history, 12 for history plus current-collection confirmation, and four for confirmation alone. Do not lower gates merely to make it trade. The current v3 policy has seven canonical days, 42 selected decisions across eight tickers, and no measured horizons. Previous-model canonical outcomes have only 26 measured observations across three distinct stocks, with 45 missing outcomes. Separate versions/horizons and repair measurement coverage before drawing strategy conclusions.
 
-The user's five current in-app theses were last revised on 11 August. Three separate dated review drafts for API, BW and HIMS are complete in [THESIS_REVIEW_2026-09-07.md](THESIS_REVIEW_2026-09-07.md), with stored fact IDs, source checks, assumptions and review triggers. They do not overwrite or adopt new saved convictions. BW's current debt and HIMS's investment/FCF reconciliation exist in the SEC filings but are absent from normalized app metrics. Address those coverage/definition gaps before company-specific valuation. The fixed bear/base/bull sensitivity is not evidence of mispricing.
+The user's five current in-app theses were last revised on 11 August. Three separate dated review drafts for API, BW and HIMS are complete in [THESIS_REVIEW_2026-09-07.md](THESIS_REVIEW_2026-09-07.md), with stored fact IDs, source checks, assumptions and review triggers. They do not overwrite or adopt new saved convictions. [BW/API reconciliation](BW_API_RECONCILIATION_2026-09-07.md) now makes the filing-level debt, liquidity and ADS definitions visible without replacing normalized facts. The fixed bear/base/bull sensitivity is not evidence of mispricing.
 
 ## Roadmap
 
@@ -232,7 +234,7 @@ The user's five current in-app theses were last revised on 11 August. Three sepa
 
 - Observe forward coverage from the published bounded price tracking (origin/main aaf537c). Schema and the first 18-symbol live batch are in Neon; unattended execution of the new code remains to be observed. Old missing observations are not backfilled.
 - Keep the current discovery and paper policies collecting forward evidence while those correctness issues are addressed. Weekend repeated purchase intents remain the documented V1 behavior until a separately versioned policy is chosen.
-- Observe the published HIMS investment extraction and BW EV/Sales date guard in subsequent refreshes. Remaining source work: BW total debt/preferred claims require filing-level reconciliation (CompanyFacts lacks the total), and API broader liquidity/ADS conversion requires a documented bridge. Do not substitute partial debt or ordinary shares for those missing inputs.
+- Observe the published HIMS investment extraction, BW/API dated reconciliation and `scores-v2` / `signals-v3` date guard in subsequent refreshes. A new filing needs a new dated review; do not substitute partial debt or ordinary shares for a current complete definition.
 
 ### NEXT
 
@@ -258,6 +260,8 @@ The user's five current in-app theses were last revised on 11 August. Three sepa
 ## Olulised tehnilised ja tooteotsused
 
 - **2026-09-07 financial inputs:** fallback investment deductions require both `PaymentsToAcquireOtherProductiveAssets` and `PaymentsForSoftware` with matching period and accession. The rounded `PaymentsToAcquireProductiveAssets` total is not added or substituted. FCF joins OCF and deductions only within the same filing and period; the stored expression retains parentheses and provenance. The UI names the deductions and distinguishes application-derived from company-defined FCF. `valuation-evidence-v2` requires cash/debt dates to match and be known, non-future and within the existing 550-day freshness boundary. This is a conservative availability guard, not a claim that debt includes preferred equity or all financing claims. No migration or historical snapshot rewrite.
+
+- **2026-09-07 BW/API balance review:** `balance-review-2026-09-07` is a filing-level application record, not a CompanyFacts alias. It keeps the report and filing dates, component sums, source URLs and exclusions visible for BW/API. It never overwrites automated facts, saved theses, decisions, outcomes or older score snapshots. `scores-v2` withholds the cash/debt component unless the two latest values have the exact same `periodEnd`; `signals-v3` applies the same rule before stating a cash-versus-debt inference. Both versions deliberately produce new current records while preserving the older calculation under its original version.
 
 - **2026-09-07 continued tracking:** `0009_price_tracking` adds nullable quote `market_at`, a quote-deduplication index and a separate daily attempt ledger. `captured_at` stays the receipt timestamp; no historical rows are rewritten. Existing Yahoo quotes only, positive finite USD price and the documented one-weekday recency heuristic; closed-market observations are allowed for research. Queue membership is active/watch portfolio status, positive net paper holdings, or canonical unmeasured horizons before target + seven days; SPY is included as benchmark. Fifty symbols per New York day across retries, SPY first then oldest attempt, chunks of eight. A failure consumes that symbol's daily attempt and remains visible until a later attempt. Quotes are collected after the canonical snapshot, before outcome refresh, and never create discovery collection items. Tracked endpoint quotes must reach the outcome's target in both receipt and market time. Frozen decisions, paper eligibility and measured outcomes remain unchanged. Legacy prices without market time retain their original contract.
 
@@ -575,7 +579,7 @@ Piirangud, mida tuleb teadvustada:
 
 ## Automated Test Coverage (2026-08-17)
 
-**Latest implementation recheck, 2026-09-07:** 461/461 tests in 57 files, nine migrations, isolated local `discovery_test`. The detailed inventory below is historical and is not a complete list of the current suite. Tests cover held-paper-mark continuity, stale/partial setup presentation and continued research/outcome tracking, including daily budget, deduplication and receipt/market timestamp boundaries. Remote publication and unattended tracking observation remain outstanding.
+**Latest implementation recheck, 2026-09-07:** 474/474 tests in 60 files, nine migrations, isolated local `discovery_test`. The detailed inventory below is historical and is not a complete list of the current suite. Tests cover held-paper-mark continuity, stale/partial setup presentation and continued research/outcome tracking, including daily budget, deduplication and receipt/market timestamp boundaries. Remote publication and unattended tracking observation remain outstanding.
 
 Vitest, **354 testi, 39 faili** (mõõdetud 2026-08-25). Käivitamine konteineris `docker compose run --rm -T app npm test` või hostil `npm test` (hostil on `TEST_DATABASE_URL` kohustuslik, vt „Praegune töötav seis"). Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja jooksu lõpus kustutab; Neoni golden source'i ei puudutata. **Testibaasi skeem ehitatakse versioonitud migratsioonidest** (`scripts/migrate.cjs`), seega iga jooks valideerib ühtlasi runnerit ja migratsioone `0001–0007` koos `schema_migrations` raamatupidamisega. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
 
@@ -616,6 +620,12 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-09-07 — BW/API balance reconciliation and mixed-date guard
+
+- Dated BW/API SEC reconciliation is rendered on the two company pages. The new date guard creates `scores-v2`: the cash/debt component requires exactly matching `periodEnd` values. `signals-v3` requires the same condition before a Research Brief can infer that cash covers debt. The old score and brief remain stored under their original versions.
+- Docker focused tests passed 30/30 in three files. Full isolated suite passed **60 files / 474 tests** in 261.43s; typecheck and lint exited 0; production build compiled and generated 22/22 routes. The app container was restarted after that build.
+- Runtime: BW returned HTTP 200 with `scores-v2` and the complete $276.843m borrowing table; API returned HTTP 200 with broad liquidity and ADS conversion. Regenerated BW `signals-v3` brief has three catalysts and no mixed-date cash/debt claim. Current Neon counts remain 11 investment theses, 2,169 discovery decisions, 845 candidate outcomes and 144 paper orders. Expected new current records: two `scores-v2` snapshots and two `signals-v3` briefs.
 
 ### 2026-09-07 — continued price tracking
 
@@ -902,6 +912,12 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-07 — BW/API balance reconciliation and mixed-date guard
+
+- Added `balance-review-2026-09-07`: BW's June 10-Q bridge totals $276.843m borrowings from four carrying-value lines and keeps $191.7m preferred stock, $27.822m finance leases and $17.623m operating leases separate. API's furnished Q2 result gives $361.655m broad liquidity, $100.316m borrowings and the 1 ADS = 4 ordinary-share conversion; $261.339m is a borrowing-only difference, not distributable cash.
+- Added the same-date cash/debt guard to both Financial Health scoring and the rule-based brief, with targeted regressions. This removes the incorrect BW conclusion created by cash at 2026-06-30 versus a partial debt fact at 2021-09-30. It is a versioned current calculation, not a historic rewrite.
+- Verification evidence: Docker focused 30/30; full Docker suite 60 files / 474 tests in 261.43s; typecheck, lint and optimized build all passed. After restart, BW/API pages returned 200 and rendered expected reconciliation content; BW `scores-v2` shows Financial Health 55/100 at 70% coverage without the cash/debt component. Forced `signals-v3` regeneration returned `contains_mixed_claim=False`. No user thesis/decision/outcome/paper-order count changed. Pending: commit and push this verified local work.
 
 ### 2026-09-07 — financial-input corrections
 
