@@ -28,7 +28,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
-- **2026-09-07 financial-input corrections:** HIMS investment deductions now combine disclosed productive-asset purchases and software from the same filing/period when the standard PPE metric is absent. Derived H1 FCF is -$15.161m (Neon fact #21375). API ordinary shares refreshed to 349,264,771 at 2025-12-31 (#21616), explicitly not an ADS or fully diluted count. Valuation Evidence v2 withholds EV/Sales for mismatched, stale, future or unknown cash/debt dates. BW current total debt remains unavailable in CompanyFacts; partial secured debt is not substituted. Verification: 58 files / 468 tests passed; typecheck, lint, 12 valuation QA cases, build and post-restart UI/database checks passed. Published on `main`; see the session log for the commit SHA.
+- **2026-09-07 financial-input corrections:** HIMS investment deductions now combine disclosed productive-asset purchases and software from the same filing/period when the standard PPE metric is absent. Derived H1 FCF is -$15.161m (Neon fact #21375). API ordinary shares refreshed to 349,264,771 at 2025-12-31 (#21616), explicitly not an ADS or fully diluted count. Valuation Evidence v2 withholds EV/Sales for mismatched, stale, future or unknown cash/debt dates. BW current total debt remains unavailable in CompanyFacts; partial secured debt is not substituted. Verification: 58 files / 468 tests passed; typecheck, lint, 12 valuation QA cases, build and post-restart UI/database checks passed. Published on `main` at `717b2a9`.
 
 - **2026-09-07 implementation checkpoint:** canonical discovery is v3; Form 4 hotfix is on local/remote main. Published fixes request marks for all open paper holdings, withhold incomplete/misaligned valuations and qualify stale/partial Today setups. Continued research/outcome price tracking is implemented; migration 0009 is applied to Neon and the first 18-symbol Yahoo batch is persisted. Code is published on origin/main at aaf537c; unattended tracking evidence remains outstanding. Three dated thesis-review drafts are complete in THESIS_REVIEW_2026-09-07.md; saved thesis versions remain unchanged.
 
@@ -905,6 +905,7 @@ Varasem seis:
 
 ### 2026-09-07 — financial-input corrections
 
+- Published the verified implementation on `main` as `717b2a9 Correct financial inputs and valuation guards`.
 - Inspected current SEC CompanyFacts for BW/HIMS/API and BW filing XBRL. BW CompanyFacts has current secured debt only, not total debt; automatically importing it as total would understate obligations. Kept that gap explicit and blocked the mixed-period EV/Sales anchor.
 - Added HIMS component extraction, same-accession FCF derivation, five EV/Sales date regression cases, and DB checks for exact -$15.161m FCF, no rounded-total double counting, mismatched-filing rejection and duplicate refresh idempotency.
 - Live Neon refresh: HIMS financial facts 120 -> 175 -> 175; API 51 -> 58 -> 58. No historical facts removed. HIMS latest shares fallback is a stale 2019 zero, visibly flagged; it is not a current share-count resolution. API latest ordinary shares is #21616; broader liquidity and ADS/diluted-share reconciliation remain open.
