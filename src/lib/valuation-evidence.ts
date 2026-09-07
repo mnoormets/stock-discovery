@@ -16,7 +16,7 @@ import {
 // Data Freshness + Period Alignment kihile: aegunud või joondamata sisendil
 // põhinev multiple on madala usaldusega, isegi kui number arvutub.
 
-export const VALUATION_EVIDENCE_VERSION = 'valuation-evidence-v1';
+export const VALUATION_EVIDENCE_VERSION = 'valuation-evidence-v2';
 
 export type ValuationAnchorKind =
   | 'ev_sales'
@@ -189,6 +189,17 @@ function evSalesAnchor(input: ValuationEvidenceInput, asOf: Date): ValuationAnch
       kind, label: ANCHOR_LABELS[kind], status: 'insufficient_data',
       value: null, unit: null, basis: null, confidence: 'unknown', lastUpdated: null,
       sources: [], note: `EV / Sales vajab: ${missing.join(', ')}.`,
+    };
+  }
+  const balanceDates = [input.cash.periodEnd, input.debt.periodEnd].map((date) => new Date(`${date}T00:00:00Z`).getTime());
+  if (input.cash.periodEnd !== input.debt.periodEnd || balanceDates.some((date) =>
+    !Number.isFinite(date) || date > asOf.getTime() || (asOf.getTime() - date) / 86_400_000 > STALE_FACT_DAYS)) {
+    return {
+      kind, label: ANCHOR_LABELS[kind], status: 'insufficient_data',
+      value: null, unit: null, basis: sales.basis, confidence: 'unknown',
+      lastUpdated: newestPeriod([input.revenue!, input.cash, input.debt]),
+      sources: [sourceRef('SEC cash', input.cash), sourceRef('SEC debt', input.debt)],
+      note: 'EV / Sales unavailable: cash and debt must have the same, non-stale reporting date. Review the current filing; partial debt is not total debt.',
     };
   }
   const enterpriseValue = input.marketCap + input.debt.value - input.cash.value;

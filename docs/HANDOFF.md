@@ -28,6 +28,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-09-07 financial-input corrections:** HIMS investment deductions now combine disclosed productive-asset purchases and software from the same filing/period when the standard PPE metric is absent. Derived H1 FCF is -$15.161m (Neon fact #21375). API ordinary shares refreshed to 349,264,771 at 2025-12-31 (#21616), explicitly not an ADS or fully diluted count. Valuation Evidence v2 withholds EV/Sales for mismatched, stale, future or unknown cash/debt dates. BW current total debt remains unavailable in CompanyFacts; partial secured debt is not substituted. Verification: 58 files / 468 tests passed; typecheck, lint, 12 valuation QA cases, build and post-restart UI/database checks passed. Published on `main`; see the session log for the commit SHA.
+
 - **2026-09-07 implementation checkpoint:** canonical discovery is v3; Form 4 hotfix is on local/remote main. Published fixes request marks for all open paper holdings, withhold incomplete/misaligned valuations and qualify stale/partial Today setups. Continued research/outcome price tracking is implemented; migration 0009 is applied to Neon and the first 18-symbol Yahoo batch is persisted. Code is published on origin/main at aaf537c; unattended tracking evidence remains outstanding. Three dated thesis-review drafts are complete in THESIS_REVIEW_2026-09-07.md; saved thesis versions remain unchanged.
 
 - Next.js 14.2.35, PostgreSQL ja Docker Compose; rakendus pordil `3005`.
@@ -103,6 +105,8 @@ Viimati kontrollitud päris skoorid:
 Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala kattega tulemusi, et üksiku komponendi kõrge skoor poleks eksitav.
 
 ## Tehtud verstapostid
+
+- **2026-09-07 financial corrections:** verified HIMS same-filing investment/FCF extraction, refreshed API ordinary shares, and introduced the v2 EV/Sales date guard. Repeated live refreshes were idempotent and saved theses/decisions/outcomes/orders stayed unchanged. BW total debt and API broader liquidity/ADS conversion remain research gaps; code is published on `main`.
 
 - **2026-09-07 publication and review:** price-tracking/integrity code pushed and remote SHA verified at `aaf537c4dd6bb862a9f52f438e3df0ccb5e6c8f4`. Three source-backed thesis-review drafts completed; no thesis statuses or database records changed.
 
@@ -228,7 +232,7 @@ The user's five current in-app theses were last revised on 11 August. Three sepa
 
 - Observe forward coverage from the published bounded price tracking (origin/main aaf537c). Schema and the first 18-symbol live batch are in Neon; unattended execution of the new code remains to be observed. Old missing observations are not backfilled.
 - Keep the current discovery and paper policies collecting forward evidence while those correctness issues are addressed. Weekend repeated purchase intents remain the documented V1 behavior until a separately versioned policy is chosen.
-- Reproduce and repair valuation-input coverage using the completed three-thesis review: BW debt selection and HIMS investment deductions from the existing SEC source. Keep company-defined FCF distinct from generic derived FCF; preserve all historical snapshots. API liquidity/ADS-unit reconciliation remains a research blocker.
+- Observe the published HIMS investment extraction and BW EV/Sales date guard in subsequent refreshes. Remaining source work: BW total debt/preferred claims require filing-level reconciliation (CompanyFacts lacks the total), and API broader liquidity/ADS conversion requires a documented bridge. Do not substitute partial debt or ordinary shares for those missing inputs.
 
 ### NEXT
 
@@ -252,6 +256,8 @@ The user's five current in-app theses were last revised on 11 August. Three sepa
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- **2026-09-07 financial inputs:** fallback investment deductions require both `PaymentsToAcquireOtherProductiveAssets` and `PaymentsForSoftware` with matching period and accession. The rounded `PaymentsToAcquireProductiveAssets` total is not added or substituted. FCF joins OCF and deductions only within the same filing and period; the stored expression retains parentheses and provenance. The UI names the deductions and distinguishes application-derived from company-defined FCF. `valuation-evidence-v2` requires cash/debt dates to match and be known, non-future and within the existing 550-day freshness boundary. This is a conservative availability guard, not a claim that debt includes preferred equity or all financing claims. No migration or historical snapshot rewrite.
 
 - **2026-09-07 continued tracking:** `0009_price_tracking` adds nullable quote `market_at`, a quote-deduplication index and a separate daily attempt ledger. `captured_at` stays the receipt timestamp; no historical rows are rewritten. Existing Yahoo quotes only, positive finite USD price and the documented one-weekday recency heuristic; closed-market observations are allowed for research. Queue membership is active/watch portfolio status, positive net paper holdings, or canonical unmeasured horizons before target + seven days; SPY is included as benchmark. Fifty symbols per New York day across retries, SPY first then oldest attempt, chunks of eight. A failure consumes that symbol's daily attempt and remains visible until a later attempt. Quotes are collected after the canonical snapshot, before outcome refresh, and never create discovery collection items. Tracked endpoint quotes must reach the outcome's target in both receipt and market time. Frozen decisions, paper eligibility and measured outcomes remain unchanged. Legacy prices without market time retain their original contract.
 
@@ -896,6 +902,40 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-07 — financial-input corrections
+
+- Inspected current SEC CompanyFacts for BW/HIMS/API and BW filing XBRL. BW CompanyFacts has current secured debt only, not total debt; automatically importing it as total would understate obligations. Kept that gap explicit and blocked the mixed-period EV/Sales anchor.
+- Added HIMS component extraction, same-accession FCF derivation, five EV/Sales date regression cases, and DB checks for exact -$15.161m FCF, no rounded-total double counting, mismatched-filing rejection and duplicate refresh idempotency.
+- Live Neon refresh: HIMS financial facts 120 -> 175 -> 175; API 51 -> 58 -> 58. No historical facts removed. HIMS latest shares fallback is a stale 2019 zero, visibly flagged; it is not a current share-count resolution. API latest ordinary shares is #21616; broader liquidity and ADS/diluted-share reconciliation remain open.
+- Original focused verification caught a syntax error, corrected before succeeding typecheck/lint/valuation QA. The session resumed with Docker stopped; test/build attempts failed on unavailable Docker/Postgres, then Docker was restarted and verification rerun. Full suite passed: 58 files, 468 tests, 480.69s (start 09:29:44 Tallinn). Typecheck and lint exited 0; valuation QA 12/12 passed; production build compiled and generated 22/22 pages. Post-build app restart completed; API/BW/HIMS returned HTTP 200 and browser checks showed the ADS warning, withheld EV/Sales with both dates, and readable negative-FCF formula. Live fingerprints stayed identical: 11 investment_theses, 2169 discovery_decisions, 845 candidate_outcomes and 144 paper_strategy_orders. Existing company-page write-on-read behavior may append current score/catalyst records; the four historical/user tables were unchanged.
+
+
+Actual verification output (2026-09-07 financial corrections):
+
+```text
+> stock-discovery@0.1.0 typecheck
+> node node_modules/typescript/bin/tsc --noEmit
+
+> stock-discovery@0.1.0 lint
+> node node_modules/next/dist/bin/next lint
+✔ No ESLint warnings or errors
+
+Valuation evidence deterministic QA: 12/12 passed
+
+Test Files  58 passed (58)
+Tests       468 passed (468)
+Start at    09:29:44
+Duration    480.69s
+
+✓ Compiled successfully
+✓ Generating static pages (22/22)
+Container stock-discovery-app-1 Started
+
+BW: HTTP 200; expected evidence true
+HIMS: HTTP 200; expected evidence true
+API: HTTP 200; expected evidence true
+```
 
 ### 2026-09-07 — publication and three thesis-review drafts
 

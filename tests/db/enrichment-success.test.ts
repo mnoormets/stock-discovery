@@ -101,6 +101,37 @@ afterEach(() => {
 });
 
 describe('E9.1 — success: enriched = 1', () => {
+  it('derives HIMS-style investment deductions without double-counting the rounded total', async () => {
+    const period = { start: '2026-01-01', end: '2026-06-30', filed: '2026-08-10', form: '10-Q' };
+    stubWithBody(companyFactsBody({
+      NetCashProvidedByUsedInOperatingActivities: { units: [durationUnit({ ...period, val: 53_417_000 })] },
+      PaymentsToAcquireOtherProductiveAssets: { units: [durationUnit({ ...period, val: 55_770_000 })] },
+      PaymentsForSoftware: { units: [durationUnit({ ...period, val: 12_808_000 })] },
+      PaymentsToAcquireProductiveAssets: { units: [durationUnit({ ...period, val: 68_600_000 })] },
+    }));
+    const companyId = await seedCompany('AAA');
+    const { refreshCompanyFinancials } = await import('../../src/lib/company-financials');
+    await refreshCompanyFinancials('AAA');
+    await refreshCompanyFinancials('AAA');
+    const rows = await readFacts(companyId);
+    expect(rows.filter((row) => row.metric === 'free_cash_flow')).toHaveLength(1);
+    expect(rows.find((row) => row.metric === 'free_cash_flow')).toMatchObject({
+      value: '-15161000', period_kind: 'ytd', is_derived: true,
+      tag: 'NetCashProvidedByUsedInOperatingActivities-(PaymentsToAcquireOtherProductiveAssets+PaymentsForSoftware)',
+    });
+  });
+
+  it('does not join investment components or FCF across different filings', async () => {
+    stubWithBody(companyFactsBody({
+      NetCashProvidedByUsedInOperatingActivities: { units: [durationUnit()] },
+      PaymentsToAcquireOtherProductiveAssets: { units: [durationUnit()] },
+      PaymentsForSoftware: { units: [durationUnit({ accn: '0000000000-26-000002' })] },
+    }));
+    const companyId = await seedCompany('AAA');
+    await enrichStoredCompanyFinancials();
+    expect((await readFacts(companyId)).map((row) => row.metric)).toEqual(['operating_cash_flow']);
+  });
+
   it('tagastab completed ja loeb ettevõtte rikastatuks', async () => {
     stubWithBody(minimalCashFacts());
     await seedCompany('AAA');

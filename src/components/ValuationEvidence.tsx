@@ -92,7 +92,7 @@ export default function ValuationEvidence({
           </table>
         </div>
       )}
-      <p className="muted valuationNote">Iga ankur on eraldi läbipaistev suhtarv (fakt / fakt) või unknown — mitte koondskoor. Peer comparison ja sum-of-parts jäävad V1-s käsitsi täidetavaks. Confidence tuleneb Data Freshness + Period Alignment kihist: aegunud või joondamata sisendil põhinev multiple on madala usaldusega. Ei muuda Growth, Health, Coverage ega Catalyst skoori.</p>
+      <p className="muted valuationNote">Iga ankur on eraldi läbipaistev suhtarv (fakt / fakt) või unknown — mitte koondskoor. Peer comparison ja sum-of-parts jäävad käsitsi täidetavaks. EV / Sales requires cash and debt from the same, non-stale reporting date; other anchors retain their displayed freshness confidence. Ei muuda Growth, Health, Coverage ega Catalyst skoori.</p>
     </section>
   );
 }

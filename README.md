@@ -6,6 +6,8 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- Financial evidence keeps reporting dates and definitions visible: EV/Sales is unavailable when cash/debt dates differ or are stale/unknown/future. Investment deductions may include separately disclosed productive-asset and software purchases; derived FCF requires the same filing and period. Ordinary-share counts are not automatically ADS or fully diluted counts.
+
 - Tickeri valideeritud otsing ja ettevõtte detailvaade.
 - Yahoo Finance’i hind, turukapitalisatsioon, maht, uudised ja tulemuste aeg, kui need on saadaval.
 - SEC EDGARi viimased avaldused ja tasuta CompanyFactsi finantsajalugu (revenue, net income, OCF, tuletatud FCF, cash, debt ja shares outstanding), kui `SEC_USER_AGENT` on seadistatud.

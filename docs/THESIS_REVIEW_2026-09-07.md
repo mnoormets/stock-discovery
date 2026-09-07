@@ -1,5 +1,7 @@
 # Three thesis reviews — 7 September 2026
 
+**Implementation follow-up, later on 7 September:** the dated observations below are preserved. HIMS's same-filing asset/software deductions now produce stored derived H1 FCF of -$15.161m (fact #21375). API's SEC ordinary-share history was refreshed, with 349,264,771 shares at 2025-12-31 (#21616), explicitly not an ADS/diluted count. BW's stale cash/debt combination now makes EV/Sales unavailable; current total debt is absent from CompanyFacts and remains a filing-reconciliation gap. Broader API liquidity remains unresolved. See HANDOFF for verification and publication status.
+
 These are dated research drafts against the saved 11 August theses, not new investment instructions. Neon was queried in a read-only transaction; saved thesis versions/statuses, scores and decisions were not changed. CAKE and ACHR remain outside this review because their latest theses were rejected. Baseline: [August research sprint](RESEARCH_SPRINT_2026-08-11.md).
 
 ## Evidence boundary

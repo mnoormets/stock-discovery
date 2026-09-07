@@ -264,12 +264,16 @@ export default async function CompanyPage({ params }: { params: { ticker: string
                     <strong>{financialValue(summary)}</strong>
                     {change != null && <small className={change >= 0 ? 'positive' : 'negative'}>{change >= 0 ? '+' : '−'}{Math.abs(change).toLocaleString('et-EE', { maximumFractionDigits: 1 })}% YoY</small>}
                     <small>{periodLabel(summary)}</small>
+                    {metric === 'free_cash_flow' && <small>{summary.latest.tag.includes('PaymentsForSoftware')
+                      ? 'OCF − property, equipment and intangible purchases − software investment'
+                      : 'OCF − property and equipment investment'}</small>}
+                    {metric === 'shares_outstanding' && summary.latest.form === '20-F' && <small>Reported ordinary shares; ADS conversion and fully diluted shares are not established.</small>}
                     <a href={summary.latest.sourceUrl} target="_blank" rel="noreferrer">SEC algallikas{summary.latest.derived ? ' · tuletatud' : ''}</a>
                   </div>
                 );
               })}
             </div>
-            <p className="muted financialNote">YoY võrdleb sama tüüpi ja sarnase pikkusega perioodi aasta varasemaga. Free cash flow = operating cash flow − capital expenditure; debt võib olla SEC-i komponentidest tuletatud.</p>
+            <p className="muted financialNote">YoY võrdleb sama tüüpi ja sarnase pikkusega perioodi aasta varasemaga. Free cash flow = operating cash flow − disclosed investment deductions from the same filing and period (see calculation). This derived measure is not automatically the company-defined FCF. Cash excludes broader liquidity unless the source tag includes it; debt may be derived from SEC components.</p>
           </>
         )}
       </section>

@@ -316,9 +316,9 @@ function deriveDebt(data: SecCompanyFacts, cik: string): FinancialPoint[] {
 }
 
 function deriveFreeCashFlow(operating: FinancialPoint[], capex: FinancialPoint[]): FinancialPoint[] {
-  const capexByPeriod = new Map(capex.map((point) => [`${point.periodStart}:${point.periodEnd}:${point.periodKind}`, point]));
+  const capexByPeriod = new Map(capex.map((point) => [`${point.periodStart}:${point.periodEnd}:${point.periodKind}:${point.accessionNumber}`, point]));
   return operating.flatMap((cashFlow) => {
-    const investment = capexByPeriod.get(`${cashFlow.periodStart}:${cashFlow.periodEnd}:${cashFlow.periodKind}`);
+    const investment = capexByPeriod.get(`${cashFlow.periodStart}:${cashFlow.periodEnd}:${cashFlow.periodKind}:${cashFlow.accessionNumber}`);
     if (!investment) return [];
     return [{
       ...cashFlow,
@@ -327,9 +327,28 @@ function deriveFreeCashFlow(operating: FinancialPoint[], capex: FinancialPoint[]
       accessionNumber: cashFlow.accessionNumber === investment.accessionNumber
         ? cashFlow.accessionNumber
         : `${cashFlow.accessionNumber}+${investment.accessionNumber}`,
-      tag: `${cashFlow.tag}-${investment.tag}`,
+      tag: `${cashFlow.tag}-${investment.derived ? `(${investment.tag})` : investment.tag}`,
       derived: true,
     }];
+  });
+}
+
+// Some filers report property/equipment/intangibles and software separately.
+// Require both disclosed components from the same filing and period. Do not
+// use the rounded ProductiveAssets total or add it to its own components.
+function extractInvestmentFallback(data: SecCompanyFacts, cik: string): FinancialPoint[] {
+  const definition: MetricDefinition = {
+    metric: 'capital_expenditure', taxonomy: 'us-gaap', unit: 'USD', duration: true,
+    tags: ['PaymentsToAcquireOtherProductiveAssets'],
+  };
+  const assets = extractDefinition(data, cik, definition);
+  const software = extractDefinition(data, cik, { ...definition, tags: ['PaymentsForSoftware'] });
+  return assets.flatMap((asset) => {
+    const match = software.find((point) => point.periodStart === asset.periodStart
+      && point.periodEnd === asset.periodEnd && point.accessionNumber === asset.accessionNumber);
+    if (!match) return [];
+    return [{ ...asset, value: Math.abs(asset.value) + Math.abs(match.value),
+      tag: `${asset.tag}+${match.tag}`, derived: true }];
   });
 }
 
@@ -710,6 +729,10 @@ async function refreshCompanyFinancialsUncached(rawTicker: string): Promise<Comp
   const response = await fetchCompanyFacts(ticker);
   if (!response) return null;
   const extracted = DEFINITIONS.flatMap((definition) => extractMetricPoints(response.facts, response.identity.cik, definition));
+  const fallbackInvestments = extractInvestmentFallback(response.facts, response.identity.cik);
+  extracted.push(...fallbackInvestments.filter((point) => !extracted.some((existing) =>
+    existing.metric === 'capital_expenditure' && existing.periodStart === point.periodStart
+    && existing.periodEnd === point.periodEnd && existing.accessionNumber === point.accessionNumber)));
   const operating = extracted.filter((point) => point.metric === 'operating_cash_flow');
   const capex = extracted.filter((point) => point.metric === 'capital_expenditure');
   const points = [...extracted, ...deriveDebt(response.facts, response.identity.cik), ...deriveFreeCashFlow(operating, capex)];

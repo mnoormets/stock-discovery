@@ -103,8 +103,8 @@ const staleDebt = calculateValuationEvidence({
   cash: m(50, '2026-06-30', 'instant'),
   debt: m(150, '2021-12-31', 'instant'),
 }, asOf);
-assert.equal(anchor(staleDebt, 'ev_sales').status, 'computable', 'still computes with a stale input');
-assert.equal(anchor(staleDebt, 'ev_sales').confidence, 'low', 'a stale debt input makes valuation low confidence');
+assert.equal(anchor(staleDebt, 'ev_sales').status, 'insufficient_data', 'stale debt blocks EV/Sales');
+assert.equal(anchor(staleDebt, 'ev_sales').value, null, 'no misleading multiple is exposed');
 
 // 8. Puuduv cash → EV/Sales andmeid napib (mitte vale EV).
 const noCash = calculateValuationEvidence({
