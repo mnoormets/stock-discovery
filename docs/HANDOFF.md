@@ -917,7 +917,7 @@ Varasem seis:
 
 - Added `balance-review-2026-09-07`: BW's June 10-Q bridge totals $276.843m borrowings from four carrying-value lines and keeps $191.7m preferred stock, $27.822m finance leases and $17.623m operating leases separate. API's furnished Q2 result gives $361.655m broad liquidity, $100.316m borrowings and the 1 ADS = 4 ordinary-share conversion; $261.339m is a borrowing-only difference, not distributable cash.
 - Added the same-date cash/debt guard to both Financial Health scoring and the rule-based brief, with targeted regressions. This removes the incorrect BW conclusion created by cash at 2026-06-30 versus a partial debt fact at 2021-09-30. It is a versioned current calculation, not a historic rewrite.
-- Verification evidence: Docker focused 30/30; full Docker suite 60 files / 474 tests in 261.43s; typecheck, lint and optimized build all passed. After restart, BW/API pages returned 200 and rendered expected reconciliation content; BW `scores-v2` shows Financial Health 55/100 at 70% coverage without the cash/debt component. Forced `signals-v3` regeneration returned `contains_mixed_claim=False`. No user thesis/decision/outcome/paper-order count changed. Pending: commit and push this verified local work.
+- Verification evidence: Docker focused 30/30; full Docker suite 60 files / 474 tests in 261.43s; typecheck, lint and optimized build all passed. After restart, BW/API pages returned 200 and rendered expected reconciliation content; BW `scores-v2` shows Financial Health 55/100 at 70% coverage without the cash/debt component. Forced `signals-v3` regeneration returned `contains_mixed_claim=False`. No user thesis/decision/outcome/paper-order count changed. Published on `main` as `6760c47`.
 
 ### 2026-09-07 — financial-input corrections
 
