@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-09-07
+Uuendatud: 2026-09-08
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -27,6 +27,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Rakendus ei anna ostu- ega müügisoovitusi.
 
 ## Praegune töötav seis
+
+- **2026-09-08 account handover:** [CODEX_ACCOUNT_HANDOVER_2026-09-08.md](CODEX_ACCOUNT_HANDOVER_2026-09-08.md) records the remote baseline, current product state, safety boundaries, recent source-backed work, exact verification commands, operational credentials required, and prioritized next steps for an account transition. After Docker Desktop was restored, the Neon-backed app passed `/today`, BW, and API HTTP smoke checks; the document distinguishes this runtime evidence from the last full 7 September verification.
 
 - **2026-09-07 balance reconciliation:** [BW_API_RECONCILIATION_2026-09-07.md](BW_API_RECONCILIATION_2026-09-07.md) documents and displays a dated SEC bridge: BW $276.843m borrowings, $308.634m cash and separate preferred/lease claims; API $361.655m broad liquidity, $100.316m borrowings and the 1 ADS = 4 ordinary-share conversion. `scores-v2` and `signals-v3` now require identical cash/debt balance dates, so BW's stale 2021 debt no longer produces a current cash/debt score or brief claim. Earlier score snapshots and brief records remain versioned historical evidence.
 
@@ -232,6 +234,7 @@ The user's five current in-app theses were last revised on 11 August. Three sepa
 
 ### NOW - järgmine töö
 
+- Incoming Codex should read the account handover and verify the effective Neon target before any write-on-read page, collection command, migration, or production work. Docker is currently restored on this host; repeat the standard runtime checks in the new environment before changing code.
 - Observe forward coverage from the published bounded price tracking (origin/main aaf537c). Schema and the first 18-symbol live batch are in Neon; unattended execution of the new code remains to be observed. Old missing observations are not backfilled.
 - Keep the current discovery and paper policies collecting forward evidence while those correctness issues are addressed. Weekend repeated purchase intents remain the documented V1 behavior until a separately versioned policy is chosen.
 - Observe the published HIMS investment extraction, BW/API dated reconciliation and `scores-v2` / `signals-v3` date guard in subsequent refreshes. A new filing needs a new dated review; do not substitute partial debt or ordinary shares for a current complete definition.
@@ -262,6 +265,8 @@ The user's five current in-app theses were last revised on 11 August. Three sepa
 - **2026-09-07 financial inputs:** fallback investment deductions require both `PaymentsToAcquireOtherProductiveAssets` and `PaymentsForSoftware` with matching period and accession. The rounded `PaymentsToAcquireProductiveAssets` total is not added or substituted. FCF joins OCF and deductions only within the same filing and period; the stored expression retains parentheses and provenance. The UI names the deductions and distinguishes application-derived from company-defined FCF. `valuation-evidence-v2` requires cash/debt dates to match and be known, non-future and within the existing 550-day freshness boundary. This is a conservative availability guard, not a claim that debt includes preferred equity or all financing claims. No migration or historical snapshot rewrite.
 
 - **2026-09-07 BW/API balance review:** `balance-review-2026-09-07` is a filing-level application record, not a CompanyFacts alias. It keeps the report and filing dates, component sums, source URLs and exclusions visible for BW/API. It never overwrites automated facts, saved theses, decisions, outcomes or older score snapshots. `scores-v2` withholds the cash/debt component unless the two latest values have the exact same `periodEnd`; `signals-v3` applies the same rule before stating a cash-versus-debt inference. Both versions deliberately produce new current records while preserving the older calculation under its original version.
+
+- **2026-09-08 account transition:** the handover captures configuration names and access requirements but deliberately excludes secrets. New environments must verify `DATABASE_URL` points to Neon before production-oriented work, because host `.env.local` can override `.env`; Docker app configuration is fail-closed and explicitly supplies the Neon URL. The frozen local `discovery` database remains backup/test infrastructure, never a production target.
 
 - **2026-09-07 continued tracking:** `0009_price_tracking` adds nullable quote `market_at`, a quote-deduplication index and a separate daily attempt ledger. `captured_at` stays the receipt timestamp; no historical rows are rewritten. Existing Yahoo quotes only, positive finite USD price and the documented one-weekday recency heuristic; closed-market observations are allowed for research. Queue membership is active/watch portfolio status, positive net paper holdings, or canonical unmeasured horizons before target + seven days; SPY is included as benchmark. Fifty symbols per New York day across retries, SPY first then oldest attempt, chunks of eight. A failure consumes that symbol's daily attempt and remains visible until a later attempt. Quotes are collected after the canonical snapshot, before outcome refresh, and never create discovery collection items. Tracked endpoint quotes must reach the outcome's target in both receipt and market time. Frozen decisions, paper eligibility and measured outcomes remain unchanged. Legacy prices without market time retain their original contract.
 
@@ -621,6 +626,10 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 
 ## Viimane testitud seis
 
+### 2026-09-08 — account handover
+
+- Repository state was read from local/remote Git: `main` and `origin/main` both resolved to `fdcdddbbb285747755c642c052fdf76d647623f5` before this documentation commit. Docker Desktop was initially unavailable; after the user started it, local `db` was healthy and `app` started successfully. `/today`, `/company/BW`, and `/company/API` all returned HTTP 200; BW showed `scores-v2` plus its debt table and API showed broad liquidity plus ADS conversion. A read-only app-container query confirmed the production target is Neon `neondb`, with 11 theses, 2,308 decisions, 875 outcomes, 168 paper orders, 139 `scores-v2` snapshots, and two `signals-v3` briefs. No full test/build rerun occurred because this session changed documentation only; the latest such evidence remains the 7 September balance-reconciliation entry below.
+
 ### 2026-09-07 — BW/API balance reconciliation and mixed-date guard
 
 - Dated BW/API SEC reconciliation is rendered on the two company pages. The new date guard creates `scores-v2`: the cash/debt component requires exactly matching `periodEnd` values. `signals-v3` requires the same condition before a Research Brief can infer that cash covers debt. The old score and brief remain stored under their original versions.
@@ -912,6 +921,10 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-08 — account handover
+
+- Created `docs/CODEX_ACCOUNT_HANDOVER_2026-09-08.md` for migration to a different Codex account. It covers user intent, repository baseline, recent files and commits, financial-data decisions, database/scheduler safety, exact commands, verified status, credentials-to-transfer names, unresolved work, and safe first steps. Existing local dump artifacts remain untracked and excluded. No application code, schema, live data, or secret was changed or exposed. After Docker Desktop was restored, started the stopped local app service and recorded its Neon-backed HTTP/runtime smoke results; no collect, migration, or direct data-write command ran.
 
 ### 2026-09-07 — BW/API balance reconciliation and mixed-date guard
 
