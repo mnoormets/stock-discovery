@@ -80,7 +80,7 @@ export default async function PerformancePage() {
     {dashboard?.available && <>
       <section className="section">
         <div className="sectionHeading"><div><p className="eyebrow">{dashboard.policyVersion}</p><h2>Kaks poliitikat, sama raha</h2></div><span className="muted">Seis: {dateTime(dashboard.generatedAt)}</span></div>
-        <p className="muted">Valuation uses USD marks from the same New York date as SPY, within 20 minutes of its mark. Recency allows one elapsed New York weekday; weekends add no days and holidays are not inferred. Incomplete valuation stays unknown. Frozen signal-time labels below preserve the original policy assessment.</p>
+        <p className="muted">Valuation uses USD marks from the same New York date as SPY, within 20 minutes of its mark. Recency allows one elapsed New York trading day; weekends and the published 2026–2028 NYSE holidays add no days. Outside that published window the rule falls back conservatively to weekdays. Incomplete valuation stays unknown. Frozen signal-time labels below preserve the original policy assessment.</p>
         {STRATEGIES.map((strategy) => {
           const actual = dashboard.books.find((book) => book.strategy === strategy.key && book.book === 'strategy')!;
           const benchmark = dashboard.books.find((book) => book.strategy === strategy.key && book.book === 'benchmark')!;

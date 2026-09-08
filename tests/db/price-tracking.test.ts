@@ -33,6 +33,7 @@ describe('continued price tracking', () => {
     expect(await collectTrackedPrices({ now, quoteFetcher: fetcher })).toMatchObject({ saved: 2, attempted: 2 });
     expect(await collectTrackedPrices({ now, quoteFetcher: fetcher })).toMatchObject({ saved: 0, attempted: 0 });
     expect(await collectTrackedPrices({ now: new Date('2026-09-07T12:00:00Z'), quoteFetcher: fetcher })).toMatchObject({ unchanged: 2, saved: 0 });
+    expect(await collectTrackedPrices({ now: new Date('2026-09-08T12:00:00Z'), quoteFetcher: fetcher })).toMatchObject({ unchanged: 2, stale: 0 });
     const prices = (await pool.query('SELECT captured_at, market_at, source FROM price_snapshots')).rows;
     expect(prices).toHaveLength(2);
     expect(prices.every((row) => row.captured_at.toISOString() === now.toISOString()
@@ -56,7 +57,7 @@ describe('continued price tracking', () => {
   it('records stale, invalid and failed quotes without manufacturing prices', async () => {
     await insertCompany('SPY');
     const now = new Date('2026-09-08T14:00:00Z');
-    expect(await collectTrackedPrices({ now, quoteFetcher: async (tickers) => quotes(tickers, '2026-09-04T20:00:00Z') })).toMatchObject({ stale: 1, saved: 0 });
+    expect(await collectTrackedPrices({ now, quoteFetcher: async (tickers) => quotes(tickers, '2026-09-02T20:00:00Z') })).toMatchObject({ stale: 1, saved: 0 });
     expect(await collectTrackedPrices({ now: new Date('2026-09-09T14:00:00Z'), quoteFetcher: async (tickers) => quotes(tickers, '2026-09-10T20:00:00Z') })).toMatchObject({ invalid: 1 });
     expect(await collectTrackedPrices({ now: new Date('2026-09-10T14:00:00Z'), quoteFetcher: async () => { throw Error('provider unavailable'); } })).toMatchObject({ failed: 1 });
     expect((await pool.query('SELECT count(*)::int AS count FROM price_snapshots')).rows[0].count).toBe(0);

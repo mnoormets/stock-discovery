@@ -62,7 +62,7 @@ export default function CandidateSituationSummary({
         {recency !== 'recent' ? 'Current setup unknown' : partial ? 'Partial history' : market === 'not_overheated' ? 'Not overheated' : market === 'overheated' ? 'Run-up elevated' : 'Unknown'}
       </strong>
       <small>{marketDetail}</small>
-      <small>Price observed: {observedLabel} (Tallinn). Recency allows one New York weekday; holidays are not inferred. This is observation time, not a live execution quote.</small>
+      <small>Price observed: {observedLabel} (Tallinn). Recency allows one New York trading day; weekends and the published 2026–2028 NYSE holidays add no days. This is observation time, not a live execution quote.</small>
     </div>
     <p>Independent research checks, not a buy signal. Open the evidence below before acting.</p>
   </section>;
