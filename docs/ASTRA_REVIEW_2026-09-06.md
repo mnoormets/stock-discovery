@@ -6,7 +6,7 @@ Reviewed checkout: `b5f3290` (`main`); `git ls-remote origin refs/heads/main` re
 
 ## Judgment
 
-Implementation follow-up: the user approved proceeding after this review. The first local code slice refreshes open paper holdings without new orders, withholds stale/misaligned paper valuations, and qualifies stale/partial Today setups. The 7 September follow-up implements bounded research/outcome price tracking and has saved its first 18-symbol Yahoo batch. This review preserves the original findings; current verification, remaining work and publication status are in [HANDOFF.md](HANDOFF.md). Remote publication and unattended forward coverage remain outstanding.
+Implementation follow-up: the user approved proceeding after this review. The first slice refreshes open paper holdings without new orders, withholds stale/misaligned paper valuations, and qualifies stale/partial Today setups. The 7 September follow-up implemented bounded research/outcome price tracking; unattended attempts were observed through 8 September without fabricating holiday prices. The 8 September valuation-review slice adds versioned company assumptions, reverse valuation, an observable review trigger and exact price context to Thesis Builder. This review preserves the original findings; current verification, remaining work and publication status are in [HANDOFF.md](HANDOFF.md).
 
 The app has a useful foundation: source-linked facts, immutable decisions, transparent scores, a thesis journal, and a paper benchmark. Its immediate bottleneck is continuous tracking after discovery. Today it can keep recommending research on a stock while no longer collecting the prices needed to assess its current setup or measure the outcome.
 

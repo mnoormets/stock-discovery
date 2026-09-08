@@ -22,11 +22,21 @@ export const dynamic = 'force-dynamic';
 const emptyThesis = {
   summary: '', business: '', whyNow: '', moat: '', mispricing: '', catalyst: '',
   invalidation: '', twelveMonthCheckpoint: '', checkpointIsMeasurable: false,
+  revenueAssumption: '', marginAssumption: '', cashFlowAssumption: '',
+  dilutionAssumption: '', valuationAssumption: '', downsideScenario: '',
+  reverseValuationQuestion: '', nextReviewTrigger: '',
   timeHorizon: '', status: 'draft' as ThesisStatus,
+  scoreSnapshotId: null, valuationPriceSnapshotId: null,
 };
 
 function dateTime(value: string): string {
   return new Intl.DateTimeFormat('et-EE', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+}
+
+function valuationPrice(thesis: ThesisVersion): string {
+  const context = thesis.valuationPrice;
+  if (!context) return 'Hinnasnapshot puudub';
+  return `${context.price.toLocaleString('et-EE', { maximumFractionDigits: 2 })} ${context.currency || ''}`.trim();
 }
 
 function EvidenceCard({ title, score }: { title: string; score: CompanyScore | null }) {
@@ -70,6 +80,20 @@ function Defense({ thesis }: { thesis: ThesisVersion }) {
       <div className="defenseGrid">{items.map(([label, value]) => (
         <div key={label}><span>{label}</span><p>{value || 'Vastus puudub — kasutaja oletus vajab sõnastamist.'}</p></div>
       ))}</div>
+      <h3>Valuation decision review</h3>
+      <p className="muted">Assumptions are user hypotheses recorded against {valuationPrice(thesis)}{thesis.valuationPrice ? ` · market time ${dateTime(thesis.valuationPrice.marketAt || thesis.valuationPrice.capturedAt)}` : ''}.</p>
+      <div className="defenseGrid">
+        {[
+          ['Revenue assumption', thesis.revenueAssumption],
+          ['Margin assumption', thesis.marginAssumption],
+          ['Cash-flow assumption', thesis.cashFlowAssumption],
+          ['Dilution assumption', thesis.dilutionAssumption],
+          ['Valuation assumption', thesis.valuationAssumption],
+          ['Plausible downside', thesis.downsideScenario],
+          ["What must the business deliver to justify today's price?", thesis.reverseValuationQuestion],
+          ['Next review trigger', thesis.nextReviewTrigger],
+        ].map(([label, value]) => <div key={label}><span>{label}</span><p>{value || 'Kasutaja oletus puudub.'}</p></div>)}
+      </div>
       <p className="muted">Ajahorisont: {thesis.timeHorizon || 'määramata'} · versioon {thesis.version} · {dateTime(thesis.createdAt)}</p>
     </section>
   );
@@ -143,6 +167,7 @@ export default async function ThesisPage({
         <form action={saveThesisAction} className="thesisForm">
           <input type="hidden" name="positionId" value={workspace.positionId} />
           <input type="hidden" name="scoreSnapshotId" value={tracked.current?.id || ''} />
+          <input type="hidden" name="valuationPriceSnapshotId" value={workspace.latestValuationPrice?.id || ''} />
           <label><span>Teesi lühikokkuvõte <em>kasutaja oletus</em></span><textarea name="summary" defaultValue={thesis.summary} rows={3} maxLength={5000} placeholder="Ühe lõiguga: miks võiks seda ettevõtet sellel ajahorisondil omada?" /></label>
           <label><span>The business <em>kasutaja kirjeldus</em></span><textarea name="business" defaultValue={thesis.business} rows={3} maxLength={5000} placeholder="Mida ettevõte müüb, kellele ja miks klient seda vajab?" /></label>
           <div className="thesisFormGrid">
@@ -151,6 +176,22 @@ export default async function ThesisPage({
             <label><span>Mispricing <em>kasutaja peab tõendama</em></span><textarea name="mispricing" defaultValue={thesis.mispricing} rows={4} maxLength={5000} placeholder="Mida turg sinu arvates alahindab või valesti mõistab?" /></label>
             <label><span>Katalüsaator <em>kontrolli sündmust/allikat</em></span><textarea name="catalyst" defaultValue={thesis.catalyst} rows={4} maxLength={5000} placeholder="Milline konkreetne sündmus võiks uut infot tuua?" /></label>
           </div>
+          <section className="valuationAssumptionFields">
+            <div><p className="eyebrow">COMPANY-SPECIFIC VALUATION · USER ASSUMPTIONS</p><h3>What must this business deliver to justify today’s price?</h3>
+              <p className="muted">These fields become part of the thesis version. Current context: {workspace.latestValuationPrice
+                ? `${workspace.latestValuationPrice.price.toLocaleString('et-EE', { maximumFractionDigits: 2 })} ${workspace.latestValuationPrice.currency || ''} · ${dateTime(workspace.latestValuationPrice.marketAt || workspace.latestValuationPrice.capturedAt)}`
+                : 'price snapshot unavailable'}. Mechanical valuation evidence above remains separate.</p></div>
+            <div className="thesisFormGrid">
+              <label><span>Revenue assumption <em>user hypothesis</em></span><textarea name="revenueAssumption" defaultValue={thesis.revenueAssumption} rows={4} maxLength={5000} placeholder="What revenue level or growth rate must the company deliver, and by when?" /></label>
+              <label><span>Margin assumption <em>user hypothesis</em></span><textarea name="marginAssumption" defaultValue={thesis.marginAssumption} rows={4} maxLength={5000} placeholder="What gross, operating, or contribution margin must be sustainable?" /></label>
+              <label><span>Cash-flow assumption <em>user hypothesis</em></span><textarea name="cashFlowAssumption" defaultValue={thesis.cashFlowAssumption} rows={4} maxLength={5000} placeholder="What cash conversion, burn, or FCF path must occur?" /></label>
+              <label><span>Dilution assumption <em>user hypothesis</em></span><textarea name="dilutionAssumption" defaultValue={thesis.dilutionAssumption} rows={4} maxLength={5000} placeholder="How much dilution, financing, or share-count growth can the thesis tolerate?" /></label>
+              <label><span>Valuation assumption <em>user hypothesis</em></span><textarea name="valuationAssumption" defaultValue={thesis.valuationAssumption} rows={4} maxLength={5000} placeholder="Which multiple or cash-flow yield would be justified, and why?" /></label>
+              <label><span>Plausible downside case <em>user hypothesis</em></span><textarea name="downsideScenario" defaultValue={thesis.downsideScenario} rows={4} maxLength={5000} placeholder="Describe a company-specific failure case and its likely economic effect." /></label>
+            </div>
+            <label><span>Reverse-valuation question <em>required thinking, not a forecast</em></span><textarea name="reverseValuationQuestion" defaultValue={thesis.reverseValuationQuestion} rows={4} maxLength={5000} placeholder="What must this business deliver to justify the recorded market price?" /></label>
+            <label><span>Next review trigger <em>observable event + timing</em></span><textarea name="nextReviewTrigger" defaultValue={thesis.nextReviewTrigger} rows={3} maxLength={5000} placeholder="Example: review after Q3 filing; compare revenue, FCF, dilution, and guidance with these assumptions." /></label>
+          </section>
           <label className="criticalField"><span>Mis muudab teesi valeks? <em>kohustuslik enne ready staatust</em></span><textarea name="invalidation" defaultValue={thesis.invalidation} rows={4} maxLength={5000} placeholder="Kirjelda mõõdetav tulemus või sündmus, mille korral teesi enam ei kaitse." /></label>
           <label className="checkpointField"><span>Mis peab järgmise 12 kuu jooksul juhtuma? <em>eraldi pikaajalisest teesist</em></span><textarea name="twelveMonthCheckpoint" defaultValue={thesis.twelveMonthCheckpoint} rows={4} maxLength={5000} placeholder="Näiteks: revenue kasv püsib üle 20%, FCF paraneb või konkreetne verstapost saavutatakse." /></label>
           <label className="checkLabel"><input type="checkbox" name="checkpointIsMeasurable" defaultChecked={thesis.checkpointIsMeasurable} /><span>Kinnitan, et 12 kuu kontrollpunkti saab objektiivselt hinnata numbriga või jah/ei tulemusega.</span></label>
@@ -167,7 +208,7 @@ export default async function ThesisPage({
 
       <section className="section"><div className="sectionHeading"><div><p className="eyebrow">AS KNOWN AT THE TIME</p><h2>Versiooniajalugu</h2></div><span className="muted">{workspace.history.length} versiooni</span></div>
         {workspace.history.length === 0 ? <div className="empty card">Ühtegi teesi versiooni pole veel salvestatud.</div> : <div className="thesisHistory">{workspace.history.map((version) => (
-          <details className="card" key={version.id}><summary><span><strong>Versioon {version.version}</strong> · {version.status}{version.isCurrent ? ' · praegune' : ''}</span><span className="muted">{dateTime(version.createdAt)}</span></summary><div className="historyBody"><p>{version.summary || 'Kokkuvõte puudub.'}</p><div><span>12 kuu kontrollpunkt</span><p>{version.twelveMonthCheckpoint || 'Puudub'}</p></div><div><span>Score snapshot</span><p>{version.scoreVersion ? `${version.scoreVersion}: Growth ${version.growthScore ?? '—'}, Health ${version.healthScore ?? '—'}, Coverage ${version.coverageScore ?? '—'}` : 'Snapshot puudub'}</p></div></div></details>
+          <details className="card" key={version.id}><summary><span><strong>Versioon {version.version}</strong> · {version.status}{version.isCurrent ? ' · praegune' : ''}</span><span className="muted">{dateTime(version.createdAt)}</span></summary><div className="historyBody"><p>{version.summary || 'Kokkuvõte puudub.'}</p><div><span>12 kuu kontrollpunkt</span><p>{version.twelveMonthCheckpoint || 'Puudub'}</p></div><div><span>Reverse valuation</span><p>{version.reverseValuationQuestion || 'Puudub'} · {valuationPrice(version)}</p></div><div><span>Next review trigger</span><p>{version.nextReviewTrigger || 'Puudub'}</p></div><div><span>Score snapshot</span><p>{version.scoreVersion ? `${version.scoreVersion}: Growth ${version.growthScore ?? '—'}, Health ${version.healthScore ?? '—'}, Coverage ${version.coverageScore ?? '—'}` : 'Snapshot puudub'}</p></div></div></details>
         ))}</div>}
       </section>
     </main>

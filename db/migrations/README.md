@@ -1,8 +1,8 @@
 # Migratsioonid — konventsioon ja rakendusjärjekord
 
-**2026-09-06 update:** `0009_price_tracking` is also applied to Neon (`neondb`): one nullable quote timestamp, quote-deduplication index and separate tracking-attempt ledger. Preflight GO; fresh custom-format backup verified with pg_restore list; apply 111 ms; post-apply conformance `VASTAB` with zero missing/extra objects. Details and the first live tracking verification are in `docs/HANDOFF.md`. The paragraph below preserves the earlier 0008 checkpoint.
+**2026-09-08 update:** migrations `0001`–`0010` are applied to Neon (`neondb`). `0010_thesis_valuation_review` adds nine nullable versioned thesis fields, including the exact `price_snapshots` reference, without rewriting existing theses. Preflight was GO; a PostgreSQL 18 custom-format backup was validated (4,582,313 bytes, 336 TOC entries, SHA-256 `D1F2DE9651F8124F23C777EB6D07FC6CACCFE53D6CD334DD444ADCD9ABF21E3D`); apply took 98 ms; post-apply conformance is `VASTAB` with zero missing or extra objects. Details are in `docs/HANDOFF.md`.
 
-Staatus: **0001–0008 on Neoni `neondb` golden source'is rakendatud.** `0006_insider_form4_persistence` ja `0007_insider_lookup_bucket` rakendusid 2026-08-23; `0008_paper_strategy` rakendus kasutaja eksplitsiitse kinnituse järel 2026-09-01 244 ms-ga. Järel-`--status` näitas 8 kirjet ja 0 pending migratsiooni ning `--conformance` verdict oli `VASTAB` 0 puuduva või üleliigse objektiga. `0008` loob ainult hüpoteetilise paper-order/mark ledgeri; apply järel ei käivitatud collect'i, signal- ega execution-käsku. Runner `scripts/migrate.cjs` on olemas ja **käsitsi käivitatav** — app startup ega `npm run check` seda ei kutsu. `ensureSchema()` jääb tootmises esialgu alles, kuid on migreeritud skeemil tõestatud **no-op** (vt „`ensureSchema()` staatus").
+Runner `scripts/migrate.cjs` is manual: app startup and `npm run check` do not invoke it. `ensureSchema()` remains in production for now and is proven to be a no-op against the migrated schema (see “`ensureSchema()` staatus”).
 
 ## Failinime formaat
 

@@ -45,7 +45,7 @@ Read [AGENTS.md](../AGENTS.md), [README.md](../README.md), and [HANDOFF.md](HAND
 | Market/source data | Existing Yahoo, SEC EDGAR/CompanyFacts, ApeWisdom, optional FMP fallback, and application data only |
 | App URL | `http://localhost:3005` when Docker is running |
 | Time zone | `Europe/Tallinn`; collection dates use Tallinn calendar days |
-| Migrations | `db/migrations/0001_baseline.sql` through `0009_price_tracking.sql`; all 0001–0009 are applied to Neon |
+| Migrations | `db/migrations/0001_baseline.sql` through `0010_thesis_valuation_review.sql`; all 0001–0010 are applied to Neon |
 
 `docker-compose.yml` deliberately forces the app service to receive `DATABASE_URL` from `.env`. It should point to Neon. This prevents the application from silently falling back to the frozen local `db` database. `.env.local` can override `.env` for host-run Next processes, so verify the effective database target before using host `npm run dev`.
 
@@ -60,6 +60,12 @@ SEC_USER_AGENT=<identifying SEC-compliant application/contact string>
 `FMP_API_KEY` and `HEALTHCHECKS_PING_URL` are optional. GitHub Actions also requires `NEON_DATABASE_URL` and `SEC_USER_AGENT`; its workflow uses `workflow_dispatch` and an external cron-job.org trigger. The separate paper-execution workflow also requires `NEON_DATABASE_URL`. Do not place secret values in Git, terminal transcripts, issues, or this handover.
 
 ## Recent work and where it lives
+
+### Versioned valuation decision review — current workspace
+
+Files: [0010_thesis_valuation_review.sql](../db/migrations/0010_thesis_valuation_review.sql), [thesis.ts](../src/lib/thesis.ts), and [Thesis Builder](../src/app/thesis/[positionId]/page.tsx).
+
+Thesis Builder now records company-specific revenue, margin, cash-flow, dilution, valuation and downside assumptions, a reverse-valuation question, the next observable review trigger, and the exact company price snapshot shown when the version was written. Existing versions remain nullable and were not backfilled. Migration `0010` is applied to Neon; the full isolated suite passes 61 files / 477 tests and the rebuilt `/thesis/12` runtime page was visually checked without saving user content. See `docs/HANDOFF.md` for the backup, migration, and verification record.
 
 ### Forward price tracking — `aaf537c`
 
@@ -131,7 +137,7 @@ Important write behavior:
 - The last three core collections (#30–32, 4–6 September) succeeded. Canonical v3 runs #62–64 evaluated 119/124/129 companies and selected six each.
 - The current v3 policy has seven canonical days, 42 selected decisions across eight tickers, and no measured horizons. Older-model canonical outcomes have only 26 measurements across three distinct stocks and 45 missing outcomes. This is far too little evidence to claim a profitable strategy.
 - Paper execution through 4 September recorded 18 filled stock buys and 18 matching SPY buys. Entry-aware skipped 30 signals: 14 missing history, 12 missing both history and current-collection confirmation, and four missing confirmation only. Do not lower gates merely to create trades.
-- The main immediate need is observing fresh forward price coverage under the new tracker. It has not yet been independently observed through a subsequent unattended run.
+- The tracker was independently observed through unattended 7 and 8 September runs. The 7 September batch recorded all 18 unchanged Friday quotes; the 8 September pre-market batch recorded all 18 as stale after the US Labor Day holiday and saved no false prices. The remaining check is the first regular-session timestamp advance after the holiday.
 - On 8 September after Docker was restored, `db` was healthy and `app` was running on port 3005. `/today`, `/company/BW`, and `/company/API` returned HTTP 200. BW rendered `scores-v2` and its total-borrowings reconciliation; API rendered broad liquidity and the ADS conversion. This is a runtime smoke check only; the latest full test/typecheck/lint/build evidence remains the 7 September verification.
 
 ## Commands for a new environment

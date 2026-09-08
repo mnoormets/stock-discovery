@@ -158,6 +158,25 @@ describe('D4 — testibaas on ehitatud migratsioonidest', () => {
     expect(inject('migratedTables')).toContain('paper_strategy_marks');
   });
 
+  it('0010_thesis_valuation_review lisab versioonitud valuation-väljad ja hinnaviite', async () => {
+    expect(inject('appliedMigrations')).toContain('0010_thesis_valuation_review');
+    const columns = await pool.query(`SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'investment_theses'
+        AND column_name IN (
+          'revenue_assumption', 'margin_assumption', 'cash_flow_assumption',
+          'dilution_assumption', 'valuation_assumption', 'downside_scenario',
+          'reverse_valuation_question', 'next_review_trigger', 'valuation_price_snapshot_id'
+        ) ORDER BY column_name`);
+    expect(columns.rows.map((row) => row.column_name)).toHaveLength(9);
+
+    const constraint = await pool.query(`SELECT pg_get_constraintdef(oid) AS definition
+      FROM pg_constraint
+      WHERE conrelid = to_regclass('investment_theses')
+        AND conname = 'investment_theses_valuation_price_snapshot_id_fkey'`);
+    expect(constraint.rows[0]?.definition).toContain('FOREIGN KEY (valuation_price_snapshot_id)');
+    expect(constraint.rows[0]?.definition).toContain('REFERENCES price_snapshots(id) ON DELETE RESTRICT');
+  });
+
   it('schema_migrations tabel on olemas', async () => {
     const { rows } = await pool.query("SELECT to_regclass('public.schema_migrations') IS NOT NULL AS ok");
     expect(rows[0].ok).toBe(true);

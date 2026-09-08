@@ -28,13 +28,15 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-09-08 versioned valuation decision review:** Thesis Builder now stores company-specific revenue, margin, cash-flow, dilution, valuation and downside assumptions, a reverse-valuation question and an observable next-review trigger in every new thesis version. The version also references the exact company `price_snapshots` row shown in the form, while existing thesis history remains nullable and receives no hindsight backfill. Migration `0010_thesis_valuation_review` is applied to Neon. Existing API thesis versions still show that no historical price context was recorded; the current edit form visibly shows the latest 4.07 USD observation. No user thesis was saved or changed during verification.
+
 - **2026-09-08 account handover:** [CODEX_ACCOUNT_HANDOVER_2026-09-08.md](CODEX_ACCOUNT_HANDOVER_2026-09-08.md) records the remote baseline, current product state, safety boundaries, recent source-backed work, exact verification commands, operational credentials required, and prioritized next steps for an account transition. After Docker Desktop was restored, the Neon-backed app passed `/today`, BW, and API HTTP smoke checks; the document distinguishes this runtime evidence from the last full 7 September verification.
 
 - **2026-09-07 balance reconciliation:** [BW_API_RECONCILIATION_2026-09-07.md](BW_API_RECONCILIATION_2026-09-07.md) documents and displays a dated SEC bridge: BW $276.843m borrowings, $308.634m cash and separate preferred/lease claims; API $361.655m broad liquidity, $100.316m borrowings and the 1 ADS = 4 ordinary-share conversion. `scores-v2` and `signals-v3` now require identical cash/debt balance dates, so BW's stale 2021 debt no longer produces a current cash/debt score or brief claim. Earlier score snapshots and brief records remain versioned historical evidence.
 
 - **2026-09-07 financial-input corrections:** HIMS investment deductions now combine disclosed productive-asset purchases and software from the same filing/period when the standard PPE metric is absent. Derived H1 FCF is -$15.161m (Neon fact #21375). API ordinary shares refreshed to 349,264,771 at 2025-12-31 (#21616), explicitly not an ADS or fully diluted count. Valuation Evidence v2 withholds EV/Sales for mismatched, stale, future or unknown cash/debt dates. BW current total debt remains unavailable in CompanyFacts; partial secured debt is not substituted. Verification: 58 files / 468 tests passed; typecheck, lint, 12 valuation QA cases, build and post-restart UI/database checks passed. Published on `main` at `717b2a9`.
 
-- **2026-09-07 implementation checkpoint:** canonical discovery is v3; Form 4 hotfix is on local/remote main. Published fixes request marks for all open paper holdings, withhold incomplete/misaligned valuations and qualify stale/partial Today setups. Continued research/outcome price tracking is implemented; migration 0009 is applied to Neon and the first 18-symbol Yahoo batch is persisted. Code is published on origin/main at aaf537c; unattended tracking evidence remains outstanding. Three dated thesis-review drafts are complete in THESIS_REVIEW_2026-09-07.md; saved thesis versions remain unchanged.
+- **2026-09-07 implementation checkpoint:** canonical discovery is v3; Form 4 hotfix is on local/remote main. Published fixes request marks for all open paper holdings, withhold incomplete/misaligned valuations and qualify stale/partial Today setups. Continued research/outcome price tracking is implemented; migration 0009 is applied to Neon and the first 18-symbol Yahoo batch is persisted. Code is published on origin/main at aaf537c. Subsequent 7/8 September unattended attempts are verified; the 8 September pre-market batch correctly recorded Labor Day's Friday quotes as stale without saving false observations. Three dated thesis-review drafts are complete in THESIS_REVIEW_2026-09-07.md; saved thesis versions remain unchanged.
 
 - Next.js 14.2.35, PostgreSQL ja Docker Compose; rakendus pordil `3005`.
 - Yahoo Finance hinnad, uudised, earnings ja analüütikute konsensus.
@@ -222,26 +224,25 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 **2026-09-06 review: the user confirmed that the objective is better personal investing results.** The implementation remains a research tool; a score is not an instruction to buy. The evidence-backed review and proposed fixes are in [ASTRA_REVIEW_2026-09-06.md](ASTRA_REVIEW_2026-09-06.md).
 
-The last three core collections (#30–32, 4–6 September) succeeded; canonical v3 runs #62–64 evaluated 119/124/129 companies and selected six each. Registered Form 4 dates 31 August–4 September are persisted and the latest collection used fresh 4 September insider evidence. The completion-safe Form 4 hotfix is already committed and visible on remote main at b5f3290; it is not awaiting push. Paper execution through 4 September is reflected in 18 filled stock buys and 18 SPY buys. Nasdaq observation remains a separate, DB-free calibration; this session did not inspect its latest remote artifacts.
+Core collection #35 and canonical v3 run #67 succeeded on 8 September: 200 provider rows were scanned, 34 candidates were built, 42 market lookups ran and six of 139 evaluated companies were included. Registered Form 4 evidence remains in the existing source path. The completion-safe Form 4 hotfix is already published. Nasdaq observation remains a separate, DB-free calibration; this session did not inspect its latest remote artifacts.
 
-**The immediate constraint is dependable forward measurement.** The review found BW's research price stuck on 18 August and ELF's on 26 August, plus missing paper marks for CRDO/FIVE. The published fix includes all open paper holdings and withholds incomplete valuations. Continued tracking now independently appends Yahoo research prices for holdings, active/watch research and outstanding canonical horizons; 18 real quotes were received at 00:04 Tallinn on 7 September, with their actual Friday market times preserved. These observations can feed future research and eligible outcome endpoints without rewriting snapshot #64 or filling old missing windows. Today still shows the original decision-linked setup and a separate tracking panel. Code publication is verified at aaf537c on origin/main. The next unattended run using that code remains unverified.
+**The immediate constraint remains dependable forward measurement, but unattended execution is now verified.** The tracker ran on both 7 and 8 September. All 18 Sunday attempts reused Friday's market timestamp and were recorded as `unchanged`; all 18 pre-market Tuesday attempts still carried the Friday timestamp and were honestly recorded as `stale`, with no fabricated price snapshots. This is expected around the 7 September US Labor Day holiday because the bounded recency rule excludes weekends but deliberately does not infer exchange holidays. The next regular-session observation should confirm fresh Tuesday quotes; old missing windows remain unfilled.
 
 Entry-aware has skipped all 30 stock signals: 14 for missing history, 12 for history plus current-collection confirmation, and four for confirmation alone. Do not lower gates merely to make it trade. The current v3 policy has seven canonical days, 42 selected decisions across eight tickers, and no measured horizons. Previous-model canonical outcomes have only 26 measured observations across three distinct stocks, with 45 missing outcomes. Separate versions/horizons and repair measurement coverage before drawing strategy conclusions.
 
-The user's five current in-app theses were last revised on 11 August. Three separate dated review drafts for API, BW and HIMS are complete in [THESIS_REVIEW_2026-09-07.md](THESIS_REVIEW_2026-09-07.md), with stored fact IDs, source checks, assumptions and review triggers. They do not overwrite or adopt new saved convictions. [BW/API reconciliation](BW_API_RECONCILIATION_2026-09-07.md) now makes the filing-level debt, liquidity and ADS definitions visible without replacing normalized facts. The fixed bear/base/bull sensitivity is not evidence of mispricing.
+The user's five current in-app theses were last revised on 11 August. Three separate dated review drafts for API, BW and HIMS are complete in [THESIS_REVIEW_2026-09-07.md](THESIS_REVIEW_2026-09-07.md), with stored fact IDs, source checks, assumptions and review triggers. Thesis Builder can now capture those assumptions as new, price-linked versions, but they remain user hypotheses and no saved conviction/status was changed automatically. [BW/API reconciliation](BW_API_RECONCILIATION_2026-09-07.md) makes the filing-level debt, liquidity and ADS definitions visible without replacing normalized facts. The fixed bear/base/bull sensitivity is not evidence of mispricing.
 
 ## Roadmap
 
 ### NOW - järgmine töö
 
-- Incoming Codex should read the account handover and verify the effective Neon target before any write-on-read page, collection command, migration, or production work. Docker is currently restored on this host; repeat the standard runtime checks in the new environment before changing code.
-- Observe forward coverage from the published bounded price tracking (origin/main aaf537c). Schema and the first 18-symbol live batch are in Neon; unattended execution of the new code remains to be observed. Old missing observations are not backfilled.
+- Observe the first post-holiday regular-session tracking batch. The unattended integration itself is proven; the remaining check is that Tuesday market timestamps advance after the 8 September pre-market stale batch. Old missing observations are not backfilled.
+- Use the new valuation fields to review API, BW and HIMS with the user. Saving is a conviction-bearing action: present the existing dated drafts and current price context, then let the user decide the actual assumptions and status for each new version.
 - Keep the current discovery and paper policies collecting forward evidence while those correctness issues are addressed. Weekend repeated purchase intents remain the documented V1 behavior until a separately versioned policy is chosen.
 - Observe the published HIMS investment extraction, BW/API dated reconciliation and `scores-v2` / `signals-v3` date guard in subsequent refreshes. A new filing needs a new dated review; do not substitute partial debt or ordinary shares for a current complete definition.
 
 ### NEXT
 
-- Company-specific, versioned valuation assumptions and reverse-valuation questions within the existing thesis workflow; distinguish user assumptions from reported SEC facts and mechanical sensitivity.
 - Model-version/horizon-separated results, distinct ticker/decision counts and missing-outcome coverage. Do not count repeated daily picks as independent bets or pool v2 performance into a claim about v3.
 - A separately versioned, capital-constrained paper experiment only after defining cash, position/concentration limits, repeated-signal treatment, order expiry and exits. Preserve V1 as the original baseline.
 - Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing the five-company budget, queue order or adding production listing discovery.
@@ -261,6 +262,8 @@ The user's five current in-app theses were last revised on 11 August. Three sepa
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- **2026-09-08 thesis valuation review:** `0010_thesis_valuation_review` adds nullable text fields for revenue, margin, cash-flow, dilution, valuation, downside, reverse valuation and the next review trigger, plus a nullable FK to `price_snapshots`. Existing rows remain valid and are not backfilled. New saves hash the assumptions and price ID as part of the thesis version; the price ID is retained only when it belongs to the position's company. The FK uses `ON DELETE RESTRICT` so referenced market context cannot disappear. These fields are user hypotheses and stay separate from automatic Valuation Evidence. They do not become new `ready` requirements yet, which avoids retroactively invalidating current theses.
 
 - **2026-09-07 financial inputs:** fallback investment deductions require both `PaymentsToAcquireOtherProductiveAssets` and `PaymentsForSoftware` with matching period and accession. The rounded `PaymentsToAcquireProductiveAssets` total is not added or substituted. FCF joins OCF and deductions only within the same filing and period; the stored expression retains parentheses and provenance. The UI names the deductions and distinguishes application-derived from company-defined FCF. `valuation-evidence-v2` requires cash/debt dates to match and be known, non-future and within the existing 550-day freshness boundary. This is a conservative availability guard, not a claim that debt includes preferred equity or all financing claims. No migration or historical snapshot rewrite.
 
@@ -584,7 +587,7 @@ Piirangud, mida tuleb teadvustada:
 
 ## Automated Test Coverage (2026-08-17)
 
-**Latest implementation recheck, 2026-09-07:** 474/474 tests in 60 files, nine migrations, isolated local `discovery_test`. The detailed inventory below is historical and is not a complete list of the current suite. Tests cover held-paper-mark continuity, stale/partial setup presentation and continued research/outcome tracking, including daily budget, deduplication and receipt/market timestamp boundaries. Remote publication and unattended tracking observation remain outstanding.
+**Latest implementation recheck, 2026-09-08:** 477/477 tests in 61 files, ten migrations, isolated local `discovery_test`. The detailed inventory below is historical and is not a complete list of the current suite. Tests cover versioned valuation assumptions and price context, held-paper-mark continuity, stale/partial setup presentation and continued research/outcome tracking, including daily budget, deduplication and receipt/market timestamp boundaries. Unattended tracking is observed through the 8 September pre-market holiday case.
 
 Vitest, **354 testi, 39 faili** (mõõdetud 2026-08-25). Käivitamine konteineris `docker compose run --rm -T app npm test` või hostil `npm test` (hostil on `TEST_DATABASE_URL` kohustuslik, vt „Praegune töötav seis"). Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja jooksu lõpus kustutab; Neoni golden source'i ei puudutata. **Testibaasi skeem ehitatakse versioonitud migratsioonidest** (`scripts/migrate.cjs`), seega iga jooks valideerib ühtlasi runnerit ja migratsioone `0001–0007` koos `schema_migrations` raamatupidamisega. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
 
@@ -625,6 +628,12 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-09-08 — versioned valuation decision review
+
+- Migration `0010_thesis_valuation_review` applied to Neon `neondb` after read-only `schema:diff`, status and preflight reported zero duplicate prices, zero invalid thesis statuses and GO. The PostgreSQL 16 dump client first failed safely on Neon's PostgreSQL 18 version; no DDL had run. A PostgreSQL 18 custom-format backup then passed `pg_restore --list`: 4,582,313 bytes, 336 TOC entries, SHA-256 `D1F2DE9651F8124F23C777EB6D07FC6CACCFE53D6CD334DD444ADCD9ABF21E3D`. Apply took 98 ms; status shows 10 applied / 0 pending and post-apply conformance is `VASTAB` with zero missing or extra objects.
+- Focused tests passed 25/25 in two files. The full isolated suite passed **61 files / 477 tests** in 296.05s with all ten migrations applied to `discovery_test`. Lint reported no warnings or errors. The optimized production build compiled and generated 22/22 pages. An initial container typecheck encountered stale missing `.next/types` files after the service stop; the post-build rerun passed cleanly. The app container was restarted after the build.
+- Runtime `/thesis/12` returned HTTP 200 and was visually inspected in the browser. API's current edit form rendered all eight company-specific assumption/review inputs and latest context `4.07 USD · 8 September 2026, 16:59`; both existing versions still render with unavailable historical price context. No save action ran. Neon remained at 11 theses, 2,308 decisions, 875 outcomes, 168 paper orders and 139 `scores-v2` snapshots.
 
 ### 2026-09-08 — account handover
 
@@ -921,6 +930,13 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-08 — versioned company valuation review
+
+- Added migration `0010_thesis_valuation_review` and matching init/runtime schema definitions. Every new thesis version can store revenue, margin, cash-flow, dilution, valuation and downside assumptions, the reverse-valuation question, next observable review trigger and exact company price snapshot. Existing rows remain nullable with no backfill; the FK prevents referenced price evidence from deletion.
+- Extended Thesis Builder's defense, edit form and version history. Automatic SEC/valuation evidence remains visually separate from the user's hypotheses. Saving an unchanged form against the same price remains idempotent; a changed assumption or new price context creates a new immutable version. A snapshot from another company is discarded.
+- Added focused persistence and schema coverage, applied the migration through the guarded Neon runbook with a verified PostgreSQL 18 backup, and completed full lint/typecheck/test/build/restart/runtime checks. The browser smoke read API's existing ready thesis and current 4.07 USD form context without submitting the form; user thesis count and other historical counters remained unchanged.
+- Read-only unattended tracking inspection closed the earlier operational question: 7 September ran 18 `unchanged` attempts and 8 September ran 18 `stale` attempts against Friday 4 September market timestamps. No false holiday prices were saved. The remaining observation is the first post-holiday regular-session timestamp advance.
 
 ### 2026-09-08 — account handover
 

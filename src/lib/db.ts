@@ -537,6 +537,15 @@ export async function ensureSchema(): Promise<void> {
       invalidation TEXT,
       twelve_month_checkpoint TEXT,
       checkpoint_is_measurable BOOLEAN NOT NULL DEFAULT false,
+      revenue_assumption TEXT,
+      margin_assumption TEXT,
+      cash_flow_assumption TEXT,
+      dilution_assumption TEXT,
+      valuation_assumption TEXT,
+      downside_scenario TEXT,
+      reverse_valuation_question TEXT,
+      next_review_trigger TEXT,
+      valuation_price_snapshot_id BIGINT REFERENCES price_snapshots(id) ON DELETE RESTRICT,
       time_horizon TEXT,
       status TEXT NOT NULL DEFAULT 'draft',
       version INTEGER NOT NULL DEFAULT 1,
@@ -557,10 +566,26 @@ export async function ensureSchema(): Promise<void> {
     ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS invalidation TEXT;
     ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS twelve_month_checkpoint TEXT;
     ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS checkpoint_is_measurable BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS revenue_assumption TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS margin_assumption TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS cash_flow_assumption TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS dilution_assumption TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS valuation_assumption TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS downside_scenario TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS reverse_valuation_question TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS next_review_trigger TEXT;
+    ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS valuation_price_snapshot_id BIGINT;
     ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'draft';
     ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
     ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS content_hash TEXT;
     ALTER TABLE investment_theses ADD COLUMN IF NOT EXISTS score_snapshot_id BIGINT;
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'investment_theses_valuation_price_snapshot_id_fkey') THEN
+        ALTER TABLE investment_theses ADD CONSTRAINT investment_theses_valuation_price_snapshot_id_fkey
+          FOREIGN KEY (valuation_price_snapshot_id) REFERENCES price_snapshots(id) ON DELETE RESTRICT;
+      END IF;
+    END $$;
     CREATE UNIQUE INDEX IF NOT EXISTS idx_one_current_thesis
       ON investment_theses (position_id) WHERE is_current;
     CREATE INDEX IF NOT EXISTS idx_thesis_position_history
