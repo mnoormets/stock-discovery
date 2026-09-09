@@ -3,6 +3,12 @@ import CandidateSituationSummary from '@/components/CandidateSituationSummary';
 import Form4PurchaseEvidence from '@/components/Form4PurchaseEvidence';
 import { getPriceTrackingSummary } from '@/lib/price-tracking';
 import {
+  getThesisReviewQueue,
+  type ThesisAssumptionState,
+  type ThesisReviewItem,
+  type ThesisReviewState,
+} from '@/lib/thesis-review-queue';
+import {
   getCatalystStatusLabel,
   getTodayBrief,
   type TodayBrief,
@@ -29,6 +35,19 @@ const priorityLabel = {
   promising: 'High research priority',
   watch: 'Watch and verify',
   low_priority: 'Lower priority',
+};
+
+const thesisReviewLabel: Record<ThesisReviewState, string> = {
+  review_due: 'Review due',
+  awaiting_evidence: 'Awaiting evidence',
+  reviewed: 'Reviewed',
+};
+
+const assumptionStateLabel: Record<ThesisAssumptionState, string> = {
+  review_due: 'Check against new evidence',
+  awaiting_evidence: 'Awaiting evidence',
+  reviewed: 'Reviewed in current version',
+  missing: 'Not recorded',
 };
 
 function formatPercent(value: number | null): string {
@@ -244,6 +263,65 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
   );
 }
 
+function ThesisReviewCard({ item }: { item: ThesisReviewItem }) {
+  const priceCurrenciesMatch = item.decisionCurrency != null
+    && item.latestCurrency != null
+    && item.decisionCurrency === item.latestCurrency;
+  return (
+    <article className={`thesisReviewCard ${item.state}`}>
+      <div className="thesisReviewTop">
+        <div>
+          <Link className="ticker" href={`/thesis/${item.positionId}`}>{item.ticker}</Link>
+          <small>{item.companyName || 'Company name unavailable'} · thesis v{item.thesisVersion} · {item.thesisStatus}</small>
+        </div>
+        <span className={`thesisReviewState ${item.state}`}>{thesisReviewLabel[item.state]}</span>
+      </div>
+
+      <div className="thesisReviewPrices">
+        <span>Decision price<strong>{formatPrice(item.decisionPrice, item.decisionCurrency)}</strong><small>{formatDate(item.decisionPriceAt)}</small></span>
+        <span>Latest stored price<strong>{formatPrice(item.latestPrice, item.latestCurrency)}</strong><small>{formatDate(item.latestPriceAt)}</small></span>
+        <span>Since decision<strong>{priceCurrenciesMatch ? formatSignedPercent(item.priceChangePercent) : 'Unavailable'}</strong><small>{priceCurrenciesMatch ? 'Price context only' : 'Currency comparison unavailable'}</small></span>
+      </div>
+
+      <div className="thesisReviewTrigger">
+        <span>Next review trigger</span>
+        <p>{item.nextReviewTrigger || 'No explicit trigger was recorded.'}</p>
+      </div>
+
+      {item.state === 'review_due' && (
+        <div className="thesisDueEvidence">
+          <strong>New evidence needs a human review</strong>
+          <ul>{item.dueEvidence.map((evidence, index) => (
+            <li key={`${evidence.kind}-${evidence.occurredAt}-${index}`}>
+              {evidence.sourceUrl
+                ? <a href={evidence.sourceUrl} target="_blank" rel="noreferrer">{evidence.label} ↗</a>
+                : evidence.label}
+              <small>{formatDate(evidence.occurredAt)}</small>
+            </li>
+          ))}</ul>
+        </div>
+      )}
+      {item.state === 'awaiting_evidence' && (
+        <p className="thesisAwaiting">Next scheduled results: <strong>{formatDateTime(item.nextEarningsAt)}</strong></p>
+      )}
+      {item.state === 'reviewed' && (
+        <p className="thesisAwaiting">No newer qualifying evidence or future results date is stored.</p>
+      )}
+
+      <details className="thesisAssumptionReview">
+        <summary>Review all recorded assumptions</summary>
+        <div>{item.assumptions.map((assumption) => (
+          <article key={assumption.key}>
+            <div><strong>{assumption.label}</strong><span className={assumption.state}>{assumptionStateLabel[assumption.state]}</span></div>
+            <p>{assumption.text || 'No hypothesis is recorded in the current thesis version.'}</p>
+          </article>
+        ))}</div>
+      </details>
+      <Link className="button secondary thesisReviewLink" href={`/thesis/${item.positionId}`}>Open Thesis Builder →</Link>
+    </article>
+  );
+}
+
 function EmptyBrief({ error }: { error: string }) {
   return <main className="wrap pageStack"><section className="hero compact"><p className="eyebrow">READ-ONLY RESEARCH COCKPIT</p><h1>Today&apos;s Research Brief</h1><p className="lead">A research starting point, not a trading recommendation.</p></section><div className="notice danger">Could not load the brief: {error}</div></main>;
 }
@@ -252,6 +330,7 @@ export default async function TodayPage() {
   let brief: TodayBrief;
   try { brief = await getTodayBrief(); } catch (error) { return <EmptyBrief error={(error as Error).message} />; }
   const tracking = await getPriceTrackingSummary().catch(() => ({ available: false, waiting: 0, rows: [] }));
+  const thesisReviews = await getThesisReviewQueue().catch(() => null);
 
   const collection = brief.latestCollectionRun;
   const quality = brief.dataQuality;
@@ -284,7 +363,21 @@ export default async function TodayPage() {
         <span><strong>{canonical?.includedCount ?? 0}</strong> research candidates</span>
         <span><strong>{formatPercent(quality?.secCoveragePercent ?? null)}</strong> SEC coverage</span>
         <span><strong>{brief.watchItems.filter((item) => item.ticker).length}</strong> candidate checks</span>
+        <span><strong>{thesisReviews?.dueCount ?? '—'}</strong> thesis reviews due</span>
         <span><strong>{nextOutcome ? formatDate(nextOutcome.firstTargetAt) : 'Unknown'}</strong> next measurable</span>
+      </section>
+
+      <section className="section thesisReviewSection">
+        <div className="sectionHeading">
+          <div><p className="eyebrow">THESIS REVIEW QUEUE</p><h2>What needs a decision?</h2></div>
+          <small>Current theses · stored evidence only</small>
+        </div>
+        <p className="muted">A new thesis version records that you reviewed the evidence. The queue becomes due when a newer financial filing, a qualifying assessed SEC event, or a passed results date appears. Free-text assumptions are never converted into automatic pass/fail claims.</p>
+        {!thesisReviews
+          ? <div className="empty card">Thesis review queue unavailable. The daily research snapshot remains unchanged.</div>
+          : thesisReviews.items.length === 0
+            ? <div className="empty card">No current active/watchlist thesis is available for review.</div>
+            : <div className="thesisReviewGrid">{thesisReviews.items.map((item) => <ThesisReviewCard item={item} key={item.thesisId} />)}</div>}
       </section>
 
       <section className="section todayCandidateSection">

@@ -644,6 +644,40 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .todayReviewList article.info { border-left-color: var(--accent); }
 .todayReviewList p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
 .todayReviewList a { align-self: center; white-space: nowrap; font-size: 12px; font-weight: 800; }
+.thesisReviewSection { display: grid; gap: 14px; }
+.thesisReviewGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.thesisReviewCard { display: grid; gap: 14px; padding: 18px; border: 1px solid var(--border); border-left: 3px solid var(--muted); border-radius: 12px; background: var(--card); }
+.thesisReviewCard.review_due { border-left-color: var(--amber); }
+.thesisReviewCard.awaiting_evidence { border-left-color: var(--accent); }
+.thesisReviewCard.reviewed { border-left-color: var(--green); }
+.thesisReviewTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.thesisReviewTop > div { display: grid; gap: 4px; }
+.thesisReviewTop small { color: var(--muted); }
+.thesisReviewState { border: 1px solid var(--border); border-radius: 999px; padding: 5px 9px; font-size: 10px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+.thesisReviewState.review_due { color: var(--amber); border-color: #866729; }
+.thesisReviewState.awaiting_evidence { color: var(--accent); border-color: #34618d; }
+.thesisReviewState.reviewed { color: var(--green); border-color: #2f7049; }
+.thesisReviewPrices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.thesisReviewPrices > span { display: grid; gap: 3px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 11px; }
+.thesisReviewPrices strong { color: var(--text); font-size: 16px; }
+.thesisReviewPrices small { color: var(--muted); }
+.thesisReviewTrigger { padding: 11px 12px; border-radius: 8px; background: rgba(117,183,255,.06); }
+.thesisReviewTrigger span { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.thesisReviewTrigger p { margin: 5px 0 0; font-size: 12px; }
+.thesisDueEvidence { padding: 12px; border: 1px solid #866729; border-radius: 8px; background: rgba(211,163,59,.07); }
+.thesisDueEvidence ul { margin: 8px 0 0; padding-left: 18px; }
+.thesisDueEvidence li { margin: 5px 0; }
+.thesisDueEvidence small { display: block; color: var(--muted); }
+.thesisAwaiting { margin: 0; color: var(--muted); font-size: 12px; }
+.thesisAssumptionReview summary { cursor: pointer; font-weight: 800; }
+.thesisAssumptionReview > div { display: grid; gap: 8px; margin-top: 10px; }
+.thesisAssumptionReview article { padding: 10px; border: 1px solid var(--border); border-radius: 8px; }
+.thesisAssumptionReview article > div { display: flex; justify-content: space-between; gap: 10px; }
+.thesisAssumptionReview article span { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+.thesisAssumptionReview article span.review_due { color: var(--amber); }
+.thesisAssumptionReview article span.missing { color: var(--red); }
+.thesisAssumptionReview article p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.thesisReviewLink { justify-self: start; }
 .changeGroup { display: grid; gap: 7px; padding-top: 12px; border-top: 1px solid var(--border); }
 .changeGroup > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .todayChangeList { display: grid; gap: 6px; }
@@ -682,6 +716,7 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
   .todayRunStrip > div { border-top: 1px solid var(--border); border-left: 0; }
   .todayRunStrip > div:first-child { border-top: 0; }
   .todayReviewList article { align-items: flex-start; flex-direction: column; }
+  .thesisReviewGrid, .thesisReviewPrices { grid-template-columns: 1fr; }
   .quickGrid, .contentGrid, .metricGrid, .formGrid, .scannerColumns, .briefGrid, .scoreCards, .scoreAuditBody, .thesisEvidenceGrid, .thesisFormGrid, .thesisMetaGrid, .defenseGrid, .historyBody, .criteriaGrid, .candidateEvidenceGrid, .validationGrid, .backtestGrid, .backtestEvidence, .sectorMetricGrid, .dataQualitySummary, .compactDataQuality .dataQualitySummary, .catalystDimensions, .valuationDimensions, .urDimensions, .coverageSummaryGrid, .backfillSummaryGrid, .qualityOverviewGrid, .qualityMetadataGrid, .metadataSummaryGrid, .rootCauseSummaryGrid, .rootCauseLargestGrid { grid-template-columns: 1fr; }
   .paperBookGrid, .paperBook .backtestMetrics { grid-template-columns: 1fr; }
   .dataQualityTop, .catalystTop, .valuationTop, .underRecognitionTop { flex-direction: column; }

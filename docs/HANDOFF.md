@@ -28,6 +28,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-09-09 Thesis Review Queue V1:** `/today` now reads every current, non-rejected thesis for active/watchlist positions in a batched `REPEATABLE READ, READ ONLY` transaction. Each card shows the version/status, exact thesis-linked decision price, latest stored price and same-currency change, explicit review trigger, future earnings date and all eight recorded assumptions. `review_due` requires a newer stored financial filing, a decisive/supporting assessed SEC event, or a passed earnings date without a newer filing; unverified news headlines do not trigger it. Free text is never parsed into a pass/fail claim and no thesis/status is changed automatically. A new thesis version is the human review record. Current Neon state is 0 due: API/BW/HIMS v3 are awaiting evidence for their November dates, at latest stored prices $4.0474/$7.59/$27.315 versus reviewed $4.11/$7.74/$28.17.
+
 - **2026-09-09 approved API/BW/HIMS thesis versions:** The user accepted the [9 September decision packet](THESIS_REVIEW_2026-09-07.md) as written. API v3 is current and `ready`; BW v3 and HIMS v3 are current and `researching`. Each version stores the eight company-specific assumptions, its current score evidence and the exact reviewed 8 September close: API #2327 at $4.11, BW #2329 at $7.74 and HIMS #2339 at $28.17. Newer price rows were already present at save time and were deliberately not substituted. Database verification found one current thesis per position and unchanged v2 narrative/checkpoint fields; the three runtime pages returned HTTP 200 and rendered v3, the approved assumption and approved price. These are monitoring hypotheses, not buy/sell signals.
 
 - **2026-09-09 GitHub Actions runtime maintenance:** Today's successful run carried GitHub's Node 20 deprecation warning for actions/checkout@v4, actions/setup-node@v4 and actions/upload-artifact@v4. All three workflows now use current Node 24 runtime majors: checkout/setup-node v7 and upload-artifact v6. Node installed for the application remains pinned to 22. The workflow contract and triggers are unchanged. The workflow assertion was updated and the final full isolated suite passed 61 files / 480 tests. Post-push nasdaq-listing-observation #9 ran exact SHA 8c03536, succeeded in 39s, produced its retained artifact, displayed checkout/setup-node v7 steps and had no deprecation annotation.
@@ -235,14 +237,15 @@ Core collection #35 and canonical v3 run #67 succeeded on 8 September: 200 provi
 
 Entry-aware's strategy book currently has one filled and 41 skipped stock signals: 17 for missing history, 17 for history plus current-collection confirmation, and seven for confirmation alone. Do not lower gates merely to make it trade. The current v3 policy has nine canonical days, 54 selected decisions across nine tickers; only eight 1-week outcomes across four tickers are measured and 262 horizons remain pending. Canonical v2 has 63 measured outcomes across seven tickers, 53 missing and 284 pending. Keep versions and horizons separate; this is still far too little independent evidence for a strategy conclusion.
 
-The user accepted the API, BW and HIMS decision packet on 9 September. Their current v3 Thesis Builder records contain the dated assumptions and review triggers, while their 11 August v2 records remain immutable history. API remains `ready`; BW and HIMS remain `researching`. [BW/API reconciliation](BW_API_RECONCILIATION_2026-09-07.md) makes the filing-level debt, liquidity and ADS definitions visible without replacing normalized facts. The fixed bear/base/bull sensitivity is not evidence of mispricing.
+The user accepted the API, BW and HIMS decision packet on 9 September. Their current v3 Thesis Builder records contain the dated assumptions and review triggers, while their 11 August v2 records remain immutable history. API remains `ready`; BW and HIMS remain `researching`. Today now turns these records into a deterministic review queue; all three are awaiting November evidence and none is due. [BW/API reconciliation](BW_API_RECONCILIATION_2026-09-07.md) makes the filing-level debt, liquidity and ADS definitions visible without replacing normalized facts. The fixed bear/base/bull sensitivity is not evidence of mispricing.
 
 ## Roadmap
 
 ### NOW - järgmine töö
 
 - Keep the current discovery and paper policies collecting forward evidence while those correctness issues are addressed. Weekend repeated purchase intents remain the documented V1 behavior until a separately versioned policy is chosen.
-- Observe the accepted API/BW/HIMS v3 gates, published HIMS investment extraction, BW/API dated reconciliation and `scores-v2` / `signals-v3` date guard in subsequent refreshes. At each stated trigger, compare new filings with the recorded assumptions before changing thesis status. Do not substitute partial debt or ordinary shares for a current complete definition.
+- Use the Thesis Review Queue through the next stored evidence cycle. When an item becomes due, review its primary source and record the conclusion as a new thesis version; do not automate pass/fail or status changes from free text.
+- Observe the accepted API/BW/HIMS v3 gates, published HIMS investment extraction, BW/API dated reconciliation and `scores-v2` / `signals-v3` date guard in subsequent refreshes. Do not substitute partial debt or ordinary shares for a current complete definition.
 
 ### NEXT
 
@@ -265,6 +268,8 @@ The user accepted the API, BW and HIMS decision packet on 9 September. Their cur
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- **2026-09-09 thesis review queue:** V1 adds no schema and no scheduled writer. The queue is a separate batched repeatable-read transaction, limited to current non-rejected theses attached to active/watch positions. Due evidence is intentionally narrow: a financial filing stored/filed after the version, a latest decisive/supporting assessment for a new SEC filing, or a passed stored earnings date when no newer financial filing exists. Secondary news cannot create due state. Price change requires matching explicit currencies. Assumption text remains visible but non-computable; saving a new immutable thesis version is the explicit reviewed action.
 
 - **2026-09-09 accepted thesis assumptions:** API v3 remains `ready` with cash-only liquidity until access and reserves justify a broader definition. BW v3 remains `researching` pending positive TTM OCF/company-defined FCF and demonstrable backlog cash conversion. HIMS v3 remains `researching` against 15% long-term growth, roughly 70% gross margin and a roughly 10% normalized FCF-margin hurdle within three years. Each record is linked to the exact price reviewed by the user rather than a newer snapshot that arrived before persistence.
 
@@ -938,6 +943,12 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-09 — Thesis Review Queue V1
+
+- Added `src/lib/thesis-review-queue.ts`, a read-only batched model for current active/watchlist theses, decision/latest price context, review triggers, future/passed earnings and narrowly qualifying new filing evidence. No free-text threshold parser, thesis write, status change, ranking change, provider or migration was added.
+- Added the queue near the top of `/today`, with review-due/awaiting/reviewed states, full assumption details and direct Thesis Builder links. README and user guide now document the daily review flow and exact state semantics.
+- Focused database coverage exercises empty/read-only behavior, same-currency price context, future earnings, new financial filings, assessed relevant versus routine SEC events, missing assumptions, passed-results gaps and the reviewed state. The first focused run exposed only an exact floating-point test assertion (19.999999999999996 vs 20); it was changed to a numeric tolerance and the final focused suite passed 6/6. Final typecheck and lint passed, and the full isolated suite applied all 10 migrations and passed 62 files / 486 tests in 407.98s. The mounted Docker production build generated 22/22 routes, followed by the required app restart. Live Neon inspection showed API/BW/HIMS v3 awaiting evidence with 0 due; final `/today` HTTP smoke matched all 10 queue markers and the visual/accessibility check rendered all three cards, reviewed prices and triggers.
 
 ### 2026-09-09 — current thesis packet and Actions runtime maintenance
 

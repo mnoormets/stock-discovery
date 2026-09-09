@@ -4,13 +4,13 @@ See juhend on inimesele, kes avab rakenduse esimest korda. Stock Discovery aitab
 
 ## Soovitatud igapäevane töövoog
 
-1. Ava **Daily Changes** ja vaata, millised portfelli või Watchlisti tickerid vajavad ülevaatust.
-2. Ava **Watchlist** ning kontrolli olulisi Growth/Health muutusi ja muutunud komponente.
-3. Ava huvipakkuva tickeri **ettevõtte faktivaade** ning kontrolli hind, SEC finantsid, uudised, earnings, skooride põhjused ja algallikad.
-4. Uue idee leidmiseks ava **Skänner → Leia järgmine RKLB**.
-5. Lisa põhjendatud kandidaat Watchlisti või alusta kohe teesi.
-6. Täida **Thesis Builderis** kasutaja hüpoteesid ja 12 kuu mõõdetav kontrollpunkt.
-7. Muuda tees `ready` olekusse alles siis, kui invalidation-tingimus ja kontrollpunkt on selgelt sõnastatud.
+1. Ava **Today** ja vaata kõigepealt Thesis Review Queue'd: kas mõne olemasoleva teesi järel on saabunud uus tõend.
+2. Vaata Today kandidaate ning **Needs review** hoiatusi; kõrge skoor tähendab ainult „uuri lähemalt”.
+3. Ava **Watchlist** ning kontrolli olulisi Growth/Health muutusi ja muutunud komponente.
+4. Ava huvipakkuva tickeri **ettevõtte faktivaade** ning kontrolli hind, SEC finantsid, uudised, earnings, skooride põhjused ja algallikad.
+5. Uue idee leidmiseks ava **Skänner → Leia järgmine RKLB**.
+6. Lisa põhjendatud kandidaat Watchlisti või alusta kohe teesi.
+7. Täida **Thesis Builderis** kasutaja hüpoteesid ja 12 kuu mõõdetav kontrollpunkt. Muuda tees `ready` olekusse alles siis, kui invalidation-tingimus ja kontrollpunkt on selgelt sõnastatud.
 
 ## Avaleht ja tickeri otsing
 
@@ -84,6 +84,16 @@ Veerg **Skoori muutus** võrdleb kahte järjestikust sama mudeliversiooni snapsh
 - `no major changes` – vähemalt 10-punktilist või olulist komponendi seisundimuutust ei leitud.
 
 Detailist näeb vana ja uut skoori, muutunud komponente, mudeliversiooni ja snapshot'i ID-sid. See on ülevaatuse signaal, mitte kauplemiskorraldus.
+
+## Thesis Review Queue
+
+Today lehe Thesis Review Queue seob praeguse teesi selle salvestamisel valitud hinnasnapshotiga ja viimase salvestatud sama valuuta hinnaga. Hinnamuutus on kontekst, mitte teesi läbimise või ebaõnnestumise otsus.
+
+- `Review due` tähendab, et pärast praeguse teesi loomist on salvestatud uuem finantsavaldus, otsustava/toetava thesis-relevance'iga SEC sündmus või earnings-kuupäev on möödunud ilma uuema finantsavalduseta.
+- `Awaiting evidence` tähendab, et uuemat kvalifitseeruvat tõendit ei ole ja järgmine earnings-kuupäev on teada.
+- `Reviewed` tähendab, et praegusest versioonist uuemat kvalifitseeruvat tõendit ega tulevast earnings-kuupäeva ei ole salvestatud.
+
+Kaart näitab revenue-, margin-, cash-flow-, dilution-, valuation- ja downside-hüpoteese, reverse-valuation küsimust ning järgmist review trigger'it. Need väljad on vabatekst, mistõttu rakendus ei nimeta neid automaatselt läbituks ega ebaõnnestunuks. Kui `Review due` ilmub, ava Thesis Builder, kontrolli algallikat ja salvesta oma hinnang uue versioonina. Nii jääb alles nii eelmine otsus kui ka uue ülevaatuse aeg ja hinnakontekst.
 
 ## „Leia järgmine RKLB”
 
