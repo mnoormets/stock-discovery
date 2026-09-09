@@ -48,11 +48,9 @@ jobs:
 
       - run: npm ci
 
-      # Fail-fast. Ilma DATABASE_URL-ita langeb `ensureLocalDatabaseUrl()`
-      # (`scripts/_ts-loader.cjs:49-52`) vaikselt tagasi vaikeväärtusele
-      # `localhost:5433/discovery`, mida runneril ei ole. Ilma selle kontrollita
-      # näeks puuduv secret välja nagu segadust tekitav ühendusviga, mitte nagu
-      # puuduv secret.
+      # Fail-fast. Puuduv secret peab paistma konfiguratsiooniveana enne, kui
+      # andmebaasiklient proovib ühendust avada. Iga DB samm seob selle URL-i
+      # allpool eraldi DATABASE_TARGET=golden lepinguga.
       - name: Kontrolli, et NEON_DATABASE_URL secret on olemas
         env:
           NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
@@ -72,6 +70,7 @@ jobs:
         timeout-minutes: 40
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DATABASE_TARGET: golden
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           TZ: Europe/Tallinn
         run: npm run ingest:form4 -- --recent-days 7 --fail-on-filing-error
@@ -82,6 +81,7 @@ jobs:
         timeout-minutes: 1
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DATABASE_TARGET: golden
           TZ: Europe/Tallinn
         run: |
           mkdir -p artifacts/companyfacts-queue
@@ -107,6 +107,7 @@ jobs:
         id: collect_daily
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DATABASE_TARGET: golden
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
           HEALTHCHECKS_PING_URL: ${{ secrets.HEALTHCHECKS_PING_URL }}
@@ -127,6 +128,7 @@ jobs:
         timeout-minutes: 1
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DATABASE_TARGET: golden
           TZ: Europe/Tallinn
         run: |
           mkdir -p artifacts/companyfacts-queue

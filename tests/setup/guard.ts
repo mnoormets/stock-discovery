@@ -11,6 +11,7 @@ import { TEST_DATABASE_URL, assertTestDatabaseName, redact } from './test-db-url
 
 assertTestDatabaseName();
 process.env.DATABASE_URL = TEST_DATABASE_URL;
+process.env.DATABASE_TARGET = 'test';
 
 // Dünaamiline import, sest ESM staatilised importid hoisti'takse mooduli algusse
 // ja tooksid db.ts sisse enne ülemist rida.

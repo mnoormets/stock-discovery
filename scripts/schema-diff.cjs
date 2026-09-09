@@ -226,6 +226,7 @@ async function structuralDiff() {
     // 2) runtime ensure*-ahel. DATABASE_URL peab olema seatud ENNE db.ts laadimist,
     //    sest Pool luuakse impordi hetkel.
     process.env.DATABASE_URL = runtimeUrl;
+    process.env.DATABASE_TARGET = 'test';
     const db = loadTs(path.join(root, 'src/lib/db.ts'));
     await db.ensureSchema();
     await loadTs(path.join(root, 'src/lib/company-financials.ts')).ensureFinancialSchema();

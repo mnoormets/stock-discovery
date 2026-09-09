@@ -46,10 +46,12 @@ npm run migrate -- --database-url postgres://discovery:discovery@localhost:5433/
 | `--preflight` | **GO / NO-GO kontroll enne apply't.** Koondab ühte vaatesse: sihtbaas + kas nõuab `--allow-golden-source`, `schema_migrations` seis, iga migratsiooni pending/applied/mismatch, `price_snapshots` duplikaadid, `investment_theses` vigased staatused **ja conformance**. **Read-only.** |
 | `--conformance` | **Kas sihtbaas vastab baseline sihtskeemile?** Ehitab ajutise DB baseline'ist ja diffib selle sihtbaasi vastu: puuduvad tabelid, veerud, indeksid, piirangud + „üle" objektid. **Sihtbaasi suhtes read-only**; ajutine DB kustutatakse alati |
 | `--status` | Ainult raport (applied / pending / checksum mismatch). **Ei kirjuta midagi, ei loo `schema_migrations` tabelit.** Töötab ka kaitstud baasi vastu |
-| `--database-url <url>` | Eksplitsiitne sihtbaas; muidu `DATABASE_URL` või lokaalne vaikeväärtus |
+| `--database-url <url>` | Eksplitsiitne sihtbaas; muidu valideeritud `DATABASE_URL` + `DATABASE_TARGET` paar või lokaalne vaikeväärtus |
 | `--allow-golden-source` | **Ainus viis** rakendada baasi, mille nimi ei lõpe `_test` / `_tmp`-ga (nt golden source `neondb`) |
 
 **Kaitstud sihtbaas (fail-closed).** Runner **keeldub vaikimisi igast baasist**, mille nimi ei lõpe `_test` või `_tmp`-ga — sh päris golden source'ist Neonis (`neondb`). Ilma `--allow-golden-source` liputa katkeb ta enne mistahes DDL-i. Äraviskamiseks mõeldud baas läheb läbi ilma lipuga: `*_migration_tmp` käsitsi, testharnessi `discovery_test` ja conformance'i `schema_conformance_diff_tmp`. **Miks fail-closed:** varem oli kaitse nimekirja-põhine (`dbName === 'discovery'`), mis 2026-08-19 Neoni cutover'il pöördus tagurpidi — päris baas jäi kaitsmata ja kaitstud jäi ainult külmutatud lokaalne koopia. Fail-closed ei saa ümbernimetamisest (Neoni branch, uus projekt, uus host) vaikselt katki minna.
+
+Tavalised rakenduse ja CLI ühendused valideerivad lisaks `DATABASE_TARGET` väärtuse enne ühendamist. `golden` lubab ainult Neoni hosti, `local` ainult kohalikke hoste ning `test` ainult `_test` või `_tmp` baasi. `--database-url` jääb migratsioonirunneri teadlikuks erandiks, sest runner kontrollib päris sihti ise ja nõuab iga mitteajutise baasi kirjutamiseks eraldi `--allow-golden-source` lippu.
 
 **Advisory lock.** Kogu jooks on kaetud `pg_try_advisory_lock(hashtext('stock-discovery:migrate'))`-iga ühel pühendatud ühendusel; teine samaaegne migrator lõpetab puhtalt ilma rakendamata. Lukk vabastatakse alati (`finally`).
 

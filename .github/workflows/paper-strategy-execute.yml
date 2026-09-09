@@ -38,5 +38,6 @@ jobs:
       - name: Capture fresh paper fills and marks
         env:
           DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DATABASE_TARGET: golden
           TZ: America/New_York
         run: npm run paper:strategy -- execute

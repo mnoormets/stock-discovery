@@ -16,6 +16,7 @@ describe('paper strategy execution workflow safety', () => {
 
   it('uses the existing Neon secret without embedding a connection string', () => {
     expect(workflow).toContain('DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}');
+    expect(workflow).toContain('DATABASE_TARGET: golden');
     expect(workflow).not.toContain('postgresql://');
     expect(workflow).not.toContain('postgres://');
   });

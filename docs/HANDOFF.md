@@ -28,6 +28,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-09-09 database target contract:** every normal app and CLI database startup now requires `DATABASE_URL` and an explicit `DATABASE_TARGET`. `golden` accepts only a `neon.tech` host, `local` only an intentional local host, and `test` only a database ending `_test` or `_tmp`; validation happens before a PostgreSQL client connects and errors contain no credentials. This closes the observed host trap where Next loaded the frozen local `discovery` URL from `.env.local` ahead of the Neon URL in `.env`. Docker and database-connected GitHub workflow steps explicitly use `golden`; the test harness uses `test`. The migration runner retains its independent stricter write guard and explicit `--database-url` escape hatch.
+
 - **2026-09-09 Thesis Review Queue V1:** `/today` now reads every current, non-rejected thesis for active/watchlist positions in a batched `REPEATABLE READ, READ ONLY` transaction. Each card shows the version/status, exact thesis-linked decision price, latest stored price and same-currency change, explicit review trigger, future earnings date and all eight recorded assumptions. `review_due` requires a newer stored financial filing, a decisive/supporting assessed SEC event, or a passed earnings date without a newer filing; unverified news headlines do not trigger it. Free text is never parsed into a pass/fail claim and no thesis/status is changed automatically. A new thesis version is the human review record. Current Neon state is 0 due: API/BW/HIMS v3 are awaiting evidence for their November dates, at latest stored prices $4.0474/$7.59/$27.315 versus reviewed $4.11/$7.74/$28.17.
 
 - **2026-09-09 approved API/BW/HIMS thesis versions:** The user accepted the [9 September decision packet](THESIS_REVIEW_2026-09-07.md) as written. API v3 is current and `ready`; BW v3 and HIMS v3 are current and `researching`. Each version stores the eight company-specific assumptions, its current score evidence and the exact reviewed 8 September close: API #2327 at $4.11, BW #2329 at $7.74 and HIMS #2339 at $28.17. Newer price rows were already present at save time and were deliberately not substituted. Database verification found one current thesis per position and unchanged v2 narrative/checkpoint fields; the three runtime pages returned HTTP 200 and rendered v3, the approved assumption and approved price. These are monitoring hypotheses, not buy/sell signals.
@@ -239,6 +241,8 @@ Entry-aware's strategy book currently has one filled and 41 skipped stock signal
 
 The user accepted the API, BW and HIMS decision packet on 9 September. Their current v3 Thesis Builder records contain the dated assumptions and review triggers, while their 11 August v2 records remain immutable history. API remains `ready`; BW and HIMS remain `researching`. Today now turns these records into a deterministic review queue; all three are awaiting November evidence and none is due. [BW/API reconciliation](BW_API_RECONCILIATION_2026-09-07.md) makes the filing-level debt, liquidity and ADS definitions visible without replacing normalized facts. The fixed bear/base/bull sensitivity is not evidence of mispricing.
 
+The database startup ambiguity is resolved. Host Next startup now rejects the existing `.env.local` local URL when `.env` declares `DATABASE_TARGET=golden`; the Docker app is explicitly pinned to the validated Neon target. Normal CLI jobs load the same contract, while isolated tests declare `test`. Keep `.env.local` as the intentional negative case unless a future local-app workflow is explicitly chosen.
+
 ## Roadmap
 
 ### NOW - järgmine töö
@@ -252,7 +256,6 @@ The user accepted the API, BW and HIMS decision packet on 9 September. Their cur
 - Model-version/horizon-separated results, distinct ticker/decision counts and missing-outcome coverage. Do not count repeated daily picks as independent bets or pool v2 performance into a claim about v3.
 - A separately versioned, capital-constrained paper experiment only after defining cash, position/concentration limits, repeated-signal treatment, order expiry and exits. Preserve V1 as the original baseline.
 - Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing the five-company budget, queue order or adding production listing discovery.
-- Repair the host-startup configuration trap: Next's .env.local still overrides .env with the frozen local database unless DATABASE_URL is set explicitly. Docker's explicit Neon environment is verified. Add a reliable target check rather than relying on remembered launch instructions.
 
 ### LATER
 
@@ -280,7 +283,9 @@ The user accepted the API, BW and HIMS decision packet on 9 September. Their cur
 
 - **2026-09-07 BW/API balance review:** `balance-review-2026-09-07` is a filing-level application record, not a CompanyFacts alias. It keeps the report and filing dates, component sums, source URLs and exclusions visible for BW/API. It never overwrites automated facts, saved theses, decisions, outcomes or older score snapshots. `scores-v2` withholds the cash/debt component unless the two latest values have the exact same `periodEnd`; `signals-v3` applies the same rule before stating a cash-versus-debt inference. Both versions deliberately produce new current records while preserving the older calculation under its original version.
 
-- **2026-09-08 account transition:** the handover captures configuration names and access requirements but deliberately excludes secrets. New environments must verify `DATABASE_URL` points to Neon before production-oriented work, because host `.env.local` can override `.env`; Docker app configuration is fail-closed and explicitly supplies the Neon URL. The frozen local `discovery` database remains backup/test infrastructure, never a production target.
+- **2026-09-09 database target contract:** `DATABASE_URL` is never silently defaulted by the app. `DATABASE_TARGET=golden` requires a Neon hostname, `local` requires `localhost`, `127.0.0.1`, `::1` or Docker host `db`, and `test` requires a `_test` or `_tmp` database name. The check runs before a Pool/Client opens for normal app and CLI paths and reports only host/database metadata. Docker Compose requires the target explicitly; DB-connected GitHub steps pin it to `golden`; both Vitest setup layers pin it to `test`. `_ts-loader` still creates an intentional local pair only when neither URL nor target was supplied. Migration apply retains its separate fail-closed database-name guard and requires `--allow-golden-source` for every non-scratch write.
+
+- **2026-09-08 account transition:** the handover captures configuration names and access requirements but deliberately excludes secrets. New environments must set both `DATABASE_URL` and `DATABASE_TARGET`; the runtime contract now rejects the earlier `.env.local`/`.env` mismatch before connecting. The frozen local `discovery` database remains backup/test infrastructure, never a production target.
 
 - **2026-09-08 NYSE holiday recency:** read-side observation recency allows one elapsed New York trading day. Weekends and the NYSE's explicitly published 2026–2028 full-day holidays add no days; later years and unscheduled closures fall back to the earlier conservative weekday behavior until their dates are deliberately reviewed. The schedule is source-visible and local, so daily collection gains no new network dependency. Early closes do not change the date-level previous-close rule. Existing tracking attempt outcomes and price rows are not rewritten; paper execution's live quote rules are unchanged.
 
@@ -600,7 +605,7 @@ Piirangud, mida tuleb teadvustada:
 
 ## Automated Test Coverage (2026-08-17)
 
-**Latest implementation recheck, 2026-09-08:** 480/480 tests in 61 files, ten migrations, isolated local `discovery_test`; typecheck and lint passed. The optimized build compiled all 22 routes, the `app` container was restarted, and `/today` plus `/performance` returned HTTP 200; Performance rendered the holiday-aware explanation. The detailed inventory below is historical and is not a complete list of the current suite. Tests cover versioned valuation assumptions and price context, held-paper-mark continuity, stale/partial setup presentation and continued research/outcome tracking, including daily budget, quote deduplication, receipt/market timestamp boundaries, Labor Day and Thanksgiving closures, the first trading day after a closure, and conservative fallback outside the published 2026–2028 schedule.
+**Latest implementation recheck, 2026-09-09:** 492/492 tests in 63 files, ten migrations, isolated local `discovery_test`; teardown left zero test databases. Typecheck and lint passed. The optimized build compiled all 22 routes, the `app` container was restarted, and `/today` plus `/thesis/12` returned HTTP 200 while unauthenticated `/api/collect` returned 401. Tests now include the explicit database-target contract, credential-safe failures and workflow target pins in addition to the previously documented coverage. The detailed inventory below is historical and is not a complete list of the current suite.
 
 Vitest, **354 testi, 39 faili** (mõõdetud 2026-08-25). Käivitamine konteineris `docker compose run --rm -T app npm test` või hostil `npm test` (hostil on `TEST_DATABASE_URL` kohustuslik, vt „Praegune töötav seis"). Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja jooksu lõpus kustutab; Neoni golden source'i ei puudutata. **Testibaasi skeem ehitatakse versioonitud migratsioonidest** (`scripts/migrate.cjs`), seega iga jooks valideerib ühtlasi runnerit ja migratsioone `0001–0007` koos `schema_migrations` raamatupidamisega. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
 
@@ -641,6 +646,12 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-09-09 — database target contract
+
+- Added a shared pre-connection validator used by the app and normal CLI entrypoints. It rejects a missing URL/target, a local URL labelled `golden`, a remote URL labelled `local`, and a non-scratch database labelled `test`; mismatch messages expose only the host and database name. The app no longer falls back silently to Docker `db:5432/discovery`.
+- `.env` now declares `DATABASE_TARGET=golden` without changing or exposing its connection string. `.env.local` remains local and provided the negative precedence proof: a separate Next environment load stopped with `DATABASE_TARGET=golden requires a neon.tech host ... Check .env.local precedence.` Docker Compose resolved and then ran with target `golden`, the Neon host and database `neondb`. Database-connected collect and paper workflows carry the same target; the DB-free Nasdaq workflow remains unchanged.
+- Focused workflow/validator coverage passed 18/18. Final `npm run typecheck` and `npm run lint` passed; after the last loader correction the full isolated suite applied all ten migrations and passed **63 files / 492 tests** in 420.85s, after which `discovery_test` count was zero. The Docker production build compiled and generated 22/22 routes, followed by the required app restart. `npm run collect:status` read Neon and reported canonical run #69 for 9 September; `/today` and `/thesis/12` returned HTTP 200, unauthenticated `/api/collect` returned 401, and the live container revalidated `golden` + Neon `neondb`. No migration, collection or production database write was performed for this change.
 
 ### 2026-09-08 — versioned valuation decision review
 
@@ -943,6 +954,12 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-09 — fail-closed database target selection
+
+- Replaced the app's silent local database fallback with `src/lib/database-target.cjs`, shared by `src/lib/db.ts` and CLI setup. Updated the custom TypeScript loader to pass explicit `.cjs` imports through Node, and routed the previously direct Form 4 calibration connection through the same validator.
+- Added explicit target intent to Docker Compose, the local-env setup helper, both database test bootstraps, temporary schema-diff databases and all database-connected GitHub workflow steps. Updated `.env.example`, README, the migration runbook and workflow contract tests. No new provider, schema, migration or product behavior was introduced.
+- Verified the exact host trap, isolated test target, live Neon CLI, Docker-resolved target, full build/restart and protected HTTP endpoint. The full suite passed 492/492 and removed its temporary database. Existing untracked dump/transfer artifacts were left untouched.
 
 ### 2026-09-09 — Thesis Review Queue V1
 

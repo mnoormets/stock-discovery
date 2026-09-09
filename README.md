@@ -54,9 +54,10 @@ Continued price tracking runs after the canonical snapshot and before outcome me
 ## Kohalik käivitamine Dockeriga
 
 1. Kopeeri `.env.example` failiks `.env`.
-2. Määra pikk juhuslik `CRON_SECRET`.
-3. Määra SEC nõuetele vastav `SEC_USER_AGENT`, kui soovid EDGARi andmeid.
-4. Käivita:
+2. Määra Neoni `DATABASE_URL` ja jäta `DATABASE_TARGET=golden`.
+3. Määra pikk juhuslik `CRON_SECRET`.
+4. Määra SEC nõuetele vastav `SEC_USER_AGENT`, kui soovid EDGARi andmeid.
+5. Käivita:
 
 ```bash
 docker compose up --build
@@ -73,7 +74,7 @@ npm ci
 npm run dev
 ```
 
-`DATABASE_URL` peab osutama andmebaasile. Skeemi kanooniline allikas on **versioonitud migratsioonid** kaustas `db/migrations` — rakenda need runneriga:
+`DATABASE_URL` ja `DATABASE_TARGET` tuleb seada paarina. Golden source nõuab väärtust `golden` ja `neon.tech` hosti; tahtlik lokaalne app nõuab väärtust `local` ja lokaalset hosti; testid nõuavad väärtust `test` ning `_test` või `_tmp` lõpuga baasinime. Vale paar katkestab käivituse enne ühendamist, mis takistab `.env.local` failil Neoni sihti vaikselt lokaalse koopiaga asendamast. Skeemi kanooniline allikas on **versioonitud migratsioonid** kaustas `db/migrations` — rakenda need runneriga:
 
 ```bash
 npm run migrate -- --preflight
@@ -98,6 +99,7 @@ Automaatne GitHub Actions päevatöö teeb enne põhikogumist idempotentse SEC F
 | Muutuja | Vajalik | Kasutus |
 |---|---:|---|
 | `DATABASE_URL` | jah | PostgreSQL ühendus |
+| `DATABASE_TARGET` | jah | Sihtlepingu tüüp: `golden`, `local` või `test` |
 | `CRON_SECRET` | jah | `/api/collect` kaitse |
 | `SEC_USER_AGENT` | SEC jaoks | SEC EDGAR, CompanyFacts ja kauplemispeatamiste feed |
 | `FMP_API_KEY` | ei | Yahoo varuallikas radari fundamentaalidele |

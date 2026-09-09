@@ -3,15 +3,14 @@ import { createHash } from 'node:crypto';
 import type { Candidate, Fundamentals } from './types';
 import type { SecSuspension } from './sec';
 import type { CompanyResearch } from './investment';
+import { requiredDatabaseUrl } from './database-target.cjs';
 
 // Üks jagatud ühenduste bassein kogu rakenduse peale.
 const globalForPg = globalThis as unknown as { _pgPool?: Pool };
 export const pool =
   globalForPg._pgPool ??
   new Pool({
-    connectionString:
-      process.env.DATABASE_URL ||
-      'postgres://discovery:discovery@db:5432/discovery',
+    connectionString: requiredDatabaseUrl(),
   });
 if (!globalForPg._pgPool) globalForPg._pgPool = pool;
 

@@ -19,9 +19,10 @@ function loadTs(absPath) {
   mod.filename = absPath;
   mod.paths = module.paths;
   const nodeRequire = mod.require.bind(mod);
-  mod.require = (request) => (request.startsWith('.')
-    ? loadTs(path.resolve(path.dirname(absPath), request.endsWith('.ts') ? request : `${request}.ts`))
-    : nodeRequire(request));
+  mod.require = (request) => {
+    if (!request.startsWith('.') || /\.(cjs|js|json)$/.test(request)) return nodeRequire(request);
+    return loadTs(path.resolve(path.dirname(absPath), request.endsWith('.ts') ? request : `${request}.ts`));
+  };
   loaded.set(absPath, mod.exports);
   mod._compile(compiled, absPath);
   loaded.set(absPath, mod.exports);
@@ -47,8 +48,12 @@ function loadEnv(repoRoot) {
 const LOCAL_DATABASE_URL = 'postgres://discovery:discovery@localhost:5433/discovery';
 
 function ensureLocalDatabaseUrl() {
-  if (!process.env.DATABASE_URL) process.env.DATABASE_URL = LOCAL_DATABASE_URL;
-  return process.env.DATABASE_URL;
+  if (!process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = LOCAL_DATABASE_URL;
+    if (!process.env.DATABASE_TARGET) process.env.DATABASE_TARGET = 'local';
+  }
+  const { requiredDatabaseUrl } = require('../src/lib/database-target.cjs');
+  return requiredDatabaseUrl();
 }
 
 function repoRoot() {

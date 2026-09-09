@@ -34,6 +34,7 @@ $safeFmpKey = $FmpApiKey.Replace("`r", '').Replace("`n", '')
 
 $content = @"
 DATABASE_URL=postgres://discovery:discovery@db:5432/discovery
+DATABASE_TARGET=local
 TZ=Europe/Tallinn
 CRON_SECRET=$cronSecret
 SEC_USER_AGENT=$safeUserAgent

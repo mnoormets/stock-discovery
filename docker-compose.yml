@@ -25,10 +25,10 @@ services:
       # Golden source on alates 2026-08-19 Neon, MITTE lokaalne `db` teenus.
       # Varem oli siin kõvakodeeritud db:5432 URL, mis võitis .env-i ja pani
       # konteineri vaikselt näitama külmutatud cutover-eelseid andmeid.
-      # `:?` on TEADLIK valik: tühi väärtus langeks src/lib/db.ts:12-14
-      # fallback'i tõttu tagasi täpselt sellele samale külmutatud baasile
-      # ja viga oleks jälle nähtamatu. Parem, kui konteiner katkeb valjult.
+      # Mõlemad väärtused on kohustuslikud ja src/lib/db.ts valideerib nende
+      # sobivuse enne ühendamist. Parem, kui konteiner katkeb valjult.
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL peab olema .env failis määratud (Neoni golden source)}
+      DATABASE_TARGET: ${DATABASE_TARGET:?DATABASE_TARGET peab olema golden}
       TZ: Europe/Tallinn
       # Loetakse .env failist (compose interpoleerib automaatselt). Kui puudub → tühi.
       FMP_API_KEY: ${FMP_API_KEY:-}

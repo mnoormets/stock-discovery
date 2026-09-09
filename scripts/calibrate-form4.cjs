@@ -12,7 +12,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client } = require('pg');
-const { loadEnv, repoRoot, registerRepoModules } = require('./_ts-loader.cjs');
+const { ensureLocalDatabaseUrl, loadEnv, repoRoot, registerRepoModules } = require('./_ts-loader.cjs');
 const {
   createSecClient,
   extractOwnershipXml,
@@ -264,11 +264,12 @@ async function main(argv = process.argv.slice(2)) {
   const root = repoRoot();
   registerRepoModules(root);
   loadEnv(root);
+  const databaseUrl = ensureLocalDatabaseUrl();
   if (!process.env.SEC_USER_AGENT) throw new Error('SEC_USER_AGENT puudub.');
   const options = parseArgs(argv);
   const sec = createSecClient(process.env.SEC_USER_AGENT);
   const dates = options.dates || await latestIndexDates(sec, options.days);
-  const companyUniversePromise = readCompanyUniverse(process.env.DATABASE_URL);
+  const companyUniversePromise = readCompanyUniverse(databaseUrl);
   const dayInputs = [];
 
   console.log('=== SEC Form 4 calibration (read-only) ===');

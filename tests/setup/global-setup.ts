@@ -67,6 +67,7 @@ export default async function setup(context: GlobalSetupContext) {
   // DATABASE_URL peab olema seatud ENNE src/lib/db.ts importi, sest see loob
   // Pool'i impordi hetkel. Dünaamiline import hoiab järjekorra kindlana.
   process.env.DATABASE_URL = TEST_DATABASE_URL;
+  process.env.DATABASE_TARGET = 'test';
   const { pool } = await import('../../src/lib/db');
   try {
     const { rows } = await pool.query('SELECT current_database() AS db');

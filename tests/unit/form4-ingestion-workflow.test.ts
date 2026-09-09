@@ -21,4 +21,9 @@ describe('scheduled Form 4 ingestion workflow integration', () => {
     expect(workflow).toContain("steps.form4_ingest.outcome == 'failure'");
     expect(workflow).toContain('timeout-minutes: 55');
   });
+
+  it('pins every database-connected step to the Neon golden source', () => {
+    expect(workflow.match(/DATABASE_URL: \$\{\{ secrets\.NEON_DATABASE_URL \}\}/g)).toHaveLength(5);
+    expect(workflow.match(/DATABASE_TARGET: golden/g)).toHaveLength(4);
+  });
 });
