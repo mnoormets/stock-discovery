@@ -37,11 +37,11 @@ jobs:
     timeout-minutes: 55
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Node 22 vastab app Dockerfile'ile (`FROM node:22-slim`) ja README nõudele.
       # `package.json`-is `engines` välja ei ole, seega versioon fikseeritakse siin.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -150,7 +150,7 @@ jobs:
       - name: Upload CompanyFacts queue observation
         if: always()
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: companyfacts-queue-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/companyfacts-queue/

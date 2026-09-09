@@ -17,9 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -32,7 +32,7 @@ jobs:
 
       - name: Upload Nasdaq listing observation
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: nasdaq-listing-observation-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/nasdaq-listings/

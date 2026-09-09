@@ -85,3 +85,73 @@ Then add company-specific versioned assumptions to the thesis workflow: source-b
 - SEC accession directories were reachable for all three; BW and HIMS filing text was inspected for the specific reconciliations above. API full-text fetch was size-limited.
 - This is a documentation/research step. No application code, schema or database content changed; the previous code verification remains recorded in HANDOFF. No new automated tracking run was observed during this step.
 - These drafts do not demonstrate improved returns. Saved thesis adoption, subsequent disclosures and forward tracking remain necessary evidence.
+
+
+## 9 September decision packet
+
+This follow-up turns the dated evidence above into proposed Thesis Builder text. It is a review draft, not an investment instruction or a saved thesis version. The user must accept or edit the assumptions and status before any write to `investment_theses`.
+
+The context was read from Neon in a read-only transaction after `collect-daily #23` completed successfully. Each quote is the 8 September US regular-session close collected on 9 September. Existing saved theses remain unchanged.
+
+| Company | Current saved thesis | Price snapshot | Price / market cap | 9 September discovery |
+|---|---|---|---|---|
+| API | #6 v2, `ready` | #2327, 2026-09-08 20:00:01 UTC | $4.11 / $347.500m | included rank 6; Growth 81, Health 93, Coverage 100 |
+| BW | #7 v2, `researching` | #2329, 2026-09-08 20:00:03 UTC | $7.74 / $1,152.990m | excluded; Growth 100, Health 55, Coverage 85 |
+| HIMS | #9 v2, `researching` | #2339, 2026-09-08 20:00:03 UTC | $28.17 / $6,572.439m | excluded; Growth 63, Health 35, Coverage 78 |
+
+The discovery result is supporting context only. A high score means “research further,” and exclusion is not a sell conclusion. No newer filing was established in this follow-up.
+
+### API proposed v3
+
+Recommended status: keep `ready` if the user accepts the conservative liquidity treatment. Here, `ready` means ready for a monitored research decision, not ready to buy.
+
+| Field | Proposed user hypothesis |
+|---|---|
+| Revenue | Over the next two comparable quarters, revenue growth remains at least 10% year over year and DBNRR is at least 100. Paid conversational-AI usage must become separately measurable. |
+| Margin | Gross margin remains near or above 63% while GAAP operating profitability stays non-negative. Growth requiring a material gross-margin reset does not satisfy the thesis. |
+| Cash flow | Trailing OCF and FCF remain positive through the next two reports without depending on a one-time working-capital release. |
+| Dilution | ADS count grows no more than 5% year over year. Buybacks count only when the period-end ADS-equivalent count falls after employee issuance. |
+| Valuation | Start with only $72.667m cash/equivalents against $100.316m borrowings; treat deposits and bank products as uncounted optional value until parent access, restrictions and an operating reserve are explicit. At $4.11 this is about $375.149m enterprise value, 2.66x FY2025 revenue and 14.7x FY2025 FCF. These are dated sensitivities, not fair value. |
+| Downside | Revenue growth falls below 5%, DBNRR stays below 95, OCF turns negative, or cash outside cash/equivalents cannot be accessed without a material haircut. Net ADS issuance compounds the downside. |
+| Reverse valuation | Can Agora sustain double-digit growth, at least 63% gross margin and positive recurring FCF without net dilution, while proving how much of the reported $361.655m broad liquidity is accessible to shareholders? |
+| Next review | Review after the next quarterly results or earlier financing/liquidity disclosure. Compare revenue growth, DBNRR, gross margin, OCF/FCF, period-end ADS equivalents and liquidity restrictions with these assumptions. |
+
+The conservative valuation excludes $288.988m of deposits and bank products from surplus liquidity. Counting all reported broad liquidity would reduce the same-date enterprise-value sensitivity to about $86.161m. The user must accept the cash-only anchor or specify a documented haircut and operating reserve.
+
+### BW proposed v3
+
+Recommended status: remain `researching`. The balance reconciliation fixed the evidence gap, but H1 cash conversion and the claim stack do not yet support a ready thesis.
+
+| Field | Proposed user hypothesis |
+|---|---|
+| Revenue | For at least two consecutive filings, backlog converts into reported revenue without material cancellation or unexplained delay. Base Electron and other major projects must be separate enough to judge growth beyond one contract. |
+| Margin | Project and operating margins do not deteriorate as backlog converts. The $80–105m 2026 adjusted-EBITDA guidance is a checkpoint, but GAAP profitability and cash conversion must confirm it. |
+| Cash flow | TTM OCF turns positive and company-defined FCF becomes positive within 12 months. H1 FCF of -$13.373m must improve through collected project cash, not delayed payables or another financing. |
+| Dilution | Fully diluted shares increase no more than 5% from the post-offering base during the next 12 months. Any further issue must show a specific per-share return greater than its dilution. |
+| Valuation | Value all financing claims before applying a multiple. At $7.74, equity value is about $1,152.990m; borrowings, preferred stock and finance leases net of cash make claim-adjusted capital about $1,340.721m before operating leases and other obligations. Do not choose a revenue or EBITDA multiple until recurring margins, TTM cash flow and diluted shares are established. |
+| Downside | A major project slips or is cancelled, backlog fails to convert to cash, margins compress, or negative FCF forces another equity raise. The preferred/debt/lease stack can absorb value before common shareholders benefit. |
+| Reverse valuation | Can BW convert enough of the $2.6b reported backlog into recurring cash-positive work to support at least $1.341b of claim-adjusted capital without another material share increase? |
+| Next review | Review after the next quarterly filing, a material Base Electron milestone, backlog revision or financing announcement. Reconcile revenue by major project, backlog changes, margins, OCF, capex, debt, preferred claims, leases and diluted shares. |
+
+The $1.341b bridge uses $276.843m borrowings, $191.7m preferred stock, $27.822m finance leases and $308.634m cash. Including $17.623m operating leases makes the sensitivity about $1.358b. The user must decide whether positive TTM FCF is a hard prerequisite for `ready`, or whether two quarters of demonstrably improving conversion are sufficient.
+
+### HIMS proposed v3
+
+Recommended status: remain `researching`. The current equity value requires strong future cash economics while current evidence shows acquisition-mixed growth, weaker margin and negative company-defined H1 FCF.
+
+| Field | Proposed user hypothesis |
+|---|---|
+| Revenue | Within two comparable reports, US organic revenue returns to positive year-over-year growth and Eucalyptus revenue is separate enough to verify it. Over 3–5 years, consolidated growth remains at least 15% without repeated acquisitions. |
+| Margin | Gross margin recovers to about 70% within 12 months and stays above 65% in every intervening quarter alongside compliant GLP-1 operations and stable customer economics. |
+| Cash flow | TTM company-defined FCF becomes positive for two consecutive quarters, including purchases of property, equipment, intangibles and software. Within three years, normalized FCF margin reaches roughly 10% without a temporary working-capital benefit. |
+| Dilution | Fully diluted shares grow no more than 5% year over year after acquisition consideration and stock compensation. Further acquisitions disclose their share and cash cost. |
+| Valuation | At $28.17, equity value is about $6.572b. A 20–25x normalized-FCF assumption requires about $263–329m of annual FCF, roughly 8.7–10.9% of Q2 revenue annualized only as a scale comparison. The annualization is not a forecast; H1 company-defined FCF was -$15.161m. |
+| Downside | US organic revenue remains negative, gross margin stays below 65%, GLP-1 or acquisition economics require repeated restructuring, or full-definition FCF remains negative. Multiple compression and dilution then reinforce each other. |
+| Reverse valuation | Can HIMS produce $263–329m of recurring annual FCF within three years while restoring US organic growth, about 70% gross margin and controlled dilution, enough to justify today’s $6.572b equity value at 20–25x FCF? |
+| Next review | Review after the next quarterly report or GLP-1 regulatory/acquisition-financing update. Reconcile organic/acquired revenue, gross margin, retention/CAC evidence, company-defined FCF, working capital, debt and diluted shares. |
+
+The user must accept the proposed 15% long-term growth and 10% normalized FCF-margin hurdles or replace them with explicit thresholds before saving.
+
+Suggested decision order: settle API's liquidity haircut; decide BW's minimum cash-conversion evidence; then decide whether HIMS can reach the reverse-valuation cash requirement without repeated acquisitions. Save accepted companies separately so each version keeps its own price snapshot and the 11 August baseline.
+
+No thesis, position, score, discovery decision, outcome or paper order changed while preparing this packet.

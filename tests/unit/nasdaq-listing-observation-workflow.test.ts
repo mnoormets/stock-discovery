@@ -17,7 +17,7 @@ describe('Nasdaq listing observation workflow', () => {
     expect(workflow).toContain('timeout-minutes: 3');
     expect(workflow).toContain('timeout-minutes: 1');
     expect(workflow).toContain('calibrate:nasdaq-listings -- --artifact-dir artifacts/nasdaq-listings');
-    expect(workflow).toContain('actions/upload-artifact@v4');
+    expect(workflow).toContain('actions/upload-artifact@v6');
     expect(workflow).toContain('if-no-files-found: error');
     expect(workflow).toContain('retention-days: 30');
   });
