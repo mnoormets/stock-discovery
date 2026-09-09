@@ -89,21 +89,21 @@ Then add company-specific versioned assumptions to the thesis workflow: source-b
 
 ## 9 September decision packet
 
-This follow-up turns the dated evidence above into proposed Thesis Builder text. It is a review draft, not an investment instruction or a saved thesis version. The user must accept or edit the assumptions and status before any write to `investment_theses`.
+This follow-up turned the dated evidence above into Thesis Builder text. The user accepted the assumptions and statuses as written on 9 September 2026. They are recorded hypotheses and monitoring gates, not investment instructions.
 
-The context was read from Neon in a read-only transaction after `collect-daily #23` completed successfully. Each quote is the 8 September US regular-session close collected on 9 September. Existing saved theses remain unchanged.
+The context was read from Neon after `collect-daily #23` completed successfully. Each approved quote is the 8 September US regular-session close collected on 9 September. The subsequent save preserved these exact price snapshots even though newer snapshot rows had arrived, so the decision remains tied to the market context the user reviewed.
 
 | Company | Current saved thesis | Price snapshot | Price / market cap | 9 September discovery |
 |---|---|---|---|---|
-| API | #6 v2, `ready` | #2327, 2026-09-08 20:00:01 UTC | $4.11 / $347.500m | included rank 6; Growth 81, Health 93, Coverage 100 |
-| BW | #7 v2, `researching` | #2329, 2026-09-08 20:00:03 UTC | $7.74 / $1,152.990m | excluded; Growth 100, Health 55, Coverage 85 |
-| HIMS | #9 v2, `researching` | #2339, 2026-09-08 20:00:03 UTC | $28.17 / $6,572.439m | excluded; Growth 63, Health 35, Coverage 78 |
+| API | v3, `ready` | #2327, 2026-09-08 20:00:01 UTC | $4.11 / $347.500m | included rank 6; Growth 81, Health 93, Coverage 100 |
+| BW | v3, `researching` | #2329, 2026-09-08 20:00:03 UTC | $7.74 / $1,152.990m | excluded; Growth 100, Health 55, Coverage 85 |
+| HIMS | v3, `researching` | #2339, 2026-09-08 20:00:03 UTC | $28.17 / $6,572.439m | excluded; Growth 63, Health 35, Coverage 78 |
 
 The discovery result is supporting context only. A high score means “research further,” and exclusion is not a sell conclusion. No newer filing was established in this follow-up.
 
-### API proposed v3
+### API approved v3
 
-Recommended status: keep `ready` if the user accepts the conservative liquidity treatment. Here, `ready` means ready for a monitored research decision, not ready to buy.
+Approved status: keep `ready` with the conservative liquidity treatment. Here, `ready` means ready for a monitored research decision, not ready to buy.
 
 | Field | Proposed user hypothesis |
 |---|---|
@@ -116,11 +116,11 @@ Recommended status: keep `ready` if the user accepts the conservative liquidity 
 | Reverse valuation | Can Agora sustain double-digit growth, at least 63% gross margin and positive recurring FCF without net dilution, while proving how much of the reported $361.655m broad liquidity is accessible to shareholders? |
 | Next review | Review after the next quarterly results or earlier financing/liquidity disclosure. Compare revenue growth, DBNRR, gross margin, OCF/FCF, period-end ADS equivalents and liquidity restrictions with these assumptions. |
 
-The conservative valuation excludes $288.988m of deposits and bank products from surplus liquidity. Counting all reported broad liquidity would reduce the same-date enterprise-value sensitivity to about $86.161m. The user must accept the cash-only anchor or specify a documented haircut and operating reserve.
+The conservative valuation excludes $288.988m of deposits and bank products from surplus liquidity. Counting all reported broad liquidity would reduce the same-date enterprise-value sensitivity to about $86.161m. The approved thesis uses the cash-only anchor until a documented haircut and operating reserve support a broader definition.
 
-### BW proposed v3
+### BW approved v3
 
-Recommended status: remain `researching`. The balance reconciliation fixed the evidence gap, but H1 cash conversion and the claim stack do not yet support a ready thesis.
+Approved status: remain `researching`. The balance reconciliation fixed the evidence gap, but H1 cash conversion and the claim stack do not yet support a ready thesis.
 
 | Field | Proposed user hypothesis |
 |---|---|
@@ -133,11 +133,11 @@ Recommended status: remain `researching`. The balance reconciliation fixed the e
 | Reverse valuation | Can BW convert enough of the $2.6b reported backlog into recurring cash-positive work to support at least $1.341b of claim-adjusted capital without another material share increase? |
 | Next review | Review after the next quarterly filing, a material Base Electron milestone, backlog revision or financing announcement. Reconcile revenue by major project, backlog changes, margins, OCF, capex, debt, preferred claims, leases and diluted shares. |
 
-The $1.341b bridge uses $276.843m borrowings, $191.7m preferred stock, $27.822m finance leases and $308.634m cash. Including $17.623m operating leases makes the sensitivity about $1.358b. The user must decide whether positive TTM FCF is a hard prerequisite for `ready`, or whether two quarters of demonstrably improving conversion are sufficient.
+The $1.341b bridge uses $276.843m borrowings, $191.7m preferred stock, $27.822m finance leases and $308.634m cash. Including $17.623m operating leases makes the sensitivity about $1.358b. Positive TTM OCF and company-defined FCF remain explicit research gates; a future review can decide whether two quarters of demonstrably improving conversion justify changing status.
 
-### HIMS proposed v3
+### HIMS approved v3
 
-Recommended status: remain `researching`. The current equity value requires strong future cash economics while current evidence shows acquisition-mixed growth, weaker margin and negative company-defined H1 FCF.
+Approved status: remain `researching`. The current equity value requires strong future cash economics while current evidence shows acquisition-mixed growth, weaker margin and negative company-defined H1 FCF.
 
 | Field | Proposed user hypothesis |
 |---|---|
@@ -150,8 +150,6 @@ Recommended status: remain `researching`. The current equity value requires stro
 | Reverse valuation | Can HIMS produce $263–329m of recurring annual FCF within three years while restoring US organic growth, about 70% gross margin and controlled dilution, enough to justify today’s $6.572b equity value at 20–25x FCF? |
 | Next review | Review after the next quarterly report or GLP-1 regulatory/acquisition-financing update. Reconcile organic/acquired revenue, gross margin, retention/CAC evidence, company-defined FCF, working capital, debt and diluted shares. |
 
-The user must accept the proposed 15% long-term growth and 10% normalized FCF-margin hurdles or replace them with explicit thresholds before saving.
+The approved hurdles are 15% long-term growth and a roughly 10% normalized FCF margin within three years.
 
-Suggested decision order: settle API's liquidity haircut; decide BW's minimum cash-conversion evidence; then decide whether HIMS can reach the reverse-valuation cash requirement without repeated acquisitions. Save accepted companies separately so each version keeps its own price snapshot and the 11 August baseline.
-
-No thesis, position, score, discovery decision, outcome or paper order changed while preparing this packet.
+The three versions were saved separately through the application's versioned thesis domain function. Verification confirmed one current v3 per position, unchanged v2 narrative/checkpoint fields, exact approved assumptions and statuses, and price links #2327/#2329/#2339. API uses score snapshot #4604, BW #4598 and HIMS #4608. No position status, discovery decision, outcome or paper order changed.
