@@ -19,18 +19,18 @@ function dateTime(value: string): string {
 
 function HorizonCard({ stats }: { stats: BacktestHorizonStats }) {
   return <article className="card backtestHorizon">
-    <div className="validationHorizonTop"><strong>{stats.horizon}</strong><span>{stats.measuredCount}/{stats.candidateCount} mõõdetud</span></div>
+    <div className="validationHorizonTop"><strong>{stats.horizon}</strong><span>{stats.measuredTickerCount}/{stats.distinctTickerCount} tickerit mõõdetud</span></div>
     <dl className="backtestMetrics">
-      <div><dt>Jookse</dt><dd>{stats.runCount}</dd></div>
-      <div><dt>Kandidaate</dt><dd>{stats.candidateCount}</dd></div>
-      <div><dt>Keskmine</dt><dd className={valueClass(stats.averageReturn)}>{percent(stats.averageReturn)}</dd></div>
-      <div><dt>Mediaan</dt><dd className={valueClass(stats.medianReturn)}>{percent(stats.medianReturn)}</dd></div>
-      <div><dt>Hit rate</dt><dd>{percent(stats.hitRatePercent)}</dd></div>
-      <div><dt>Võitis benchmark’i</dt><dd>{percent(stats.beatBenchmarkPercent)}</dd></div>
-      <div><dt>Keskmine excess</dt><dd className={valueClass(stats.averageExcessReturn)}>{percent(stats.averageExcessReturn)}</dd></div>
+      <div><dt>Otsuseid mõõdetud</dt><dd>{stats.measuredDecisionCount}/{stats.decisionCount}</dd></div>
+      <div><dt>Tickerite keskmine</dt><dd className={valueClass(stats.averageReturn)}>{percent(stats.averageReturn)}</dd></div>
+      <div><dt>Tickerite mediaan</dt><dd className={valueClass(stats.medianReturn)}>{percent(stats.medianReturn)}</dd></div>
+      <div><dt>Ticker hit rate</dt><dd>{percent(stats.hitRatePercent)}</dd></div>
+      <div><dt>Tickereid üle benchmark’i</dt><dd>{percent(stats.beatBenchmarkPercent)}</dd></div>
+      <div><dt>Tickerite keskmine excess</dt><dd className={valueClass(stats.averageExcessReturn)}>{percent(stats.averageExcessReturn)}</dd></div>
     </dl>
     <div className="validationExtremes">
-      <span>Benchmark mõõdetud: {stats.benchmarkMeasuredCount}/{stats.measuredCount}</span>
+      <span>Benchmark: {stats.benchmarkMeasuredTickerCount} tickerit / {stats.benchmarkMeasuredDecisionCount} otsust</span>
+      <span>Ootel: {stats.pendingCount} · puudu: {stats.missingCount} · unavailable: {stats.unavailableCount}</span>
       <span>Parim: {stats.best ? <><strong>{stats.best.ticker}</strong> {percent(stats.best.returnPercent)}</> : '—'}</span>
       <span>Halvim: {stats.worst ? <><strong>{stats.worst.ticker}</strong> {percent(stats.worst.returnPercent)}</> : '—'}</span>
     </div>
@@ -76,9 +76,10 @@ export default async function BacktestPage() {
     {dashboard && <>
       {!dashboard.hasMeasuredOutcomes && <div className="empty card backtestEmpty"><strong>Backtest vajab mõõdetud discovery outcome’e. Käivita scanner ja oota kuni valitud horisondid täituvad.</strong><p>Null kandidaati ja puuduv benchmark on korrektsed tulemused. Puuduvat excess return’i ei muudeta 0%-ks.</p></div>}
       <section className="section">
-        <div className="sectionHeading"><div><p className="eyebrow">BENCHMARK · {dashboard.benchmarkSymbol} · CANONICAL ONLY</p><h2>Tulemused horisondi kaupa</h2></div><span className="muted">{dashboard.canonicalRuns} canonical jooksu ({dashboard.totalRuns} kokku salvestatud)</span></div>
-        <div className="backtestGrid">{dashboard.horizons.map((stats) => <HorizonCard stats={stats} key={stats.horizon} />)}</div>
-        <p className="muted provenanceNote"><strong>Koondnäitajad kasutavad ainult canonical (`rklb_daily`) jooksu</strong> (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 4). Käsitsi avatud scanneri jooks (`rklb`) jääb allpool run-level detaili auditiks, aga ei lähe mediaani, hit rate’i ega excess return’i koondnäitajatesse. Kokku salvestatud: {dashboard.provenance.map((item) => `${item.modelVersion} · ${item.runType} ${item.runs} jooksu / ${item.candidates} kandidaati`).join('; ') || 'jooksu pole'}. Eri mudeliversioone ei tohi lugeda ühe seeriana.</p>
+        <div className="sectionHeading"><div><p className="eyebrow">BENCHMARK · {dashboard.benchmarkSymbol} · MODEL VERSION × HORIZON</p><h2>Canonical tulemuskohordid</h2></div><span className="muted">{dashboard.canonicalRuns} canonical jooksu ({dashboard.totalRuns} kokku salvestatud)</span></div>
+        <p className="muted validationMethod">Sama tickeri korduvad mõõdetud otsused keskmistatakse esmalt mudeliversiooni ja horisondi sees. Return, mediaan, hit rate ja benchmark-võrdlus annavad seejärel igale tickerile ühe võrdse kaalu; otsuseread näitavad eraldi mõõtmiskatvust.</p>
+        {dashboard.models.length === 0 ? <div className="empty card"><strong>Canonical tulemuskoorte pole veel.</strong></div> : dashboard.models.map((model) => <div className="outcomeModel" key={model.modelVersion}><div className="sectionHeading"><div><h3>{model.modelVersion}</h3><p>{model.runCount} jooksu · {model.decisionCount} otsust · {model.distinctTickerCount} eri tickerit</p></div></div><div className="backtestGrid">{model.horizons.map((stats) => <HorizonCard stats={stats} key={stats.horizon} />)}</div></div>)}
+        <p className="muted provenanceNote"><strong>Tulemused kasutavad ainult canonical (`rklb_daily`) jookse</strong> (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 4). Käsitsi avatud scanneri jooks (`rklb`) jääb allpool run-level detaili auditiks. Kokku salvestatud: {dashboard.provenance.map((item) => `${item.modelVersion} · ${item.runType} ${item.runs} jooksu / ${item.candidates} otsust`).join('; ') || 'jooksu pole'}.</p>
       </section>
       <section className="section">
         <div className="sectionHeading"><div><p className="eyebrow">SAVED DECISIONS ONLY</p><h2>Run-level detail</h2></div><Link className="button secondary" href="/validation">Ava Validation</Link></div>

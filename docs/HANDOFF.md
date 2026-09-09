@@ -28,6 +28,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-09-09 model- and ticker-separated outcome results:** `/validation` and `/backtest` now build a separate cohort for every canonical model version and holding horizon. Repeated daily decisions for one ticker are averaged inside that ticker before the cohort mean, median, hit rate, best/worst and benchmark comparison are calculated, so each ticker has one equal statistical weight. The pages show both decision and distinct-ticker coverage plus measured, pending, missing and unavailable counts. Manual runs remain excluded and a model with zero selected decisions remains visible. This is a read-side interpretation change: no schema, provider, score, ranking, discovery or paper-policy behavior changed.
+
 - **2026-09-09 database target contract:** every normal app and CLI database startup now requires `DATABASE_URL` and an explicit `DATABASE_TARGET`. `golden` accepts only a `neon.tech` host, `local` only an intentional local host, and `test` only a database ending `_test` or `_tmp`; validation happens before a PostgreSQL client connects and errors contain no credentials. This closes the observed host trap where Next loaded the frozen local `discovery` URL from `.env.local` ahead of the Neon URL in `.env`. Docker and database-connected GitHub workflow steps explicitly use `golden`; the test harness uses `test`. The migration runner retains its independent stricter write guard and explicit `--database-url` escape hatch.
 
 - **2026-09-09 Thesis Review Queue V1:** `/today` now reads every current, non-rejected thesis for active/watchlist positions in a batched `REPEATABLE READ, READ ONLY` transaction. Each card shows the version/status, exact thesis-linked decision price, latest stored price and same-currency change, explicit review trigger, future earnings date and all eight recorded assumptions. `review_due` requires a newer stored financial filing, a decisive/supporting assessed SEC event, or a passed earnings date without a newer filing; unverified news headlines do not trigger it. Free text is never parsed into a pass/fail claim and no thesis/status is changed automatically. A new thesis version is the human review record. Current Neon state is 0 due: API/BW/HIMS v3 are awaiting evidence for their November dates, at latest stored prices $4.0474/$7.59/$27.315 versus reviewed $4.11/$7.74/$28.17.
@@ -237,7 +239,7 @@ Core collection #35 and canonical v3 run #67 succeeded on 8 September: 200 provi
 
 **The immediate constraint is decision quality and dependable forward measurement; the 8 September cron alert is resolved and the 9 September collection succeeded.** GitHub `collect-daily #21` persisted collection #35, canonical run #67, 43 price snapshots, 24 paper orders and 30 refreshed outcomes before its tracking completion check exited 1. The tracker correctly refused to fabricate newer timestamps, but the recency helper counted the Labor Day closure as an elapsed market day and labelled all 18 Friday quotes stale. The helper now uses the official published 2026–2028 NYSE full-day closure dates and falls back conservatively to weekdays outside that range. The failed attempt rows stay immutable; old missing windows remain unfilled.
 
-Entry-aware's strategy book currently has one filled and 41 skipped stock signals: 17 for missing history, 17 for history plus current-collection confirmation, and seven for confirmation alone. Do not lower gates merely to make it trade. The current v3 policy has nine canonical days, 54 selected decisions across nine tickers; only eight 1-week outcomes across four tickers are measured and 262 horizons remain pending. Canonical v2 has 63 measured outcomes across seven tickers, 53 missing and 284 pending. Keep versions and horizons separate; this is still far too little independent evidence for a strategy conclusion.
+Entry-aware's strategy book currently has one filled and 41 skipped stock signals: 17 for missing history, 17 for history plus current-collection confirmation, and seven for confirmation alone. Do not lower gates merely to make it trade. Canonical v3 now has 10 runs, 60 selected decisions and nine distinct tickers. At one week, 16 decisions across six tickers are measured and 44 remain pending; after averaging repeated decisions within each ticker, the six-ticker mean is -3.49%, median +0.21% and mean excess return versus SPY -3.81%. Canonical v2 has 16 runs, 80 decisions and ten tickers: its one-week cohort has 46 measured decisions across nine tickers and 34 missing, while its two-week cohort has 38 measured decisions across six tickers, 23 pending and 19 missing. These are small, correlated samples. Model versions and horizons remain separate and none of these figures supports a strategy-performance claim.
 
 The user accepted the API, BW and HIMS decision packet on 9 September. Their current v3 Thesis Builder records contain the dated assumptions and review triggers, while their 11 August v2 records remain immutable history. API remains `ready`; BW and HIMS remain `researching`. Today now turns these records into a deterministic review queue; all three are awaiting November evidence and none is due. [BW/API reconciliation](BW_API_RECONCILIATION_2026-09-07.md) makes the filing-level debt, liquidity and ADS definitions visible without replacing normalized facts. The fixed bear/base/bull sensitivity is not evidence of mispricing.
 
@@ -253,7 +255,6 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NEXT
 
-- Model-version/horizon-separated results, distinct ticker/decision counts and missing-outcome coverage. Do not count repeated daily picks as independent bets or pool v2 performance into a claim about v3.
 - A separately versioned, capital-constrained paper experiment only after defining cash, position/concentration limits, repeated-signal treatment, order expiry and exits. Preserve V1 as the original baseline.
 - Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing the five-company budget, queue order or adding production listing discovery.
 
@@ -271,6 +272,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- **2026-09-09 outcome cohort weighting:** Results are grouped by canonical `model_version` and horizon. Within one cohort, every measured decision return is first averaged by ticker; cohort return, median, hit rate, best/worst and benchmark-excess statistics then weight those ticker averages equally. Decision counts remain visible as operational observation coverage, and distinct ticker counts are the statistical sample coverage. Pending, missing and unavailable decisions remain separate. Manual runs and excluded decisions do not enter cohort results; zero-candidate canonical model versions remain visible instead of disappearing.
 
 - **2026-09-09 thesis review queue:** V1 adds no schema and no scheduled writer. The queue is a separate batched repeatable-read transaction, limited to current non-rejected theses attached to active/watch positions. Due evidence is intentionally narrow: a financial filing stored/filed after the version, a latest decisive/supporting assessment for a new SEC filing, or a passed stored earnings date when no newer financial filing exists. Secondary news cannot create due state. Price change requires matching explicit currencies. Assumption text remains visible but non-computable; saving a new immutable thesis version is the explicit reviewed action.
 
@@ -395,16 +398,15 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ## Avatud sõltuvused ja otsused
 
-Current as of 2026-09-06; earlier calibration observations and superseded plans are preserved in dated session entries and supporting design documents.
+Current as of 2026-09-09; earlier calibration observations and superseded plans are preserved in dated session entries and supporting design documents.
 
-- Verified open defects: continued quote collection for selected/held names, stale/partial market-setup labels, and marks for held tickers without new orders. See the review's acceptance criteria.
-- Outcome sample coverage and maturity remain insufficient for a strategy conclusion. Canonical v3 has only eight measured 1-week outcomes across four tickers; prior versions and later horizons must remain separate.
+- Outcome sample coverage and maturity remain insufficient for a strategy conclusion. Canonical v3 has 16 measured one-week decisions across six distinct tickers; repeated decisions are correlated observations, and prior versions and later horizons remain separate.
 - Historical prices must not be invented or silently backfilled. Reusing existing paper marks for outcome measurement requires a provenance and immutability design before implementation.
 - Capital, risk tolerance, concentration limits and intended holding period must be established before a portfolio-policy experiment; this review did not receive those user constraints.
 - CompanyFacts daily budget remains five, and MIN_MENTIONS remains three. Inspect accumulated observations before retuning either.
 - Nasdaq listing observation is implemented but is not production discovery. Its latest artifact series was not reviewed in this session.
 - Authentication/authorization and supported Next.js remain prerequisites for any public deployment. Automated tests, versioned migrations and API/CLI advisory locking already exist; they are not unbuilt blockers.
-- Neon remains the sole canonical database. Host .env.local still targets the frozen local discovery database; use the explicit verified Docker environment pending a startup fix. Tests use only the isolated local discovery_test database.
+- Neon remains the sole canonical database. Host `.env.local` still targets the frozen local discovery database as an intentional mismatch case; normal startup now rejects it when the declared target is `golden`. Docker pins the app to the validated Neon target, and tests use only the isolated local `discovery_test` database.
 - Healthchecks protects core collection completion; paper execution needs independent absence/failure visibility. Registered filing persistence does not prove historical EDGAR completeness. Fine-grained scheduler PAT expiry remains recorded as 2027-08-20; expiry and notifications were not rechecked today.
 - Benchmark for current experiments is SPY. Sector benchmarks, business-driver concentration and a finite-cash paper policy are separate possible improvements, not changes made here.
 - financial_facts write-flow provenance and non-versioned sector/restatement limitations remain open. Existing immutable snapshots must not be reinterpreted as stronger historical evidence than they contain.
@@ -605,7 +607,7 @@ Piirangud, mida tuleb teadvustada:
 
 ## Automated Test Coverage (2026-08-17)
 
-**Latest implementation recheck, 2026-09-09:** 492/492 tests in 63 files, ten migrations, isolated local `discovery_test`; teardown left zero test databases. Typecheck and lint passed. The optimized build compiled all 22 routes, the `app` container was restarted, and `/today` plus `/thesis/12` returned HTTP 200 while unauthenticated `/api/collect` returned 401. Tests now include the explicit database-target contract, credential-safe failures and workflow target pins in addition to the previously documented coverage. The detailed inventory below is historical and is not a complete list of the current suite.
+**Latest implementation recheck, 2026-09-09:** 495/495 tests in 65 files, ten migrations, isolated local `discovery_test`; teardown left zero test databases. Typecheck and lint passed. The optimized build compiled all 22 routes and the `app` container was restarted. Live `/validation` and `/backtest` returned HTTP 200 and rendered separate v3, v2 and v1 cohorts with decision/ticker coverage and pending/missing/unavailable states. Tests now include model/horizon isolation, equal ticker weighting and explicit status/benchmark coverage in addition to the database-target contract and previously documented coverage. The detailed inventory below is historical and is not a complete list of the current suite.
 
 Vitest, **354 testi, 39 faili** (mõõdetud 2026-08-25). Käivitamine konteineris `docker compose run --rm -T app npm test` või hostil `npm test` (hostil on `TEST_DATABASE_URL` kohustuslik, vt „Praegune töötav seis"). Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja jooksu lõpus kustutab; Neoni golden source'i ei puudutata. **Testibaasi skeem ehitatakse versioonitud migratsioonidest** (`scripts/migrate.cjs`), seega iga jooks valideerib ühtlasi runnerit ja migratsioone `0001–0007` koos `schema_migrations` raamatupidamisega. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
 
@@ -646,6 +648,12 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-09-09 — model- and ticker-separated outcome results
+
+- Added a shared pure cohort summarizer and changed `/validation` and `/backtest` to aggregate canonical included decisions separately by `model_version` and horizon. Repeated decisions are averaged per ticker before ticker-level statistics, while both decision and distinct-ticker coverage remain explicit. Pending, missing and unavailable decisions and benchmark coverage are reported separately. No migration, new provider, score/ranking change, discovery policy or paper policy was introduced.
+- Focused unit/database coverage passed 3/3 in two files. Final `npm run typecheck` and `npm run lint` passed. The full isolated suite applied all ten migrations and passed **65 files / 495 tests** in 425.04s; teardown left zero test databases. The mounted Docker production build compiled and generated 22/22 routes, followed by the required app restart.
+- Live Neon smoke returned HTTP 200 for `/validation` and `/backtest`. Browser inspection confirmed separate v3/v2/v1 sections, ticker-weighted metrics, decision/ticker denominators and all outcome states. The existing read-triggered refresh measured newly due outcomes during the checks: v3 one-week coverage is now 16 decisions across six tickers; v2 one-week is 46 across nine and v2 two-week is 38 across six. Historical decisions and already measured outcomes remained immutable.
 
 ### 2026-09-09 — database target contract
 
@@ -954,6 +962,12 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-09 — model- and ticker-separated outcome results
+
+- Replaced the pooled validation/backtest headline with explicit canonical model-version and horizon cohorts. Added a shared ticker-level aggregation helper so repeated daily selections of the same company do not receive independent statistical weight, while operational decision coverage remains visible.
+- Updated both pages to show run, decision, ticker, measured, pending, missing, unavailable and benchmark coverage. README and the user guide explain the interpretation. Added focused unit and database regression tests covering model isolation, repeated-ticker weighting, benchmark coverage and outcome states.
+- Typecheck, lint, focused tests, the 495-test isolated suite and the 22-route Docker production build passed. The app was restarted; both live pages returned HTTP 200 and were inspected in the browser. Runtime verification used the pages' existing due-outcome refresh behavior and therefore advanced due production coverage without changing the outcome contract.
 
 ### 2026-09-09 — fail-closed database target selection
 

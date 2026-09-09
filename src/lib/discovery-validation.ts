@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { ensureSchema, pool } from './db';
 import type { DiscoveryCriterion } from './rklb-discovery';
 import { recordMissingOutcomeAnalysisSnapshots } from './outcome-analysis-snapshots';
+import { summarizeOutcomeCohort } from './model-outcome-results';
 
 // V3 eemaldab market-cap hard ceiling'id, valib kuni kaks kandidaati igast
 // versioned market-cap tier'ist ning jätab scale-kriteeriumi järjestusloendusest
@@ -118,9 +119,13 @@ export interface ValidationRun {
 
 export interface HorizonValidationStats {
   horizon: OutcomeHorizon;
-  candidateCount: number;
-  observedCount: number;
+  decisionCount: number;
+  distinctTickerCount: number;
+  measuredDecisionCount: number;
+  measuredTickerCount: number;
   pendingCount: number;
+  missingCount: number;
+  unavailableCount: number;
   averageReturn: number | null;
   medianReturn: number | null;
   winnerCount: number;
@@ -132,9 +137,16 @@ export interface HorizonValidationStats {
   worst: { ticker: string; returnPercent: number } | null;
 }
 
-// Koondstatistika loeb kõiki salvestatud jooksu, sh käsitsi avatud scanneri
-// jooksu. Provenance peab olema nähtav, et v1/v2 ja canonical/manual tulemusi ei
-// loetaks ühe seeriana.
+export interface ModelValidationStats {
+  modelVersion: string;
+  runCount: number;
+  decisionCount: number;
+  distinctTickerCount: number;
+  horizons: HorizonValidationStats[];
+}
+
+// Provenance loeb kõik salvestatud jooksud. Tulemuste kohordid piirduvad
+// canonical run'idega ja on mudeliversiooni järgi eraldatud.
 export interface RunProvenanceUsage {
   modelVersion: string;
   runType: string;
@@ -150,7 +162,7 @@ export interface ValidationDashboard {
   canonicalRuns: number;
   canonicalCandidates: number;
   provenance: RunProvenanceUsage[];
-  horizons: HorizonValidationStats[];
+  models: ModelValidationStats[];
   runs: ValidationRun[];
 }
 
@@ -538,11 +550,17 @@ function jsonArray<T>(value: T[] | string | null): T[] {
 export async function getValidationDashboard(): Promise<ValidationDashboard> {
   await ensureSchema();
   await refreshCandidateOutcomes();
-  const [counts, canonicalCounts, provenanceRows, outcomeRows, runRows] = await Promise.all([
+  const [counts, canonicalModelRows, provenanceRows, outcomeRows, runRows] = await Promise.all([
     pool.query(`SELECT count(*)::int AS runs, COALESCE(sum(included_count), 0)::int AS candidates FROM discovery_runs`),
     pool.query(
-      `SELECT count(*)::int AS runs, COALESCE(sum(included_count), 0)::int AS candidates
-       FROM discovery_runs WHERE run_type = $1`,
+      `SELECT r.model_version, count(DISTINCT r.id)::int AS runs,
+              count(d.id)::int AS decisions,
+              count(DISTINCT d.ticker)::int AS tickers
+       FROM discovery_runs r
+       LEFT JOIN discovery_decisions d ON d.run_id = r.id AND d.included = true
+       WHERE r.run_type = $1
+       GROUP BY r.model_version
+       ORDER BY max(r.run_at) DESC, r.model_version DESC`,
       [CANONICAL_RUN_TYPE],
     ),
     pool.query(
@@ -553,9 +571,9 @@ export async function getValidationDashboard(): Promise<ValidationDashboard> {
     ),
     // Koondstatistika loeb ainult canonical run'e (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 4).
     pool.query(
-      `SELECT o.horizon, o.status, o.return_percent, d.ticker
+      `SELECT r.model_version, o.horizon, o.status, o.return_percent, d.ticker
        FROM candidate_outcomes o
-       JOIN discovery_decisions d ON d.id = o.decision_id
+       JOIN discovery_decisions d ON d.id = o.decision_id AND d.included = true
        JOIN discovery_runs r ON r.id = d.run_id
        WHERE r.run_type = $1`,
       [CANONICAL_RUN_TYPE],
@@ -567,30 +585,46 @@ export async function getValidationDashboard(): Promise<ValidationDashboard> {
     ),
   ]);
 
-  const horizons = OUTCOME_HORIZONS.map((horizon): HorizonValidationStats => {
-    const rows = outcomeRows.rows.filter((row) => row.horizon === horizon);
-    const measured = rows
-      .filter((row) => row.status === 'measured' && row.return_percent != null)
-      .map((row) => ({ ticker: String(row.ticker), returnPercent: Number(row.return_percent) }));
-    const returns = measured.map((row) => row.returnPercent);
-    const winnerCount = returns.filter((value) => value > 0).length;
-    const loserCount = returns.filter((value) => value < 0).length;
-    const flatCount = returns.filter((value) => value === 0).length;
-    const ranked = [...measured].sort((a, b) => b.returnPercent - a.returnPercent);
+  const models: ModelValidationStats[] = canonicalModelRows.rows.map((model) => {
+    const modelRows = outcomeRows.rows.filter((row) => row.model_version === model.model_version);
     return {
-      horizon,
-      candidateCount: rows.length,
-      observedCount: measured.length,
-      pendingCount: rows.filter((row) => row.status !== 'measured').length,
-      averageReturn: returns.length ? returns.reduce((sum, value) => sum + value, 0) / returns.length : null,
-      medianReturn: median(returns),
-      winnerCount,
-      loserCount,
-      flatCount,
-      winnerPercent: returns.length ? (winnerCount / returns.length) * 100 : null,
-      loserPercent: returns.length ? (loserCount / returns.length) * 100 : null,
-      best: ranked[0] || null,
-      worst: ranked.length ? ranked[ranked.length - 1] : null,
+      modelVersion: String(model.model_version),
+      runCount: Number(model.runs),
+      decisionCount: Number(model.decisions),
+      distinctTickerCount: Number(model.tickers),
+      horizons: OUTCOME_HORIZONS.map((horizon): HorizonValidationStats => {
+        const summary = summarizeOutcomeCohort(modelRows
+          .filter((row) => row.horizon === horizon)
+          .map((row) => ({
+            ticker: String(row.ticker),
+            status: String(row.status),
+            returnPercent: row.return_percent == null ? null : Number(row.return_percent),
+          })));
+        const returns = summary.tickerReturns.map((row) => row.returnPercent);
+        const winnerCount = returns.filter((value) => value > 0).length;
+        const loserCount = returns.filter((value) => value < 0).length;
+        const flatCount = returns.filter((value) => value === 0).length;
+        const ranked = [...summary.tickerReturns].sort((a, b) => b.returnPercent - a.returnPercent);
+        return {
+          horizon,
+          decisionCount: summary.decisionCount,
+          distinctTickerCount: summary.distinctTickerCount,
+          measuredDecisionCount: summary.measuredDecisionCount,
+          measuredTickerCount: summary.measuredTickerCount,
+          pendingCount: summary.pendingCount,
+          missingCount: summary.missingCount,
+          unavailableCount: summary.unavailableCount,
+          averageReturn: returns.length ? returns.reduce((sum, value) => sum + value, 0) / returns.length : null,
+          medianReturn: median(returns),
+          winnerCount,
+          loserCount,
+          flatCount,
+          winnerPercent: returns.length ? (winnerCount / returns.length) * 100 : null,
+          loserPercent: returns.length ? (loserCount / returns.length) * 100 : null,
+          best: ranked[0] || null,
+          worst: ranked.length ? ranked[ranked.length - 1] : null,
+        };
+      }),
     };
   });
 
@@ -701,15 +735,15 @@ export async function getValidationDashboard(): Promise<ValidationDashboard> {
   return {
     totalRuns: Number(counts.rows[0]?.runs || 0),
     totalCandidates: Number(counts.rows[0]?.candidates || 0),
-    canonicalRuns: Number(canonicalCounts.rows[0]?.runs || 0),
-    canonicalCandidates: Number(canonicalCounts.rows[0]?.candidates || 0),
+    canonicalRuns: models.reduce((sum, model) => sum + model.runCount, 0),
+    canonicalCandidates: models.reduce((sum, model) => sum + model.decisionCount, 0),
     provenance: provenanceRows.rows.map((row) => ({
       modelVersion: String(row.model_version),
       runType: String(row.run_type),
       runs: Number(row.runs),
       candidates: Number(row.candidates),
     })),
-    horizons,
+    models,
     runs,
   };
 }

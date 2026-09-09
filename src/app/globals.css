@@ -217,6 +217,8 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .guideRules { display: grid; gap: 9px; margin-bottom: 0; }
 .validationMethod { max-width: 940px; }
 .validationGrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.outcomeModel { display: grid; gap: 12px; margin-top: 24px; }
+.outcomeModel > .sectionHeading { margin-bottom: 0; }
 .validationHorizon { display: grid; gap: 14px; padding: 15px; }
 .validationHorizonTop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .validationHorizonTop strong { color: var(--accent); font-size: 24px; }

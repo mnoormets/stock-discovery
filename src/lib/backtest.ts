@@ -9,20 +9,34 @@ import {
   type OutcomeHorizon,
   type RunProvenanceUsage,
 } from './discovery-validation';
+import { summarizeOutcomeCohort } from './model-outcome-results';
 
 export interface BacktestHorizonStats {
   horizon: OutcomeHorizon;
-  runCount: number;
-  candidateCount: number;
-  measuredCount: number;
+  decisionCount: number;
+  distinctTickerCount: number;
+  measuredDecisionCount: number;
+  measuredTickerCount: number;
+  pendingCount: number;
+  missingCount: number;
+  unavailableCount: number;
   averageReturn: number | null;
   medianReturn: number | null;
   hitRatePercent: number | null;
   beatBenchmarkPercent: number | null;
   averageExcessReturn: number | null;
-  benchmarkMeasuredCount: number;
+  benchmarkMeasuredDecisionCount: number;
+  benchmarkMeasuredTickerCount: number;
   best: { ticker: string; returnPercent: number } | null;
   worst: { ticker: string; returnPercent: number } | null;
+}
+
+export interface BacktestModelStats {
+  modelVersion: string;
+  runCount: number;
+  decisionCount: number;
+  distinctTickerCount: number;
+  horizons: BacktestHorizonStats[];
 }
 
 export interface BacktestOutcome {
@@ -68,7 +82,7 @@ export interface BacktestDashboard {
   canonicalRuns: number;
   hasMeasuredOutcomes: boolean;
   provenance: RunProvenanceUsage[];
-  horizons: BacktestHorizonStats[];
+  models: BacktestModelStats[];
   runs: BacktestRun[];
 }
 
@@ -115,9 +129,19 @@ export async function collectDefaultBenchmarkPrice(): Promise<boolean> {
 export async function getBacktestDashboard(): Promise<BacktestDashboard> {
   await ensureSchema();
   await refreshCandidateOutcomes();
-  const [countRows, canonicalCountRows, provenanceRows, runRows, outcomeRows] = await Promise.all([
+  const [countRows, canonicalModelRows, provenanceRows, runRows, outcomeRows] = await Promise.all([
     pool.query(`SELECT count(*)::int AS total FROM discovery_runs`),
-    pool.query(`SELECT count(*)::int AS total FROM discovery_runs WHERE run_type = $1`, [CANONICAL_RUN_TYPE]),
+    pool.query(
+      `SELECT r.model_version, count(DISTINCT r.id)::int AS runs,
+              count(d.id)::int AS decisions,
+              count(DISTINCT d.ticker)::int AS tickers
+       FROM discovery_runs r
+       LEFT JOIN discovery_decisions d ON d.run_id = r.id AND d.included = true
+       WHERE r.run_type = $1
+       GROUP BY r.model_version
+       ORDER BY max(r.run_at) DESC, r.model_version DESC`,
+      [CANONICAL_RUN_TYPE],
+    ),
     pool.query(
       `SELECT model_version, run_type, count(*)::int AS runs,
               COALESCE(sum(included_count), 0)::int AS candidates
@@ -131,8 +155,8 @@ export async function getBacktestDashboard(): Promise<BacktestDashboard> {
     ),
     // Koondnäitajad loevad ainult canonical run'e (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 4).
     pool.query(
-      `SELECT r.id AS run_id, d.ticker, o.horizon, o.status, o.return_percent,
-              o.benchmark_status, o.benchmark_return_percent, o.excess_return_percent
+      `SELECT r.model_version, d.ticker, o.horizon, o.status, o.return_percent,
+              o.benchmark_status, o.excess_return_percent
        FROM candidate_outcomes o
        JOIN discovery_decisions d ON d.id = o.decision_id AND d.included = true
        JOIN discovery_runs r ON r.id = d.run_id
@@ -163,33 +187,48 @@ export async function getBacktestDashboard(): Promise<BacktestDashboard> {
       )
     : { rows: [] as Record<string, unknown>[] };
   const totalRuns = Number(countRows.rows[0]?.total || 0);
-  const canonicalRuns = Number(canonicalCountRows.rows[0]?.total || 0);
-  const horizons = OUTCOME_HORIZONS.map((horizon): BacktestHorizonStats => {
-    const rows = outcomeRows.rows.filter((row) => row.horizon === horizon);
-    const measured = rows.filter((row) => row.status === 'measured' && row.return_percent != null);
-    const returns = measured.map((row) => Number(row.return_percent));
-    const benchmarkMeasured = measured.filter((row) =>
-      row.benchmark_status === 'measured'
-      && row.benchmark_return_percent != null
-      && row.excess_return_percent != null,
-    );
-    const excessReturns = benchmarkMeasured.map((row) => Number(row.excess_return_percent));
-    const ranked = measured
-      .map((row) => ({ ticker: String(row.ticker), returnPercent: Number(row.return_percent) }))
-      .sort((a, b) => b.returnPercent - a.returnPercent);
+  const canonicalRuns = canonicalModelRows.rows.reduce((sum, row) => sum + Number(row.runs), 0);
+  const models: BacktestModelStats[] = canonicalModelRows.rows.map((model) => {
+    const modelRows = outcomeRows.rows.filter((row) => row.model_version === model.model_version);
     return {
-      horizon,
-      runCount: canonicalRuns,
-      candidateCount: rows.length,
-      measuredCount: measured.length,
-      averageReturn: returns.length ? returns.reduce((sum, value) => sum + value, 0) / returns.length : null,
-      medianReturn: median(returns),
-      hitRatePercent: returns.length ? (returns.filter((value) => value > 0).length / returns.length) * 100 : null,
-      beatBenchmarkPercent: excessReturns.length ? (excessReturns.filter((value) => value > 0).length / excessReturns.length) * 100 : null,
-      averageExcessReturn: excessReturns.length ? excessReturns.reduce((sum, value) => sum + value, 0) / excessReturns.length : null,
-      benchmarkMeasuredCount: benchmarkMeasured.length,
-      best: ranked[0] || null,
-      worst: ranked.length ? ranked[ranked.length - 1] : null,
+      modelVersion: String(model.model_version),
+      runCount: Number(model.runs),
+      decisionCount: Number(model.decisions),
+      distinctTickerCount: Number(model.tickers),
+      horizons: OUTCOME_HORIZONS.map((horizon): BacktestHorizonStats => {
+        const rows = modelRows
+          .filter((row) => row.horizon === horizon)
+          .map((row) => ({
+            ticker: String(row.ticker),
+            status: String(row.status),
+            returnPercent: numberOrNull(row.return_percent),
+            benchmarkStatus: row.benchmark_status == null ? null : String(row.benchmark_status),
+            excessReturnPercent: numberOrNull(row.excess_return_percent),
+          }));
+        const summary = summarizeOutcomeCohort(rows);
+        const returns = summary.tickerReturns.map((row) => row.returnPercent);
+        const excessReturns = summary.tickerExcessReturns.map((row) => row.returnPercent);
+        const ranked = [...summary.tickerReturns].sort((a, b) => b.returnPercent - a.returnPercent);
+        return {
+          horizon,
+          decisionCount: summary.decisionCount,
+          distinctTickerCount: summary.distinctTickerCount,
+          measuredDecisionCount: summary.measuredDecisionCount,
+          measuredTickerCount: summary.measuredTickerCount,
+          pendingCount: summary.pendingCount,
+          missingCount: summary.missingCount,
+          unavailableCount: summary.unavailableCount,
+          averageReturn: returns.length ? returns.reduce((sum, value) => sum + value, 0) / returns.length : null,
+          medianReturn: median(returns),
+          hitRatePercent: returns.length ? (returns.filter((value) => value > 0).length / returns.length) * 100 : null,
+          beatBenchmarkPercent: excessReturns.length ? (excessReturns.filter((value) => value > 0).length / excessReturns.length) * 100 : null,
+          averageExcessReturn: excessReturns.length ? excessReturns.reduce((sum, value) => sum + value, 0) / excessReturns.length : null,
+          benchmarkMeasuredDecisionCount: summary.benchmarkMeasuredDecisionCount,
+          benchmarkMeasuredTickerCount: summary.benchmarkMeasuredTickerCount,
+          best: ranked[0] || null,
+          worst: ranked.length ? ranked[ranked.length - 1] : null,
+        };
+      }),
     };
   });
 
@@ -238,14 +277,14 @@ export async function getBacktestDashboard(): Promise<BacktestDashboard> {
     benchmarkSymbol: DEFAULT_BENCHMARK_SYMBOL,
     totalRuns,
     canonicalRuns,
-    hasMeasuredOutcomes: horizons.some((horizon) => horizon.measuredCount > 0),
+    hasMeasuredOutcomes: models.some((model) => model.horizons.some((horizon) => horizon.measuredTickerCount > 0)),
     provenance: provenanceRows.rows.map((row) => ({
       modelVersion: String(row.model_version),
       runType: String(row.run_type),
       runs: Number(row.runs),
       candidates: Number(row.candidates),
     })),
-    horizons,
+    models,
     runs,
   };
 }

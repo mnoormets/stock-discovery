@@ -24,17 +24,18 @@ function returnClass(value: number | null): string {
 
 function HorizonCard({ stats }: { stats: HorizonValidationStats }) {
   return <article className="card validationHorizon">
-    <div className="validationHorizonTop"><strong>{stats.horizon}</strong><span>{stats.observedCount}/{stats.candidateCount} mõõdetud</span></div>
+    <div className="validationHorizonTop"><strong>{stats.horizon}</strong><span>{stats.measuredTickerCount}/{stats.distinctTickerCount} tickerit mõõdetud</span></div>
     <dl className="validationMetrics">
-      <div><dt>Keskmine</dt><dd className={returnClass(stats.averageReturn)}>{percent(stats.averageReturn)}</dd></div>
-      <div><dt>Mediaan</dt><dd className={returnClass(stats.medianReturn)}>{percent(stats.medianReturn)}</dd></div>
-      <div><dt>Võitjaid</dt><dd>{stats.winnerCount}{stats.winnerPercent == null ? '' : ` · ${percent(stats.winnerPercent)}`}</dd></div>
-      <div><dt>Kaotajaid</dt><dd>{stats.loserCount}{stats.loserPercent == null ? '' : ` · ${percent(stats.loserPercent)}`}</dd></div>
+      <div><dt>Tickerite keskmine</dt><dd className={returnClass(stats.averageReturn)}>{percent(stats.averageReturn)}</dd></div>
+      <div><dt>Tickerite mediaan</dt><dd className={returnClass(stats.medianReturn)}>{percent(stats.medianReturn)}</dd></div>
+      <div><dt>Võitnud tickerid</dt><dd>{stats.winnerCount}{stats.winnerPercent == null ? '' : ` · ${percent(stats.winnerPercent)}`}</dd></div>
+      <div><dt>Kaotanud tickerid</dt><dd>{stats.loserCount}{stats.loserPercent == null ? '' : ` · ${percent(stats.loserPercent)}`}</dd></div>
     </dl>
     <div className="validationExtremes">
       <span>Parim: {stats.best ? <><strong>{stats.best.ticker}</strong> {percent(stats.best.returnPercent)}</> : '—'}</span>
       <span>Halvim: {stats.worst ? <><strong>{stats.worst.ticker}</strong> {percent(stats.worst.returnPercent)}</> : '—'}</span>
-      {stats.pendingCount > 0 && <span>Ootel / puudu: {stats.pendingCount}</span>}
+      <span>Otsuseid mõõdetud: {stats.measuredDecisionCount}/{stats.decisionCount}</span>
+      <span>Ootel: {stats.pendingCount} · puudu: {stats.missingCount} · unavailable: {stats.unavailableCount}</span>
     </div>
   </article>;
 }
@@ -61,7 +62,7 @@ export default async function ValidationPage() {
     <section className="hero compact"><p className="eyebrow">POINT-IN-TIME · ACTUAL OUTCOMES</p><h1>Discovery valideerimine</h1><p className="lead">Siin mõõdetakse, mida „Leia järgmine RKLB” päriselt otsuse hetkel leidis ja kuidas kaasatud kandidaadi hind hiljem muutus. See pole ostu- ega müügisoovitus.</p></section>
     {error && <div className="notice danger">Valideerimise andmeid ei õnnestunud laadida: {error}</div>}
     {dashboard && <>
-      <section className="section"><div className="sectionHeading"><div><p className="eyebrow">MEASURED SEPARATELY BY HORIZON · CANONICAL ONLY</p><h2>Tulemuste kokkuvõte</h2></div><span className="muted">{dashboard.canonicalRuns} canonical jooksu · {dashboard.canonicalCandidates} kandidaati</span></div><p className="muted validationMethod">Baasiks on otsusehetke hinnasnapshot. Horisondi hinnaks võetakse esimene snapshot sihtajal või järgneva seitsme päeva jooksul. Juba mõõdetud tulemust hiljem ümber ei kirjutata.</p><p className="muted provenanceNote"><strong>Koondstatistika kasutab ainult canonical (`rklb_daily`) jooksu</strong> (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 4); käsitsi scanneri (`rklb`) jooksud jäävad allpool jooksude ajalukku auditiks, aga ei lähe mediaani, hit rate’i ega frequency’t. Kokku salvestatud: {dashboard.provenance.map((item) => `${item.modelVersion} · ${item.runType} ${item.runs} jooksu / ${item.candidates} kandidaati`).join('; ') || 'jooksu pole'}. Eri mudeliversioone ei tohi lugeda ühe seeriana.</p><div className="validationGrid">{dashboard.horizons.map((stats) => <HorizonCard stats={stats} key={stats.horizon} />)}</div></section>
+      <section className="section"><div className="sectionHeading"><div><p className="eyebrow">MODEL VERSION × HORIZON · CANONICAL ONLY</p><h2>Tulemuste kokkuvõte</h2></div><span className="muted">{dashboard.canonicalRuns} canonical jooksu · {dashboard.canonicalCandidates} otsust</span></div><p className="muted validationMethod">Iga mudeliversioon ja horisont on eraldi kohort. Sama tickeri korduvate mõõdetud otsuste tootlused keskmistatakse esmalt selle tickeri sees; keskmine, mediaan, võitjad ja kaotajad annavad seejärel igale tickerile ühe võrdse kaalu. Otsuseread jäävad eraldi nähtavaks katvuse mõõtmiseks. Baasiks on otsusehetke hinnasnapshot ning juba mõõdetud tulemust hiljem ümber ei kirjutata.</p><p className="muted provenanceNote"><strong>Tulemused kasutavad ainult canonical (`rklb_daily`) jookse</strong> (docs/DISCOVERY_FREQUENCY_PROVENANCE.md § 4). Käsitsi scanneri (`rklb`) jooksud jäävad allpool auditiks. Kokku salvestatud: {dashboard.provenance.map((item) => `${item.modelVersion} · ${item.runType} ${item.runs} jooksu / ${item.candidates} otsust`).join('; ') || 'jooksu pole'}.</p>{dashboard.models.length === 0 ? <div className="empty card"><strong>Canonical tulemuskoorte pole veel.</strong></div> : dashboard.models.map((model) => <div className="outcomeModel" key={model.modelVersion}><div className="sectionHeading"><div><h3>{model.modelVersion}</h3><p>{model.runCount} jooksu · {model.decisionCount} otsust · {model.distinctTickerCount} eri tickerit</p></div></div><div className="validationGrid">{model.horizons.map((stats) => <HorizonCard stats={stats} key={stats.horizon} />)}</div></div>)}</section>
       <section className="section"><div className="sectionHeading"><div><p className="eyebrow">IMMUTABLE DECISION LOG</p><h2>Jooksude ajalugu</h2></div><Link className="button secondary" href="/scanner?preset=rklb">Käivita uus discovery</Link></div>
         {dashboard.runs.length === 0 ? <div className="empty card"><strong>Ühtegi discovery jooksu pole veel salvestatud.</strong><p>Käivita „Leia järgmine RKLB”; ka null kandidaadiga jooks salvestatakse.</p></div> : <div className="validationRuns">{dashboard.runs.map((run, index) => <details className="card validationRun" key={run.id} open={index === 0}><summary><span><strong>Run #{run.id}</strong><small>{dateTime(run.runAt)} · {run.modelVersion}</small></span><span>{run.includedCount} kaasatud · {run.evaluatedCount} vaadeldud</span></summary><div className="validationRunBody"><details className="runRules"><summary>Otsusereeglid</summary><ul>{run.rules.map((rule) => <li key={rule}>{rule}</li>)}</ul></details><div className="validationDecisions">{run.decisions.map((decision) => <DecisionCard decision={decision} key={decision.id} />)}</div></div></details>)}</div>}
       </section>
