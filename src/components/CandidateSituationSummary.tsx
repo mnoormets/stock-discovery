@@ -1,14 +1,17 @@
 import {
   derivePaperBusinessState,
   derivePaperMarketSetupState,
+  evaluatePaperStrategies,
 } from '@/lib/paper-strategy';
 import type { CandidatePriceContext } from '@/lib/price-context';
 import { priceObservationRecency } from '@/lib/price-observation';
 
 interface CandidateSituationSummaryProps {
+  ticker: string;
   growthScore: number | null;
   healthScore: number | null;
   coverageScore: number;
+  currentCollectionConfirmed: boolean;
   priceContext: CandidatePriceContext;
   priceCapturedAt: string | null;
 }
@@ -18,9 +21,11 @@ function score(value: number | null): string {
 }
 
 export default function CandidateSituationSummary({
+  ticker,
   growthScore,
   healthScore,
   coverageScore,
+  currentCollectionConfirmed,
   priceContext,
   priceCapturedAt,
 }: CandidateSituationSummaryProps) {
@@ -47,6 +52,24 @@ export default function CandidateSituationSummary({
     ? new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Europe/Tallinn', dateStyle: 'medium', timeStyle: 'short',
     }).format(new Date(priceCapturedAt)) : 'Unknown';
+  const entryAware = evaluatePaperStrategies({
+    ticker,
+    canonicalIncluded: true,
+    growthScore,
+    healthScore,
+    coverageScore,
+    currentCollectionConfirmed,
+    priceContext,
+  }).find((evaluation) => evaluation.strategy === 'entry_aware')!;
+  const displayBlockers = [
+    ...entryAware.reasons,
+    recency !== 'recent' || priceContext.currentPrice == null
+      ? 'Today requires a recent, valid displayed decision price before showing a positive paper-entry state.'
+      : null,
+  ].filter((reason): reason is string => Boolean(reason));
+  const paperEntryEligible = entryAware.eligibility === 'eligible'
+    && recency === 'recent'
+    && priceContext.currentPrice != null;
 
   return <section className="todaySituationSummary" aria-label="Business and market situation">
     <div className="todaySituationAxis">
@@ -64,6 +87,17 @@ export default function CandidateSituationSummary({
       <small>{marketDetail}</small>
       <small>Price observed: {observedLabel} (Tallinn). Recency allows one New York trading day; weekends and the published 2026–2028 NYSE holidays add no days. This is observation time, not a live execution quote.</small>
     </div>
-    <p>Independent research checks, not a buy signal. Open the evidence below before acting.</p>
+    <div className={`todaySituationAxis paperEntry ${paperEntryEligible ? 'eligible' : 'wait'}`}>
+      <span>Paper entry test</span>
+      <strong className={paperEntryEligible ? 'positive' : 'scoreNeutral'}>
+        {paperEntryEligible ? 'Eligible for paper entry' : 'Wait'}
+      </strong>
+      <small>{paperEntryEligible
+        ? 'Entry-aware V1 would create a hypothetical $100 buy intent. Its business, current-data and price-setup gates all pass.'
+        : `Research candidate only. Today does not show a paper entry: ${displayBlockers.join(' ')}`}</small>
+    </div>
+    <p>{paperEntryEligible
+      ? "This is the app's clearest positive state: promising enough for its hypothetical paper-entry test. Review the thesis and risks before considering real money."
+      : "The company may still be worth researching, but it does not currently pass the app's hypothetical paper-entry rules."}</p>
   </section>;
 }

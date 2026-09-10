@@ -120,6 +120,7 @@ describe('Daily Research Brief read model', () => {
       expect.objectContaining({
         ticker: 'BRIEF', companyName: 'BRIEF Research Inc.', rank: 1,
         sourcePathLabel: 'Growth screen',
+        currentCollectionConfirmed: true,
         researchSummary: expect.objectContaining({ priority: 'promising' }),
       }),
     ]);

@@ -17,8 +17,8 @@ const STRATEGIES: Array<{ key: PaperStrategyKey; name: string; rule: string }> =
   },
   {
     key: 'entry_aware',
-    name: 'Entry-aware',
-    rule: 'Sama $100 ainult siis, kui Growth ≥ 65, Health ≥ 65, Coverage ≥ 70, tänane market data on kinnitatud ja hinnalugu ei näita juba tugevat run-up’i.',
+    name: 'Entry-aware paper-entry signal',
+    rule: 'See on appi hüpoteetiline ostusignaal: $100 intent tekib ainult siis, kui Growth ≥ 65, Health ≥ 65, Coverage ≥ 70, tänane market data on kinnitatud ja hinnalugu ei näita juba tugevat run-up’i. Iga uus eligible päev loob uue intent’i, ka korduva tickeri puhul.',
   },
 ];
 

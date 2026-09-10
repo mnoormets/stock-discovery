@@ -164,6 +164,7 @@ export interface TodayCandidate {
   lookupBucket: string;
   sourcePathLabel: string;
   provenanceKnown: boolean;
+  currentCollectionConfirmed: boolean;
   decisionPrice: number | null;
   priceCapturedAt: string | null;
   currency: string | null;
@@ -824,7 +825,8 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
                 d.catalyst_detail,
                 d.catalyst_at, d.catalyst_url, d.reasons, d.risks, d.unknowns, d.criteria,
                 d.sector, d.collection_run_item_id,
-                c.name AS company_name, i.lookup_bucket, i.raw_signal
+                c.name AS company_name, i.lookup_bucket, i.raw_signal,
+                COALESCE(i.market_data_found, false) AS current_collection_confirmed
          FROM discovery_decisions d
          LEFT JOIN companies c ON c.id = d.company_id
          LEFT JOIN collection_run_items i ON i.id = d.collection_run_item_id
@@ -962,6 +964,7 @@ export async function getTodayBrief(now = new Date()): Promise<TodayBrief> {
           lookupBucket,
           sourcePathLabel: getSourcePathLabel(lookupBucket),
           provenanceKnown: Boolean(row.collection_run_item_id && row.lookup_bucket && row.lookup_bucket !== 'unknown'),
+          currentCollectionConfirmed: Boolean(row.current_collection_confirmed),
           decisionPrice,
           priceCapturedAt,
           currency: row.currency || null,

@@ -558,8 +558,9 @@ code { padding: 2px 5px; border-radius: 4px; background: rgba(0,0,0,.28); }
 .todayCandidateSignals span { padding: 5px 8px; border-radius: 7px; background: #0f1928; color: var(--muted); font-size: 11px; text-transform: capitalize; }
 .todayCandidateSignals strong { color: var(--text); }
 .todayCandidateSignals .todayTraceSignal { opacity: .65; border: 1px dashed var(--border); }
-.todaySituationSummary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.todaySituationSummary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .todaySituationAxis { display: grid; gap: 4px; min-width: 0; padding: 10px 11px; border: 1px solid var(--border); border-radius: 9px; background: #0f1928; }
+.todaySituationAxis.paperEntry.eligible { border-color: #2f7049; background: rgba(47, 112, 73, .12); }
 .todaySituationAxis > span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
 .todaySituationAxis > strong { font-size: 15px; }
 .todaySituationAxis > small { color: var(--muted); line-height: 1.4; }

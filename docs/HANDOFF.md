@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-09-09
+Uuendatud: 2026-09-10
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -27,6 +27,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Rakendus ei anna ostu- ega müügisoovitusi.
 
 ## Praegune töötav seis
+
+- **2026-09-10 explicit paper-entry state:** Every `/today` candidate now shows Business, Market setup and a separate `Eligible for paper entry` or `Wait` result using the existing entry-aware V1 gates. Today additionally refuses the positive label when its displayed decision price is stale, invalid or unavailable. Eligible is named as the app's clearest positive state and means that the hypothetical strategy would create a $100 buy intent; Wait includes the exact failed gate. `/performance` uses the same signal language and states that every new eligible day creates another intent even for a repeated ticker. This exposes the policy instead of turning a research priority badge into an implied purchase. No score, ranking, discovery selection, stored paper order behavior, schema or broker integration changed.
 
 - **2026-09-09 model- and ticker-separated outcome results:** `/validation` and `/backtest` now build a separate cohort for every canonical model version and holding horizon. Repeated daily decisions for one ticker are averaged inside that ticker before the cohort mean, median, hit rate, best/worst and benchmark comparison are calculated, so each ticker has one equal statistical weight. The pages show both decision and distinct-ticker coverage plus measured, pending, missing and unavailable counts. Manual runs remain excluded and a model with zero selected decisions remains visible. This is a read-side interpretation change: no schema, provider, score, ranking, discovery or paper-policy behavior changed.
 
@@ -255,11 +257,12 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NEXT
 
-- A separately versioned, capital-constrained paper experiment only after defining cash, position/concentration limits, repeated-signal treatment, order expiry and exits. Preserve V1 as the original baseline.
+- Inspect entry-aware eligible/Wait decisions and their version-separated forward results as the independent ticker sample matures. If repeated hypothetical buys expose a bad app signal, revise the signal policy under a new version instead of suppressing the order in the simulator.
 - Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing the five-company budget, queue order or adding production listing discovery.
 
 ### LATER
 
+- Add a separately versioned capital-constrained variant only if the user wants to test actual cash, position and concentration boundaries. The current experiment intentionally applies the same $100 cash flow to every app signal and its SPY comparison.
 - Broaden discovery only when tracked results and research rejection reasons demonstrate a specific gap. No additional external source without the user's explicit decision.
 - Supported Next.js upgrade as a separate tested change; authentication/authorization before public exposure. Public deployment and subscriptions are not the present objective.
 - Thesis outcome analysis, portfolio drawdown and business-driver concentration views when the underlying observations and portfolio policy are dependable.
@@ -272,6 +275,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- **2026-09-10 paper-entry meaning:** `entry_aware` eligible is the app's executable hypothetical buy state. It requires the existing V1 Business thresholds, current collection confirmation and accepted price-history/run-up state; Today labels it explicitly and adds a read-side displayed-price recency guard before showing the positive state. Every failure is `Wait` with reasons. Each eligible canonical day creates a new $100 intent, including a repeated ticker. Repetition is deliberate evidence about the app policy: if it is economically wrong, create a new policy version rather than silently deduplicating execution. The state does not place a broker order and does not replace human thesis, valuation, risk or position-size review.
 
 - **2026-09-09 outcome cohort weighting:** Results are grouped by canonical `model_version` and horizon. Within one cohort, every measured decision return is first averaged by ticker; cohort return, median, hit rate, best/worst and benchmark-excess statistics then weight those ticker averages equally. Decision counts remain visible as operational observation coverage, and distinct ticker counts are the statistical sample coverage. Pending, missing and unavailable decisions remain separate. Manual runs and excluded decisions do not enter cohort results; zero-candidate canonical model versions remain visible instead of disappearing.
 
@@ -402,7 +407,7 @@ Current as of 2026-09-09; earlier calibration observations and superseded plans 
 
 - Outcome sample coverage and maturity remain insufficient for a strategy conclusion. Canonical v3 has 16 measured one-week decisions across six distinct tickers; repeated decisions are correlated observations, and prior versions and later horizons remain separate.
 - Historical prices must not be invented or silently backfilled. Reusing existing paper marks for outcome measurement requires a provenance and immutability design before implementation.
-- Capital, risk tolerance, concentration limits and intended holding period must be established before a portfolio-policy experiment; this review did not receive those user constraints.
+- Capital, risk tolerance, concentration limits and intended holding period remain necessary only for a future finite-cash portfolio-policy experiment. They are not inputs to the current equal-$100 signal-quality comparison.
 - CompanyFacts daily budget remains five, and MIN_MENTIONS remains three. Inspect accumulated observations before retuning either.
 - Nasdaq listing observation is implemented but is not production discovery. Its latest artifact series was not reviewed in this session.
 - Authentication/authorization and supported Next.js remain prerequisites for any public deployment. Automated tests, versioned migrations and API/CLI advisory locking already exist; they are not unbuilt blockers.
@@ -607,7 +612,7 @@ Piirangud, mida tuleb teadvustada:
 
 ## Automated Test Coverage (2026-08-17)
 
-**Latest implementation recheck, 2026-09-09:** 495/495 tests in 65 files, ten migrations, isolated local `discovery_test`; teardown left zero test databases. Typecheck and lint passed. The optimized build compiled all 22 routes and the `app` container was restarted. Live `/validation` and `/backtest` returned HTTP 200 and rendered separate v3, v2 and v1 cohorts with decision/ticker coverage and pending/missing/unavailable states. Tests now include model/horizon isolation, equal ticker weighting and explicit status/benchmark coverage in addition to the database-target contract and previously documented coverage. The detailed inventory below is historical and is not a complete list of the current suite.
+**Latest implementation recheck, 2026-09-10:** 496/496 tests in 65 files, ten migrations, isolated local `discovery_test`; teardown left zero test databases. Typecheck and lint passed. The optimized build compiled all 22 routes and the `app` container was restarted. Live `/today` and `/performance` returned HTTP 200; browser inspection confirmed that all six current candidates show `Wait` with their actual failed gates and that no candidate is presented as paper-entry eligible today. Tests now include the explicit positive paper-entry state, current-collection failure and stale displayed-price guard in addition to model/horizon isolation and the previously documented coverage. The detailed inventory below is historical and is not a complete list of the current suite.
 
 Vitest, **354 testi, 39 faili** (mõõdetud 2026-08-25). Käivitamine konteineris `docker compose run --rm -T app npm test` või hostil `npm test` (hostil on `TEST_DATABASE_URL` kohustuslik, vt „Praegune töötav seis"). Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja jooksu lõpus kustutab; Neoni golden source'i ei puudutata. **Testibaasi skeem ehitatakse versioonitud migratsioonidest** (`scripts/migrate.cjs`), seega iga jooks valideerib ühtlasi runnerit ja migratsioone `0001–0007` koos `schema_migrations` raamatupidamisega. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
 
@@ -649,6 +654,11 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 
 ## Viimane testitud seis
 
+### 2026-09-10 - explicit paper-entry state
+
+- Added `currentCollectionConfirmed` to the Today read model and reused `evaluatePaperStrategies()` in the candidate summary. Business, Market setup and Paper entry test now appear together. `Eligible for paper entry` means entry-aware V1 would create its hypothetical $100 buy intent; `Wait` shows the actual failed policy reasons. Today also fails closed when the displayed decision price is stale, invalid or unavailable.
+- Focused Today component/read-model coverage passed 28/28 after correcting one HTML-escaped apostrophe assertion. Final typecheck and lint passed. The full isolated suite applied all ten migrations and passed **65 files / 496 tests** in 422.40s; teardown left zero test databases. The Docker production build compiled and generated 22/22 routes, followed by the required app restart.
+- `/today` and `/performance` returned HTTP 200 with the new labels. Browser inspection confirmed the full live candidate surface: all six 9 September candidates currently show `Wait`, with insufficient price history, missing current-collection confirmation or a stale displayed price named where applicable. No score, discovery decision, stored paper order or other production record was changed.
 ### 2026-09-09 — model- and ticker-separated outcome results
 
 - Added a shared pure cohort summarizer and changed `/validation` and `/backtest` to aggregate canonical included decisions separately by `model_version` and horizon. Repeated decisions are averaged per ticker before ticker-level statistics, while both decision and distinct-ticker coverage remain explicit. Pending, missing and unavailable decisions and benchmark coverage are reported separately. No migration, new provider, score/ranking change, discovery policy or paper policy was introduced.
@@ -963,6 +973,11 @@ Varasem seis:
 
 ## Sessioonilogi
 
+### 2026-09-10 - explicit paper-entry state
+
+- Made entry-aware V1 the explicit hypothetical buy state on Today and Performance. A research candidate remains distinct from a paper-entry candidate, and the exact reason for `Wait` is visible without opening technical details.
+- Preserved the user's repeated-signal decision: every newly eligible canonical day remains a new $100 intent even for the same ticker. If that exposes weak behavior, the policy must be fixed under a new version rather than hidden in execution deduplication.
+- Verification passed with 28 focused tests, 496 full-suite tests, typecheck, lint, the 22-route production build, app restart, HTTP smoke and browser inspection. Existing untracked dump, transfer and local-tool artifacts were left untouched.
 ### 2026-09-09 — model- and ticker-separated outcome results
 
 - Replaced the pooled validation/backtest headline with explicit canonical model-version and horizon cohorts. Added a shared ticker-level aggregation helper so repeated daily selections of the same company do not receive independent statistical weight, while operational decision coverage remains visible.

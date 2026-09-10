@@ -128,9 +128,11 @@ function CandidateCard({ candidate }: { candidate: TodayCandidate }) {
       </div>
 
       <CandidateSituationSummary
+        ticker={candidate.ticker}
         growthScore={candidate.growthScore}
         healthScore={candidate.healthScore}
         coverageScore={candidate.coverageScore}
+        currentCollectionConfirmed={candidate.currentCollectionConfirmed}
         priceContext={candidate.priceContext}
         priceCapturedAt={candidate.priceCapturedAt}
       />
@@ -347,7 +349,7 @@ export default async function TodayPage() {
         <div className="todaySystemStatus"><span className={`todayStatus ${brief.status}`}>{status.badge}</span><div><strong>{status.title}</strong><small>{status.detail}</small></div></div>
       </section>
 
-      <div className="todayGuardrail">High scores mean “research further”, never “buy”. This page is read-only and does not refresh data or place orders.</div>
+      <div className="todayGuardrail">High scores mean “research further”. “Eligible for paper entry” is the app&apos;s clearest positive state: the entry-aware rules would create a hypothetical buy intent, but this page remains read-only and places no real order.</div>
       <section className="card">
         <h2>Continued price tracking</h2>
         <p>Open holdings, active/watchlist research and outstanding outcome horizons are checked separately from discovery. Up to 50 symbols per New York day, including SPY. These follow-up prices do not rewrite the daily snapshot above.</p>

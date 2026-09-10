@@ -5,12 +5,22 @@ See juhend on inimesele, kes avab rakenduse esimest korda. Stock Discovery aitab
 ## Soovitatud igapäevane töövoog
 
 1. Ava **Today** ja vaata kõigepealt Thesis Review Queue'd: kas mõne olemasoleva teesi järel on saabunud uus tõend.
-2. Vaata Today kandidaate ning **Needs review** hoiatusi; kõrge skoor tähendab ainult „uuri lähemalt”.
+2. Vaata Today kandidaate ning **Needs review** hoiatusi. Kõrge skoor tähendab „uuri lähemalt”; `Eligible for paper entry` on eraldi appi positiivne paper-otsus.
 3. Ava **Watchlist** ning kontrolli olulisi Growth/Health muutusi ja muutunud komponente.
 4. Ava huvipakkuva tickeri **ettevõtte faktivaade** ning kontrolli hind, SEC finantsid, uudised, earnings, skooride põhjused ja algallikad.
 5. Uue idee leidmiseks ava **Skänner → Leia järgmine RKLB**.
 6. Lisa põhjendatud kandidaat Watchlisti või alusta kohe teesi.
 7. Täida **Thesis Builderis** kasutaja hüpoteesid ja 12 kuu mõõdetav kontrollpunkt. Muuda tees `ready` olekusse alles siis, kui invalidation-tingimus ja kontrollpunkt on selgelt sõnastatud.
+
+### Today paper-entry otsus
+
+Iga Today kandidaadikaart näitab Business- ja Market setup'i kõrval eraldi **Paper entry test** tulemust:
+
+- `Eligible for paper entry` tähendab, et entry-aware V1 kõik väravad läbisid: Growth vähemalt 65, Health vähemalt 65, Coverage vähemalt 70, current collection kinnitas turuandmed ja salvestatud hinnalugu ei näita elevated run-up'i. Today nõuab positiivse sildi jaoks lisaks hiljutist ja kehtivat kuvatud decision-price'i. See on appi selgeim positiivne seis ning looks hüpoteetilise $100 buy intent'i.
+- `Wait` tähendab, et ettevõte võib endiselt väärida uurimist, kuid vähemalt üks paper-entry värav ei läbinud. Kaart ütleb täpse põhjuse.
+- Iga uus eligible päev tekitab uue intent'i ka sama tickeri korral. Kui see käitumine osutub halvaks, tuleb parandada ja versioonida signaalipoliitika; simulator ei peida probleemi tickeri dedupeerimisega.
+
+Paper-entry seis on läbipaistev mudelikatse. Today ei saada brokerile orderit ning enne päris raha kasutamist tuleb kontrollida teesi, valuation'it, riske ja positsiooni suurust.
 
 ## Avaleht ja tickeri otsing
 

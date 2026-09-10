@@ -28,9 +28,11 @@ function priceContext(overrides: Partial<CandidatePriceContext> = {}): Candidate
 
 function render(overrides: Partial<Parameters<typeof CandidateSituationSummary>[0]> = {}): string {
   return renderToStaticMarkup(createElement(CandidateSituationSummary, {
+    ticker: 'TEST',
     growthScore: 80,
     healthScore: 75,
     coverageScore: 90,
+    currentCollectionConfirmed: true,
     priceCapturedAt: '2026-09-03T12:00:00.000Z',
     priceContext: priceContext(),
     ...overrides,
@@ -46,6 +48,8 @@ describe('CandidateSituationSummary', () => {
       });
       expect(html).toContain('Current setup unknown');
       expect(html).toContain('Stored price is stale');
+      expect(html).toContain('Wait');
+      expect(html).toContain('requires a recent, valid displayed decision price');
       expect(html).not.toContain('Not overheated');
     }
   });
@@ -59,14 +63,25 @@ describe('CandidateSituationSummary', () => {
     expect(html).not.toContain('Not overheated');
   });
 
-  it('shows strong business and a separate not-overheated market state', () => {
+  it('makes the positive paper-entry state explicit when every entry-aware gate passes', () => {
     const html = render();
     expect(html).toContain('Business');
     expect(html).toContain('Strong');
     expect(html).toContain('Market setup');
     expect(html).toContain('Not overheated');
     expect(html).toContain('Growth 80/100 · Health 75/100 · Coverage 90/100');
-    expect(html).toContain('not a buy signal');
+    expect(html).toContain('Paper entry test');
+    expect(html).toContain('Eligible for paper entry');
+    expect(html).toContain('hypothetical $100 buy intent');
+    expect(html).toContain('clearest positive state');
+  });
+
+  it('labels a research candidate as wait when current collection data is not confirmed', () => {
+    const html = render({ currentCollectionConfirmed: false });
+    expect(html).toContain('Paper entry test');
+    expect(html).toContain('Wait');
+    expect(html).toContain('Research candidate only');
+    expect(html).toContain('did not confirm current market data');
   });
 
   it('does not treat an elevated run-up as positive market evidence', () => {
