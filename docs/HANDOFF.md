@@ -30,6 +30,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 - **2026-09-10 canonical current-collection gate:** `rklb-discovery-v4` lets only tickers with `market_data_found=true` in the linked same-run `collection_run_items` compete for canonical market-cap tier slots. Manual RKLB scans still use the broader stored universe. The fix prevents cached names absent from today's collection from consuming all-picks and entry-aware measurement slots; base Growth/Coverage filters, ranking comparator, tier boundaries, tier capacity, paper-entry gates, providers and schema are unchanged. A canonical call without a positive collection-run ID now fails explicitly instead of silently creating an unlinked daily shortlist.
 
+- **2026-09-10 first live v4 cohort:** Manually dispatched `collect-daily #25` completed successfully in 20m05s on exact deployed commit `cd56cae`. Collection #39 produced canonical run #71 with 148 evaluated and six included: SNDK, CRDO, WTI, DY, ARM and BWFG. A read-only Neon audit found zero missing item links, zero cross-run links and zero unconfirmed market-data links; the run has one quality snapshot, 30 outcome horizons and 24 paper orders. The separate same-day executor #10 succeeded in 43s and filled the only entry-aware eligible order, SNDK, at $1,699.00; the other five entry-aware orders remain skipped with explicit insufficient-history reasons.
+
 - **2026-09-10 explicit paper-entry state:** Every `/today` candidate now shows Business, Market setup and a separate `Eligible for paper entry` or `Wait` result using the existing entry-aware V1 gates. Today additionally refuses the positive label when its displayed decision price is stale, invalid or unavailable. Eligible is named as the app's clearest positive state and means that the hypothetical strategy would create a $100 buy intent; Wait includes the exact failed gate. `/performance` uses the same signal language and states that every new eligible day creates another intent even for a repeated ticker. This exposes the policy instead of turning a research priority badge into an implied purchase. No score, ranking, discovery selection, stored paper order behavior, schema or broker integration changed.
 
 - **2026-09-09 model- and ticker-separated outcome results:** `/validation` and `/backtest` now build a separate cohort for every canonical model version and holding horizon. Repeated daily decisions for one ticker are averaged inside that ticker before the cohort mean, median, hit rate, best/worst and benchmark comparison are calculated, so each ticker has one equal statistical weight. The pages show both decision and distinct-ticker coverage plus measured, pending, missing and unavailable counts. Manual runs remain excluded and a model with zero selected decisions remains visible. This is a read-side interpretation change: no schema, provider, score, ranking, discovery or paper-policy behavior changed.
@@ -239,9 +241,9 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 **2026-09-06 review: the user confirmed that the objective is better personal investing results.** The implementation remains a research tool; a score is not an instruction to buy. The evidence-backed review and proposed fixes are in [ASTRA_REVIEW_2026-09-06.md](ASTRA_REVIEW_2026-09-06.md).
 
-Canonical v3 run #70 on 10 September exposed a selection mismatch: SNDK and WTI were current-collection-confirmed, while cached ELF, APP, FIVE and API occupied four of six tier slots despite being absent from collection #38. At the same time current confirmed CRDO, DY, ALL, BWFG and other base-eligible companies were excluded by tier capacity. SNDK correctly passed entry-aware V1 with partial history and a -1.27% one-month return, then filled its hypothetical strategy order at a fresh regular-session quote of $1,699.975. WTI correctly waited for price history. The v4 fix moves current collection confirmation before tier allocation so cached names cannot starve the canonical experiment; it does not lower any paper gate or rewrite v3 history.
+The first production v4 cohort now proves the current-collection fix in the real pipeline. Collection #39 and canonical run #71 selected SNDK, CRDO, WTI, DY, ARM and BWFG; all six link to a same-run item whose market-data lookup succeeded. This replaces v3 run #70's cached-slot mismatch without rewriting it. The v4 run has one immutable quality snapshot, five forward horizons per decision and four paper-policy observations per decision.
 
-The immediate constraint remains decision quality and dependable forward measurement. Earlier cron failure emails refer to older collection runs, including the already-fixed NYSE holiday recency bug. The authenticated GitHub Actions page shows the latest 10 September jobs green: `collect-daily #24` succeeded in 38m38s at 08:10 Tallinn, and `paper-strategy-execute #9` plus `nasdaq-listing-observation #10` succeeded at 16:35 in 39s and 36s. The database independently shows collection #38, canonical run #70 and its paper execution completed. Preserve failed historical attempts and compare v4 only within its own model-version cohorts.
+The immediate constraint remains decision quality and dependable forward measurement. The authenticated GitHub Actions page shows `collect-daily #25` green on exact deployed commit `cd56cae` and the separately dispatched `paper-strategy-execute #10` green. Entry-aware V1 acted on its only positive state by filling SNDK at $1,699.00; CRDO, WTI, DY, ARM and BWFG explicitly wait for enough stored price history. Earlier cron failure emails refer to historical runs, including the fixed NYSE holiday recency bug. Preserve failed attempts and compare v4 only within its own model-version cohorts.
 
 The user accepted the API, BW and HIMS decision packet on 9 September. Their current v3 Thesis Builder records contain the dated assumptions and review triggers, while their 11 August v2 records remain immutable history. API remains `ready`; BW and HIMS remain `researching`. Today now turns these records into a deterministic review queue; all three are awaiting November evidence and none is due. [BW/API reconciliation](BW_API_RECONCILIATION_2026-09-07.md) makes the filing-level debt, liquidity and ADS definitions visible without replacing normalized facts. The fixed bear/base/bull sensitivity is not evidence of mispricing.
 
@@ -251,13 +253,13 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Observe the first scheduled `rklb-discovery-v4` canonical run and confirm that every included decision links to a same-run `market_data_found=true` collection item. Keep v3 outcomes separate as immutable history.
+- Let continued price tracking mature the v4 cohort, then inspect its entry-aware Eligible/Wait decisions and version-separated forward outcomes. Keep v1-v3 history immutable and separate; if repeated hypothetical buys reveal a weak signal, revise the policy under a new version.
 - Use the Thesis Review Queue through the next stored evidence cycle. When an item becomes due, review its primary source and record the conclusion as a new thesis version; do not automate pass/fail or status changes from free text.
 - Observe the accepted API/BW/HIMS v3 gates, published HIMS investment extraction, BW/API dated reconciliation and `scores-v2` / `signals-v3` date guard in subsequent refreshes. Do not substitute partial debt or ordinary shares for a current complete definition.
 
 ### NEXT
 
-- Inspect v4 entry-aware eligible/Wait decisions and their version-separated forward results as the independent ticker sample matures. If repeated hypothetical buys expose a bad app signal, revise the signal policy under a new version instead of suppressing the order in the simulator.
+- Review the first v4 names when their stored history and outcome horizons mature, prioritizing falsifiable thesis work for eligible names over changes to the ranking policy based on one cohort.
 - Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing the five-company budget, queue order or adding production listing discovery.
 
 ### LATER
@@ -405,7 +407,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ## Avatud sõltuvused ja otsused
 
-Current as of 2026-09-09; earlier calibration observations and superseded plans are preserved in dated session entries and supporting design documents.
+Current as of 2026-09-10; earlier calibration observations and superseded plans are preserved in dated session entries and supporting design documents.
 
 - Outcome sample coverage and maturity remain insufficient for a strategy conclusion. Canonical v3 has 16 measured one-week decisions across six distinct tickers; repeated decisions are correlated observations, and prior versions and later horizons remain separate.
 - Historical prices must not be invented or silently backfilled. Reusing existing paper marks for outcome measurement requires a provenance and immutability design before implementation.
@@ -614,7 +616,7 @@ Piirangud, mida tuleb teadvustada:
 
 ## Automated Test Coverage (2026-08-17)
 
-**Latest implementation recheck, 2026-09-10:** 497/497 tests in 65 files passed against the isolated local `discovery_test` built from all ten migrations; teardown completed. The first full run exposed one expected hard-coded v3 label in the model-cohort test, which was updated to the current-version fixture and then passed in an 8/8 focused rerun before the clean full run. Typecheck and lint passed. The mounted Docker production build compiled all 22 routes, and the `app` container was started and explicitly restarted afterward. Live `/today`, `/scanner?preset=rklb` and `/performance` returned HTTP 200. A validated read-only Neon audit confirmed run #70, collection #38, the cached-slot defect, and SNDK's filled entry-aware order; no production v4 run was created during verification, so the first scheduled v4 run remains the next runtime provenance check. The detailed inventory below is historical and is not a complete list of the current suite.
+**Latest implementation recheck, 2026-09-10:** 497/497 tests in 65 files passed against the isolated local `discovery_test` built from all ten migrations; teardown completed. The first full run exposed one expected hard-coded v3 label in the model-cohort test, which was updated to the current-version fixture and then passed in an 8/8 focused rerun before the clean full run. Typecheck and lint passed. The mounted Docker production build compiled all 22 routes, and the `app` container was started and explicitly restarted afterward. The first live production v4 run then completed on that exact deployed commit: GitHub `collect-daily #25` succeeded in 20m05s, Neon collection #39 and canonical run #71 passed the same-run current-data audit, and executor #10 filled SNDK at $1,699.00. The running Docker app returned HTTP 200 for `/today`, `/performance`, `/validation` and `/backtest`; rendered Today contained `rklb-discovery-v4` and all six run #71 tickers. The detailed inventory below is historical and is not a complete list of the current suite.
 
 Vitest, **354 testi, 39 faili** (mõõdetud 2026-08-25). Käivitamine konteineris `docker compose run --rm -T app npm test` või hostil `npm test` (hostil on `TEST_DATABASE_URL` kohustuslik, vt „Praegune töötav seis"). Testid jooksevad eraldi `discovery_test` andmebaasi vastu, mille harness ise loob ja jooksu lõpus kustutab; Neoni golden source'i ei puudutata. **Testibaasi skeem ehitatakse versioonitud migratsioonidest** (`scripts/migrate.cjs`), seega iga jooks valideerib ühtlasi runnerit ja migratsioone `0001–0007` koos `schema_migrations` raamatupidamisega. Failid jooksevad järjestikku (`fileParallelism: false`), sest testibaas on jagatud ja iga test alustab `resetDb()`-ga.
 
@@ -655,6 +657,12 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-09-10 - first live v4 production run
+
+- GitHub `collect-daily #25` ran exact deployed commit `cd56cae` and succeeded in 20m05s. It completed collection #39, canonical `rklb-discovery-v4` run #71 and all after-report/artifact/failure-gate steps.
+- A validated `READ ONLY` Neon transaction found 6/6 included decisions linked to collection #39 items with `market_data_found=true`, with zero missing or cross-run links. The run has one data-quality snapshot, 30 candidate outcomes and 24 paper orders.
+- Entry-aware V1 produced one eligible order. The separately dispatched `paper-strategy-execute #10` succeeded in 43s and filled SNDK at $1,699.00; CRDO, WTI, DY, ARM and BWFG remain skipped for insufficient stored price history. Docker services were healthy, four live routes returned HTTP 200, and rendered Today showed v4 plus all six tickers. This production observation changed no code, so the preceding 497-test/typecheck/lint/build evidence remains the applicable implementation gate.
 
 ### 2026-09-10 - explicit paper-entry state
 
@@ -974,6 +982,12 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-10 - first live v4 production run
+
+- Manually dispatched GitHub `collect-daily #25` after deployment because the normal morning run predated v4. It ran commit `cd56cae`, succeeded in 20m05s and wrote collection #39 plus canonical run #71.
+- Audited Neon through a validated read-only transaction: all six included decisions are same-run and current-data confirmed; the quality snapshot, 30 outcomes and 24 policy orders are complete. The included tickers are SNDK, CRDO, WTI, DY, ARM and BWFG.
+- Dispatched paper executor #10 because its scheduled run had occurred before the new canonical signal. It succeeded in 43s, filling SNDK at $1,699.00 while leaving the other five entry-aware orders skipped with explicit insufficient-history reasons. Docker `/today`, `/performance`, `/validation` and `/backtest` returned 200, and Today rendered the v4 model plus all six names. Temporary audit files were removed; existing local artifacts were untouched.
 
 ### 2026-09-10 - canonical current-collection selection
 
