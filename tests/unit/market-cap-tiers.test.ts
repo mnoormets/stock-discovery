@@ -73,10 +73,29 @@ describe('market-cap-tier-policy-v1', () => {
   });
 
   it('keeps empty and sparse cohorts sparse instead of forcing six selections', () => {
-    expect(select([])).toMatchObject({ selected: [], overCapacity: [], unknownMarketCap: [] });
+    expect(select([])).toMatchObject({ selected: [], overCapacity: [], unknownMarketCap: [], ineligible: [] });
     expect(select([
       { ticker: 'LOW', marketCap: 1_000_000_000, rank: 1 },
       { ticker: 'UP', marketCap: 100_000_000_000, rank: 1 },
     ]).selected.map((row) => row.ticker)).toEqual(['LOW', 'UP']);
+  });
+
+  it('does not let an ineligible higher-ranked candidate consume a tier slot', () => {
+    const rows = [
+      { ticker: 'STALE', marketCap: 3_000_000_000, rank: 1 },
+      { ticker: 'CURRENT_A', marketCap: 3_000_000_000, rank: 2 },
+      { ticker: 'CURRENT_B', marketCap: 3_000_000_000, rank: 3 },
+    ];
+    const current = new Set(['CURRENT_A', 'CURRENT_B']);
+    const result = selectCanonicalCandidatesByMarketCapTier(
+      rows,
+      (row) => row.marketCap,
+      compare,
+      (row) => current.has(row.ticker),
+    );
+
+    expect(result.selected.map((row) => row.ticker)).toEqual(['CURRENT_A', 'CURRENT_B']);
+    expect(result.ineligible.map((row) => row.ticker)).toEqual(['STALE']);
+    expect(result.overCapacity).toEqual([]);
   });
 });

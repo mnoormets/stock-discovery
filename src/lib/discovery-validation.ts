@@ -4,10 +4,11 @@ import type { DiscoveryCriterion } from './rklb-discovery';
 import { recordMissingOutcomeAnalysisSnapshots } from './outcome-analysis-snapshots';
 import { summarizeOutcomeCohort } from './model-outcome-results';
 
-// V3 eemaldab market-cap hard ceiling'id, valib kuni kaks kandidaati igast
-// versioned market-cap tier'ist ning jätab scale-kriteeriumi järjestusloendusest
-// välja. Frequency/persistence ei tohi võrrelda eri kaasamisreegleid ühe loona.
-export const DISCOVERY_MODEL_VERSION = 'rklb-discovery-v3';
+// V4 säilitab V3 market-cap tier'id, kuid lubab canonical tier-kohtadele ainult
+// sama collection run'i market-data lookupis kinnitatud tickerid. Manual scanner
+// jääb laiema stored-universe vaateks. Frequency/persistence ei tohi võrrelda eri
+// kaasamisreegleid ühe loona.
+export const DISCOVERY_MODEL_VERSION = 'rklb-discovery-v4';
 export const DEFAULT_BENCHMARK_SYMBOL = 'SPY';
 export const OUTCOME_HORIZONS = ['1w', '2w', '1m', '3m', '6m'] as const;
 export type OutcomeHorizon = (typeof OUTCOME_HORIZONS)[number];

@@ -24,6 +24,7 @@ import {
   MARKET_CAP_TIER_CANDIDATES_PER_TIER,
   MARKET_CAP_TIER_POLICY_VERSION,
 } from './config';
+import { getCollectionRunItems } from './collection-run-items';
 
 export type DiscoveryCriterionStatus = 'supported' | 'uncertain' | 'missing';
 
@@ -117,6 +118,7 @@ const RULES = [
   `Igast turukapitalitier'ist valitakse kuni ${MARKET_CAP_TIER_CANDIDATES_PER_TIER} kandidaati; vabu kohti ei laenata tier'ide vahel.`,
   'Puuduva või vigase market capiga ettevõte ei saa canonical tier-kohta.',
 ];
+const CURRENT_COLLECTION_RULE = 'Canonical kandidaat peab olema sama collection run\'i market-data lookupis kinnitatud.';
 
 function formatBillions(value: number): string {
   if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toLocaleString('et-EE', { maximumFractionDigits: 1 })} mld`;
@@ -321,6 +323,20 @@ function decisionInput(item: EvaluatedCompany, included: boolean, rank: number |
 export async function getRklbDiscoveryCandidates(
   options: { runType?: DiscoveryRunType; collectionRunId?: number | null } = {},
 ): Promise<RklbDiscoveryResult> {
+  const runType = options.runType || 'rklb';
+  const requiresCurrentCollection = runType === CANONICAL_RUN_TYPE;
+  if (requiresCurrentCollection
+      && (options.collectionRunId == null
+        || !Number.isInteger(options.collectionRunId)
+        || options.collectionRunId <= 0)) {
+    throw new Error('Canonical discovery requires a positive collectionRunId.');
+  }
+  const currentCollectionTickers = requiresCurrentCollection
+    ? new Set((await getCollectionRunItems(options.collectionRunId!))
+      .filter((item) => item.marketDataFound)
+      .map((item) => item.ticker))
+    : null;
+  const rules = requiresCurrentCollection ? [...RULES, CURRENT_COLLECTION_RULE] : RULES;
   const financials = await getAllStoredCompanyFinancials();
   await saveCompanyScoreSnapshots(financials);
   const [evidenceByTicker, positions, sectorRelativeByTicker] = await Promise.all([
@@ -394,6 +410,7 @@ export async function getRklbDiscoveryCandidates(
     eligible,
     (item) => item.evidence.marketCap,
     candidateOrder,
+    (item) => currentCollectionTickers?.has(item.evidence.ticker) ?? true,
   );
   const selected = [...tierSelection.selected].sort(candidateOrder);
   const selectedRank = new Map(selected.map((item, index) => [item.evidence.ticker, index + 1]));
@@ -403,12 +420,14 @@ export async function getRklbDiscoveryCandidates(
   for (const item of tierSelection.unknownMarketCap) {
     item.exclusionReasons.push('Market cap puudub või on vigane; canonical tier-kohta ei määrata.');
   }
+  for (const item of tierSelection.ineligible) {
+    item.exclusionReasons.push('Sama collection run ei kinnitanud tickeri market data\'t; canonical tier-kohta ei määrata.');
+  }
   const decisions = evaluated.map((item) => {
     const rank = selectedRank.get(item.evidence.ticker) ?? null;
     return decisionInput(item, rank != null, rank);
   });
-  const runType = options.runType || 'rklb';
-  const run = await recordDiscoveryRun(RULES, decisions, runAt, runType, options.collectionRunId ?? null);
+  const run = await recordDiscoveryRun(rules, decisions, runAt, runType, options.collectionRunId ?? null);
   // Canonical run ilma kvaliteedisnapshotita oleks poolik audit trail. Viga
   // propagatsioonib collect:daily sammu (CLI lisab selle errors nimekirja ja
   // lõpetab exit 1-ga), kuid juba committed canonical run jääb alles.
@@ -450,7 +469,7 @@ export async function getRklbDiscoveryCandidates(
     recordedEvaluatedCompanies: run.evaluatedCount,
     recordedCandidateCount: run.includedCount,
     generatedAt: runAt.toISOString(),
-    rules: RULES,
+    rules,
     runId: run.runId,
     collectionRunId: run.collectionRunId,
     runReused: !run.created,

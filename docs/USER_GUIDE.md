@@ -16,6 +16,7 @@ See juhend on inimesele, kes avab rakenduse esimest korda. Stock Discovery aitab
 
 Iga Today kandidaadikaart näitab Business- ja Market setup'i kõrval eraldi **Paper entry test** tulemust:
 
+- Today canonical nimekiri kasutab ainult sama päeva collection run'is turuandmetega kinnitatud tickereid. Käsitsi avatud RKLB scanner võib endiselt näidata laiemat salvestatud research-universumit.
 - `Eligible for paper entry` tähendab, et entry-aware V1 kõik väravad läbisid: Growth vähemalt 65, Health vähemalt 65, Coverage vähemalt 70, current collection kinnitas turuandmed ja salvestatud hinnalugu ei näita elevated run-up'i. Today nõuab positiivse sildi jaoks lisaks hiljutist ja kehtivat kuvatud decision-price'i. See on appi selgeim positiivne seis ning looks hüpoteetilise $100 buy intent'i.
 - `Wait` tähendab, et ettevõte võib endiselt väärida uurimist, kuid vähemalt üks paper-entry värav ei läbinud. Kaart ütleb täpse põhjuse.
 - Iga uus eligible päev tekitab uue intent'i ka sama tickeri korral. Kui see käitumine osutub halvaks, tuleb parandada ja versioonida signaalipoliitika; simulator ei peida probleemi tickeri dedupeerimisega.

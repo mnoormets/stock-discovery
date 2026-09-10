@@ -12,6 +12,7 @@ export interface MarketCapTierSelection<T> {
   selectedByTier: Record<MarketCapTier, T[]>;
   overCapacity: T[];
   unknownMarketCap: T[];
+  ineligible: T[];
 }
 
 export function marketCapTier(marketCap: number | null): MarketCapTier | null {
@@ -25,6 +26,7 @@ export function selectCanonicalCandidatesByMarketCapTier<T>(
   candidates: readonly T[],
   marketCapOf: (candidate: T) => number | null,
   compare: (a: T, b: T) => number,
+  eligibleForSelection: (candidate: T) => boolean = () => true,
 ): MarketCapTierSelection<T> {
   const grouped: Record<MarketCapTier, T[]> = {
     lower_cap: [],
@@ -32,8 +34,13 @@ export function selectCanonicalCandidatesByMarketCapTier<T>(
     upper_cap: [],
   };
   const unknownMarketCap: T[] = [];
+  const ineligible: T[] = [];
 
   for (const candidate of candidates) {
+    if (!eligibleForSelection(candidate)) {
+      ineligible.push(candidate);
+      continue;
+    }
     const tier = marketCapTier(marketCapOf(candidate));
     if (tier == null) unknownMarketCap.push(candidate);
     else grouped[tier].push(candidate);
@@ -52,5 +59,6 @@ export function selectCanonicalCandidatesByMarketCapTier<T>(
     selectedByTier,
     overCapacity,
     unknownMarketCap,
+    ineligible,
   };
 }

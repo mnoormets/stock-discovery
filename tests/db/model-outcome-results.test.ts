@@ -53,7 +53,7 @@ describe('model-version and horizon result cohorts', () => {
       );
     }
 
-    const v3Run = await recordDiscoveryRun(
+    const currentRun = await recordDiscoveryRun(
       ['test-rule'],
       [
         makeDecisionInput({ companyId: aaaId, ticker: 'AAA', candidateRank: 1 }),
@@ -66,14 +66,14 @@ describe('model-version and horizon result cohorts', () => {
     await setOneWeekOutcome(v2Runs[0], 'AAA', 'measured', 10, 5);
     await setOneWeekOutcome(v2Runs[1], 'AAA', 'measured', -10, -15);
     await setOneWeekOutcome(v2Runs[2], 'AAA', 'missing', null, null);
-    await setOneWeekOutcome(v3Run.runId, 'AAA', 'measured', 20, 10);
-    await setOneWeekOutcome(v3Run.runId, 'BBB', 'unavailable', null, null);
+    await setOneWeekOutcome(currentRun.runId, 'AAA', 'measured', 20, 10);
+    await setOneWeekOutcome(currentRun.runId, 'BBB', 'unavailable', null, null);
 
     const validation = await getValidationDashboard();
     const backtest = await getBacktestDashboard();
 
     expect(validation.models.map((model) => model.modelVersion)).toEqual([
-      'rklb-discovery-v3',
+      'rklb-discovery-v4',
       'rklb-discovery-v2',
     ]);
     const validationV2 = validation.models[1];
@@ -106,8 +106,8 @@ describe('model-version and horizon result cohorts', () => {
       beatBenchmarkPercent: 0,
     });
 
-    const validationV3 = validation.models[0].horizons.find((item) => item.horizon === '1w')!;
-    expect(validationV3).toMatchObject({
+    const validationCurrent = validation.models[0].horizons.find((item) => item.horizon === '1w')!;
+    expect(validationCurrent).toMatchObject({
       decisionCount: 2,
       distinctTickerCount: 2,
       measuredDecisionCount: 1,
