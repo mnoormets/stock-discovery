@@ -104,11 +104,14 @@ Automaatne GitHub Actions päevatöö teeb enne põhikogumist idempotentse SEC F
 | `SEC_USER_AGENT` | SEC jaoks | SEC EDGAR, CompanyFacts ja kauplemispeatamiste feed |
 | `FMP_API_KEY` | ei | Yahoo varuallikas radari fundamentaalidele |
 | `HEALTHCHECKS_PING_URL` | ei | `collect:daily` dead-man-switch heartbeat pärast kinnitatud edukat canonical run'i |
+| `PAPER_STRATEGY_HEALTHCHECKS_PING_URL` | ei | eraldi dead-man-switch heartbeat pärast edukat paper-strategy execution'it |
 | `TZ` | ei | Ajavöönd, vaikimisi Europe/Tallinn |
 
 Yahoo Finance, ApeWisdom ja Tradestie ei vaja selles prototüübis API-võtit, kuid nende avalikud liidesed võivad olla piiratud või muutuda.
 
 `HEALTHCHECKS_PING_URL` tuleb pärast Healthchecks.io check'i loomist lisada lokaalsesse `.env` faili ja GitHub Actionsi samanimelise repository secret'ina. CLI saadab sellele GET-päringu ainult siis, kui kõik collect'i sammud lõppesid veata ja tänase Tallinna päeva canonical run on andmebaasis kinnitatud (uus või idempotentselt taaskasutatud). Dry-run, osaline/ebaõnnestunud jooks ega puuduv canonical run heartbeat'i ei saada; heartbeat'i enda tõrge jääb hoiatuseks ega muuda edukat collection'it failure'iks.
+
+`PAPER_STRATEGY_HEALTHCHECKS_PING_URL` peab viitama teisele Healthchecks.io check'ile ja olema GitHub Actionsi samanimeline repository secret. `paper-strategy-execute` workflow pingib seda ainult pärast edukat hypothetical execution'it; ebaõnnestunud execution ei saa tervet ping'i saata. Seadistamata URL jätab sammu vahele ning Healthchecks-võrgutõrge ei muuda juba õnnestunud paper execution'it ebaõnnestunuks.
 
 ## Kvaliteedikontroll
 
@@ -136,7 +139,7 @@ npm run build
 - Coverage Score on Growth ja Financial Health mudelite kaalutud sisendikatte keskmine. Growth/Health edetabelites kuvatakse vähemalt 70 coverage ettevõtted enne madalama kattega tulemusi, et üksiku komponendi kõrge skoor ei oleks eksitav.
 - Score-mudeli versioon on salvestatud iga snapshotiga. Valemi muutmisel tuleb versiooni tõsta, et eri valemitega tulemusi ei võrreldaks vaikimisi sama ajaloona.
 - Rakendus ei sisalda optsioonianalüüsi, ajaloolist ümbervalikut ega automaatset kauplemist.
-- Paper Strategy ei ole automaatne kauplemine: `paper_strategy_orders` on ainult hüpoteetiline ledger. V1 modelleerib USA aktsiaorderi 0,1% komisjoni (min $0.10, max $1), kuid mitte makse, dividende, FX-i, slippage'it ega Lightyeari tegelikku täitmist. `0008_paper_strategy` on Neoni golden source'il rakendatud; esimene 12-orderiline hypothetical fill ja `/performance` smoke on kontrollitud. `paper-strategy-execute` workflow jääb ainult `workflow_dispatch`-iks, kuid cron-job.org dispatch'ib seda iga päev 09:35 `America/New_York`; esimene päris unattended scheduled run on veel kontrollimata.
+- Paper Strategy ei ole automaatne kauplemine: `paper_strategy_orders` on ainult hüpoteetiline ledger. V1 modelleerib USA aktsiaorderi 0,1% komisjoni (min $0.10, max $1), kuid mitte makse, dividende, FX-i, slippage'it ega Lightyeari tegelikku täitmist. `0008_paper_strategy` on Neoni golden source'il rakendatud; esimene 12-orderiline hypothetical fill ja `/performance` smoke on kontrollitud. `paper-strategy-execute` workflow jääb ainult `workflow_dispatch`-iks, kuid cron-job.org dispatch'ib seda iga päev 09:35 `America/New_York`; 11. septembri unattended run #11 õnnestus 42 sekundiga. Sõltumatu dead-man heartbeat vajab eraldi Healthchecks check'i ja repository secret'i.
 - Nasdaq new-listing radar ei ole veel production discovery'ga ühendatud. `npm run calibrate:nasdaq-listings` on DB-vaba read-only kalibratsioon, mis võrdleb ametlikke jooksvaid `nasdaqlisted.txt` ja `TradingSystemAddsDeletes.txt` faile; `--artifact-dir` säilitab mõlemad täpsed source-payloadid ja versioneeritud `observation.json` raporti. Eraldi `nasdaq-listing-observation` workflow ei saa DB secret'it ega käivita collect'i; cron-job.org dispatch'ib seda iga päev 09:35 `America/New_York`, et koguda 30 päevaks säilitatavaid kalibratsiooniartifact'e. Esimene täielik directory on ainult baseline ning ühtki olemasolevat tickerit ei nimetata selle põhjal uueks.
 - Validation on forward outcome tracking, mitte täielik ajalooline backtest: see kogub tulemusi alates salvestatud discovery jooksudest ega rekonstrueeri minevikku tänaste andmetega.
 - Backtest V1 on salvestatud forward outcome'ide aus kohordivaade, mitte tõend strateegia toimivuse ega tulevase tootluse kohta. Mudeliversioone ei liideta ning korduvat päevast tickerit ei loeta sõltumatuks panuseks.

@@ -57,7 +57,7 @@ CRON_SECRET=<long random value>
 SEC_USER_AGENT=<identifying SEC-compliant application/contact string>
 ```
 
-`FMP_API_KEY` and `HEALTHCHECKS_PING_URL` are optional. GitHub Actions also requires `NEON_DATABASE_URL` and `SEC_USER_AGENT`; its workflow uses `workflow_dispatch` and an external cron-job.org trigger. The separate paper-execution workflow also requires `NEON_DATABASE_URL`. Do not place secret values in Git, terminal transcripts, issues, or this handover.
+`FMP_API_KEY` and `HEALTHCHECKS_PING_URL` are optional. GitHub Actions also requires `NEON_DATABASE_URL` and `SEC_USER_AGENT`; its workflow uses `workflow_dispatch` and an external cron-job.org trigger. The separate paper-execution workflow requires `NEON_DATABASE_URL` and optionally `PAPER_STRATEGY_HEALTHCHECKS_PING_URL` for its independent dead-man check. Do not place secret values in Git, terminal transcripts, issues, or this handover.
 
 ## Recent work and where it lives
 

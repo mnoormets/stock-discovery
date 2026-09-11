@@ -41,3 +41,17 @@ jobs:
           DATABASE_TARGET: golden
           TZ: America/New_York
         run: npm run paper:strategy -- execute
+
+      # Separate dead-man switch from the core collection. The default success()
+      # condition means failed execution never sends a false healthy ping.
+      - name: Send paper execution Healthchecks heartbeat
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          PAPER_STRATEGY_HEALTHCHECKS_PING_URL: ${{ secrets.PAPER_STRATEGY_HEALTHCHECKS_PING_URL }}
+        run: |
+          if [ -z "$PAPER_STRATEGY_HEALTHCHECKS_PING_URL" ]; then
+            echo "PAPER_STRATEGY_HEALTHCHECKS_PING_URL is not configured; skipping heartbeat."
+            exit 0
+          fi
+          curl --fail --silent --show-error --max-time 10 "$PAPER_STRATEGY_HEALTHCHECKS_PING_URL"

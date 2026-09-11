@@ -20,4 +20,17 @@ describe('paper strategy execution workflow safety', () => {
     expect(workflow).not.toContain('postgresql://');
     expect(workflow).not.toContain('postgres://');
   });
+
+  it('pings a separate optional dead-man switch only after execution', () => {
+    const execution = workflow.indexOf('npm run paper:strategy -- execute');
+    const heartbeat = workflow.indexOf('Send paper execution Healthchecks heartbeat');
+
+    expect(execution).toBeGreaterThan(-1);
+    expect(heartbeat).toBeGreaterThan(execution);
+    expect(workflow).toContain(
+      'PAPER_STRATEGY_HEALTHCHECKS_PING_URL: ${{ secrets.PAPER_STRATEGY_HEALTHCHECKS_PING_URL }}',
+    );
+    expect(workflow).toContain('curl --fail --silent --show-error --max-time 10');
+    expect(workflow).toContain('continue-on-error: true');
+  });
 });
