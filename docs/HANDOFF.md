@@ -30,7 +30,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 - **2026-09-10 canonical current-collection gate:** `rklb-discovery-v4` lets only tickers with `market_data_found=true` in the linked same-run `collection_run_items` compete for canonical market-cap tier slots. Manual RKLB scans still use the broader stored universe. The fix prevents cached names absent from today's collection from consuming all-picks and entry-aware measurement slots; base Growth/Coverage filters, ranking comparator, tier boundaries, tier capacity, paper-entry gates, providers and schema are unchanged. A canonical call without a positive collection-run ID now fails explicitly instead of silently creating an unlinked daily shortlist.
 
-- **2026-09-11 separate paper-execution dead-man path:** `paper-strategy-execute` now has a bounded post-success Healthchecks step using its own optional `PAPER_STRATEGY_HEALTHCHECKS_PING_URL` repository secret. The step follows the hypothetical executor, so a failed executor cannot send a healthy ping; an unset secret skips honestly and a Healthchecks network failure does not reinterpret a completed execution as failed. A separate Healthchecks check exists with `35 9 * * *` in `America/New_York`, two-hour grace and the existing email integration. Storing its private ping URL in GitHub and running the first new-SHA smoke remain activation steps.
+- **2026-09-13 paper-execution dead-man path active:** `paper-strategy-execute` has a bounded post-success Healthchecks step using its own optional `PAPER_STRATEGY_HEALTHCHECKS_PING_URL` repository secret. The step follows the hypothetical executor, so a failed executor cannot send a healthy ping; an unset secret skips honestly and a Healthchecks network failure does not reinterpret a completed execution as failed. The dedicated GitHub secret is configured. Healthchecks check `stock-discovery paper-strategy execution` uses `35 9 * * *` in `America/New_York`, two-hour grace and the existing email integration. Manual workflow run #13 on exact commit `e765990` succeeded in 40 seconds; its heartbeat step completed in one second and Healthchecks changed from never pinged to up.
 
 - **2026-09-10 first live v4 cohort:** Manually dispatched `collect-daily #25` completed successfully in 20m05s on exact deployed commit `cd56cae`. Collection #39 produced canonical run #71 with 148 evaluated and six included: SNDK, CRDO, WTI, DY, ARM and BWFG. A read-only Neon audit found zero missing item links, zero cross-run links and zero unconfirmed market-data links; the run has one quality snapshot, 30 outcome horizons and 24 paper orders. The separate same-day executor #10 succeeded in 43s and filled the only entry-aware eligible order, SNDK, at $1,699.00; the other five entry-aware orders remain skipped with explicit insufficient-history reasons.
 
@@ -247,7 +247,7 @@ The first production v4 cohort now proves the current-collection fix in the real
 
 The immediate constraint remains decision quality and dependable forward measurement. The authenticated GitHub Actions page shows the 11 September unattended jobs green: `collect-daily #26` succeeded from the 08:10 Tallinn dispatch in 24m45s and `paper-strategy-execute #11` succeeded from the 09:35 New York dispatch in 42s. Entry-aware V1 continues to act only on its explicit positive state. Earlier cron failure emails refer to historical runs, including the fixed NYSE holiday recency bug. Preserve failed attempts and compare v4 only within its own model-version cohorts.
 
-Paper execution's independent dead-man path is implemented and its separate Healthchecks check is prepared. Activation still requires the user's confirmation to transmit the private ping URL to GitHub as `PAPER_STRATEGY_HEALTHCHECKS_PING_URL`, followed by one new-SHA workflow run proving the check receives a ping. Until then the existing GitHub/cron success evidence remains valid, but absence monitoring is not complete.
+Paper execution's independent dead-man path is active. The dedicated GitHub secret is stored, manual workflow run #13 succeeded on exact commit `e765990`, the separate heartbeat step ran successfully and Healthchecks recorded the first ping as up. The normal 09:35 `America/New_York` cron-job.org dispatch remains the execution cadence; Healthchecks now detects a missing successful execution independently.
 
 The user accepted the API, BW and HIMS decision packet on 9 September. Their current v3 Thesis Builder records contain the dated assumptions and review triggers, while their 11 August v2 records remain immutable history. API remains `ready`; BW and HIMS remain `researching`. Today now turns these records into a deterministic review queue; all three are awaiting November evidence and none is due. [BW/API reconciliation](BW_API_RECONCILIATION_2026-09-07.md) makes the filing-level debt, liquidity and ADS definitions visible without replacing normalized facts. The fixed bear/base/bull sensitivity is not evidence of mispricing.
 
@@ -257,7 +257,6 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Activate the prepared paper-execution Healthchecks check by storing its private URL in the dedicated GitHub repository secret, then run and verify one new-SHA workflow heartbeat.
 - Let continued price tracking mature the v4 cohort, then inspect its entry-aware Eligible/Wait decisions and version-separated forward outcomes. Keep v1-v3 history immutable and separate; if repeated hypothetical buys reveal a weak signal, revise the policy under a new version.
 - Use the Thesis Review Queue through the next stored evidence cycle. When an item becomes due, review its primary source and record the conclusion as a new thesis version; do not automate pass/fail or status changes from free text.
 - Observe the accepted API/BW/HIMS v3 gates, published HIMS investment extraction, BW/API dated reconciliation and `scores-v2` / `signals-v3` date guard in subsequent refreshes. Do not substitute partial debt or ordinary shares for a current complete definition.
@@ -423,7 +422,7 @@ Current as of 2026-09-10; earlier calibration observations and superseded plans 
 - Nasdaq listing observation is implemented but is not production discovery. Its latest artifact series was not reviewed in this session.
 - Authentication/authorization and supported Next.js remain prerequisites for any public deployment. Automated tests, versioned migrations and API/CLI advisory locking already exist; they are not unbuilt blockers.
 - Neon remains the sole canonical database. Host `.env.local` still targets the frozen local discovery database as an intentional mismatch case; normal startup now rejects it when the declared target is `golden`. Docker pins the app to the validated Neon target, and tests use only the isolated local `discovery_test` database.
-- Core collection has its own active Healthchecks heartbeat. The separate paper-execution check and workflow path now exist, but the GitHub repository secret and first live ping remain pending user-confirmed activation. Registered filing persistence does not prove historical EDGAR completeness. Fine-grained scheduler PAT expiry remains recorded as 2027-08-20.
+- Core collection and paper execution each have their own active Healthchecks heartbeat. The paper check is tied to the post-success executor step through its dedicated GitHub secret; manual run #13 provided the first live-ping proof. Registered filing persistence does not prove historical EDGAR completeness. Fine-grained scheduler PAT expiry remains recorded as 2027-08-20.
 - Benchmark for current experiments is SPY. Sector benchmarks, business-driver concentration and a finite-cash paper policy are separate possible improvements, not changes made here.
 - financial_facts write-flow provenance and non-versioned sector/restatement limitations remain open. Existing immutable snapshots must not be reinterpreted as stronger historical evidence than they contain.
 
@@ -665,11 +664,17 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 
 ## Viimane testitud seis
 
+### 2026-09-13 - paper-execution heartbeat live activation
+
+- Stored the dedicated private ping URL as the GitHub Actions repository secret `PAPER_STRATEGY_HEALTHCHECKS_PING_URL`; the value was not printed or committed.
+- Manually dispatched `paper-strategy-execute #13` on `main`. GitHub showed exact commit `e765990`, overall success in 40 seconds and the `execute` job successful in 36 seconds. Its `Send paper execution Healthchecks heartbeat` step completed successfully in one second.
+- The separate Healthchecks detail page changed from never pinged to `This check is up` with the first ping about 35 seconds old. This live workflow run validates the already fully tested workflow commit; the activation-only documentation update did not change runtime code and did not require another local test/build cycle.
+
 ### 2026-09-11 - separate paper-execution heartbeat path
 
 - Added a post-success step to `.github/workflows/paper-strategy-execute.yml` using the dedicated optional `PAPER_STRATEGY_HEALTHCHECKS_PING_URL` secret. The step is after execution, bounded to ten seconds/one minute and non-critical; missing configuration is logged and skipped. No paper policy, database, quote or broker path changed.
 - Added a workflow regression and documented the separate secret in `.env.example` and README. Focused Docker coverage passed 3/3. Typecheck and lint passed; the final isolated suite passed 65 files / 498 tests in 270.81s and teardown left zero test databases. The mounted production build generated 22/22 routes, the app container was restarted, Docker was healthy, and Today plus Performance returned HTTP 200.
-- Verified the existing external cadence rather than assuming it: GitHub collect #26 succeeded at 08:10 Tallinn in 24m45s and paper executor #11 succeeded at 09:35 New York in 42s. Created the separate Healthchecks cron check with two-hour grace and email integration. Its private ping URL has not yet been transmitted to GitHub; live activation and first-ping proof remain pending.
+- Verified the existing external cadence rather than assuming it: GitHub collect #26 succeeded at 08:10 Tallinn in 24m45s and paper executor #11 succeeded at 09:35 New York in 42s. Created the separate Healthchecks cron check with two-hour grace and email integration. It was subsequently activated and proved live on 13 September as recorded above.
 
 ### 2026-09-10 - first live v4 production run
 
@@ -996,11 +1001,17 @@ Varasem seis:
 
 ## Sessioonilogi
 
+### 2026-09-13 - paper execution dead-man activation
+
+- After explicit user confirmation, copied the private URL from the dedicated Healthchecks check into the GitHub Actions repository secret `PAPER_STRATEGY_HEALTHCHECKS_PING_URL` without exposing its value in Git or terminal output.
+- Dispatched GitHub Actions `paper-strategy-execute #13` on `main`. The run used exact commit `e765990`, completed successfully in 40 seconds, and its execute job completed in 36 seconds. The post-success Healthchecks step was present, ran rather than skipped, and succeeded in one second.
+- Healthchecks reported `This check is up` and a first ping roughly 35 seconds earlier. The activation closes the independent absence-monitoring gap for paper execution; no app code, policy, database row or broker path changed in this session step.
+
 ### 2026-09-11 - paper execution dead-man implementation
 
 - Confirmed in authenticated GitHub Actions that today's external jobs are healthy before changing observability: collect #26 succeeded in 24m45s and paper executor #11 in 42s. Docker Desktop was initially stopped, then started from its installed user-local path; DB became healthy and the app service was restored.
 - Added a dedicated optional paper-execution Healthchecks step after the executor, plus regression coverage and configuration documentation. The initial host focused attempt failed before discovery because the host inherited Docker-only test host `db`; the first Docker focused run then correctly caught the forbidden `collect:daily` literal in a new comment. The comment was corrected without weakening the guard, and the rerun passed 3/3.
-- Final evidence: typecheck exit 0; lint zero warnings/errors; 65 files / 498 tests passed in 270.81s after all ten migrations; zero test databases remained; production build generated 22/22 routes; app restart completed; `/today` and `/performance` returned 200. A separate Healthchecks check now exists at 09:35 America/New_York with two-hour grace and email integration, but its private URL is not yet stored in GitHub pending explicit transmission approval.
+- Final evidence: typecheck exit 0; lint zero warnings/errors; 65 files / 498 tests passed in 270.81s after all ten migrations; zero test databases remained; production build generated 22/22 routes; app restart completed; `/today` and `/performance` returned 200. A separate Healthchecks check exists at 09:35 America/New_York with two-hour grace and email integration; its later activation is recorded in the 13 September entry above.
 
 ### 2026-09-10 - first live v4 production run
 
