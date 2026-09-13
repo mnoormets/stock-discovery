@@ -12,6 +12,7 @@ ensureLocalDatabaseUrl();
 
 const { pool } = loadTs(path.join(root, 'src/lib/db.ts'));
 const store = loadTs(path.join(root, 'src/lib/paper-strategy-store.ts'));
+const policy = loadTs(path.join(root, 'src/lib/paper-strategy.ts'));
 
 function argument(name) {
   const index = process.argv.indexOf(name);
@@ -40,7 +41,12 @@ async function main() {
     return;
   }
   if (command === 'execute') {
-    console.log(JSON.stringify(await store.executePendingPaperOrders(), null, 2));
+    const now = new Date();
+    const result = await store.executePendingPaperOrders({ now });
+    console.log(JSON.stringify(result, null, 2));
+    if (policy.shouldFailDeferredPaperExecution(result.deferredOrders, now)) {
+      throw new Error(`${result.deferredOrders} hypothetical paper orders remained deferred during the expected New York regular session.`);
+    }
     return;
   }
   throw new Error('Usage: npm run paper:strategy -- signal [--run-id N] | execute');

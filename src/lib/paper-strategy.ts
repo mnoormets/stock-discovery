@@ -6,6 +6,7 @@ import {
   PAPER_STRATEGY_POLICY_VERSION,
 } from './config';
 import type { CandidatePriceContext } from './price-context';
+import { isExpectedNewYorkRegularSession } from './price-observation';
 
 export const PAPER_STRATEGY_SNAPSHOT_VERSION = 'paper-strategy-signal-v1';
 export const PAPER_STRATEGY_EXECUTION_QUOTE_MAX_AGE_MS = 20 * 60 * 1000;
@@ -141,6 +142,10 @@ export function evaluatePaperStrategies(input: PaperSignalInput): PaperSignalEva
         : entryReasons,
     },
   ];
+}
+
+export function shouldFailDeferredPaperExecution(deferredOrders: number, now: Date): boolean {
+  return deferredOrders > 0 && isExpectedNewYorkRegularSession(now);
 }
 
 export function paperCommissionUsd(grossUsd = PAPER_STRATEGY_ORDER_NOTIONAL_USD): number {

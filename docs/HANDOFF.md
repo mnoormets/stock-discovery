@@ -32,6 +32,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 - **2026-09-13 paper-execution dead-man path active:** `paper-strategy-execute` has a bounded post-success Healthchecks step using its own optional `PAPER_STRATEGY_HEALTHCHECKS_PING_URL` repository secret. The step follows the hypothetical executor, so a failed executor cannot send a healthy ping; an unset secret skips honestly and a Healthchecks network failure does not reinterpret a completed execution as failed. The dedicated GitHub secret is configured. Healthchecks check `stock-discovery paper-strategy execution` uses `35 9 * * *` in `America/New_York`, two-hour grace and the existing email integration. Manual workflow run #13 on exact commit `e765990` succeeded in 40 seconds; its heartbeat step completed in one second and Healthchecks changed from never pinged to up.
 
+- **2026-09-13 market-session paper-execution guard:** The executor CLI now exits non-zero when one or more hypothetical orders remain deferred during an expected 09:30–16:00 New York regular session. The workflow's default success gate therefore withholds its healthy heartbeat when an app-eligible buy cannot be filled. Weekend, full-day holiday and outside-session runs can still succeed with pending orders waiting for the next market session. Signal, order identity, commissions, fills, exits, schema and broker isolation are unchanged.
+
 - **2026-09-10 first live v4 cohort:** Manually dispatched `collect-daily #25` completed successfully in 20m05s on exact deployed commit `cd56cae`. Collection #39 produced canonical run #71 with 148 evaluated and six included: SNDK, CRDO, WTI, DY, ARM and BWFG. A read-only Neon audit found zero missing item links, zero cross-run links and zero unconfirmed market-data links; the run has one quality snapshot, 30 outcome horizons and 24 paper orders. The separate same-day executor #10 succeeded in 43s and filled the only entry-aware eligible order, SNDK, at $1,699.00; the other five entry-aware orders remain skipped with explicit insufficient-history reasons.
 
 - **2026-09-10 explicit paper-entry state:** Every `/today` candidate now shows Business, Market setup and a separate `Eligible for paper entry` or `Wait` result using the existing entry-aware V1 gates. Today additionally refuses the positive label when its displayed decision price is stale, invalid or unavailable. Eligible is named as the app's clearest positive state and means that the hypothetical strategy would create a $100 buy intent; Wait includes the exact failed gate. `/performance` uses the same signal language and states that every new eligible day creates another intent even for a repeated ticker. This exposes the policy instead of turning a research priority badge into an implied purchase. No score, ranking, discovery selection, stored paper order behavior, schema or broker integration changed.
@@ -247,7 +249,9 @@ The first production v4 cohort now proves the current-collection fix in the real
 
 The immediate constraint remains decision quality and dependable forward measurement. The authenticated GitHub Actions page shows the 11 September unattended jobs green: `collect-daily #26` succeeded from the 08:10 Tallinn dispatch in 24m45s and `paper-strategy-execute #11` succeeded from the 09:35 New York dispatch in 42s. Entry-aware V1 continues to act only on its explicit positive state. Earlier cron failure emails refer to historical runs, including the fixed NYSE holiday recency bug. Preserve failed attempts and compare v4 only within its own model-version cohorts.
 
-Paper execution's independent dead-man path is active. The dedicated GitHub secret is stored, manual workflow run #13 succeeded on exact commit `e765990`, the separate heartbeat step ran successfully and Healthchecks recorded the first ping as up. The normal 09:35 `America/New_York` cron-job.org dispatch remains the execution cadence; Healthchecks now detects a missing successful execution independently.
+Paper execution's independent dead-man path is active. The dedicated GitHub secret is stored, manual workflow run #13 succeeded on exact commit `e765990`, the separate heartbeat step ran successfully and Healthchecks recorded the first ping as up. The normal 09:35 `America/New_York` cron-job.org dispatch remains the execution cadence; Healthchecks now detects a missing successful execution independently. The executor also fails visibly if an expected regular-session run leaves any eligible order deferred.
+
+A 13 September read-only Neon audit found four canonical v4 runs (#71, #74, #75 and #76), 23 included decisions across 14 distinct tickers and 115 pending outcome rows. The first v4 1-week target is 17 September at 19:06 UTC, so zero measured v4 outcomes is currently correct. Today's continued-tracking batch attempted 29 symbols: 3 saved, 26 unchanged from Friday's market timestamps, zero missing/stale/invalid/failed and zero waiting. Entry-aware recorded one filled signal on 10 September, four on 11 September and six weekend-eligible intents still pending for the next regular session.
 
 The user accepted the API, BW and HIMS decision packet on 9 September. Their current v3 Thesis Builder records contain the dated assumptions and review triggers, while their 11 August v2 records remain immutable history. API remains `ready`; BW and HIMS remain `researching`. Today now turns these records into a deterministic review queue; all three are awaiting November evidence and none is due. [BW/API reconciliation](BW_API_RECONCILIATION_2026-09-07.md) makes the filing-level debt, liquidity and ADS definitions visible without replacing normalized facts. The fixed bear/base/bull sensitivity is not evidence of mispricing.
 
@@ -257,7 +261,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Let continued price tracking mature the v4 cohort, then inspect its entry-aware Eligible/Wait decisions and version-separated forward outcomes. Keep v1-v3 history immutable and separate; if repeated hypothetical buys reveal a weak signal, revise the policy under a new version.
+- Keep daily price tracking running through the first v4 1-week target on 17 September, then inspect version-separated measured outcomes. Verify the first post-guard 09:35 New York workflow run fills the six weekend-eligible intents or fails visibly without sending a healthy heartbeat. Keep v1-v3 history immutable and separate; if repeated hypothetical buys reveal a weak signal, revise the policy under a new version.
 - Use the Thesis Review Queue through the next stored evidence cycle. When an item becomes due, review its primary source and record the conclusion as a new thesis version; do not automate pass/fail or status changes from free text.
 - Observe the accepted API/BW/HIMS v3 gates, published HIMS investment extraction, BW/API dated reconciliation and `scores-v2` / `signals-v3` date guard in subsequent refreshes. Do not substitute partial debt or ordinary shares for a current complete definition.
 
@@ -285,6 +289,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - **2026-09-10 canonical currentness:** Daily canonical discovery requires a positive `collectionRunId` and filters base-eligible candidates by the linked collection run's immutable `market_data_found` truth before market-cap tier selection. Missing confirmation creates an explicit decision exclusion reason. Manual scanner runs retain their broader stored-universe behavior. Because this changes who may be selected, the discovery version advances from v3 to `rklb-discovery-v4`; old decisions, outcomes and paper orders remain unchanged and analytics must keep versions separate.
 
 - **2026-09-11 paper-execution heartbeat separation:** Paper execution must use a different Healthchecks check and secret from core collection. The workflow pings only after `npm run paper:strategy -- execute` succeeds; default step gating prevents a false healthy ping after execution failure. The heartbeat request is bounded to ten seconds and non-critical because the remote dead-man check itself detects missing pings. Missing configuration is explicit. This changes workflow observability only, not signal, fill, exit, ranking or broker behavior.
+
+- **2026-09-13 deferred execution is a market-session failure:** An app-eligible hypothetical order may remain pending while the market is closed. During an expected New York regular session, any deferred order makes the CLI fail after printing the structured result. This preserves the pending rows for retry, makes the GitHub run red and prevents a healthy dead-man ping. The calendar uses the existing explicit 2026–2028 full-day NYSE holidays and a weekday fallback outside that range; the scheduled 09:35 run is before early closes.
 
 - **2026-09-10 paper-entry meaning:** `entry_aware` eligible is the app's executable hypothetical buy state. It requires the existing V1 Business thresholds, current collection confirmation and accepted price-history/run-up state; Today labels it explicitly and adds a read-side displayed-price recency guard before showing the positive state. Every failure is `Wait` with reasons. Each eligible canonical day creates a new $100 intent, including a repeated ticker. Repetition is deliberate evidence about the app policy: if it is economically wrong, create a new policy version rather than silently deduplicating execution. The state does not place a broker order and does not replace human thesis, valuation, risk or position-size review.
 
@@ -413,7 +419,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ## Avatud sõltuvused ja otsused
 
-Current as of 2026-09-10; earlier calibration observations and superseded plans are preserved in dated session entries and supporting design documents.
+Current as of 2026-09-13; earlier calibration observations and superseded plans are preserved in dated session entries and supporting design documents.
 
 - Outcome sample coverage and maturity remain insufficient for a strategy conclusion. Canonical v3 has 16 measured one-week decisions across six distinct tickers; repeated decisions are correlated observations, and prior versions and later horizons remain separate.
 - Historical prices must not be invented or silently backfilled. Reusing existing paper marks for outcome measurement requires a provenance and immutability design before implementation.
@@ -422,7 +428,7 @@ Current as of 2026-09-10; earlier calibration observations and superseded plans 
 - Nasdaq listing observation is implemented but is not production discovery. Its latest artifact series was not reviewed in this session.
 - Authentication/authorization and supported Next.js remain prerequisites for any public deployment. Automated tests, versioned migrations and API/CLI advisory locking already exist; they are not unbuilt blockers.
 - Neon remains the sole canonical database. Host `.env.local` still targets the frozen local discovery database as an intentional mismatch case; normal startup now rejects it when the declared target is `golden`. Docker pins the app to the validated Neon target, and tests use only the isolated local `discovery_test` database.
-- Core collection and paper execution each have their own active Healthchecks heartbeat. The paper check is tied to the post-success executor step through its dedicated GitHub secret; manual run #13 provided the first live-ping proof. Registered filing persistence does not prove historical EDGAR completeness. Fine-grained scheduler PAT expiry remains recorded as 2027-08-20.
+- Core collection and paper execution each have their own active Healthchecks heartbeat. The paper check is tied to the post-success executor step through its dedicated GitHub secret; manual run #13 provided the first live-ping proof. The market-session deferred guard has unit/full-suite and local runtime proof; its first 09:35 new-SHA run is still required as live operational proof. Registered filing persistence does not prove historical EDGAR completeness. Fine-grained scheduler PAT expiry remains recorded as 2027-08-20.
 - Benchmark for current experiments is SPY. Sector benchmarks, business-driver concentration and a finite-cash paper policy are separate possible improvements, not changes made here.
 - financial_facts write-flow provenance and non-versioned sector/restatement limitations remain open. Existing immutable snapshots must not be reinterpreted as stronger historical evidence than they contain.
 
@@ -663,6 +669,12 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-09-13 - market-session deferred execution guard
+
+- A read-only Neon audit found canonical v4 runs #71/#74/#75/#76 with 23 included decisions across 14 tickers and 115 pending outcomes; none is due. The first 1-week target is 17 September 19:06 UTC. The 13 September tracking batch was complete: 29 attempts, 3 saved, 26 unchanged Friday quotes and zero waiting/errors.
+- Added an explicit New York regular-session helper and made the executor CLI fail when `deferredOrders > 0` during that window. Weekend, known full-day holiday and outside-session deferrals remain retryable success states. Focused Docker coverage passed 30/30; CLI syntax, typecheck and lint passed.
+- Full isolated Docker suite passed 65 files / 506 tests in 278.67s after all ten migrations; teardown left zero `discovery_test*` databases. Production build compiled and generated 22/22 routes, the app container restarted, and `/today` plus `/performance` returned HTTP 200. No schema or production DB mutation was required for the guard. First new-SHA market-window workflow proof remains pending.
 
 ### 2026-09-13 - paper-execution heartbeat live activation
 
@@ -1000,6 +1012,12 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-13 - v4 tracking checkpoint and deferred-order guard
+
+- Audited the golden-source database in a read-only transaction. V4 has four canonical days, 23 included decisions, 14 distinct tickers and 115 pending outcome rows; the first honest measurement is not due until 17 September. Continued tracking used 29/50 daily slots with no waiting or error state.
+- Found that `paper:strategy -- execute` returned exit 0 even when fresh regular-session quotes were unavailable, which allowed the following Healthchecks step to report healthy while app-eligible orders remained unfilled. Added the minimum time/calendar guard: any deferred order during expected New York regular hours now exits non-zero after preserving and printing the retryable result; market-closed runs remain successful.
+- Verification: focused Docker tests 30/30; CLI syntax exit 0; typecheck exit 0; lint zero warnings/errors; full Docker suite 65 files / 506 tests in 278.67s; zero remaining test databases; production build 22/22 routes; app restart complete; Today and Performance HTTP 200. Production data and schema were not changed.
 
 ### 2026-09-13 - paper execution dead-man activation
 

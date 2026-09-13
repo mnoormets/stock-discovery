@@ -2,6 +2,9 @@ const DAY_MS = 86_400_000;
 const newYorkFormatter = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
 });
+const newYorkTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+});
 
 // Published NYSE full-day closures for the years currently listed by the
 // exchange. Keeping the dates explicit makes the accepted observation window
@@ -19,6 +22,22 @@ const KNOWN_NYSE_HOLIDAYS = new Set([
 export function newYorkPriceDate(timestamp: string): string | null {
   const date = new Date(timestamp);
   return Number.isFinite(date.getTime()) ? newYorkFormatter.format(date) : null;
+}
+
+/** True only during an expected full-day NYSE regular session. */
+export function isExpectedNewYorkRegularSession(value: string | Date): boolean {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) return false;
+  const dateOnly = newYorkPriceDate(date.toISOString());
+  if (!dateOnly || KNOWN_NYSE_HOLIDAYS.has(dateOnly)) return false;
+  const weekday = new Date(`${dateOnly}T00:00:00Z`).getUTCDay();
+  if (weekday === 0 || weekday === 6) return false;
+  const parts = newYorkTimeFormatter.formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return false;
+  const minutes = hour * 60 + minute;
+  return minutes >= 9 * 60 + 30 && minutes < 16 * 60;
 }
 
 /**

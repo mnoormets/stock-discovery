@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { newYorkPriceDate, priceObservationRecency } from '../../src/lib/price-observation';
+import {
+  isExpectedNewYorkRegularSession,
+  newYorkPriceDate,
+  priceObservationRecency,
+} from '../../src/lib/price-observation';
 
 describe('price observation recency', () => {
   it.each([
@@ -23,5 +27,17 @@ describe('price observation recency', () => {
   it('uses the New York date across UTC midnight and rejects invalid timestamps', () => {
     expect(newYorkPriceDate('2026-09-05T01:00:00Z')).toBe('2026-09-04');
     expect(newYorkPriceDate('invalid')).toBeNull();
+  });
+
+  it.each([
+    ['2026-09-14T13:35:00Z', true],
+    ['2026-09-13T13:35:00Z', false],
+    ['2026-09-07T13:35:00Z', false],
+    ['2026-09-14T13:29:00Z', false],
+    ['2026-09-14T20:00:00Z', false],
+    ['2026-11-02T14:35:00Z', true],
+    ['invalid', false],
+  ] as const)('classifies expected NYSE session at %s as %s', (timestamp, expected) => {
+    expect(isExpectedNewYorkRegularSession(timestamp)).toBe(expected);
   });
 });
