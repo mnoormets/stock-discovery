@@ -288,8 +288,9 @@ export async function recordPaperStrategySignals(runId: number): Promise<RecordP
 type QuoteFetcher = (tickers: string[]) => Promise<Map<string, YahooExecutionQuote>>;
 
 /**
- * Fills only pending hypothetical orders with a fresh Yahoo REGULAR-session
- * quote. Repeated calls are idempotent because UPDATE requires status=pending.
+ * Fills only complete strategy + benchmark pairs with fresh Yahoo
+ * REGULAR-session quotes. Repeated calls are idempotent because UPDATE
+ * requires status=pending.
  */
 export async function executePendingPaperOrders(options: {
   now?: Date;
@@ -298,7 +299,8 @@ export async function executePendingPaperOrders(options: {
   const now = options.now ?? new Date();
   const quoteFetcher = options.quoteFetcher ?? fetchExecutionQuotes;
   const pending = await pool.query(
-    `SELECT id, instrument_ticker, side, notional_usd, requested_quantity
+    `SELECT id, policy_version, strategy_key, book_key, run_id, signal_ticker,
+            instrument_ticker, side, notional_usd, requested_quantity
      FROM paper_strategy_orders
      WHERE status = 'pending'
      ORDER BY signal_at, id`,
@@ -318,18 +320,42 @@ export async function executePendingPaperOrders(options: {
   const reasons: Record<string, string> = {};
   let filledOrders = 0;
   let markedTickers = 0;
+  const assessments = new Map(tickers.map((ticker) => {
+    const quote = quotes.get(ticker);
+    return [ticker, {
+      quote,
+      assessment: assessPaperExecutionQuote((quote ?? {
+        price: null,
+        currency: null,
+        marketState: null,
+        marketTime: null,
+      }) satisfies PaperExecutionQuote, now),
+    }] as const;
+  }));
+  const pendingPairs = new Map<string, typeof pending.rows>();
+  for (const order of pending.rows) {
+    const key = [order.policy_version, order.strategy_key, order.run_id, order.signal_ticker, order.side].join(':');
+    pendingPairs.set(key, [...(pendingPairs.get(key) ?? []), order]);
+  }
+  const executableOrderIds = new Set<number>();
+  for (const orders of pendingPairs.values()) {
+    const completePair = orders.length === 2
+      && orders.some((order) => order.book_key === 'strategy')
+      && orders.some((order) => order.book_key === 'benchmark');
+    if (!completePair) {
+      reasons[String(orders[0].signal_ticker)] = 'Paper cash-flow pair is incomplete; no order was filled.';
+      continue;
+    }
+    if (orders.every((order) => assessments.get(String(order.instrument_ticker))?.assessment.executable)) {
+      for (const order of orders) executableOrderIds.add(Number(order.id));
+    }
+  }
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     for (const ticker of tickers) {
-      const quote = quotes.get(ticker);
-      const assessment = assessPaperExecutionQuote((quote ?? {
-        price: null,
-        currency: null,
-        marketState: null,
-        marketTime: null,
-      }) satisfies PaperExecutionQuote, now);
+      const { quote, assessment } = assessments.get(ticker)!;
       if (!quote || !assessment.executable) {
         reasons[ticker] = assessment.reason ?? 'Execution quote was not returned.';
         continue;
@@ -346,15 +372,10 @@ export async function executePendingPaperOrders(options: {
     }
 
     for (const order of pending.rows) {
+      if (!executableOrderIds.has(Number(order.id))) continue;
       const ticker = String(order.instrument_ticker);
       const quote = quotes.get(ticker);
-      const assessment = assessPaperExecutionQuote((quote ?? {
-        price: null,
-        currency: null,
-        marketState: null,
-        marketTime: null,
-      }) satisfies PaperExecutionQuote, now);
-      if (!quote || !assessment.executable || quote.price == null) continue;
+      if (!quote || quote.price == null) continue;
 
       const isBuy = order.side === 'buy';
       const grossUsd = isBuy ? Number(order.notional_usd) : Number(order.requested_quantity) * quote.price;

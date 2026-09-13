@@ -276,6 +276,36 @@ describe('paper strategy signal ledger', () => {
     expect(status.rows).toEqual([{ status: 'pending', count: 4 }]);
   });
 
+  it('never fills only one side of a strategy and SPY cash-flow pair', async () => {
+    const runId = await canonicalRun();
+    await recordPaperStrategySignals(runId);
+    const now = new Date('2026-08-31T14:00:00.000Z');
+    const quote = (ticker: string, price: number, marketTime: string): YahooExecutionQuote => ({
+      ticker, price, currency: 'USD', marketState: 'REGULAR', marketTime,
+      source: 'yahoo', raw: { symbol: ticker, regularMarketPrice: price },
+    });
+
+    const partial = await executePendingPaperOrders({
+      now,
+      quoteFetcher: async () => new Map([
+        ['ELF', quote('ELF', 105, '2026-08-31T13:59:00.000Z')],
+        ['SPY', quote('SPY', 500, '2026-08-31T12:00:00.000Z')],
+      ]),
+    });
+    expect(partial).toMatchObject({ pendingOrders: 4, filledOrders: 0, deferredOrders: 4 });
+    expect((await pool.query("SELECT count(*)::int AS count FROM paper_strategy_orders WHERE status='filled'"))
+      .rows[0].count).toBe(0);
+
+    const complete = await executePendingPaperOrders({
+      now,
+      quoteFetcher: async () => new Map([
+        ['ELF', quote('ELF', 105, '2026-08-31T13:59:00.000Z')],
+        ['SPY', quote('SPY', 500, '2026-08-31T13:59:00.000Z')],
+      ]),
+    });
+    expect(complete).toMatchObject({ pendingOrders: 4, filledOrders: 4, deferredOrders: 0 });
+  });
+
   it('creates paired exits only after three consecutive fresh fundamental failures', async () => {
     const initialRunId = await canonicalRun();
     await recordPaperStrategySignals(initialRunId);
