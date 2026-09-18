@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { pool, resolveCollectionCompanyIds, saveCollectedCompanies } from '../../src/lib/db';
+import { pool, resolveCollectionCompanyIds, saveCollectedCompanies, saveFundamentalsSnapshot, saveCompanyResearch } from '../../src/lib/db';
 import { buildCandidates } from '../../src/lib/discovery';
 import { recordCollectionRunItem } from '../../src/lib/collection-run-items';
 import { startCollectionRun } from '../../src/lib/collection-runs';
@@ -144,3 +144,36 @@ describe('radar ticker persistence', () => {
   });
 });
 
+
+
+describe('provider quote timestamp persistence', () => {
+  it('preserves quote time across candidate, lookup, benchmark and company-detail writes', async () => {
+    const marketAt = '2026-09-17T20:00:00.000Z';
+    const fund = providerFundamentals('TIMED', { marketAt, currency: 'USD' });
+    const candidates = buildCandidates([radar('TIMED')], new Map(), new Map([['TIMED', fund]]), new Map(), new Set());
+    await saveCollectedCompanies(candidates);
+    await resolveCollectionCompanyIds(['TIMED'], new Map([['TIMED', fund]]));
+    await saveFundamentalsSnapshot({ ...fund, ticker: 'SPY' });
+    await saveCompanyResearch({
+      quote: { ticker: 'DETAIL', name: null, exchange: null, quoteType: null,
+        price: 10, marketAt, previousClose: null, marketCap: null, volume: null,
+        currency: 'USD', earningsAt: null, sector: null, industry: null, classificationSource: null },
+      news: [], secFilings: [], analystView: null, warnings: [],
+    });
+    const before = (await pool.query('SELECT id, market_at FROM price_snapshots ORDER BY id')).rows;
+    expect(before).toHaveLength(3);
+    expect(before.every((row) => row.market_at.toISOString() === marketAt)).toBe(true);
+    // A later download of the same quote must not manufacture a new observation.
+    await pool.query("UPDATE price_snapshots SET captured_at = now() - interval '1 day'");
+    await resolveCollectionCompanyIds(['TIMED'], new Map([['TIMED', fund]]));
+    await saveFundamentalsSnapshot({ ...fund, ticker: 'SPY' });
+    expect((await pool.query('SELECT id, market_at FROM price_snapshots ORDER BY id')).rows).toEqual(before);
+    await saveFundamentalsSnapshot({ ...fund, ticker: 'SPY', marketAt: '2026-09-18T13:30:00Z' });
+    expect((await pool.query('SELECT count(*)::int n FROM price_snapshots')).rows[0].n).toBe(4);
+  });
+
+  it('keeps missing quote times unknown rather than substituting download time', async () => {
+    await saveFundamentalsSnapshot(providerFundamentals('UNKNOWN_TIME'));
+    expect((await pool.query('SELECT market_at FROM price_snapshots')).rows).toEqual([{ market_at: null }]);
+  });
+});

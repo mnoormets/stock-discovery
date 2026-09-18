@@ -13,11 +13,12 @@ export async function insertPriceSnapshot(
   price: number,
   capturedAt: string,
   source = 'test',
+  marketAt: string | null = capturedAt,
 ): Promise<number> {
   const { rows } = await pool.query(
-    `INSERT INTO price_snapshots (company_id, price, captured_at, source)
-     VALUES ($1, $2, $3, $4) RETURNING id`,
-    [companyId, price, capturedAt, source],
+    `INSERT INTO price_snapshots (company_id, price, captured_at, source, market_at)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    [companyId, price, capturedAt, source, marketAt],
   );
   return Number(rows[0].id);
 }

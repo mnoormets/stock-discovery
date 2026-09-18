@@ -6,6 +6,7 @@ export interface CompanyQuote {
   exchange: string | null;
   quoteType: string | null;
   price: number | null;
+  marketAt?: string | null;
   previousClose: number | null;
   marketCap: number | null;
   volume: number | null;

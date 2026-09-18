@@ -1,4 +1,5 @@
 import YahooFinance from 'yahoo-finance2';
+import { quoteMarketTime } from './yahoo';
 import type { AnalystView, CompanyResearch, NewsItem, SecFiling } from './investment';
 import { normalizeTicker } from './investment';
 import { saveCompanyResearch } from './db';
@@ -148,6 +149,7 @@ async function fetchCompanyResearchUncached(ticker: string): Promise<CompanyRese
       exchange: quote.fullExchangeName || quote.exchange || null,
       quoteType: quote.quoteType || null,
       price: asNumber(quote.regularMarketPrice),
+      marketAt: quoteMarketTime(quote.regularMarketTime),
       previousClose: asNumber(quote.regularMarketPreviousClose),
       marketCap: asNumber(quote.marketCap),
       volume: asNumber(quote.regularMarketVolume),

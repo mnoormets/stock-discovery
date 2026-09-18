@@ -360,3 +360,34 @@ describe('C8 — horisondi target_at arvutus', () => {
     });
   });
 });
+
+
+describe('quote-time integrity across all price writers', () => {
+  it('rejects unknown, pre-target and future quote times for both stock and SPY', async () => {
+    const spyId = await seedBenchmarkPrices([[100, '2026-09-01T12:00:00Z']]);
+    const { companyId } = await seedCanonicalRun(new Date('2026-09-01T12:00:00Z'));
+    for (const id of [companyId, spyId]) {
+      await insertPriceSnapshot(id, 150, '2026-09-08T12:01:00Z', 'yahoo', null);
+      await insertPriceSnapshot(id, 140, '2026-09-08T12:02:00Z', 'yahoo', '2026-09-07T20:00:00Z');
+      await insertPriceSnapshot(id, 130, '2026-09-08T12:03:00Z', 'yahoo', '2026-09-09T12:00:00Z');
+      await insertPriceSnapshot(id, 125, '2026-09-10T12:00:00Z', 'yahoo', '2026-09-10T12:00:00Z');
+    }
+    await refreshCandidateOutcomes(new Date('2026-09-08T14:00:00Z'));
+    expect((await outcomeByHorizon('1w')).status).toBe('pending');
+
+    await insertPriceSnapshot(companyId, 110, '2026-09-08T13:30:00Z', 'yahoo', '2026-09-08T13:29:00Z');
+    await refreshCandidateOutcomes(new Date('2026-09-08T14:00:00Z'));
+    const stockOnly = await outcomeByHorizon('1w');
+    expect(stockOnly.status).toBe('measured');
+    expect(stockOnly.benchmark_status).toBe('pending');
+    expect(Number(stockOnly.return_percent)).toBe(10);
+
+    await insertPriceSnapshot(spyId, 102, '2026-09-08T13:31:00Z', 'yahoo', '2026-09-08T13:30:00Z');
+    await refreshCandidateOutcomes(new Date('2026-09-08T14:00:00Z'));
+    const measured = await outcomeByHorizon('1w');
+    expect(measured.benchmark_status).toBe('measured');
+    expect(Number(measured.excess_return_percent)).toBe(8);
+    await refreshCandidateOutcomes(new Date('2026-09-08T14:00:00Z'));
+    expect(await outcomeByHorizon('1w')).toEqual(measured);
+  });
+});

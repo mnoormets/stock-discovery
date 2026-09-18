@@ -3,6 +3,15 @@ import type { Fundamentals } from './types';
 
 const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
+/** Yahoo's quote time, never the time we downloaded the response. */
+export function quoteMarketTime(value: unknown): string | null {
+  if (value == null) return null;
+  const date = value instanceof Date ? value
+    : typeof value === 'number' ? new Date(value * 1000)
+      : typeof value === 'string' ? new Date(value) : null;
+  return date != null && Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export interface YahooExecutionQuote {
@@ -47,6 +56,7 @@ export async function fetchFundamentals(tickers: string[]): Promise<Map<string, 
             name: q.longName || q.shortName || undefined,
             marketCap: typeof q.marketCap === 'number' ? q.marketCap : undefined,
             price: typeof q.regularMarketPrice === 'number' ? q.regularMarketPrice : undefined,
+            marketAt: quoteMarketTime(q.regularMarketTime),
             currency: q.currency || undefined,
             volume: vol || undefined,
             // quoteType 'ETF'/'MUTUALFUND' → fond, filtreerime välja

@@ -25,6 +25,7 @@ export interface Fundamentals {
   name?: string;
   marketCap?: number;
   price?: number;
+  marketAt?: string | null;
   currency?: string;
   volume?: number;   // keskmine/viimane päevamaht (likviidsuse hindamiseks)
   isFund?: boolean;  // ETF / fond (isEtf / quoteType järgi) → filtreerime välja
@@ -46,6 +47,7 @@ export interface Candidate {
   sentimentValue: number;         // -1..1
   marketCap: number | null;
   price: number | null;
+  marketAt?: string | null;
   currency: string | null;
   volume: number | null;
   fundamentalsSource: 'yahoo' | 'fmp' | null;

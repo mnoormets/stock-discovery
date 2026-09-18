@@ -67,6 +67,7 @@ export default async function BacktestPage() {
   try { dashboard = await getBacktestDashboard(); }
   catch (caught) { error = (caught as Error).message; }
   return <main className="wrap pageStack">
+    <p className="notice warning"><strong>Historical measurement limitation.</strong> Earlier results may use download time where the quote time was unknown. Those records remain unchanged and do not establish a verified investment edge. New measurements require a known market timestamp at or after the horizon target for both the stock and SPY.</p>
     <section className="hero compact">
       <p className="eyebrow">POINT-IN-TIME · NO HISTORICAL RESELECTION</p>
       <h1>Backtest V1</h1>

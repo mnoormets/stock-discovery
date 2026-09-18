@@ -68,6 +68,7 @@ async function insertPriceSnapshot(
   companyId: number,
   values: {
     price: number | null;
+    marketAt?: string | null;
     previousClose: number | null;
     marketCap: number | null;
     volume: number | null;
@@ -78,12 +79,13 @@ async function insertPriceSnapshot(
   await client.query('SELECT pg_advisory_xact_lock($1)', [companyId]);
   await client.query(
     `INSERT INTO price_snapshots
-       (company_id, price, previous_close, market_cap, volume, currency, source)
-     SELECT $1, $2, $3, $4, $5, $6, $7
+       (company_id, price, previous_close, market_cap, volume, currency, source, market_at)
+     SELECT $1, $2, $3, $4, $5, $6, $7, $8
      WHERE NOT EXISTS (
        SELECT 1 FROM price_snapshots
        WHERE company_id = $1
-         AND captured_at >= now() - interval '5 minutes'
+         AND ($8::timestamptz IS NOT NULL OR captured_at >= now() - interval '5 minutes')
+         AND market_at IS NOT DISTINCT FROM $8::timestamptz
          AND price IS NOT DISTINCT FROM $2::numeric
          AND previous_close IS NOT DISTINCT FROM $3::numeric
          AND market_cap IS NOT DISTINCT FROM $4::bigint
@@ -99,6 +101,7 @@ async function insertPriceSnapshot(
       values.volume,
       values.currency,
       values.source,
+      values.marketAt ?? null,
     ],
   );
 }
@@ -125,6 +128,7 @@ export async function saveCompanyResearch(research: CompanyResearch): Promise<vo
 
     await insertPriceSnapshot(client, companyId, {
       price: quote.price,
+      marketAt: quote.marketAt,
       previousClose: quote.previousClose,
       marketCap: quote.marketCap,
       volume: quote.volume,
@@ -236,6 +240,7 @@ export async function saveCollectedCompanies(candidates: Candidate[]): Promise<M
       if (candidate.price != null || candidate.marketCap != null || candidate.volume != null) {
         await insertPriceSnapshot(client, companyId, {
           price: candidate.price,
+          marketAt: candidate.marketAt,
           previousClose: null,
           marketCap: candidate.marketCap,
           volume: candidate.volume,
@@ -305,6 +310,7 @@ export async function resolveCollectionCompanyIds(
       });
       await insertPriceSnapshot(client, companyId, {
         price: fundamental.price ?? null,
+        marketAt: fundamental.marketAt,
         previousClose: null,
         marketCap: fundamental.marketCap ?? null,
         volume: fundamental.volume ?? null,
@@ -808,6 +814,7 @@ export async function saveFundamentalsSnapshot(fundamental: Fundamentals): Promi
     });
     await insertPriceSnapshot(client, companyId, {
       price: fundamental.price ?? null,
+      marketAt: fundamental.marketAt,
       previousClose: null,
       marketCap: fundamental.marketCap ?? null,
       volume: fundamental.volume ?? null,

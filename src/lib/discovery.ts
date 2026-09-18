@@ -194,6 +194,7 @@ export function buildCandidates(
       sentimentValue: sent.value,
       marketCap: fund?.marketCap ?? null,
       price: fund?.price ?? null,
+      marketAt: fund?.marketAt ?? null,
       currency: fund?.currency ?? null,
       volume: fund?.volume ?? null,
       fundamentalsSource: fund?.source ?? null,

@@ -124,6 +124,7 @@ async function collectCore(collectionRunId: number) {
         name: ex?.name ?? v.name,
         marketCap: ex?.marketCap ?? v.marketCap,
         price: ex?.price ?? v.price,
+        marketAt: ex?.price != null ? ex.marketAt : v.marketAt,
         currency: ex?.currency ?? v.currency,
         volume: ex?.volume ?? v.volume,
         source: ex?.marketCap ? ex.source : v.source, // kummast tuli turukap

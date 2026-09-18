@@ -423,14 +423,17 @@ export async function refreshCandidateOutcomes(now = new Date()): Promise<number
       changed += result.rowCount || 0;
       continue;
     }
+    // Receipt time cannot establish that a quote reached the target. Unknown
+    // legacy market times remain in history but cannot create new measurements.
     const observed = await pool.query(
       `SELECT price, captured_at
        FROM price_snapshots
        WHERE company_id = $1 AND price IS NOT NULL
          AND captured_at >= $2 AND captured_at < $2::timestamptz + interval '7 days'
-         AND (market_at IS NULL OR market_at >= $2)
+         AND market_at >= $2 AND market_at <= captured_at
+         AND captured_at <= $3
        ORDER BY captured_at ASC, id ASC LIMIT 1`,
-      [Number(row.company_id), new Date(row.target_at).toISOString()],
+      [Number(row.company_id), new Date(row.target_at).toISOString(), now.toISOString()],
     );
     if (observed.rowCount) {
       const price = Number(observed.rows[0].price);
@@ -495,9 +498,10 @@ export async function refreshCandidateOutcomes(now = new Date()): Promise<number
        WHERE c.ticker = $1 AND p.price IS NOT NULL
          AND p.captured_at >= $2
          AND p.captured_at < $2::timestamptz + interval '7 days'
-         AND (p.market_at IS NULL OR p.market_at >= $2)
+         AND p.market_at >= $2 AND p.market_at <= p.captured_at
+         AND p.captured_at <= $3
        ORDER BY p.captured_at ASC, p.id ASC LIMIT 1`,
-      [symbol, new Date(row.target_at).toISOString()],
+      [symbol, new Date(row.target_at).toISOString(), now.toISOString()],
     );
     if (startPrice != null && startPrice > 0 && end.rowCount) {
       const endPrice = Number(end.rows[0].price);

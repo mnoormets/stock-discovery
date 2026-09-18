@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-09-11
+Uuendatud: 2026-09-18
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -27,6 +27,10 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Rakendus ei anna ostu- ega müügisoovitusi.
 
 ## Praegune töötav seis
+
+- **2026-09-18 forward measurement repair:** first v4 audit found 11 measured one-week decisions across eight tickers, with unknown endpoint market time on nine stock rows and all 11 SPY rows. Existing Yahoo writers now preserve quote time; new stock/SPY outcome measurements require known market time at/after the target and no later than receipt, with receipt no later than the evaluation clock. All 11 historical measured records remain unchanged. Validation/backtest display the historical limitation. See [reproducible review](research/2026-09-18/REVIEW.md), saved SQL/data and executed notebook. Full suite: 66 files / 512 tests; typecheck, lint and build passed; restarted app returned HTTP 200 on both pages. No strategy, broker, schema or external provider change.
+
+- **2026-09-18 failure audit:** Dispatch is working. On 17 September, collect #32 exceeded the SEC Form 4 40-minute limit, but core collection #46 succeeded. Today's collect #33 succeeded on unchanged `4d1c1ee` in 44m03s (Form 4: 35m18s), producing collection #47 and canonical v4 #81 (6/187 included). All registered 10–17 September filings are persisted. Paper #20 filled 14 orders and correctly failed for four deferred API orders after quote timestamp validation failed. BWFG also appeared in quote diagnostics but has no pending order. Paper recovery remains unverified before today's scheduled 16:35 Tallinn run. No code, scheduler or production data was changed.
 
 - **2026-09-10 canonical current-collection gate:** `rklb-discovery-v4` lets only tickers with `market_data_found=true` in the linked same-run `collection_run_items` compete for canonical market-cap tier slots. Manual RKLB scans still use the broader stored universe. The fix prevents cached names absent from today's collection from consuming all-picks and entry-aware measurement slots; base Growth/Coverage filters, ranking comparator, tier boundaries, tier capacity, paper-entry gates, providers and schema are unchanged. A canonical call without a positive collection-run ID now fails explicitly instead of silently creating an unlinked daily shortlist.
 
@@ -245,11 +249,13 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
+**18 September update:** the user confirmed paper-first evaluation before allocating their own money; no live budget or loss tolerance is committed. Repair measurement before tuning to early returns. The first review is complete, but quote-time gaps make the historical arithmetic unverified; starting-price timing remains a separate limitation. Entry-aware v4 gross purchases total $2,600, with SNDK/WTI at 53.85%. Next work is a prospective, separately versioned finite-capital/position-limit experiment, with comparable marks, fees and drawdowns. Do not optimize limits on this tiny affected sample.
+
 **2026-09-06 review: the user confirmed that the objective is better personal investing results.** The implementation remains a research tool; a score is not an instruction to buy. The evidence-backed review and proposed fixes are in [ASTRA_REVIEW_2026-09-06.md](ASTRA_REVIEW_2026-09-06.md).
 
 The first production v4 cohort now proves the current-collection fix in the real pipeline. Collection #39 and canonical run #71 selected SNDK, CRDO, WTI, DY, ARM and BWFG; all six link to a same-run item whose market-data lookup succeeded. This replaces v3 run #70's cached-slot mismatch without rewriting it. The v4 run has one immutable quality snapshot, five forward horizons per decision and four paper-policy observations per decision.
 
-The immediate constraint remains decision quality and dependable forward measurement. The authenticated GitHub Actions page shows the 11 September unattended jobs green: `collect-daily #26` succeeded from the 08:10 Tallinn dispatch in 24m45s and `paper-strategy-execute #11` succeeded from the 09:35 New York dispatch in 42s. Entry-aware V1 continues to act only on its explicit positive state. Earlier cron failure emails refer to historical runs, including the fixed NYSE holiday recency bug. Preserve failed attempts and compare v4 only within its own model-version cohorts.
+The immediate constraint remains decision quality and dependable forward measurement. The authenticated GitHub Actions page shows the 11 September unattended jobs green: `collect-daily #26` succeeded from the 08:10 Tallinn dispatch in 24m45s and `paper-strategy-execute #11` succeeded from the 09:35 New York dispatch in 42s. Entry-aware V1 continues to act only on its explicit positive state. Update 18 September: fresh alerts refer to the real Form 4 timeout and deferred paper orders described above, not merely historical holiday failures. Preserve failed attempts and compare v4 only within its own model-version cohorts.
 
 Paper execution's independent dead-man path is active. The dedicated GitHub secret is stored, manual workflow run #13 succeeded on exact commit `e765990`, the separate heartbeat step ran successfully and Healthchecks recorded the first ping as up. The normal 09:35 `America/New_York` cron-job.org dispatch remains the execution cadence; Healthchecks now detects a missing successful execution independently. The executor also fails visibly if an expected regular-session run leaves any eligible order deferred.
 
@@ -263,18 +269,21 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Keep daily price tracking running through the first v4 1-week target on 17 September, then inspect version-separated measured outcomes. Verify the first post-guard 09:35 New York workflow run fills every complete app/SPY pair for the six weekend-eligible intents or fails visibly without sending a healthy heartbeat. Keep v1-v3 history immutable and separate; if repeated hypothetical buys reveal a weak signal, revise the policy under a new version.
+- Verify the next regular-session executor resolves four API orders pending from 17 September. Preserve freshness and paired-fill safeguards. Form 4 recovered, but 35m18s is near its 40-minute limit; recurring timeouts warrant a verified performance fix. Direct cron-job.org history requires sign-in; GitHub confirms dispatch arrivals.
+
+- Track a clean forward cohort after the quote-time repair separately from affected history. Verify scheduled collection preserves market timestamps and outcome coverage advances only after actual quote time reaches each target; do not fabricate or rewrite old measurements. The initial v4 review is completed, not pending.
 - Use the Thesis Review Queue through the next stored evidence cycle. When an item becomes due, review its primary source and record the conclusion as a new thesis version; do not automate pass/fail or status changes from free text.
 - Observe the accepted API/BW/HIMS v3 gates, published HIMS investment extraction, BW/API dated reconciliation and `scores-v2` / `signals-v3` date guard in subsequent refreshes. Do not substitute partial debt or ordinary shares for a current complete definition.
 
 ### NEXT
+
+- Specify and implement a separate finite-capital paper experiment with position/concentration limits. Keep existing $100 daily policies as controls and compare matched SPY cash flows, fees, drawdowns and missed fills prospectively. This is simulated capital, not authorization to place real trades.
 
 - Review the first v4 names when their stored history and outcome horizons mature, prioritizing falsifiable thesis work for eligible names over changes to the ranking policy based on one cohort.
 - Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing the five-company budget, queue order or adding production listing discovery.
 
 ### LATER
 
-- Add a separately versioned capital-constrained variant only if the user wants to test actual cash, position and concentration boundaries. The current experiment intentionally applies the same $100 cash flow to every app signal and its SPY comparison.
 - Broaden discovery only when tracked results and research rejection reasons demonstrate a specific gap. No additional external source without the user's explicit decision.
 - Supported Next.js upgrade as a separate tested change; authentication/authorization before public exposure. Public deployment and subscriptions are not the present objective.
 - Thesis outcome analysis, portfolio drawdown and business-driver concentration views when the underlying observations and portfolio policy are dependable.
@@ -317,7 +326,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 - **2026-09-08 NYSE holiday recency:** read-side observation recency allows one elapsed New York trading day. Weekends and the NYSE's explicitly published 2026–2028 full-day holidays add no days; later years and unscheduled closures fall back to the earlier conservative weekday behavior until their dates are deliberately reviewed. The schedule is source-visible and local, so daily collection gains no new network dependency. Early closes do not change the date-level previous-close rule. Existing tracking attempt outcomes and price rows are not rewritten; paper execution's live quote rules are unchanged.
 
-- **2026-09-07 continued tracking:** `0009_price_tracking` adds nullable quote `market_at`, a quote-deduplication index and a separate daily attempt ledger. `captured_at` stays the receipt timestamp; no historical rows are rewritten. Existing Yahoo quotes only, positive finite USD price and the documented one-weekday recency heuristic; closed-market observations are allowed for research. Queue membership is active/watch portfolio status, positive net paper holdings, or canonical unmeasured horizons before target + seven days; SPY is included as benchmark. Fifty symbols per New York day across retries, SPY first then oldest attempt, chunks of eight. A failure consumes that symbol's daily attempt and remains visible until a later attempt. Quotes are collected after the canonical snapshot, before outcome refresh, and never create discovery collection items. Tracked endpoint quotes must reach the outcome's target in both receipt and market time. Frozen decisions, paper eligibility and measured outcomes remain unchanged. Legacy prices without market time retain their original contract.
+- **2026-09-07 continued tracking:** `0009_price_tracking` adds nullable quote `market_at`, a quote-deduplication index and a separate daily attempt ledger. `captured_at` stays the receipt timestamp; no historical rows are rewritten. Existing Yahoo quotes only, positive finite USD price and the documented one-weekday recency heuristic; closed-market observations are allowed for research. Queue membership is active/watch portfolio status, positive net paper holdings, or canonical unmeasured horizons before target + seven days; SPY is included as benchmark. Fifty symbols per New York day across retries, SPY first then oldest attempt, chunks of eight. A failure consumes that symbol's daily attempt and remains visible until a later attempt. Quotes are collected after the canonical snapshot, before outcome refresh, and never create discovery collection items. Tracked endpoint quotes must reach the outcome's target in both receipt and market time. Frozen decisions, paper eligibility and measured outcomes remain unchanged. Historical note: on 18 September, new measurement eligibility was tightened to require known market time for every source; already-measured legacy outcomes remain immutable.
 
 - **2026-09-06 implementation:** paper quote requests union pending orders with positive net holdings per policy/strategy/book. Read-side valuation requires valid USD marks, the same New York date as SPY and at most 20 minutes of timestamp separation. The original observation recency rule permitted one elapsed New York weekday and excluded only weekends; the 2026-09-08 decision above supersedes that calendar detail. Original execution freshness, discovery v3 and frozen paper-strategy-v1 eligibility remain unchanged. Today timestamps come from each decision's referenced price snapshot, never from a subsequently fetched quote. No migration or historical rewrite.
 
@@ -1024,6 +1033,23 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-18 - first v4 review and quote-time integrity
+
+- Saved `research/2026-09-18/evidence.json` from a read-only repeatable-read transaction, with exact SQL and endpoint-link uniqueness checks. The notebook's three standard-library code cells were executed sequentially with captured outputs (not a Jupyter kernel); `REVIEW.md` exposes the same arithmetic and limitations. 53 one-week decisions: 11 measured / 42 pending. Nine candidate endpoints and all 11 benchmark endpoints have unknown market time. Equal-ticker excess arithmetic is -1.806 pp, not validated portfolio performance. Entry-aware v4 gross filled buys: $2,600; largest two tickers 53.85%.
+- Preserved Yahoo `regularMarketTime` through fundamentals, discovery candidates, fallback merge, research quote and all four shared DB writer paths. Known identical quotes deduplicate across receipt times; unknown timestamps remain null. No schema migration or historical backfill.
+- New candidate and SPY endpoint selection rejects unknown, pre-target and future timestamps. Existing measured rows are untouched. Both results pages visibly explain their historical limitation. Starting-price timing and full economic-return validity remain unvalidated; this repair does not establish an edge.
+- Verification commands, all exit 0: `docker compose exec -T app npm run typecheck`; `docker compose exec -T app npm run lint` (`No ESLint warnings or errors`); `docker compose exec -T app npm run build` (`Compiled successfully`, 22/22 pages); `docker compose run --rm -T app npm test` (`Test Files 66 passed (66)`, `Tests 512 passed (512)`, duration 304.82s). Focused regression run also passed 30 tests. The first full run was interrupted by the required app restart and was not counted; the replacement ran to completion in a separate disposable container.
+- App restarted after build. Browser screenshots/DOM confirmed readable warnings and missing-data states on `/validation` and `/backtest`; runtime logged HTTP 200 (29173ms and 12535ms). Actual Yahoo SPY observation persisted `market_at=2026-09-17T20:00:00Z`, price 762.6, row 3323; writing twice left one row. No synthetic production records. Subsequent audit: `{"historicalMeasuredRows":11,"unchanged":true,"nowMeasured":11}`. Test harness removes its isolated test database on teardown.
+- No real capital committed, no broker orders, no policy tuning, and no new data source. Local runtime is verified; remote publication/scheduled execution of this change has not yet been verified.
+
+### 2026-09-18 - scheduled failure investigation
+
+- Authenticated Actions: [collect #32](https://github.com/mnoormets/stock-discovery/actions/runs/35184710903) hit the Form 4 40-minute limit after persisting 623 new 16 September accessions, while revisiting older dates. Core collection succeeded in 10m20s. [Collect #33](https://github.com/mnoormets/stock-discovery/actions/runs/35309781440) succeeded unchanged, including 707 new 17 September filings. [Paper #20](https://github.com/mnoormets/stock-discovery/actions/runs/35227986639) reported 18 pending, 14 filled, four deferred orders and 24 marked tickers; API/BWFG timestamps failed validation. Nasdaq #17 succeeded.
+- Actual `npm run collect:status` exited 0 against Neon: latest canonical #81, 2026-09-18, rklb-discovery-v4, 6/187 included, today canonical exists JAH. All 21 included decisions without outcomes belong to manual runs, excluded by design.
+- Separate `BEGIN READ ONLY` audit: collections #44–47 all success; registered SEC filings all persisted, with counts 511/435/600/511/623/707 for 10/11/14/15/16/17 September respectively. This verifies registered records, not historical EDGAR completeness. Four older API orders remain pending (baseline and entry-aware, each paired with SPY), plus today's 20 new orders. Fourteen fills on 17 September. No database writes or synthetic records.
+- Collection recovered automatically. No speculative code fix or out-of-session replay was made; paper recovery remains pending fresh regular-session quotes. Lower-level timeout latency was not proven; sequential processing of persisted accessions is a possible optimization, not an established root cause.
+- Limits: cron-job.org browser is signed out; local Docker daemon is unavailable. No application code changed and no build/test/UI-success claim is made. Initial sandboxed DB connectivity failed; network-enabled read-only checks succeeded. No commit or push.
 
 ### 2026-09-13 - Astra paper-pair integrity review
 

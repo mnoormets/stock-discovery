@@ -59,6 +59,7 @@ export default async function ValidationPage() {
   try { dashboard = await getValidationDashboard(); }
   catch (caught) { error = (caught as Error).message; }
   return <main className="wrap pageStack">
+    <p className="notice warning"><strong>Historical measurement limitation.</strong> Earlier results may use download time where the quote time was unknown. Those records remain unchanged and do not establish a verified investment edge. New measurements require a known market timestamp at or after the horizon target for both the stock and SPY.</p>
     <section className="hero compact"><p className="eyebrow">POINT-IN-TIME · ACTUAL OUTCOMES</p><h1>Discovery valideerimine</h1><p className="lead">Siin mõõdetakse, mida „Leia järgmine RKLB” päriselt otsuse hetkel leidis ja kuidas kaasatud kandidaadi hind hiljem muutus. See pole ostu- ega müügisoovitus.</p></section>
     {error && <div className="notice danger">Valideerimise andmeid ei õnnestunud laadida: {error}</div>}
     {dashboard && <>
