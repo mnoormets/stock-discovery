@@ -28,6 +28,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-09-18 money-first Performance:** user clarified that the desired primary answer is money won/lost after the app actually bought. `/performance` now leads with entry-aware filled purchases, costs, holdings plus sale proceeds, net P/L and per-stock results; comparison policies/rules/order audit are collapsed. Repeated buys use quantity-weighted entry prices and all fees; closed positions include net sale proceeds; unknown/stale marks still cannot imply zero P/L. No selection, execution, schema or valuation-validity rule changed.
+
 - **2026-09-18 forward measurement repair:** first v4 audit found 11 measured one-week decisions across eight tickers, with unknown endpoint market time on nine stock rows and all 11 SPY rows. Existing Yahoo writers now preserve quote time; new stock/SPY outcome measurements require known market time at/after the target and no later than receipt, with receipt no later than the evaluation clock. All 11 historical measured records remain unchanged. Validation/backtest display the historical limitation. See [reproducible review](research/2026-09-18/REVIEW.md), saved SQL/data and executed notebook. Full suite: 66 files / 512 tests; typecheck, lint and build passed; restarted app returned HTTP 200 on both pages. No strategy, broker, schema or external provider change.
 
 - **2026-09-18 failure audit:** Dispatch is working. On 17 September, collect #32 exceeded the SEC Form 4 40-minute limit, but core collection #46 succeeded. Today's collect #33 succeeded on unchanged `4d1c1ee` in 44m03s (Form 4: 35m18s), producing collection #47 and canonical v4 #81 (6/187 included). All registered 10–17 September filings are persisted. Paper #20 filled 14 orders and correctly failed for four deferred API orders after quote timestamp validation failed. BWFG also appeared in quote diagnostics but has no pending order. Paper recovery remains unverified before today's scheduled 16:35 Tallinn run. No code, scheduler or production data was changed.
@@ -249,7 +251,9 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-**18 September update:** the user confirmed paper-first evaluation before allocating their own money; no live budget or loss tolerance is committed. Repair measurement before tuning to early returns. The first review is complete, but quote-time gaps make the historical arithmetic unverified; starting-price timing remains a separate limitation. Entry-aware v4 gross purchases total $2,600, with SNDK/WTI at 53.85%. Next work is a prospective, separately versioned finite-capital/position-limit experiment, with comparable marks, fees and drawdowns. Do not optimize limits on this tiny affected sample.
+**18 September evening clarification:** prioritize the user's question: did the paper purchases gain or lose money, and how much? Show money in, current holdings plus sale proceeds, and net dollar P/L first, using actual fills rather than pre-entry price moves. Keep methodology available under details. Do not replace this request with a new strategy/capital experiment.
+
+**18 September update:** the user confirmed paper-first evaluation before allocating their own money; no live budget or loss tolerance is committed. Repair measurement before tuning to early returns. The first review is complete, but quote-time gaps make the historical arithmetic unverified; starting-price timing remains a separate limitation. Entry-aware v4 gross purchases total $2,600, with SNDK/WTI at 53.85%. The user subsequently prioritized a simple money-made/lost view of existing paper purchases; that presentation now comes before another strategy experiment. Do not optimize limits on this tiny affected sample.
 
 **2026-09-06 review: the user confirmed that the objective is better personal investing results.** The implementation remains a research tool; a score is not an instruction to buy. The evidence-backed review and proposed fixes are in [ASTRA_REVIEW_2026-09-06.md](ASTRA_REVIEW_2026-09-06.md).
 
@@ -277,12 +281,12 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NEXT
 
-- Specify and implement a separate finite-capital paper experiment with position/concentration limits. Keep existing $100 daily policies as controls and compare matched SPY cash flows, fees, drawdowns and missed fills prospectively. This is simulated capital, not authorization to place real trades.
-
 - Review the first v4 names when their stored history and outcome horizons mature, prioritizing falsifiable thesis work for eligible names over changes to the ranking policy based on one cohort.
 - Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing the five-company budget, queue order or adding production listing discovery.
 
 ### LATER
+
+- Specify and implement a separate finite-capital paper experiment with position/concentration limits. Keep existing $100 daily policies as controls and compare matched SPY cash flows, fees, drawdowns and missed fills prospectively. This is simulated capital, not authorization to place real trades.
 
 - Broaden discovery only when tracked results and research rejection reasons demonstrate a specific gap. No additional external source without the user's explicit decision.
 - Supported Next.js upgrade as a separate tested change; authentication/authorization before public exposure. Public deployment and subscriptions are not the present objective.
@@ -1033,6 +1037,13 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-18 - money made or lost presentation
+
+- Implemented the user's requested primary view using the existing entry-aware filled paper ledger. Net P/L = remaining holdings value + net sale proceeds - purchases including fees. Open holdings are explicitly unrealized paper results. Baseline/SPY and signal evidence remain available under a collapsed details section. Average entry uses total bought quantity, not the arithmetic mean of execution prices; multiple buys are grouped per ticker. A pre-entry rise is never counted as our profit. Closed positions keep their result even without fresh marks; missing prices on open positions stay unavailable.
+- Ran the existing simulated executor to refresh held prices: `pendingOrders: 0`, `filledOrders: 0`, `deferredOrders: 0`, `markedTickers: 27`, `reasons: {}`. No new trade was made. API and FOR had usable fresh marks in this refresh. This does not independently prove a GitHub workflow's status.
+- At quotes 18 September 17:55:09–18:02:13 UTC, entry-aware purchases across the current policy totaled $3,303.30 including fees, value $3,337.884344367391, net paper gain $34.584344367391104 (+1.04696347%), nine open stocks and no sales. SNDK +$89.29, CRCL +$8.94; ALL -$10.90, API -$2.73, APP -$3.08, DKS -$0.55, FOR -$4.28, RDDT -$20.04, WTI -$22.07. Independent SQL aggregation and the sum of unrounded stock P/L reconciled to the headline. These are dated marks, not a promise of later prices or cashed-out profits.
+- Focused regression run: 10/10 tests passed in 13.59s, covering gains, stale prices, empty books, repeated purchases and sold losses including fees. Final required checks all exited 0: `npm run typecheck`, `npm run lint` (`No ESLint warnings or errors`), `npm run build` (`Compiled successfully`, 22/22 pages), and `docker compose run --rm -T app npm test` (`Test Files 66 passed (66)`, `Tests 513 passed (513)`, duration 307.08s). App restarted after the final build; `/performance` returned HTTP 200 in 2999ms. Browser verified the $34.58 headline, $3,303.30 invested, $3,337.88 value, nine stock rows, and working collapsed/expanded details. No synthetic production data; test database removed by teardown.
 
 ### 2026-09-18 - first v4 review and quote-time integrity
 

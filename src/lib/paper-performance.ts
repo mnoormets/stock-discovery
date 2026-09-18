@@ -18,6 +18,20 @@ export interface PaperSignalEvidence {
   reasons: string[];
 }
 
+export interface PaperPositionPerformance {
+  ticker: string;
+  firstBoughtAt: string | null;
+  averageBuyPrice: number | null;
+  investedUsd: number;
+  saleProceedsUsd: number;
+  currentValueUsd: number | null;
+  profitUsd: number | null;
+  returnPercent: number | null;
+  latestPrice: number | null;
+  markAt: string | null;
+  open: boolean;
+}
+
 export interface PaperBookPerformance {
   strategy: PaperStrategyKey;
   book: 'strategy' | 'benchmark';
@@ -30,6 +44,7 @@ export interface PaperBookPerformance {
   profitUsd: number | null;
   returnPercent: number | null;
   openPositions: number;
+  positions: PaperPositionPerformance[];
   valuationComplete: boolean;
   valuationIssues: string[];
   oldestMarkAt: string | null;
@@ -209,6 +224,29 @@ export async function getPaperPerformanceDashboard(now = new Date()): Promise<Pa
         const mark = latestMarks.get(ticker);
         return mark ? [mark.marketTime] : [];
       }).sort();
+      const positionResults: PaperPositionPerformance[] = [...positions.entries()].map(([ticker, quantity]) => {
+        const trades = filled.filter((order) => order.instrument_ticker === ticker);
+        const buys = trades.filter((order) => order.side === 'buy');
+        const invested = buys.reduce((sum, order) => sum + value(order.gross_usd) + value(order.fee_usd), 0);
+        const boughtQuantity = buys.reduce((sum, order) => sum + value(order.executed_quantity), 0);
+        const buyGross = buys.reduce((sum, order) => sum + value(order.gross_usd), 0);
+        const proceeds = trades.filter((order) => order.side === 'sell')
+          .reduce((sum, order) => sum + value(order.gross_usd) - value(order.fee_usd), 0);
+        const isOpen = quantity > 1e-12;
+        const mark = latestMarks.get(ticker);
+        const usable = referenceAvailable && !valuationIssues.some((issue) => issue.startsWith(`${ticker}:`));
+        const currentValue = !isOpen ? 0 : usable ? quantity * mark!.price! : null;
+        const profit = currentValue == null ? null : currentValue + proceeds - invested;
+        const boughtAt = buys.flatMap((order) => order.executed_at ? [new Date(order.executed_at).toISOString()] : []).sort();
+        return {
+          ticker, firstBoughtAt: boughtAt[0] ?? null,
+          averageBuyPrice: boughtQuantity > 0 ? buyGross / boughtQuantity : null,
+          investedUsd: invested, saleProceedsUsd: proceeds, currentValueUsd: currentValue,
+          profitUsd: profit, returnPercent: profit == null || invested <= 0 ? null : profit / invested * 100,
+          latestPrice: isOpen && usable ? mark!.price : null,
+          markAt: isOpen ? mark?.marketTime ?? null : null, open: isOpen,
+        };
+      }).sort((a, b) => a.ticker.localeCompare(b.ticker));
       books.push({
         strategy,
         book,
@@ -221,6 +259,7 @@ export async function getPaperPerformanceDashboard(now = new Date()): Promise<Pa
         profitUsd,
         returnPercent,
         openPositions: open.length,
+        positions: positionResults,
         valuationComplete,
         valuationIssues,
         oldestMarkAt: marks[0] ?? null,

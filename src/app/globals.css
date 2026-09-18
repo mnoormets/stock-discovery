@@ -123,6 +123,10 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spa
 .paperStrategySection { display: grid; gap: 12px; padding: 18px 0 22px; border-top: 1px solid var(--border); }
 .paperStrategySection:first-of-type { border-top: 0; }
 .paperStrategySection h3, .paperStrategySection p, .paperBook h3 { margin: 0; }
+.moneySummary h3 { font-size: clamp(1.5rem, 3vw, 2.5rem); }
+.moneySummary .backtestMetrics > div { display: block; }
+.moneySummary .backtestMetrics dd { margin: 6px 0 0; font-size: 1.35rem; }
+.moneyResult td small { display: block; margin-top: 5px; }
 .paperBookGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .paperBook { display: grid; gap: 14px; }
 .paperBook .backtestMetrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }

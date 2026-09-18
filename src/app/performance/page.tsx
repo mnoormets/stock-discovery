@@ -63,6 +63,39 @@ function BookCard({ book, label }: { book: PaperBookPerformance; label: string }
   </article>;
 }
 
+function MoneyResult({ book }: { book: PaperBookPerformance }) {
+  const total = book.currentValueUsd == null ? null : book.currentValueUsd + book.saleProceedsUsd;
+  return <section className="section moneyResult" aria-label="Paper profit and loss">
+    <div className="sectionHeading"><h2>Are we making money?</h2><span className="pill watch">Paper money</span></div>
+    <article className="card paperBook moneySummary">
+      <h3 className={valueClass(book.profitUsd)}>{book.profitUsd == null
+        ? book.filledOrders === 0 ? 'No purchases yet' : 'Total profit / loss awaiting prices'
+        : book.profitUsd > 0 ? `We are up ${usd(book.profitUsd)}`
+          : book.profitUsd < 0 ? `We are down ${usd(Math.abs(book.profitUsd))}` : 'We are breaking even'}</h3>
+      <dl className="backtestMetrics">
+        <div><dt>Money put in, including fees</dt><dd>{usd(book.investedUsd)}</dd></div>
+        <div><dt>Holdings value + sale proceeds</dt><dd>{usd(total)}</dd></div>
+        <div><dt>Gain / loss</dt><dd className={valueClass(book.profitUsd)}>{percent(book.returnPercent)}</dd></div>
+      </dl>
+      <p className="muted">Actual paper purchases under the app’s entry rules. Open holdings show gains or losses on paper; they are not cashed out. Values use the quote times below.</p>
+      {book.profitUsd == null && book.filledOrders > 0 && <p className="riskText">Some prices cannot be used for a complete total. Available stock results are shown below; missing results are not zero.</p>}
+      {book.pendingOrders > 0 && <small>{book.pendingOrders} orders awaiting purchase are excluded.</small>}
+    </article>
+    <div className="card tableWrap"><table>
+      <thead><tr><th>Stock / first purchase</th><th>Average purchase price</th><th>Latest usable price</th><th>Money put in</th><th>Value + sale proceeds</th><th>Won / lost after fees</th></tr></thead>
+      <tbody>{book.positions.length ? book.positions.map((position) => <tr key={position.ticker}>
+        <td><strong>{position.ticker}</strong><small>{dateTime(position.firstBoughtAt)} · {position.open ? 'Holding' : 'Sold'}</small></td>
+        <td>{usd(position.averageBuyPrice)}</td>
+        <td>{position.open ? position.latestPrice == null ? 'Awaiting usable price' : usd(position.latestPrice) : 'Position closed'}<small>{position.open ? `Last quote: ${dateTime(position.markAt)}` : ''}</small></td>
+        <td>{usd(position.investedUsd)}</td>
+        <td>{usd(position.currentValueUsd == null ? null : position.currentValueUsd + position.saleProceedsUsd)}</td>
+        <td className={valueClass(position.profitUsd)}><strong>{position.profitUsd == null ? 'Awaiting price' : `${position.profitUsd > 0 ? '+' : ''}${usd(position.profitUsd)}`}</strong><small>{percent(position.returnPercent)}</small></td>
+      </tr>) : <tr><td colSpan={6}>No completed paper purchases yet.</td></tr>}</tbody>
+    </table></div>
+    <p className="muted">Profit starts at our purchase price, not at an earlier low. A rise before we bought does not count. Repeated purchases are combined per stock; fees are included. Taxes, dividends and execution slippage are not modeled.</p>
+  </section>;
+}
+
 export default async function PerformancePage() {
   let dashboard = null;
   let error = '';
@@ -71,13 +104,15 @@ export default async function PerformancePage() {
 
   return <main className="wrap pageStack">
     <section className="hero compact">
-      <p className="eyebrow">PAPER STRATEGY · REAL SIGNAL TIME · NO BROKER ORDERS</p>
-      <h1>Performance</h1>
-      <p className="lead">Kas appi valikute järgi tegutsemine oleks päriselt raha teeninud? Siin mõõdetakse fikseeritud rahavooga hüpoteetilisi tehinguid ja sama rahavoo SPY võrdlust. See on falsifitseeritav katse, mitte ostu- ega müügisoovitus.</p>
+      <p className="eyebrow">PAPER TRADING RESULTS</p>
+      <h1>Money made or lost</h1>
+      <p className="lead">What we put in, what it is worth, and whether we bought before the price went up or down.</p>
     </section>
     {error && <div className="notice danger">Paper strategy andmeid ei õnnestunud laadida: {error}</div>}
     {dashboard && !dashboard.available && <div className="notice">Paper strategy skeem ei ole selles andmebaasis veel rakendatud. Discovery töötab edasi muutmata; siia ei kuvata oletatud tulemusi.</div>}
     {dashboard?.available && <>
+      <MoneyResult book={dashboard.books.find((book) => book.strategy === 'entry_aware' && book.book === 'strategy')!} />
+      <details className="card"><summary>Comparison, strategy rules and trade history</summary>
       <section className="section">
         <div className="sectionHeading"><div><p className="eyebrow">{dashboard.policyVersion}</p><h2>Kaks poliitikat, sama raha</h2></div><span className="muted">Seis: {dateTime(dashboard.generatedAt)}</span></div>
         <p className="muted">Valuation uses USD marks from the same New York date as SPY, within 20 minutes of its mark. Recency allows one elapsed New York trading day; weekends and the published 2026–2028 NYSE holidays add no days. Outside that published window the rule falls back conservatively to weekdays. Incomplete valuation stays unknown. Frozen signal-time labels below preserve the original policy assessment.</p>
@@ -104,6 +139,7 @@ export default async function PerformancePage() {
         </table></div>
       </section>
       <aside className="card antiCheat"><h3>V1 aususe reeglid</h3><ul><li>Täitmine toimub ainult Yahoo <code>REGULAR</code> turuseisus ja kuni 20 minuti vanuse quote’iga.</li><li>Komisjon: 0,1%, minimaalselt $0.10 ja maksimaalselt $1 orderi kohta; maksud, dividendid ja FX ei ole V1-s modelleeritud.</li><li>Baseline ei varja stale signaali, kuid stale hind ei saa olla execution hind.</li><li>EXIT vajab kolme järjestikust tänase market data kinnitusega fundamentaalset läbikukkumist; top-listist kadumine üksi ei müü.</li></ul></aside>
+      </details>
     </>}
   </main>;
 }

@@ -84,6 +84,10 @@ describe('paper strategy signal ledger', () => {
     )!;
     expect(book.currentValueUsd).toBe(110);
     expect(book.profitUsd).toBeCloseTo(9.9);
+    expect(book.positions).toHaveLength(1);
+    expect(book.positions[0]).toMatchObject({ ticker: 'ELF', averageBuyPrice: 100,
+      firstBoughtAt: '2026-08-31T14:00:00.000Z', investedUsd: 100.1, currentValueUsd: 110, open: true });
+    expect(book.positions[0].profitUsd).toBeCloseTo(9.9);
 
     await executePendingPaperOrders({
       now: new Date('2026-09-02T14:00:00Z'),
@@ -94,6 +98,8 @@ describe('paper strategy signal ledger', () => {
     )!;
     expect(stale.valuationComplete).toBe(false);
     expect(stale.profitUsd).toBeNull();
+    expect(stale.positions[0].profitUsd).toBeNull();
+    expect(stale.positions[0].latestPrice).toBeNull();
     expect(stale.valuationIssues).toContain('ELF: mark date differs from SPY.');
 
     // Same-date quotes must also be close in time; missing and non-USD marks
@@ -112,10 +118,38 @@ describe('paper strategy signal ledger', () => {
     expect(outdated.valuationIssues).toContain('SPY: recent reference mark unavailable.');
   });
 
+  it('combines repeated purchases by quantity and includes both purchase fees', async () => {
+    const first = await canonicalRun();
+    await recordPaperStrategySignals(first);
+    const execute = async (time: string, price: number) => executePendingPaperOrders({
+      now: new Date(time),
+      quoteFetcher: async () => new Map(['ELF', 'SPY'].map((ticker) => [ticker, {
+        ticker, price: ticker === 'ELF' ? price : 500, currency: 'USD', marketState: 'REGULAR',
+        marketTime: time, source: 'yahoo', raw: {},
+      }])),
+    });
+    await execute('2026-08-31T14:00:00Z', 100);
+    const companyId = Number((await pool.query("SELECT id FROM companies WHERE ticker='ELF'")).rows[0].id);
+    const collectionId = Number((await pool.query('SELECT collection_run_id FROM discovery_runs WHERE id=$1', [first])).rows[0].collection_run_id);
+    const second = await recordDiscoveryRun([], [makeDecisionInput({ companyId, ticker: 'ELF' })],
+      new Date('2026-09-01T12:00:00Z'), 'rklb_daily', collectionId);
+    await recordPaperStrategySignals(second.runId);
+    await execute('2026-09-01T14:00:00Z', 50);
+    const book = (await getPaperPerformanceDashboard(new Date('2026-09-01T14:00:00Z'))).books
+      .find((item) => item.strategy === 'all_picks_baseline' && item.book === 'strategy')!;
+    expect(book.positions).toHaveLength(1);
+    expect(book.positions[0].averageBuyPrice).toBeCloseTo(200 / 3);
+    expect(book.positions[0].investedUsd).toBeCloseTo(200.2);
+    expect(book.positions[0].currentValueUsd).toBeCloseTo(150);
+    expect(book.positions[0].profitUsd).toBeCloseTo(-50.2);
+    expect(book.profitUsd).toBeCloseTo(book.positions[0].profitUsd!);
+  });
+
   it('keeps an empty portfolio valuation unknown instead of inventing zero P/L', async () => {
     const dashboard = await getPaperPerformanceDashboard(new Date('2026-08-31T14:00:00Z'));
     expect(dashboard.available).toBe(true);
     expect(dashboard.books).toHaveLength(4);
+    expect(dashboard.books.every((book) => book.positions.length === 0)).toBe(true);
     expect(dashboard.books.every((book) => book.investedUsd === 0)).toBe(true);
     expect(dashboard.books.every((book) => book.currentValueUsd == null && book.profitUsd == null)).toBe(true);
   });
@@ -371,5 +405,11 @@ describe('paper strategy signal ledger', () => {
        GROUP BY strategy_key, book_key ORDER BY strategy_key, book_key`,
     );
     expect(open.rows.every((row) => Math.abs(Number(row.quantity)) < 1e-12)).toBe(true);
+    const closed = (await getPaperPerformanceDashboard(new Date('2026-09-10T14:00:00Z'))).books
+      .find((book) => book.strategy === 'entry_aware' && book.book === 'strategy')!;
+    expect(closed.positions[0]).toMatchObject({ open: false, currentValueUsd: 0, latestPrice: null });
+    expect(closed.positions[0].saleProceedsUsd).toBeCloseTo(96.9);
+    expect(closed.positions[0].profitUsd).toBeCloseTo(-3.2);
+    expect(closed.positions[0].profitUsd).toBeCloseTo(closed.profitUsd!);
   });
 });
