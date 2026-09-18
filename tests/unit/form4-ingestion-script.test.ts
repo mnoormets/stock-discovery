@@ -69,7 +69,7 @@ describe('Form 4 ingestion CLI boundary', () => {
 
     const queries = [];
     const client = {
-      query: async (sql) => { queries.push(sql); },
+      query: async (sql) => { queries.push(sql); return { rows: [] }; },
       release: () => queries.push('RELEASE'),
     };
     const attempts = await registerIndexAttemptsAtomically(
@@ -78,6 +78,8 @@ describe('Form 4 ingestion CLI boundary', () => {
       async (_database, row) => ({ accessionNumber: row.accessionNumber, skipped: false }),
     );
     expect(attempts.map((item) => item.row.accessionNumber)).toEqual(['A', 'B']);
-    expect(queries).toEqual(['BEGIN', 'COMMIT', 'RELEASE']);
+    expect(queries[0]).toBe('BEGIN');
+    expect(queries[1]).toContain("ingestion_status = 'persisted'");
+    expect(queries.slice(2)).toEqual(['COMMIT', 'RELEASE']);
   });
 });

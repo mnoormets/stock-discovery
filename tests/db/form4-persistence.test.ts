@@ -8,6 +8,8 @@ const {
   recordFilingAttempt,
 } = await import('../../scripts/_form4-persistence.cjs');
 
+const { registerIndexAttemptsAtomically } = await import('../../scripts/ingest-form4.cjs');
+
 beforeEach(resetDb);
 
 interface OwnerInput {
@@ -88,6 +90,35 @@ async function counts() {
 }
 
 describe('SEC Form 4 persistence', () => {
+  it('batch-skips completed filings, retries failures and rolls back incomplete registration', async () => {
+    const complete = indexRow('0000000001-26-000091');
+    const retry = indexRow('0000000001-26-000092');
+    const fresh = indexRow('0000000001-26-000093');
+    await persistForm4Filing(pool, complete, parsedFiling(complete));
+    await recordFilingAttempt(pool, retry);
+    await pool.query("UPDATE insider_filings SET ingestion_status='fetch_failed', last_error='test failure' WHERE accession_number=$1", [retry.accessionNumber]);
+    const before = (await pool.query('SELECT * FROM insider_filings WHERE accession_number=$1', [complete.accessionNumber])).rows;
+    const registered: string[] = [];
+    const register = async (client, row) => {
+      registered.push(row.accessionNumber);
+      return recordFilingAttempt(client, row);
+    };
+    const result = await registerIndexAttemptsAtomically(pool, [complete, retry, fresh], register);
+    expect(result.map((item) => item.attempt.skipped)).toEqual([true, false, false]);
+    expect(registered).toEqual([retry.accessionNumber, fresh.accessionNumber]);
+    expect((await pool.query('SELECT * FROM insider_filings WHERE accession_number=$1', [complete.accessionNumber])).rows).toEqual(before);
+    expect(Number(result[1].attempt.ingestion_attempt_count)).toBe(2);
+    expect(Number(result[2].attempt.ingestion_attempt_count)).toBe(1);
+    registered.length = 0;
+    const repeat = await registerIndexAttemptsAtomically(pool, [complete, complete], register);
+    expect(repeat.every((item) => item.attempt.skipped)).toBe(true);
+    expect(registered).toEqual([]);
+    const failedDay = indexRow('0000000001-26-000094');
+    await expect(registerIndexAttemptsAtomically(pool, [failedDay, { ...fresh, accessionNumber: '' }]))
+      .rejects.toThrow('identity');
+    expect((await pool.query('SELECT id FROM insider_filings WHERE accession_number=$1', [failedDay.accessionNumber])).rowCount).toBe(0);
+  });
+
   it('is idempotent by accession without changing children or persisted time', async () => {
     const row = indexRow('0000000001-26-000001');
     const parsed = parsedFiling(row);

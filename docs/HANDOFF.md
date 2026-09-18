@@ -28,6 +28,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-09-18 SEC catch-up optimization:** registration now reads already-persisted accessions once per indexed date and skips their per-filing upsert/read round trips. New/failed filings still use the existing registration path in the same atomic transaction before fetching any filing. Real seven-day replay checked 2,876 persisted filings in 14.718 seconds, seven SEC requests, zero writes of parsed filings and zero filing errors; the complete in-range filing-row checksum was unchanged. This removes repeat-work overhead, not the cost of processing newly filed documents; next scheduled duration remains to be checked. All four API orders deferred from 17 September are now confirmed filled in Neon.
+
 - **2026-09-18 money-first Performance:** user clarified that the desired primary answer is money won/lost after the app actually bought. `/performance` now leads with entry-aware filled purchases, costs, holdings plus sale proceeds, net P/L and per-stock results; comparison policies/rules/order audit are collapsed. Repeated buys use quantity-weighted entry prices and all fees; closed positions include net sale proceeds; unknown/stale marks still cannot imply zero P/L. No selection, execution, schema or valuation-validity rule changed.
 
 - **2026-09-18 forward measurement repair:** first v4 audit found 11 measured one-week decisions across eight tickers, with unknown endpoint market time on nine stock rows and all 11 SPY rows. Existing Yahoo writers now preserve quote time; new stock/SPY outcome measurements require known market time at/after the target and no later than receipt, with receipt no later than the evaluation clock. All 11 historical measured records remain unchanged. Validation/backtest display the historical limitation. See [reproducible review](research/2026-09-18/REVIEW.md), saved SQL/data and executed notebook. Full suite: 66 files / 512 tests; typecheck, lint and build passed; restarted app returned HTTP 200 on both pages. No strategy, broker, schema or external provider change.
@@ -251,6 +253,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
+**18 September reliability follow-up:** completed the bounded SEC catch-up optimization after the user asked to resume remaining work. Immediate verification is the next unattended ingestion/collection run, including quote timestamps. Core discovery, simulated execution and money-first results already exist. Company thesis updates wait for new evidence; another strategy experiment remains Later.
+
 **18 September evening clarification:** prioritize the user's question: did the paper purchases gain or lose money, and how much? Show money in, current holdings plus sale proceeds, and net dollar P/L first, using actual fills rather than pre-entry price moves. Keep methodology available under details. Do not replace this request with a new strategy/capital experiment.
 
 **18 September update:** the user confirmed paper-first evaluation before allocating their own money; no live budget or loss tolerance is committed. Repair measurement before tuning to early returns. The first review is complete, but quote-time gaps make the historical arithmetic unverified; starting-price timing remains a separate limitation. Entry-aware v4 gross purchases total $2,600, with SNDK/WTI at 53.85%. The user subsequently prioritized a simple money-made/lost view of existing paper purchases; that presentation now comes before another strategy experiment. Do not optimize limits on this tiny affected sample.
@@ -273,7 +277,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Verify the next regular-session executor resolves four API orders pending from 17 September. Preserve freshness and paired-fill safeguards. Form 4 recovered, but 35m18s is near its 40-minute limit; recurring timeouts warrant a verified performance fix. Direct cron-job.org history requires sign-in; GitHub confirms dispatch arrivals.
+- Verify the next scheduled Form 4 duration with the persisted-filing batch lookup. A completed-window live replay now takes 14.718s, but new-day processing may still dominate. Four deferred API orders are confirmed filled; no order-recovery work remains for those rows. Direct cron-job.org history still requires sign-in.
 
 - Track a clean forward cohort after the quote-time repair separately from affected history. Verify scheduled collection preserves market timestamps and outcome coverage advances only after actual quote time reaches each target; do not fabricate or rewrite old measurements. The initial v4 review is completed, not pending.
 - Use the Thesis Review Queue through the next stored evidence cycle. When an item becomes due, review its primary source and record the conclusion as a new thesis version; do not automate pass/fail or status changes from free text.
@@ -1037,6 +1041,15 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-18 - reduce repeated SEC catch-up work
+
+- Added one persisted-accession lookup inside each date's registration transaction. Previously each already-completed accession issued an INSERT/ON CONFLICT plus SELECT; completed rows now need only the batch read. Pending and failed accessions still register/retry through `recordFilingAttempt`; atomic day registration, newest-first ordering, SEC pacing, advisory locking and the 40-minute workflow limit are unchanged. No discovery/selection/paper or schema change.
+- Added regression coverage for persisted-row immutability, retry attempt counts, fresh registration, repeated completed inputs and rollback of the entire incomplete registration batch. Focused suite passed 2 files / 14 tests in 10.23s.
+- Real `node scripts/ingest-form4.cjs --from 2026-09-17 --to 2026-09-17 --fail-on-filing-error` exited 0: 1,481 index rows, 707 distinct accession numbers, 707 skipped, zero persisted/fetch/parse/persist failures, two SEC requests, about four seconds.
+- Real `--recent-days 7 --fail-on-filing-error` replay exited 0 in 14,718ms: five indexed dates (11,14,15,16,17 September), 6,056 index rows, 2,876 distinct accessions, 2,876 skipped, zero persisted/failures, seven SEC requests. Before/after complete filing-row checksum `9d49f66dabbfdc574898eee72aa0a6f2` matched for all 2,876 in-range records. No synthetic production data. This is a completed-history replay, not a full new-day timing claim.
+- Read-only API order check: all four 17 September signals now have `status=filled`. The previously pending-order task is closed at the database level; this does not assert a GitHub workflow's status.
+- Final verification, all exit 0: `npm run typecheck`; `npm run lint` (`No ESLint warnings or errors`); `npm run build` (`Compiled successfully`, 22/22 pages); `docker compose run --rm -T app npm test` (`Test Files 66 passed (66)`, `Tests 514 passed (514)`, duration 288.76s). Restarted app after build; fresh browser request to `/performance` returned HTTP 200 in 3127ms and displayed the existing money summary. Isolated test database removed by teardown. Next scheduled new-day duration and collection timestamp propagation remain unverified.
 
 ### 2026-09-18 - money made or lost presentation
 

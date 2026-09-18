@@ -72,8 +72,22 @@ async function registerIndexAttemptsAtomically(pool, rows, recordAttempt = recor
   try {
     await client.query('BEGIN');
     began = true;
+    // Most of the rolling window is already complete. Read those immutable
+    // successes once instead of issuing an upsert and SELECT for each filing.
+    const persisted = await client.query(
+      `SELECT id, accession_number, ingestion_status, ingestion_attempt_count
+         FROM insider_filings
+        WHERE accession_number = ANY($1::text[]) AND ingestion_status = 'persisted'`,
+      [rows.map((row) => row.accessionNumber)],
+    );
+    const completed = new Map(persisted.rows.map((row) => [row.accession_number, row]));
     const attempts = [];
-    for (const row of rows) attempts.push({ row, attempt: await recordAttempt(client, row) });
+    for (const row of rows) {
+      const existing = completed.get(row.accessionNumber);
+      attempts.push({ row, attempt: existing
+        ? { ...existing, skipped: true }
+        : await recordAttempt(client, row) });
+    }
     await client.query('COMMIT');
     began = false;
     return attempts;
