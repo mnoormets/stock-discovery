@@ -12,6 +12,12 @@ See juhend on inimesele, kes avab rakenduse esimest korda. Stock Discovery aitab
 6. Lisa põhjendatud kandidaat Watchlisti või alusta kohe teesi.
 7. Täida **Thesis Builderis** kasutaja hüpoteesid ja 12 kuu mõõdetav kontrollpunkt. Muuda tees `ready` olekusse alles siis, kui invalidation-tingimus ja kontrollpunkt on selgelt sõnastatud.
 
+### Varaste võimaluste otsing
+
+Ava **Today → Early opportunities**. See vaade otsib dokumenteeritud käibekasvu ja positiivse tegevusrahavooga ettevõtteid, mille 1-, 3- ja 6-kuu hinnamuutused pole valitud tõusupiire ületanud. Iga kandidaat näitab kontrolli põhjuseid, SEC-i algallikaid, perioode ning salvestatud hinnavõrdluse sisendeid. Puuduvad andmed jätavad tulemuse kontrollimata; välistatud ja kontrollimata nimede põhjused saab eraldi avada.
+
+**What happened after first early discovery?** säilitab esimese leidmise hinna ja näitab hilisemat hinnamuutust. See pole ostust teenitud raha: tegelike pabertehingute kasum ja kahjum on endiselt **Performance** vaates. Kandidaate jälgitakse olemasoleva päevase hinnakogumise eelarve piires 30 päeva; vana või puuduv hind jätab tulemuse teadmata. Varane kandidaat ei tähenda, et aktsia kindlasti tõuseb, ega loo automaatset ostu.
+
 ### Today paper-entry otsus
 
 Iga Today kandidaadikaart näitab Business- ja Market setup'i kõrval eraldi **Paper entry test** tulemust:

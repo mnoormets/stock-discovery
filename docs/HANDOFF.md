@@ -28,6 +28,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-10-01 Early Opportunities V1 verified:** separate Yahoo/SEC research scan requires revenue growth >=25%, positive same-period USD OCF, known recent prices and all 1/3/6-month returns below +20%/+35%/+50%, session gain below 5%. Up to 20 chart requests per collection; exclusions and missing data remain visible. First real collection #63 found AMKR/CDE and saved two follow-up prices; repeat #64 preserved both first-discovery timestamps/prices and saved 139 consumed historical closes per latest candidate. The first #63 record preserves fact evidence and derived context; raw chart inputs were added subsequently, without backfilling it. Candidates stay in existing capped price tracking for 30 days; displayed return since observation is not actual paper P/L. Final full isolated suite: 70 files / 523 tests, 296.39s. Typecheck/lint/build passed; restarted app and real UI/DB checks passed. [Evidence](research/2026-10-01/EARLY_DISCOVERY.md). Next unattended execution and effectiveness remain unverified.
+
 - **2026-10-01 market radar completed:** six existing Yahoo screens now collect up to 25 rows each beyond social mentions. Latest real collection #62 persisted 137 distinct US-listed equities; all six channels succeeded, 45 radar names currently have SEC facts. Missing financials, social blacklists and canonical tier slots do not hide radar names. CLI/API share a 20-attempt Tallinn-day CompanyFacts budget; today's updated CLI enriched 15 companies after five earlier attempts, raising total SEC-covered companies 264 to 279. Canonical #95 was reused with zero new decisions, outcomes or orders; existing historical decisions and paper policies were preserved. Full isolated suite passed 68 files / 519 tests; typecheck, lint, production build, app restart, real browser and database checks passed. See [implementation verification](research/2026-09-30/MARKET_RADAR_VERIFICATION.md). Published to local and remote `main` at feature commit `fb627d8` (remote SHA checked). The next unattended run remains to be observed.
 
 - **2026-09-30 paper checkpoint completed:** read-only Neon audit found entry-aware invested $8,508.50, marked value $8,310.52, unrealized loss $197.98 (-2.33%) versus matched SPY +$7.28. 85 buys / 14 open tickers / zero sales or pending entry-aware orders. Marks are today 16:30–16:35 Tallinn, not live. All 12 intervening core collections/canonical runs and fills on all eight trading days are present. DKS/YOU captured gains, CRDO entry timing lagged; EU/CAKE/BE were excluded by documented rules. All-picks still has three HRGN pending pairs and stale MSC valuation; causes remain unresolved. Independent SQL reconciles P/L. See [dated evidence and review](research/2026-09-30/REVIEW.md). No runtime code, strategy, database data or history changed; no tests/build/UI checks claimed.
@@ -147,6 +149,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Tehtud verstapostid
 
+- Early Opportunities V1: source-backed growth/cash-flow scan, known 1/3/6-month run-up checks, frozen first-discovery price and 30-day continued tracking; verified 1 October with real AMKR/CDE observations.
+
 - Market radar V1: six independently sourced Yahoo screen lists, unscored-name visibility, idempotent company/price persistence and 20-attempt daily SEC enrichment; verified 1 October 2026.
 
 - **2026-09-07 financial corrections:** verified HIMS same-filing investment/FCF extraction, refreshed API ordinary shares, and introduced the v2 EV/Sales date guard. Repeated live refreshes were idempotent and saved theses/decisions/outcomes/orders stayed unchanged. The later dated BW/API reconciliation closes the BW total-debt and API liquidity/ADS-definition research gaps; normalized CompanyFacts remain unchanged by design.
@@ -259,6 +263,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
+**1 October early-discovery request:** user explicitly asked to find stocks before their rise. Implementing a separate versioned scan for documented growth and positive same-period cash flow before elevated 1/3/6-month returns; first qualification is frozen and tracked forward. Real collection #63 found AMKR/CDE and captured two follow-up prices. Verification completed: final 70-file/523-test suite and live repeated-run/UI checks passed. These are research hypotheses, not proven future winners or paper orders.
+
 **1 October current direction:** the user explicitly authorized broader market discovery, superseding the September feature freeze for this coverage work. Radar delivery is verified; next assess new-source coverage, SEC queue progress and whether discoveries precede subsequent price jumps. This is daily bounded discovery, not whole-market or intraday monitoring, and is not yet connected to a separately versioned paper selection policy. Preserve the current strategy control while measuring missed names and entry timing.
 
 **18 September accepted evaluation boundary:** user accepted a first review after the next 10 trading days, with no new features and only necessary execution/measurement fixes, subject to checking original-scope completeness. [Completion audit](COMPLETION_AUDIT_2026-09-18.md) distinguishes the delivered paper experiment from unfinished broader designs. Do not claim all requested features are complete or that profitability is proven. The user has now supplied the original Estonian idea; the missing-text blocker is resolved. The completion audit maps it to implementation and identifies substantive gaps in holding/exit decision support, public early-information reliability/probabilities and production new-listing screening. Challenger comparison, two under-recognition signals, production new-listing discovery and finite-capital/drawdown work remain partial/deferred. This was the evaluation boundary until the user authorized the subsequent market-coverage expansion.
@@ -286,6 +292,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 ## Roadmap
 
 ### NOW - järgmine töö
+
+- Observe unattended early-opportunities-v1 execution and its 30-day follow-up marks. Compare first discovery with subsequent returns, include losers/misses and coverage gaps, and preserve the existing paper control. Daily sample, unvalidated thresholds and shared 50-symbol tracking capacity remain explicit limits.
 
 - Observe the next unattended collection after publication: all six radar channel states, source/quote timestamps and the shared 20-company SEC budget. Track radar-first observation versus later returns prospectively; do not backfill pre-boom discoveries or reinterpret radar rows as paper buys.
 
@@ -321,6 +329,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- **2026-10-01 early-discovery boundary:** use stored SEC facts and bounded Yahoo chart history; no new provider, schema migration, canonical selection or automatic paper order. Thresholds are explicit unvalidated hypotheses; known missing/split/history failures stay unknown. First discovery is read from versioned successful collection metrics, never retroactively dated. Valid USD follow-up prices require non-future quote/receipt times and receipt after discovery. Shared price tracking remains 50 symbols/day; pending coverage is visible. Pre-revenue/event-driven ideas may be missed by the cash-flow rule and require a distinct future investigation, not a fabricated growth candidate.
 
 - **2026-10-01 coverage boundary:** use six free Yahoo discovery screens with per-channel limits, US exchange/equity/USD validation and explicit stale/missing prices. Persist the versioned radar in collection-run metrics without a schema change. Names with usable prices enter existing company/SEC queues, but radar observations do not bypass canonical collection-item eligibility or paper gates. Paid providers, whole-market coverage, intraday cadence and radar-to-strategy policy changes remain unresolved/deferred. The installed Yahoo screener schema rejects current `canonicalName`; use its supported `validateResult: false` option with our own consumed-field validation and a 15-second per-request timeout.
 
@@ -709,6 +719,11 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-10-01 — Early Opportunities V1
+
+- Final `npm run typecheck` exit 0; `npm run lint` zero warnings/errors. Final isolated Docker `npm test`: **70 files / 523 tests passed**, 296.39s. Earlier complete pre-input-trace run also passed 523 tests; final run includes immutable chart inputs. `npm run build` compiled and generated 22/22 static pages; app restarted before final smoke. Temporary test DB count 0.
+- `/today` and `/performance` HTTP 200; unauthenticated collect POST 401. Real browser confirms two candidates, 139 frozen chart inputs each, SEC links, exclusions and original first-discovery prices. Collection #63 daily CLI exit 0/healthy heartbeat; #64 repeat preserved first timestamps/prices. No extra canonical decisions or paper orders. [Verification report](research/2026-10-01/EARLY_DISCOVERY.md).
 
 ### 2026-10-01 — Market radar V1
 
@@ -1927,3 +1942,8 @@ API: HTTP 200; expected evidence true
 - Coverage expansion authorized by the user. Added six Yahoo discovery screens, bounded to 25 rows each, with explicit per-channel failures and US equity / USD validation. Added Today radar visibility for unscored companies; normal daily execution in both CLI and API expands existing SEC CompanyFacts budget to 20. Historical canonical decisions and paper policy remain unchanged. Verified on 1 October: 68 files / 519 tests passed; typecheck/lint/build passed, app restarted and real UI/DB checks completed. Collection #62 yielded 137 names and 15 new SEC-covered companies without changing the daily canonical snapshot. See [verification report](research/2026-09-30/MARKET_RADAR_VERIFICATION.md).
 
 - **2026-10-01 publication:** feature commit `fb627d8` pushed to `origin/main`; `git ls-remote` confirmed `fb627d8182fa909ed6f06bbc26d46835fa021ce2`. Final runtime after Docker Desktop recovery: Today/Performance 200, unauthenticated collection POST 401; isolated test database count 0. No failed check was substituted for the full successful 519-test run. Next unattended execution remains pending.
+
+## Session changelog — 2026-10-01 early discovery
+
+- User requested discovery before a rise. Added versioned early scan inside market-radar collection with a maximum 20 Yahoo history requests, 15-second request timeout, evidence dates/IDs/SEC links and transparent exclusion/unknown reasons. No migration or paper policy change. First qualification is read from immutable collection metrics; later quotes are known-time USD observations only. Qualifying names remain in the existing daily capped tracking queue for 30 days even if they disappear from the latest screen.
+- Real collection #63: 138 radar names, 2 watch / 43 excluded / 93 unknown. AMKR observed $52.3464, revenue +27.48%, 1/3/6m returns +14.47%/-24.84%/+11.30%; CDE $17.595, revenue +125.86%, returns -12.90%/+1.71%/-5.35%. Both have same-period positive OCF. These facts do not establish valuation, organic growth, safety or a future price jump. Canonical #95 reused, zero new orders/decisions/outcomes; tracking attempted/saved 2 with zero gaps or deferred names; CLI exit 0 and heartbeat HTTP 200. Final required verification completed: typecheck/lint/build passed, app restarted, 70 files / 523 tests passed, auth/UI/DB checks passed and isolated test DB count 0.

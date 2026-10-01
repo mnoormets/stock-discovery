@@ -6,6 +6,8 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- `/today#early-opportunities` screens current radar names for documented revenue growth (>=25% YoY), positive same-period USD operating cash flow and limited prior price appreciation. A bounded Yahoo daily-history read requires known 1/3/6-month returns below +20%/+35%/+50%, with session gain below 5%. Missing history, split events and unknown financial evidence never count as early. First qualifying discovery price/evidence is preserved in versioned collection metrics; names join the existing capped price tracking queue for 30 days and show change since discovery, separately from actual paper P/L. Initial thresholds are unvalidated research assumptions, not predictions or automatic orders.
+
 - `/today#market-radar` shows six Yahoo market screens beyond social mentions: gainers, small-cap gainers, active trading, small-cap growth, technology growth and undervalued growth. Up to 25 rows per channel are deduplicated with source reasons, observed prices/times, session change, volume ratio and current SEC coverage. Missing financials do not hide a name; channel failures and old quotes remain visible. This bounded daily research radar is separate from the canonical paper-buy shortlist.
 - Daily CLI/API SEC enrichment now shares a 20-company Tallinn-day budget (the standalone helper retains its five-company default); the existing per-company retry windows and SEC pacing remain in force.
 

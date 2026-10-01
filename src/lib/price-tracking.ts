@@ -28,6 +28,12 @@ export async function getPriceTrackingQueue(now = new Date()) {
       WHERE r.run_type = 'rklb_daily' AND d.included AND d.decision_price > 0
         AND o.status <> 'measured' AND o.target_at + interval '7 days' > $1
       UNION
+      SELECT c.id, 'early opportunity' FROM collection_runs r
+      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(r.metrics->'marketRadar'->'early'->'rows','[]'::jsonb)) item
+      JOIN companies c ON c.ticker=item->>'ticker'
+      WHERE r.status='success' AND r.metrics->'marketRadar'->'early'->>'version'='early-opportunities-v1'
+        AND item->>'state'='watch' AND r.finished_at <= $1 AND r.finished_at >= $1::timestamptz - interval '30 days'
+      UNION
       SELECT id, 'benchmark' FROM companies WHERE ticker = 'SPY'
     )
     SELECT c.id AS company_id, c.ticker, array_agg(DISTINCT r.reason ORDER BY r.reason) AS reasons,

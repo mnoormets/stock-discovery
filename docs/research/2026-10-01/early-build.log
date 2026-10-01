@@ -1,0 +1,54 @@
+
+> stock-discovery@0.1.0 build
+> node node_modules/next/dist/bin/next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/22) ...
+   Generating static pages (5/22) 
+   Generating static pages (10/22) 
+   Generating static pages (16/22) 
+ ✓ Generating static pages (22/22)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ƒ /                                    1.44 kB        97.4 kB
+├ ○ /_not-found                          873 B          88.1 kB
+├ ƒ /api/collect                         0 B                0 B
+├ ƒ /api/company/[ticker]/brief          0 B                0 B
+├ ƒ /api/report                          0 B                0 B
+├ ƒ /backtest                            205 B          96.2 kB
+├ ƒ /company/[ticker]                    2.37 kB        98.3 kB
+├ ƒ /daily                               205 B          96.2 kB
+├ ƒ /frequency                           205 B          96.2 kB
+├ ○ /guide                               205 B          96.2 kB
+├ ƒ /missed-moves                        205 B          96.2 kB
+├ ƒ /performance                         205 B          96.2 kB
+├ ƒ /portfolio                           205 B          96.2 kB
+├ ƒ /research/discovery-quality          1.52 kB        88.8 kB
+├ ƒ /research/metadata-coverage          1.46 kB        88.7 kB
+├ ƒ /research/metadata-root-cause        1.68 kB        88.9 kB
+├ ƒ /research/outcome-attribution        1.09 kB        88.4 kB
+├ ƒ /research/outcome-backfill-audit     1.3 kB         88.6 kB
+├ ƒ /research/outcome-coverage           1.14 kB        88.4 kB
+├ ƒ /scanner                             205 B          96.2 kB
+├ ƒ /search                              672 B          87.9 kB
+├ ƒ /thesis/[positionId]                 205 B          96.2 kB
+├ ƒ /today                               205 B          96.2 kB
+├ ƒ /validation                          205 B          96.2 kB
+└ ƒ /watchlist                           205 B          96.2 kB
++ First Load JS shared by all            87.3 kB
+  ├ chunks/117-9776bcfde68b9ed6.js       31.7 kB
+  ├ chunks/fd9d1056-88c8a1669018f964.js  53.6 kB
+  └ other shared chunks (total)          1.89 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

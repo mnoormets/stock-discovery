@@ -1,0 +1,86 @@
+=== Stock Discovery · daily collect ===
+  DB: postgresql://***@ep-plain-voice-b1mawnr3.c-5.eu-central-1.aws.neon.tech/neondb?sslmode=require
+(node:19132) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+-- Preflight --
+  DB uhendus                                 OK
+  SEC_USER_AGENT                         olemas
+  FMP_API_KEY                            puudub   (valikuline varutee)
+  Tallinn today                      2026-10-01
+  today canonical exists?                   JAH   (kordusjooks ei loo teist)
+  canonical runs (enne)                      50
+  candidate_outcomes (enne)                1575
+
+-- 1. runCollection --
+Tradestie ebaõnnestus, kasutan ApeWisdomi proxy-sentimenti: fetch failed
+FMP_API_KEY puudub → 12 tickerit jääb turukapita.
+  collectionRunId                           #63
+  captureDate                        2026-10-01
+  scanned                                   200
+  candidates                                 68
+  liveDataSaved                            true
+  market radar stocks                       138
+
+-- 2. benchmark (SPY) --
+  benchmarkCaptured                         JAH
+
+-- 3. SEC enrichment --
+  status                              completed
+  attempted                                   0
+  enriched                                    0
+  unavailable                                 0
+  failed                                      0
+  coveredBefore -> After             261 -> 261
+  dailyRemaining                              0
+
+-- 4. classification enrichment --
+  attempted                                   5
+  enriched                                    4
+  unavailable                                 1
+  failed                                      0
+  remaining                                 306
+
+-- 5. canonical discovery --
+  runId                                     #95
+  runReused                                 JAH   (sama Tallinna paev)
+  evaluated                                 264
+  included                                    6
+  excluded                                  258
+  inputChangedAfterSnapshot                 JAH
+  created candidate_outcomes                  0
+
+-- 5b. paper strategy signals --
+  runId                                     #95
+  decisions                                   6
+  inserted orders                             0
+  existing orders                            24
+  pending / skipped                       0 / 0
+  exit orders                                 0
+
+-- 5c. continued price tracking --
+  tracking                           {"attempted":2,"saved":2,"unchanged":0,"missing":0,"stale":0,"invalid":0,"failed":0,"deferred":0}
+
+-- 6. refreshCandidateOutcomes --
+  refreshed rows                            135
+
+-- Kokkuvote (enne -> parast) --
+  canonical_runs                     50 ->     50
+  discovery_runs total               65 ->     65
+  discovery_decisions              7140 ->   7140
+  candidate_outcomes               1575 ->   1575
+  price_snapshots                  4795 ->   5022  (+227)
+  SPY snapshots                      86 ->     87  (+1)
+  financial_enrichment_status       280 ->    280
+  companies with SEC facts          280 ->    280
+
+-- Healthchecks heartbeat --
+  status                             SENT (HTTP 200)
+

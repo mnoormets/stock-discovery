@@ -1,0 +1,73 @@
+(node:22780) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Tradestie ebaõnnestus, kasutan ApeWisdomi proxy-sentimenti: fetch failed
+FMP_API_KEY puudub → 13 tickerit jääb turukapita.
+{
+  "collectionRunId": 64,
+  "version": "early-opportunities-v1",
+  "evaluatedAt": "2026-10-01T14:10:57.208Z",
+  "historyAttempted": 2,
+  "historyDeferred": 0,
+  "states": {
+    "excluded": 47,
+    "unknown": 87,
+    "watch": 2
+  },
+  "watch": [
+    {
+      "ticker": "AMKR",
+      "price": 52.125,
+      "storedHistoryPrices": 139
+    },
+    {
+      "ticker": "CDE",
+      "price": 17.5662,
+      "storedHistoryPrices": 139
+    }
+  ],
+  "firstDiscoveryBefore": [
+    {
+      "ticker": "AMKR",
+      "at": "2026-10-01T14:01:21.498Z",
+      "price": 52.3464
+    },
+    {
+      "ticker": "CDE",
+      "at": "2026-10-01T14:01:21.498Z",
+      "price": 17.595
+    }
+  ],
+  "firstDiscoveryAfter": [
+    {
+      "ticker": "AMKR",
+      "at": "2026-10-01T14:01:21.498Z",
+      "price": 52.3464
+    },
+    {
+      "ticker": "CDE",
+      "at": "2026-10-01T14:01:21.498Z",
+      "price": 17.595
+    }
+  ],
+  "followup": [
+    {
+      "ticker": "AMKR",
+      "latestPrice": 52.125,
+      "marketAt": "2026-10-01T14:09:12.000Z",
+      "returnPercent": -0.4229517216083667
+    },
+    {
+      "ticker": "CDE",
+      "latestPrice": 17.5662,
+      "marketAt": "2026-10-01T14:09:17.000Z",
+      "returnPercent": -0.16368286445013203
+    }
+  ]
+}

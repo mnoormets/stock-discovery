@@ -1,3 +1,4 @@
+import { collectEarlyOpportunities, type EarlyOpportunitySnapshot } from './early-opportunities';
 import YahooFinance from 'yahoo-finance2';
 import { pool, resolveCollectionCompanyIds } from './db';
 import { quoteMarketTime } from './yahoo';
@@ -25,6 +26,7 @@ export interface MarketRadarSnapshot {
   version: typeof MARKET_RADAR_VERSION; observedAt: string;
   channels: Array<{ id: Channel; status: 'ok' | 'failed'; received: number; accepted: number }>;
   stocks: MarketRadarStock[];
+  early?: EarlyOpportunitySnapshot;
 }
 const yahoo = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 const number = (v: unknown): number | null => typeof v === 'number' && Number.isFinite(v) ? v : null;
@@ -89,6 +91,7 @@ export async function fetchMarketRadar(
 export async function collectMarketRadar(): Promise<MarketRadarSnapshot> {
   const snapshot = await fetchMarketRadar();
   await persistMarketRadarCompanies(snapshot);
+  snapshot.early = await collectEarlyOpportunities(snapshot);
   return snapshot;
 }
 
