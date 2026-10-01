@@ -1,0 +1,427 @@
+ Container stock-discovery-db-1 Running 
+ Container stock-discovery-db-1 Waiting 
+ Container stock-discovery-db-1 Healthy 
+ Container stock-discovery-app-run-81d6ac28aa72 Creating 
+ Container stock-discovery-app-run-81d6ac28aa72 Created 
+
+> stock-discovery@0.1.0 test
+> vitest run
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - `__dirname` (vitest.config.mts:15:25). Use `import.meta.dirname` instead
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/app[39m
+
+[test-db] skeem migratsioonidest: 10 rakendatud, 10 kirjet schema_migrations-is
+[test-db] valmis: postgres://***@db:5432/discovery_test
+ [32m✓[39m tests/db/today-brief.test.ts [2m([22m[2m22 tests[22m[2m)[22m[33m 59742[2mms[22m[39m
+     [33m[2m✓[22m[39m A1 tagastab puuduva canonical päeva korral waiting oleku ja warningu [33m 4481[2mms[22m[39m
+     [33m[2m✓[22m[39m A2 loeb latest canonical run'i ja included decision'i ning annab puhtale briefile READY [33m 6410[2mms[22m[39m
+     [33m[2m✓[22m[39m A3 seob latest run'iga selle immutable data-quality snapshot'i [33m 3061[2mms[22m[39m
+     [33m[2m✓[22m[39m A4 toob collection provenance bucketi candidate reale [33m 2400[2mms[22m[39m
+     [33m[2m✓[22m[39m A4b kuvab insider source pathi ja lookup meetrika eraldi [33m 2375[2mms[22m[39m
+     [33m[2m✓[22m[39m A4c growth precedence säilitab Form 4 evidence ning ei muuda canonical otsuse välju [33m 1718[2mms[22m[39m
+     [33m[2m✓[22m[39m A5 märgib included not_relevant mandate kandidaadi inimese kontrolliks [33m 1730[2mms[22m[39m
+     [33m[2m✓[22m[39m A6 ei muuda brief'i lugemisel ühegi public tabeli ridade arvu [33m 1908[2mms[22m[39m
+     [33m[2m✓[22m[39m A6b loeb immutable insider evidence v1 payloadi lossless stringidena ja READ ONLY [33m 3604[2mms[22m[39m
+     [33m[2m✓[22m[39m A6c märgib legacy insider payloadi fail-closed olekusse [33m 2966[2mms[22m[39m
+     [33m[2m✓[22m[39m A6d märgib malformed insider payloadi fail-closed olekusse [33m 6501[2mms[22m[39m
+     [33m[2m✓[22m[39m A7 võrdleb viimase kahe canonical päeva new/removed/repeated tickereid [33m 2414[2mms[22m[39m
+     [33m[2m✓[22m[39m A8 annab latest collection failure korral ERROR staatuse [33m 2091[2mms[22m[39m
+     [33m[2m✓[22m[39m A9 ehitab tugevale kandidaadile puhta promising research summary [33m 2179[2mms[22m[39m
+     [33m[2m✓[22m[39m A10 liigutab negative FCF ja dilution warningud riskBullets alla [33m 2518[2mms[22m[39m
+     [33m[2m✓[22m[39m A11 unknown provenance jääb subtle traceability note'iks, mitte high-priority warninguks [33m 4328[2mms[22m[39m
+     [33m[2m✓[22m[39m A12 seob salvestatud price history kandidaadi konteksti ja märgib run-up riski [33m 1612[2mms[22m[39m
+     [33m[2m✓[22m[39m A13 ehitab scenario valuationi ainult decision-time score snapshoti fact-viitest [33m 1495[2mms[22m[39m
+     [33m[2m✓[22m[39m A14 seob iga adjacent rank pairi päris RKLB comparatori esimese erineva väljaga [33m 1741[2mms[22m[39m
+     [33m[2m✓[22m[39m A15 kuvab ownership badge ainult päris watchlist/portfolio/thesis kirje korral [33m 1434[2mms[22m[39m
+     [33m[2m✓[22m[39m A16 võrdleb inline muutusi ainult eelmise sama model_version canonical runiga [33m 1411[2mms[22m[39m
+     [33m[2m✓[22m[39m A17 loeb catalyst human summary jaoks ainult salvestatud decision väljad [33m 1360[2mms[22m[39m
+ [32m✓[39m tests/db/paper-strategy.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 14756[2mms[22m[39m
+     [33m[2m✓[22m[39m marks held stocks and SPY on a later day with no new orders, without changing fills [33m 1488[2mms[22m[39m
+     [33m[2m✓[22m[39m combines repeated purchases by quantity and includes both purchase fees [33m 1656[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps an empty portfolio valuation unknown instead of inventing zero P/L [33m 1374[2mms[22m[39m
+     [33m[2m✓[22m[39m is schema-versioned, idempotent per canonical run, and pairs every eligible cash flow with SPY [33m 1434[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps baseline pending but freezes entry-aware failures as skipped facts [33m 1475[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects paper signals for a non-canonical run [33m 1435[2mms[22m[39m
+     [33m[2m✓[22m[39m fills strategy and same-cash-flow SPY orders once from fresh regular-session quotes [33m 1440[2mms[22m[39m
+     [33m[2m✓[22m[39m leaves pending orders untouched when quotes are closed or stale [33m 1432[2mms[22m[39m
+     [33m[2m✓[22m[39m never fills only one side of a strategy and SPY cash-flow pair [33m 1476[2mms[22m[39m
+     [33m[2m✓[22m[39m creates paired exits only after three consecutive fresh fundamental failures [33m 1541[2mms[22m[39m
+stderr | tests/db/enrichment-budget.test.ts > E2 — päevane eelarve ja Tallinna päevapiir > kuus kõlblikku ettevõtet annab täpselt viis katset
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E2 — päevane eelarve ja Tallinna päevapiir > kuus kõlblikku ettevõtet annab täpselt viis katset
+Ettevõtte BBB päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E2 — päevane eelarve ja Tallinna päevapiir > kuus kõlblikku ettevõtet annab täpselt viis katset
+Ettevõtte CCC päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E2 — päevane eelarve ja Tallinna päevapiir > kuus kõlblikku ettevõtet annab täpselt viis katset
+Ettevõtte DDD päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E2 — päevane eelarve ja Tallinna päevapiir > kuus kõlblikku ettevõtet annab täpselt viis katset
+Ettevõtte EEE päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E2 — päevane eelarve ja Tallinna päevapiir > kolm tänast katset jätab eelarvest kaks alles
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E2 — päevane eelarve ja Tallinna päevapiir > kolm tänast katset jätab eelarvest kaks alles
+Ettevõtte BBB päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E2 — päevane eelarve ja Tallinna päevapiir > EELMISE Tallinna päeva katsed ei kuluta tänast eelarvet
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E2 — päevane eelarve ja Tallinna päevapiir > TÄNASE Tallinna päeva katsed kuluvad eelarvest
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E3 — universumi filtrid > värske hind ja faktide puudumine teeb ettevõtte kõlblikuks
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E4 — error retry, 1 päev > 25 tundi tagasi ebaõnnestunut proovitakse uuesti
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E4 — error retry, 1 päev > consecutive_failures kasvab järjestikuse veaga
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E4 — error retry, 1 päev > last_error salvestab SEC vastuse staatuse
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 500.
+
+stderr | tests/db/enrichment-budget.test.ts > E4 — error retry, 1 päev > last_error truncates to 500 Unicode characters without splitting a surrogate pair
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA🚀TAIL
+
+stderr | tests/db/enrichment-budget.test.ts > E5 — unavailable aken, 30 päeva > 31 päeva tagasi unavailable on jälle kõlblik
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E6 — stale-facts haru, 7 päeva > kaheksa päeva vanad faktid teevad ettevõtte kõlblikuks
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E6 — stale-facts haru, 7 päeva > ASÜMMEETRIA: stale faktidega unavailable proovitakse juba päeva pärast
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E7 — queue järjekord > faktideta ettevõte on stale-faktidega ettevõttest eespool
+Ettevõtte BBB päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E7 — queue järjekord > kunagi proovimata on varem proovitust eespool
+Ettevõtte BBB päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E7 — queue järjekord > varem proovitute seast valitakse vanim katse
+Ettevõtte BBB päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E8 — tulemuse kuju ja veataluvus > segapartii loendab unavailable ja failed eraldi
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E8 — tulemuse kuju ja veataluvus > ühe tickeri viga ei nurja kogu jooksu
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 500.
+
+stderr | tests/db/enrichment-budget.test.ts > E8 — tulemuse kuju ja veataluvus > katvuse loendurid kajastavad universumi päringut
+Ettevõtte AAA päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+stderr | tests/db/enrichment-budget.test.ts > E8 — tulemuse kuju ja veataluvus > katvuse loendurid kajastavad universumi päringut
+Ettevõtte BBB päevane SEC enrichment ebaõnnestus: SEC CompanyFacts vastas 404.
+
+ [32m✓[39m tests/db/enrichment-budget.test.ts [2m([22m[2m36 tests[22m[2m)[22m[33m 71234[2mms[22m[39m
+     [33m[2m✓[22m[39m ilma User-Agentita on tulemus disabled ja võrku ei puututa [33m 2147[2mms[22m[39m
+     [33m[2m✓[22m[39m User-Agentiga aga tühja universumiga on tulemus completed [33m 4970[2mms[22m[39m
+     [33m[2m✓[22m[39m vaikimisi päevalimiit on 5 [33m 2593[2mms[22m[39m
+     [33m[2m✓[22m[39m kuus kõlblikku ettevõtet annab täpselt viis katset [33m 3539[2mms[22m[39m
+     [33m[2m✓[22m[39m kolm tänast katset jätab eelarvest kaks alles [33m 5022[2mms[22m[39m
+     [33m[2m✓[22m[39m viis tänast katset annab null katset ja null võrgupäringut [33m 1719[2mms[22m[39m
+     [33m[2m✓[22m[39m EELMISE Tallinna päeva katsed ei kuluta tänast eelarvet [33m 2250[2mms[22m[39m
+     [33m[2m✓[22m[39m TÄNASE Tallinna päeva katsed kuluvad eelarvest [33m 1505[2mms[22m[39m
+     [33m[2m✓[22m[39m limiit 0 klambritakse väärtusele 5 [33m 1372[2mms[22m[39m
+     [33m[2m✓[22m[39m limiit -3 klambritakse väärtusele 1 [33m 1301[2mms[22m[39m
+     [33m[2m✓[22m[39m limiit 100 klambritakse väärtusele 20 [33m 1082[2mms[22m[39m
+     [33m[2m✓[22m[39m limiit 2.9 klambritakse väärtusele 2 [33m 1383[2mms[22m[39m
+     [33m[2m✓[22m[39m SPY jäetakse välja [33m 1201[2mms[22m[39m
+     [33m[2m✓[22m[39m ETF jäetakse välja [33m 2315[2mms[22m[39m
+     [33m[2m✓[22m[39m üle 30 päeva vanune hind jätab ettevõtte universumist välja [33m 1713[2mms[22m[39m
+     [33m[2m✓[22m[39m hinnasnapshotita ettevõte jäetakse välja [33m 1294[2mms[22m[39m
+     [33m[2m✓[22m[39m värske hind ja faktide puudumine teeb ettevõtte kõlblikuks [33m 1597[2mms[22m[39m
+     [33m[2m✓[22m[39m kaks tundi tagasi ebaõnnestunut ei proovita uuesti [33m 1742[2mms[22m[39m
+     [33m[2m✓[22m[39m 25 tundi tagasi ebaõnnestunut proovitakse uuesti [33m 1469[2mms[22m[39m
+     [33m[2m✓[22m[39m consecutive_failures kasvab järjestikuse veaga [33m 1258[2mms[22m[39m
+     [33m[2m✓[22m[39m last_error salvestab SEC vastuse staatuse [33m 1849[2mms[22m[39m
+     [33m[2m✓[22m[39m last_error truncates to 500 Unicode characters without splitting a surrogate pair [33m 1081[2mms[22m[39m
+     [33m[2m✓[22m[39m kaks päeva tagasi unavailable ei muutu kõlblikuks (1-päevane reegel ei kehti) [33m 1402[2mms[22m[39m
+     [33m[2m✓[22m[39m 29 päeva tagasi unavailable ei ole veel kõlblik [33m 1534[2mms[22m[39m
+     [33m[2m✓[22m[39m 31 päeva tagasi unavailable on jälle kõlblik [33m 2286[2mms[22m[39m
+     [33m[2m✓[22m[39m unavailable tulemus säilitab varasema last_success_at ja nullib vealoenduri [33m 2125[2mms[22m[39m
+     [33m[2m✓[22m[39m kolm päeva vanad faktid ei tee ettevõtet kõlblikuks [33m 1917[2mms[22m[39m
+     [33m[2m✓[22m[39m kaheksa päeva vanad faktid teevad ettevõtte kõlblikuks [33m 1827[2mms[22m[39m
+     [33m[2m✓[22m[39m 1-päevane cooldown kehtib ka stale-facts harule [33m 1710[2mms[22m[39m
+     [33m[2m✓[22m[39m ASÜMMEETRIA: stale faktidega unavailable proovitakse juba päeva pärast [33m 2059[2mms[22m[39m
+     [33m[2m✓[22m[39m faktideta ettevõte on stale-faktidega ettevõttest eespool [33m 1692[2mms[22m[39m
+     [33m[2m✓[22m[39m kunagi proovimata on varem proovitust eespool [33m 1628[2mms[22m[39m
+     [33m[2m✓[22m[39m varem proovitute seast valitakse vanim katse [33m 1766[2mms[22m[39m
+     [33m[2m✓[22m[39m segapartii loendab unavailable ja failed eraldi [33m 1987[2mms[22m[39m
+     [33m[2m✓[22m[39m ühe tickeri viga ei nurja kogu jooksu [33m 3359[2mms[22m[39m
+     [33m[2m✓[22m[39m katvuse loendurid kajastavad universumi päringut [33m 1535[2mms[22m[39m
+ [32m✓[39m tests/db/outcome-immutability.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 46440[2mms[22m[39m
+     [33m[2m✓[22m[39m hilisem, soodsam hind samas aknas ei muuda mõõdetud rida [33m 1768[2mms[22m[39m
+     [33m[2m✓[22m[39m korduv refresh ei loe mõõdetud rida enam muutuseks [33m 9339[2mms[22m[39m
+     [33m[2m✓[22m[39m hilisem, soodsam SPY hind ei muuda mõõdetud benchmark'i ega excess return'i [33m 9162[2mms[22m[39m
+     [33m[2m✓[22m[39m kõik viis rida jäävad pending ja measured_at jääb null [33m 5306[2mms[22m[39m
+     [33m[2m✓[22m[39m valik käib captured_at järgi, mitte sisestusjärjekorra ega hinnataseme järgi [33m 2710[2mms[22m[39m
+     [33m[2m✓[22m[39m akna väline hind ei mõõda; akna möödudes tuleb status=missing [33m 1845[2mms[22m[39m
+     [33m[2m✓[22m[39m missing EI ole lukustatud olek: hiljem saabunud aknasisene hind mõõdab ära [33m 3670[2mms[22m[39m
+     [33m[2m✓[22m[39m null decision_price annab status=unavailable, mitte 0% tootluse [33m 1895[2mms[22m[39m
+     [33m[2m✓[22m[39m null baashind ei mõjuta veel mittesaabunud horisonte [33m 2172[2mms[22m[39m
+     [33m[2m✓[22m[39m excess_return_percent = kandidaadi tootlus miinus benchmark'i tootlus [33m 2180[2mms[22m[39m
+     [33m[2m✓[22m[39m puuduv benchmark jätab benchmark- ja excess-välja NULL-iks, mitte nulliks [33m 1917[2mms[22m[39m
+     [33m[2m✓[22m[39m kuu viimane päev clamp'itakse lühema kuu viimaseks päevaks [33m 1444[2mms[22m[39m
+     [33m[2m✓[22m[39m kuu keskel clamp'i ei toimu ja kuupäev säilib [33m 1582[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects unknown, pre-target and future quote times for both stock and SPY [33m 1446[2mms[22m[39m
+ [32m✓[39m tests/db/canonical-run-idempotency.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 51729[2mms[22m[39m
+     [33m[2m✓[22m[39m sama Tallinna päev taaskasutab run'i ka muutunud sisendiga [33m 1321[2mms[22m[39m
+     [33m[2m✓[22m[39m created=false ja inputChangedAfterCanonicalSnapshot=false [33m 1337[2mms[22m[39m
+     [33m[2m✓[22m[39m salvestab mudeliversiooni ja run_key kuju [33m 1510[2mms[22m[39m
+     [33m[2m✓[22m[39m discovery_decisions ja candidate_outcomes jäävad muutumatuks [33m 1215[2mms[22m[39m
+     [33m[2m✓[22m[39m loob täpselt viis outcome-rida kaasatud kandidaadi kohta [33m 2522[2mms[22m[39m
+     [33m[2m✓[22m[39m muutunud sisend loob samal Tallinna päeval TEISE run'i [33m 1440[2mms[22m[39m
+     [33m[2m✓[22m[39m identne sisend ei loo teist run'i [33m 1192[2mms[22m[39m
+     [33m[2m✓[22m[39m run_key kuju on VERSION:kuupäev:hash, mitte VERSION:runType:kuupäev [33m 1186[2mms[22m[39m
+     [33m[2m✓[22m[39m otsuste järjekord ei muuda hash'i — ümberjärjestus ei loo teist run'i [33m 1219[2mms[22m[39m
+     [33m[2m✓[22m[39m manual run säilitab otsuste auditi, aga ei loo outcome-ridu [33m 5805[2mms[22m[39m
+     [33m[2m✓[22m[39m canonical run samade otsustega loob viis outcome-rida [33m 2189[2mms[22m[39m
+     [33m[2m✓[22m[39m manual ja canonical samal päeval: outcome'id tulevad ainult canonical'ist [33m 1902[2mms[22m[39m
+     [33m[2m✓[22m[39m kaks otsust, üks kaasatud: outcome'id kuuluvad ainult kaasatule [33m 2847[2mms[22m[39m
+     [33m[2m✓[22m[39m kõik välistatud: null outcome'i, aga run ja otsused salvestuvad [33m 2008[2mms[22m[39m
+     [33m[2m✓[22m[39m suvi, vahetult enne keskööd: 2026-08-12T20:59:00.000Z → decision_date 2026-08-12 [33m 3567[2mms[22m[39m
+     [33m[2m✓[22m[39m suvi, täpselt kesköö: 2026-08-12T21:00:00.000Z → decision_date 2026-08-13 [33m 1954[2mms[22m[39m
+     [33m[2m✓[22m[39m talv, vahetult enne keskööd: 2026-01-15T21:59:00.000Z → decision_date 2026-01-15 [33m 5175[2mms[22m[39m
+     [33m[2m✓[22m[39m talv, täpselt kesköö: 2026-01-15T22:00:00.000Z → decision_date 2026-01-16 [33m 2530[2mms[22m[39m
+     [33m[2m✓[22m[39m sama UTC päev üle Tallinna keskööd annab KAKS canonical run'i [33m 8177[2mms[22m[39m
+     [33m[2m✓[22m[39m kaks eri UTC päeva sama Tallinna päeva sees annavad ÜHE canonical run'i [33m 2629[2mms[22m[39m
+ [32m✓[39m tests/db/infra-smoke.test.ts [2m([22m[2m23 tests[22m[2m)[22m[33m 48993[2mms[22m[39m
+     [33m[2m✓[22m[39m on ühendatud _test-lõpulise andmebaasiga, mis ei ole discovery [33m 2249[2mms[22m[39m
+     [33m[2m✓[22m[39m töötab tühjendatava andmebaasiga: portfelli tabelid on pärast reset'i tühjad [33m 1318[2mms[22m[39m
+     [33m[2m✓[22m[39m loob täpselt need 33 tabelit [33m 3779[2mms[22m[39m
+     [33m[2m✓[22m[39m koondab ka financial_enrichment_status — skeem ei ole enam kahe omaniku vahel [33m 1717[2mms[22m[39m
+     [33m[2m✓[22m[39m jooksev tabelihulk sisaldab vähemalt migreeritud komplekti [33m 1601[2mms[22m[39m
+     [33m[2m✓[22m[39m 0001_baseline on rakendatud [33m 1634[2mms[22m[39m
+     [33m[2m✓[22m[39m 0002_collection_runs_ledger on rakendatud [33m 1644[2mms[22m[39m
+     [33m[2m✓[22m[39m 0003_data_quality_snapshots on rakendatud [33m 1559[2mms[22m[39m
+     [33m[2m✓[22m[39m 0004_collection_run_items on rakendatud [33m 1550[2mms[22m[39m
+     [33m[2m✓[22m[39m 0005_outcome_analysis_snapshots on rakendatud [33m 1533[2mms[22m[39m
+     [33m[2m✓[22m[39m 0006_insider_form4_persistence on rakendatud [33m 2859[2mms[22m[39m
+     [33m[2m✓[22m[39m 0007_insider_lookup_bucket on rakendatud [33m 2200[2mms[22m[39m
+     [33m[2m✓[22m[39m 0008_paper_strategy on rakendatud ilma brokeri või discovery skeemi muutmata [33m 1633[2mms[22m[39m
+     [33m[2m✓[22m[39m 0010_thesis_valuation_review lisab versioonitud valuation-väljad ja hinnaviite [33m 1582[2mms[22m[39m
+     [33m[2m✓[22m[39m schema_migrations tabel on olemas [33m 1564[2mms[22m[39m
+     [33m[2m✓[22m[39m price_snapshots UNIQUE (company_id, captured_at) on olemas [33m 1540[2mms[22m[39m
+     [33m[2m✓[22m[39m investment_theses status CHECK on olemas [33m 1519[2mms[22m[39m
+     [33m[2m✓[22m[39m UNIQUE piirang tõesti jõustub — duplikaat-hinnasnapshot lükatakse tagasi [33m 1788[2mms[22m[39m
+     [33m[2m✓[22m[39m lähtestab ka identity-sekventsid [33m 3047[2mms[22m[39m
+     [33m[2m✓[22m[39m tühjendab kirjutatud read [33m 3991[2mms[22m[39m
+     [33m[2m✓[22m[39m ei lisa ega eemalda ühtegi tabelit, veergu, indeksit ega piirangut [33m 2935[2mms[22m[39m
+     [33m[2m✓[22m[39m on stabiilne ka korduval kutsel (ensureSchema ei ole memoiseeritud) [33m 2854[2mms[22m[39m
+     [33m[2m✓[22m[39m snapshot ise on deterministlik ja mittetühi [33m 2872[2mms[22m[39m
+ [32m✓[39m tests/db/enrichment-success.test.ts [2m([22m[2m24 tests[22m[2m)[22m[33m 47294[2mms[22m[39m
+     [33m[2m✓[22m[39m derives HIMS-style investment deductions without double-counting the rounded total [33m 5904[2mms[22m[39m
+     [33m[2m✓[22m[39m does not join investment components or FCF across different filings [33m 3006[2mms[22m[39m
+     [33m[2m✓[22m[39m tagastab completed ja loeb ettevõtte rikastatuks [33m 5882[2mms[22m[39m
+     [33m[2m✓[22m[39m salvestab enrichment-staatuse success ja nullib vealoenduri [33m 3126[2mms[22m[39m
+     [33m[2m✓[22m[39m kulutab päevaeelarvest täpselt ühe katse [33m 3184[2mms[22m[39m
+     [33m[2m✓[22m[39m loob täpselt ühe rea minimaalsest cash-faktist [33m 3766[2mms[22m[39m
+     [33m[2m✓[22m[39m kaardistab kõik SEC väljad õigesti financial_facts ridadesse [33m 2654[2mms[22m[39m
+     [33m[2m✓[22m[39m jätab fy/fp puudumisel fiscal-väljad NULL-iks [33m 1340[2mms[22m[39m
+     [33m[2m✓[22m[39m salvestab duration-mõõdiku annual perioodina koos period_start-iga [33m 1413[2mms[22m[39m
+     [33m[2m✓[22m[39m on idempotentne: sama vastuse kordustöötlus ei loo duplikaatridu [33m 1350[2mms[22m[39m
+     [33m[2m✓[22m[39m kirjutab nullidega täidetud CIK-i tühjale väljale [33m 1457[2mms[22m[39m
+     [33m[2m✓[22m[39m ei kirjuta üle olemasolevat nime ega allikat [33m 1006[2mms[22m[39m
+     [33m[2m✓[22m[39m kasvatab katvust ühe võrra ühe ettevõtte universumis [33m 1062[2mms[22m[39m
+     [33m[2m✓[22m[39m tühi objekt → unavailable, mitte error [33m 1118[2mms[22m[39m
+     [33m[2m✓[22m[39m facts puudub sisu → unavailable, mitte error [33m 1175[2mms[22m[39m
+     [33m[2m✓[22m[39m taksonoomia ilma kontseptideta → unavailable, mitte error [33m 1779[2mms[22m[39m
+     [33m[2m✓[22m[39m õige tag, vale ühik → unavailable, mitte error [33m 1027[2mms[22m[39m
+     [33m[2m✓[22m[39m lubamatu vorm 8-K → unavailable, mitte error [33m 1036[2mms[22m[39m
+     [33m[2m✓[22m[39m puuduv accession → unavailable, mitte error [33m 1035[2mms[22m[39m
+     [33m[2m✓[22m[39m vigane kuupäevaformaat → unavailable, mitte error [33m 1019[2mms[22m[39m
+     [33m[2m✓[22m[39m duration periood väljaspool 60-430 päeva akent → unavailable, mitte error [33m 1023[2mms[22m[39m
+     [33m[2m✓[22m[39m salvestab staatuse unavailable ilma last_success_at-ita [33m 989[2mms[22m[39m
+     [33m[2m✓[22m[39m täidab sec_cik ka siis, kui ühtki fakti ei ekstraheeritud [33m 983[2mms[22m[39m
+     [33m[2m✓[22m[39m ei kasvata katvust [33m 954[2mms[22m[39m
+ [32m✓[39m tests/db/outcome-analysis-snapshots.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 19331[2mms[22m[39m
+     [33m[2m✓[22m[39m A1 külmutab winneri recall-provenance, skoorid, kvaliteedi, catalysti ja mandaadi [33m 1014[2mms[22m[39m
+     [33m[2m✓[22m[39m A2 eristab winneri benchmark beatist [33m 1073[2mms[22m[39m
+     [33m[2m✓[22m[39m A2b säilitab insider bucketi outcome snapshotis [33m 1104[2mms[22m[39m
+     [33m[2m✓[22m[39m A3 kasutab puuduvate otsusehetke sisendite puhul unknown väärtusi [33m 1061[2mms[22m[39m
+     [33m[2m✓[22m[39m A4 keeldub snapshotist enne outcome measured olekut [33m 1049[2mms[22m[39m
+     [33m[2m✓[22m[39m A5 identne kordus tagastab sama rea ega loe hilisemaid source-muudatusi [33m 1084[2mms[22m[39m
+     [33m[2m✓[22m[39m A6 DB keelab snapshoti UPDATE ja DELETE operatsioonid [33m 3038[2mms[22m[39m
+     [33m[2m✓[22m[39m A7 summary vastab bucket-, score-, quality-, tier- ja mandate gruppidega [33m 2404[2mms[22m[39m
+     [33m[2m✓[22m[39m A8 refreshCandidateOutcomes loob esimese measured outcome snapshoti automaatselt [33m 1918[2mms[22m[39m
+     [33m[2m✓[22m[39m A9 canonical decision saab tickeritaseme item-FK, manual decision jääb nullable [33m 1961[2mms[22m[39m
+     [33m[2m✓[22m[39m A10 batch recorder täidab ainult puuduva measured snapshoti [33m 1778[2mms[22m[39m
+     [33m[2m✓[22m[39m A11 test DB sisaldab 0005 migratsiooni, tabelit, link-veergu ja immutable triggerit [33m 1842[2mms[22m[39m
+ [32m✓[39m tests/db/form4-persistence.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 15527[2mms[22m[39m
+     [33m[2m✓[22m[39m batch-skips completed filings, retries failures and rolls back incomplete registration [33m 2057[2mms[22m[39m
+     [33m[2m✓[22m[39m is idempotent by accession without changing children or persisted time [33m 2497[2mms[22m[39m
+     [33m[2m✓[22m[39m links an amendment ingested after its original without overwriting either filing [33m 2344[2mms[22m[39m
+     [33m[2m✓[22m[39m resolves an amendment after the original arrives later [33m 2396[2mms[22m[39m
+     [33m[2m✓[22m[39m preserves 10%-owner and multi-label director/officer roles on every transaction [33m 2404[2mms[22m[39m
+     [33m[2m✓[22m[39m rolls back all parsed content when a transaction insert fails after owners were inserted [33m 1437[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects transaction role context that disagrees with normalized owner rows [33m 1179[2mms[22m[39m
+     [33m[2m✓[22m[39m does not write companies, collection, discovery, score, ranking, or candidate tables [33m 1211[2mms[22m[39m
+ [32m✓[39m tests/db/collection-run-items.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 17586[2mms[22m[39m
+     [33m[2m✓[22m[39m A1 salvestab growth bucketi market-data valikuna [33m 1120[2mms[22m[39m
+     [33m[2m✓[22m[39m A2 salvestab recall bucketi eraldi [33m 1236[2mms[22m[39m
+     [33m[2m✓[22m[39m A3 salvestab radaril olnud, kuid lookupist välja jäänud tickeri [33m 1129[2mms[22m[39m
+     [33m[2m✓[22m[39m A4 säilitab lookup-katse, millel market data puudus [33m 1125[2mms[22m[39m
+     [33m[2m✓[22m[39m A5 seob leitud market data salvestatud companyga [33m 1070[2mms[22m[39m
+     [33m[2m✓[22m[39m A6 identne kordus on immutable ja idempotentne [33m 1153[2mms[22m[39m
+     [33m[2m✓[22m[39m A7 growth võidab deterministlikult growth+recall konflikti [33m 1080[2mms[22m[39m
+     [33m[2m✓[22m[39m A7b salvestab insider bucketi ja ranki idempotentselt [33m 1110[2mms[22m[39m
+     [33m[2m✓[22m[39m A7c preserves a legacy insider payload without adding evidence fields or backfilling it [33m 1129[2mms[22m[39m
+     [33m[2m✓[22m[39m A8 canonical discovery run viitab sama collection runile [33m 1109[2mms[22m[39m
+     [33m[2m✓[22m[39m A9 manual run töötab ilma collection_run_id-ta [33m 1061[2mms[22m[39m
+     [33m[2m✓[22m[39m A10 test DB sisaldab 0004 tabelit ja canonical link-veergu [33m 1122[2mms[22m[39m
+     [33m[2m✓[22m[39m A11 kehtiv mitme-kirjeline batch salvestub tervikuna [33m 1029[2mms[22m[39m
+     [33m[2m✓[22m[39m A12 duplikaatne batch lükatakse tagasi ega salvesta ühtki rida [33m 2170[2mms[22m[39m
+     [33m[2m✓[22m[39m A13 guard võtmestab normaliseeritud tickeri järgi [33m 941[2mms[22m[39m
+ [32m✓[39m tests/db/insider-discovery.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 5392[2mms[22m[39m
+     [33m[2m✓[22m[39m valib ainult original Form 4 director/officer non-derivative P+A ostud üle $50k [33m 1069[2mms[22m[39m
+     [33m[2m✓[22m[39m piirab deterministlikult 20 issuerini ja on korduslugemisel idempotentne [33m 1221[2mms[22m[39m
+     [33m[2m✓[22m[39m avaldab sourceFiledDate vanuse ja ei vali üle viie päeva vanast on-demand allikast [33m 1077[2mms[22m[39m
+     [33m[2m✓[22m[39m ignores a newer source date until every registered accession is persisted [33m 892[2mms[22m[39m
+     [33m[2m✓[22m[39m freezes lossless decimal facts, filing provenance, and every reporting-owner role [33m 1130[2mms[22m[39m
+ [32m✓[39m tests/db/data-quality-snapshots.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 8351[2mms[22m[39m
+     [33m[2m✓[22m[39m A1 loob canonical run'ile täpselt ühe snapshoti [33m 1380[2mms[22m[39m
+     [33m[2m✓[22m[39m A2 on idempotentne ega kirjuta olemasolevat snapshoti üle [33m 1237[2mms[22m[39m
+     [33m[2m✓[22m[39m A3 keelab manual rklb run'i snapshoti [33m 1167[2mms[22m[39m
+     [33m[2m✓[22m[39m A4 annab kolme ettevõtte fixture'il deterministlikud coverage-loendurid [33m 1154[2mms[22m[39m
+     [33m[2m✓[22m[39m A5 ei loe outcome tulemusi ega muuda juba salvestatud snapshoti [33m 1184[2mms[22m[39m
+     [33m[2m✓[22m[39m A6 jõustab UNIQUE(run_id) piirangu ka otse SQL-is [33m 1165[2mms[22m[39m
+     [33m[2m✓[22m[39m A7 test DB sisaldab 0003 migratsiooni ja uut tabelit [33m 1062[2mms[22m[39m
+ [32m✓[39m tests/db/collection-persistence.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 11473[2mms[22m[39m
+     [33m[2m✓[22m[39m säilitab turuandmeteta tickeri companies tabelis, kuid ei leiuta hinnasnapshoti [33m 1204[2mms[22m[39m
+     [33m[2m✓[22m[39m on kordusjooksul idempotentne ning lisab päris turuandmete saabumisel hinna [33m 1071[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps large-cap social candidates eligible and links their provider identity [33m 1065[2mms[22m[39m
+     [33m[2m✓[22m[39m links an existing observed company without current fundamentals [33m 1106[2mms[22m[39m
+     [33m[2m✓[22m[39m deduplicates candidate and identity-path snapshots within the same run [33m 1100[2mms[22m[39m
+     [33m[2m✓[22m[39m leaves an unknown observed ticker unresolved and does not fabricate a company [33m 1155[2mms[22m[39m
+     [33m[2m✓[22m[39m ignores empty provider payloads and fundamentals outside the observed universe [33m 1136[2mms[22m[39m
+     [33m[2m✓[22m[39m does not mutate historical collection item links while resolving later identities [33m 1249[2mms[22m[39m
+     [33m[2m✓[22m[39m preserves quote time across candidate, lookup, benchmark and company-detail writes [33m 1285[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps missing quote times unknown rather than substituting download time [33m 1100[2mms[22m[39m
+ [32m✓[39m tests/unit/score-determinism.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m tests/unit/nasdaq-listings-calibration.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/form4-calibration.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/db/score-snapshot.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 10523[2mms[22m[39m
+     [33m[2m✓[22m[39m sama sisend kaks korda annab ühe rea sama id ja hash'iga [33m 1868[2mms[22m[39m
+     [33m[2m✓[22m[39m calculated_at ei muutu kordussalvestusel [33m 3043[2mms[22m[39m
+     [33m[2m✓[22m[39m mõõdikute järjekord ei loo uut snapshot'i [33m 1107[2mms[22m[39m
+     [33m[2m✓[22m[39m muutunud latest.value annab teise rea [33m 1145[2mms[22m[39m
+     [33m[2m✓[22m[39m muutunud previousComparable.value annab samuti teise rea [33m 1089[2mms[22m[39m
+     [33m[2m✓[22m[39m KARAKTERISEERIV: skoori veerud jäävad vanaks, payload uueneb [33m 1149[2mms[22m[39m
+     [33m[2m✓[22m[39m tundmatu ticker viskab erindi, mitte ei loo orvu rida [33m 1119[2mms[22m[39m
+ [32m✓[39m tests/db/thesis-review-queue.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 6703[2mms[22m[39m
+     [33m[2m✓[22m[39m returns an empty read-only queue when no current thesis exists [33m 1087[2mms[22m[39m
+     [33m[2m✓[22m[39m shows decision/current price context and waits for a future earnings event [33m 1092[2mms[22m[39m
+     [33m[2m✓[22m[39m marks a thesis due when a new financial filing is stored after the thesis [33m 1146[2mms[22m[39m
+     [33m[2m✓[22m[39m uses only assessed decisive/supporting SEC events and labels missing assumptions [33m 1195[2mms[22m[39m
+     [33m[2m✓[22m[39m marks a passed results date due when no newer filing is stored [33m 1076[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps the current version reviewed when no newer evidence or schedule exists [33m 1101[2mms[22m[39m
+ [32m✓[39m tests/unit/data-boundaries.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/market-cap-tier-counterfactual.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/unit/metadata-join-root-cause.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/db/price-tracking.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 6012[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps canonical picks and active research after discovery, with separate provenance and quote deduplication [33m 1123[2mms[22m[39m
+     [33m[2m✓[22m[39m enforces the daily cap across repeated runs and gives unattempted symbols the next day [33m 1337[2mms[22m[39m
+     [33m[2m✓[22m[39m records stale, invalid and failed quotes without manufacturing prices [33m 1630[2mms[22m[39m
+     [33m[2m✓[22m[39m requires market time to reach the outcome target and preserves measured outcomes [33m 1919[2mms[22m[39m
+ [32m✓[39m tests/db/metadata-join-root-cause.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 5612[2mms[22m[39m
+     [33m[2m✓[22m[39m traces identity, item link, metadata, market context, and exact decision scoring [33m 3630[2mms[22m[39m
+     [33m[2m✓[22m[39m does not mutate collection, company, price, decision, or score tables [33m 1980[2mms[22m[39m
+[90mstdout[2m | tests/db/collect-route-lock.test.ts[2m > [22m[2mHTTP collect advisory-lock parity[2m > [22m[2mreleases the lock after a successful HTTP collection attempt
+[22m[39mSector/industry enrichment: proovitud 0, õnnestus 0, ebaõnnestus 0, puudu 0, veel katmata 0.
+
+ [32m✓[39m tests/db/collect-route-lock.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 7975[2mms[22m[39m
+     [33m[2m✓[22m[39m uses the same shared lock name as the CLI entrypoint [33m 1924[2mms[22m[39m
+     [33m[2m✓[22m[39m returns 409 without running collection when another session holds the lock [33m 2326[2mms[22m[39m
+     [33m[2m✓[22m[39m releases the lock after a successful HTTP collection attempt [33m 1893[2mms[22m[39m
+     [33m[2m✓[22m[39m releases the lock after a failed HTTP collection attempt [33m 1829[2mms[22m[39m
+ [32m✓[39m tests/unit/metadata-coverage-audit.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/paper-strategy.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/companyfacts-queue-observation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m tests/unit/discovery-quality-audit.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/db/collection-runs.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 18241[2mms[22m[39m
+     [33m[2m✓[22m[39m loob iga katse jaoks eraldi running-kirje [33m 1869[2mms[22m[39m
+     [33m[2m✓[22m[39m lõpetab runni success-seisus koos metricute ja kestusega [33m 1791[2mms[22m[39m
+     [33m[2m✓[22m[39m lõpetab püütud vea failure-seisus ja säilitab piiratud vea [33m 1692[2mms[22m[39m
+     [33m[2m✓[22m[39m kärbib veateate 2000 märgile [33m 1957[2mms[22m[39m
+     [33m[2m✓[22m[39m sama terminalseisu kordus on idempotentne ega kirjuta aega või metricuid üle [33m 1788[2mms[22m[39m
+     [33m[2m✓[22m[39m ei luba success-runni failure-seisuks ümber kirjutada [33m 1630[2mms[22m[39m
+     [33m[2m✓[22m[39m DB piirangud keelavad vastuolulise lifecycle rea [33m 1586[2mms[22m[39m
+     [33m[2m✓[22m[39m audit-list on uusim ees ja limiit on piiratud [33m 1587[2mms[22m[39m
+     [33m[2m✓[22m[39m orkestreerija seob operatsiooni tulemuse success-metricutega [33m 2221[2mms[22m[39m
+     [33m[2m✓[22m[39m orkestreerija rethrowib algse vea pärast failure kirje salvestamist [33m 2117[2mms[22m[39m
+ [32m✓[39m tests/db/thesis-valuation-review.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 2929[2mms[22m[39m
+     [33m[2m✓[22m[39m versions company assumptions with their exact price context and remains idempotent [33m 1512[2mms[22m[39m
+     [33m[2m✓[22m[39m drops a price snapshot that belongs to another company [33m 1415[2mms[22m[39m
+ [32m✓[39m tests/unit/migrate-guard.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/timezone-date-fixes.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/db/metadata-coverage-audit.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 2921[2mms[22m[39m
+     [33m[2m✓[22m[39m uses actual schema fields, linked decision metadata, and auto-discovered collection/company fields [33m 1464[2mms[22m[39m
+     [33m[2m✓[22m[39m does not mutate any participating source table [33m 1455[2mms[22m[39m
+ [32m✓[39m tests/unit/candidate-situation-summary.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/market-cap-tiers.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/db/model-outcome-results.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1620[2mms[22m[39m
+     [33m[2m✓[22m[39m separates model versions, exposes coverage, and weights repeated tickers once [33m 1618[2mms[22m[39m
+ [32m✓[39m tests/unit/apewisdom-dedupe.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/db/discovery-quality-audit.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 3034[2mms[22m[39m
+     [33m[2m✓[22m[39m joins collection provenance to stored classification and immutable decision scores [33m 1386[2mms[22m[39m
+     [33m[2m✓[22m[39m does not mutate collection, company, price, decision, or score tables [33m 1646[2mms[22m[39m
+ [32m✓[39m tests/db/outcome-coverage.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 3127[2mms[22m[39m
+     [33m[2m✓[22m[39m derives real totals from collection items and deduplicates multiple outcome horizons [33m 1088[2mms[22m[39m
+     [33m[2m✓[22m[39m is read-only across all participating tables [33m 1056[2mms[22m[39m
+     [33m[2m✓[22m[39m handles an empty database without invented coverage [33m 982[2mms[22m[39m
+ [32m✓[39m tests/unit/outcome-backfill-audit.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/form4-purchase-evidence.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/outcome-coverage.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/form4-ingestion-script.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/db/outcome-backfill-audit.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 1942[2mms[22m[39m
+     [33m[2m✓[22m[39m uses only stored price windows and reports readiness per item and run [33m 999[2mms[22m[39m
+     [33m[2m✓[22m[39m enforces read-only behavior across source tables [33m 941[2mms[22m[39m
+ [32m✓[39m tests/unit/rklb-ranking.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/db/outcome-attribution.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 2743[2mms[22m[39m
+     [33m[2m✓[22m[39m aggregates only real immutable outcome snapshots and linked decision signals [33m 1449[2mms[22m[39m
+     [33m[2m✓[22m[39m is read-only and handles a database with no measured snapshots [33m 1292[2mms[22m[39m
+ [32m✓[39m tests/unit/outcome-attribution.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/paper-signal-evidence.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/healthchecks-heartbeat.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/today-insider-evidence.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/database-target.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/market-radar.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/price-context.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/scenario-valuation.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/db/companyfacts-queue-observation.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1333[2mms[22m[39m
+     [33m[2m✓[22m[39m captures the real eligible queue without changing participating table counts [33m 1331[2mms[22m[39m
+ [32m✓[39m tests/unit/model-outcome-results.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/today-catalyst.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/price-observation.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/reviewed-balance-sheets.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/rklb-scale-ranking.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/paper-strategy-workflow.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/form4-ingestion-workflow.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/db/market-radar.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1175[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps unscored stocks visible and replay does not duplicate prices or create paper buys [33m 1172[2mms[22m[39m
+ [32m✓[39m tests/unit/financial-signals.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/db/market-cap-tier-counterfactual.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1127[2mms[22m[39m
+     [33m[2m✓[22m[39m reads the canonical history without changing participating table counts [33m 1124[2mms[22m[39m
+ [32m✓[39m tests/unit/nasdaq-listing-observation-workflow.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/valuation-balance-dates.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/quote-market-time.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m68 passed[39m[22m[90m (68)[39m
+[2m      Tests [22m [1m[32m519 passed[39m[22m[90m (519)[39m
+[2m   Start at [22m 15:57:58
+[2m   Duration [22m 538.67s[2m (transform 14.57s, setup 5.41s, import 18.88s, tests 495.53s, environment 8ms)[22m
+
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

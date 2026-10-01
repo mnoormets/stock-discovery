@@ -1,3 +1,4 @@
+import { MARKET_FINANCIAL_ENRICHMENT_LIMIT } from './market-radar';
 import { timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 import { runCollection } from '@/lib/collect';
@@ -66,7 +67,7 @@ export async function handleCollectRequest(
     let financialEnrichment: Awaited<ReturnType<typeof enrichStoredCompanyFinancials>> | null = null;
     let financialEnrichmentError: string | null = null;
     try {
-      financialEnrichment = await dependencies.enrichStoredCompanyFinancials();
+      financialEnrichment = await dependencies.enrichStoredCompanyFinancials(MARKET_FINANCIAL_ENRICHMENT_LIMIT);
     } catch (error) {
       financialEnrichmentError = (error as Error).message;
       console.error('Päevane SEC CompanyFactsi enrichment ebaõnnestus:', error);
@@ -141,7 +142,7 @@ export async function handleCollectRequest(
     const outcomeUpdates = await dependencies.refreshCandidateOutcomes();
     const trackingComplete = !(priceTracking.failed || priceTracking.missing || priceTracking.invalid || priceTracking.stale || priceTracking.deferred);
     return NextResponse.json({
-      ok: trackingComplete,
+      ok: trackingComplete && result.marketRadar.channels.every((channel) => channel.status === 'ok'),
       ...result,
       benchmarkCaptured,
       financialEnrichment,
@@ -151,7 +152,7 @@ export async function handleCollectRequest(
       dailyDiscovery,
       outcomeUpdates,
       priceTracking,
-    }, { status: trackingComplete ? 200 : 503 });
+    }, { status: trackingComplete && result.marketRadar.channels.every((channel) => channel.status === 'ok') ? 200 : 503 });
   } catch (err) {
     console.error('Kogumine ebaõnnestus:', err);
     return NextResponse.json(

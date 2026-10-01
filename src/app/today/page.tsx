@@ -1,3 +1,4 @@
+import MarketRadar from '@/components/MarketRadar';
 import Link from 'next/link';
 import CandidateSituationSummary from '@/components/CandidateSituationSummary';
 import Form4PurchaseEvidence from '@/components/Form4PurchaseEvidence';
@@ -350,6 +351,8 @@ export default async function TodayPage() {
       </section>
 
       <div className="todayGuardrail">High scores mean “research further”. “Eligible for paper entry” is the app&apos;s clearest positive state: the entry-aware rules would create a hypothetical buy intent, but this page remains read-only and places no real order.</div>
+      <MarketRadar />
+
       <section className="card">
         <h2>Continued price tracking</h2>
         <p>Open holdings, active/watchlist research and outstanding outcome horizons are checked separately from discovery. Up to 50 symbols per New York day, including SPY. These follow-up prices do not rewrite the daily snapshot above.</p>

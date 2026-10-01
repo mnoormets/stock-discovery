@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-09-18
+Uuendatud: 2026-10-01
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -27,6 +27,10 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Rakendus ei anna ostu- ega müügisoovitusi.
 
 ## Praegune töötav seis
+
+- **2026-10-01 market radar completed:** six existing Yahoo screens now collect up to 25 rows each beyond social mentions. Latest real collection #62 persisted 137 distinct US-listed equities; all six channels succeeded, 45 radar names currently have SEC facts. Missing financials, social blacklists and canonical tier slots do not hide radar names. CLI/API share a 20-attempt Tallinn-day CompanyFacts budget; today's updated CLI enriched 15 companies after five earlier attempts, raising total SEC-covered companies 264 to 279. Canonical #95 was reused with zero new decisions, outcomes or orders; existing historical decisions and paper policies were preserved. Full isolated suite passed 68 files / 519 tests; typecheck, lint, production build, app restart, real browser and database checks passed. See [implementation verification](research/2026-09-30/MARKET_RADAR_VERIFICATION.md). The next unattended run of the published code remains to be observed.
+
+- **2026-09-30 paper checkpoint completed:** read-only Neon audit found entry-aware invested $8,508.50, marked value $8,310.52, unrealized loss $197.98 (-2.33%) versus matched SPY +$7.28. 85 buys / 14 open tickers / zero sales or pending entry-aware orders. Marks are today 16:30–16:35 Tallinn, not live. All 12 intervening core collections/canonical runs and fills on all eight trading days are present. DKS/YOU captured gains, CRDO entry timing lagged; EU/CAKE/BE were excluded by documented rules. All-picks still has three HRGN pending pairs and stale MSC valuation; causes remain unresolved. Independent SQL reconciles P/L. See [dated evidence and review](research/2026-09-30/REVIEW.md). No runtime code, strategy, database data or history changed; no tests/build/UI checks claimed.
 
 - **2026-09-18 SEC catch-up optimization:** registration now reads already-persisted accessions once per indexed date and skips their per-filing upsert/read round trips. New/failed filings still use the existing registration path in the same atomic transaction before fetching any filing. Real seven-day replay checked 2,876 persisted filings in 14.718 seconds, seven SEC requests, zero writes of parsed filings and zero filing errors; the complete in-range filing-row checksum was unchanged. This removes repeat-work overhead, not the cost of processing newly filed documents; next scheduled duration remains to be checked. All four API orders deferred from 17 September are now confirmed filled in Neon.
 
@@ -143,6 +147,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Tehtud verstapostid
 
+- Market radar V1: six independently sourced Yahoo screen lists, unscored-name visibility, idempotent company/price persistence and 20-attempt daily SEC enrichment; verified 1 October 2026.
+
 - **2026-09-07 financial corrections:** verified HIMS same-filing investment/FCF extraction, refreshed API ordinary shares, and introduced the v2 EV/Sales date guard. Repeated live refreshes were idempotent and saved theses/decisions/outcomes/orders stayed unchanged. The later dated BW/API reconciliation closes the BW total-debt and API liquidity/ADS-definition research gaps; normalized CompanyFacts remain unchanged by design.
 
 - **2026-09-07 publication and review:** price-tracking/integrity code pushed and remote SHA verified at `aaf537c4dd6bb862a9f52f438e3df0ccb5e6c8f4`. Three source-backed thesis-review drafts completed; no thesis statuses or database records changed.
@@ -253,6 +259,10 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
+**1 October current direction:** the user explicitly authorized broader market discovery, superseding the September feature freeze for this coverage work. Radar delivery is verified; next assess new-source coverage, SEC queue progress and whether discoveries precede subsequent price jumps. This is daily bounded discovery, not whole-market or intraday monitoring, and is not yet connected to a separately versioned paper selection policy. Preserve the current strategy control while measuring missed names and entry timing.
+
+**18 September accepted evaluation boundary:** user accepted a first review after the next 10 trading days, with no new features and only necessary execution/measurement fixes, subject to checking original-scope completeness. [Completion audit](COMPLETION_AUDIT_2026-09-18.md) distinguishes the delivered paper experiment from unfinished broader designs. Do not claim all requested features are complete or that profitability is proven. The user has now supplied the original Estonian idea; the missing-text blocker is resolved. The completion audit maps it to implementation and identifies substantive gaps in holding/exit decision support, public early-information reliability/probabilities and production new-listing screening. Challenger comparison, two under-recognition signals, production new-listing discovery and finite-capital/drawdown work remain partial/deferred. This was the evaluation boundary until the user authorized the subsequent market-coverage expansion.
+
 **18 September reliability follow-up:** completed the bounded SEC catch-up optimization after the user asked to resume remaining work. Immediate verification is the next unattended ingestion/collection run, including quote timestamps. Core discovery, simulated execution and money-first results already exist. Company thesis updates wait for new evidence; another strategy experiment remains Later.
 
 **18 September evening clarification:** prioritize the user's question: did the paper purchases gain or lose money, and how much? Show money in, current holdings plus sale proceeds, and net dollar P/L first, using actual fills rather than pre-entry price moves. Keep methodology available under details. Do not replace this request with a new strategy/capital experiment.
@@ -277,6 +287,10 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
+- Observe the next unattended collection after publication: all six radar channel states, source/quote timestamps and the shared 20-company SEC budget. Track radar-first observation versus later returns prospectively; do not backfill pre-boom discoveries or reinterpret radar rows as paper buys.
+
+- The waiting-period checkpoint is completed in the 30 September review: current entry-aware paper P/L is negative and trails SPY. Current focus is diagnosing the all-picks HRGN pending orders / stale MSC quote, then reviewing repeated-entry concentration and missed-name reasons. Preserve the existing control and history; any strategy change needs a separately versioned forward experiment. Original-idea mapping remains in the completion audit; broader product and profitability are not complete.
+
 - Verify the next scheduled Form 4 duration with the persisted-filing batch lookup. A completed-window live replay now takes 14.718s, but new-day processing may still dominate. Four deferred API orders are confirmed filled; no order-recovery work remains for those rows. Direct cron-job.org history still requires sign-in.
 
 - Track a clean forward cohort after the quote-time repair separately from affected history. Verify scheduled collection preserves market timestamps and outcome coverage advances only after actual quote time reaches each target; do not fabricate or rewrite old measurements. The initial v4 review is completed, not pending.
@@ -285,14 +299,17 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NEXT
 
+- **2026-09-30 external-winner audit:** internet-selected winners compared with historical DB evidence. KOD arrived after its jump; GLND/INOD/VKTX were fetched but have zero financial facts and no canonical decisions, explained by the financial-facts inner join. META/INTC are explicitly blacklisted; MRNA lost tier slots or same-collection eligibility. GRML and several event winners have no recorded coverage under checked tickers. See [external review](research/2026-09-30/EXTERNAL_MOVERS.md). Next: investigate existing-source enrichment coverage and evaluate exclusions against user scope before any separately versioned policy change. No new provider, database writes or strategy changes; read-only evidence and source inspection only.
+
+
 - Review the first v4 names when their stored history and outcome horizons mature, prioritizing falsifiable thesis work for eligible names over changes to the ranking policy based on one cohort.
-- Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing the five-company budget, queue order or adding production listing discovery.
+- Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing queue order or adding production listing discovery. The daily budget is now 20; the standalone helper default remains five.
 
 ### LATER
 
 - Specify and implement a separate finite-capital paper experiment with position/concentration limits. Keep existing $100 daily policies as controls and compare matched SPY cash flows, fees, drawdowns and missed fills prospectively. This is simulated capital, not authorization to place real trades.
 
-- Broaden discovery only when tracked results and research rejection reasons demonstrate a specific gap. No additional external source without the user's explicit decision.
+- Broaden discovery only when tracked results and research rejection reasons demonstrate a specific gap. The user explicitly authorized broader market-information channels on 30 September; paid subscriptions still require a separate decision.
 - Supported Next.js upgrade as a separate tested change; authentication/authorization before public exposure. Public deployment and subscriptions are not the present objective.
 - Thesis outcome analysis, portfolio drawdown and business-driver concentration views when the underlying observations and portfolio policy are dependable.
 - Runtime schema-creation cleanup and other maintenance as independent slices, preserving the migrated-schema contract and golden-source safeguards.
@@ -304,6 +321,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- **2026-10-01 coverage boundary:** use six free Yahoo discovery screens with per-channel limits, US exchange/equity/USD validation and explicit stale/missing prices. Persist the versioned radar in collection-run metrics without a schema change. Names with usable prices enter existing company/SEC queues, but radar observations do not bypass canonical collection-item eligibility or paper gates. Paid providers, whole-market coverage, intraday cadence and radar-to-strategy policy changes remain unresolved/deferred. The installed Yahoo screener schema rejects current `canonicalName`; use its supported `validateResult: false` option with our own consumed-field validation and a 15-second per-request timeout.
 
 - **2026-09-10 canonical currentness:** Daily canonical discovery requires a positive `collectionRunId` and filters base-eligible candidates by the linked collection run's immutable `market_data_found` truth before market-cap tier selection. Missing confirmation creates an explicit decision exclusion reason. Manual scanner runs retain their broader stored-universe behavior. Because this changes who may be selected, the discovery version advances from v3 to `rklb-discovery-v4`; old decisions, outcomes and paper orders remain unchanged and analytics must keep versions separate.
 
@@ -691,6 +710,11 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 
 ## Viimane testitud seis
 
+### 2026-10-01 — Market radar V1
+
+- `npm run typecheck`: exit 0. `npm run lint`: no warnings or errors. Full Docker `npm test`: **68 files / 519 tests passed**, 538.67s, isolated test database. Build compiled successfully and generated 22/22 static pages; app restarted before runtime checks.
+- Real CLI collection #62: 137 radar stocks, six successful channels, 15 successful SEC enrichments, canonical #95 reused, zero inserted paper orders, healthy heartbeat HTTP 200. DB read confirmed 45/137 radar names with financial facts. Browser renders rows, source provenance, missing-financial and stale-price states. See linked verification report and actual terminal logs. Next external scheduled run remains pending.
+
 ### 2026-09-13 - paired paper execution integrity
 
 - Astra follow-up review identified a forward integrity gap: individually valid quotes could fill only the app or SPY side of one same-cash-flow comparison. A read-only Neon transaction found zero existing mismatches across 154 pairs: 73 filled, 17 pending and 64 skipped pair groups; all filled execution times matched.
@@ -1041,6 +1065,17 @@ Varasem seis:
 - Pärast production build'i taaskäivitati app-konteiner. `/scanner?preset=rklb` ja `/validation` vastasid 200 ning discovery run'ide arv püsis idempotentselt 1.
 
 ## Sessioonilogi
+
+### 2026-09-18 - supplied original idea reconciled
+
+- User supplied the original Estonian problem text and emphasized later requirements still apply. Replaced the missing-text blocker with a requirement-by-requirement map in `COMPLETION_AUDIT_2026-09-18.md`.
+- Core gaps are comprehensive holdings/earnings/exit decision support, portfolio rebalancing, public early-information verification and calibrated probability forecasts, and production new-listing analysis. Existing search, evidence, consensus, research, paper execution and P/L provide partial coverage but do not complete the original product. No current listing-status claim is made about the user's SpaceX example.
+- Preserve later constraints: no added providers, no fabricated probabilities or forced shortlist, no real-money execution. No new feature implementation or testing in this documentation-only audit; the accepted trial cannot certify unbuilt capabilities.
+
+### 2026-09-18 - honest completion boundary and trial freeze
+
+- Audited saved requirements/designs against code and existing verification; wrote `COMPLETION_AUDIT_2026-09-18.md`. Core paper experiment is delivered; broader planned features and original-text uncertainty are explicit. Corrected earlier overly broad completion wording.
+- Recorded the user's accepted 10-trading-day first checkpoint and feature freeze, subject to original-scope clarification. No code, policy, database, scheduler or real-money action changed. Documentation-only session; no new test results claimed.
 
 ### 2026-09-18 - reduce repeated SEC catch-up work
 
@@ -1877,3 +1912,16 @@ API: HTTP 200; expected evidence true
 - PLUG debt oli range kahe aasta piiri sees, kuid 675 päeva ettevõtte uusimast score-sisendist maas, mis kinnitas eraldi Period Alignment vajadust.
 - Järjekord jäi: esmalt manual research sprint ja inimese false-negative/rejection labels, seejärel Freshness/Period Alignment integrity layer, alles pärast seda catalyst hard gate'i võimalik muutmine evidence field'iks.
 - Koodi, UI-d, score-valemeid, filtreid, väliseid API-sid ega DB andmeid ei muudetud.
+
+## Session changelog — 2026-09-30
+
+- **2026-09-30 paper checkpoint completed:** read-only Neon audit found entry-aware invested $8,508.50, marked value $8,310.52, unrealized loss $197.98 (-2.33%) versus matched SPY +$7.28. 85 buys / 14 open tickers / zero sales or pending entry-aware orders. Marks are today 16:30–16:35 Tallinn, not live. All 12 intervening core collections/canonical runs and fills on all eight trading days are present. DKS/YOU captured gains, CRDO entry timing lagged; EU/CAKE/BE were excluded by documented rules. All-picks still has three HRGN pending pairs and stale MSC valuation; causes remain unresolved. Independent SQL reconciles P/L. See [dated evidence and review](research/2026-09-30/REVIEW.md). No runtime code, strategy, database data or history changed; no tests/build/UI checks claimed.
+
+
+### Session addition — external winners
+
+- **2026-09-30 external-winner audit:** internet-selected winners compared with historical DB evidence. KOD arrived after its jump; GLND/INOD/VKTX were fetched but have zero financial facts and no canonical decisions, explained by the financial-facts inner join. META/INTC are explicitly blacklisted; MRNA lost tier slots or same-collection eligibility. GRML and several event winners have no recorded coverage under checked tickers. See [external review](research/2026-09-30/EXTERNAL_MOVERS.md). Next: investigate existing-source enrichment coverage and evaluate exclusions against user scope before any separately versioned policy change. No new provider, database writes or strategy changes; read-only evidence and source inspection only.
+
+## Session changelog — market radar implementation, 2026-09-30
+
+- Coverage expansion authorized by the user. Added six Yahoo discovery screens, bounded to 25 rows each, with explicit per-channel failures and US equity / USD validation. Added Today radar visibility for unscored companies; normal daily execution in both CLI and API expands existing SEC CompanyFacts budget to 20. Historical canonical decisions and paper policy remain unchanged. Verified on 1 October: 68 files / 519 tests passed; typecheck/lint/build passed, app restarted and real UI/DB checks completed. Collection #62 yielded 137 names and 15 new SEC-covered companies without changing the daily canonical snapshot. See [verification report](research/2026-09-30/MARKET_RADAR_VERIFICATION.md).

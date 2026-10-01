@@ -35,6 +35,7 @@ function dependencies(): CollectRouteDependencies {
     // Kogu `runCollection` tagastuskuju, mitte cast: nii jääb test seotuks
     // päris tüübiga ja katkeb valjult, kui kuju muutub.
     runCollection: vi.fn(async () => ({
+      marketRadar: { version: 'market-radar-v1' as const, observedAt: new Date().toISOString(), channels: [], stocks: [] },
       collectionRunId: 1,
       captureDate: '2026-08-17',
       scanned: 0,

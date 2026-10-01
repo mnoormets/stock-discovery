@@ -1,0 +1,1963 @@
+{
+  "version": "market-radar-v1",
+  "observedAt": "2026-09-30T20:19:20.918Z",
+  "channels": [
+    {
+      "id": "day_gainers",
+      "status": "ok",
+      "received": 25,
+      "accepted": 24
+    },
+    {
+      "id": "small_cap_gainers",
+      "status": "ok",
+      "received": 25,
+      "accepted": 25
+    },
+    {
+      "id": "most_actives",
+      "status": "ok",
+      "received": 25,
+      "accepted": 25
+    },
+    {
+      "id": "aggressive_small_caps",
+      "status": "ok",
+      "received": 25,
+      "accepted": 25
+    },
+    {
+      "id": "growth_technology_stocks",
+      "status": "ok",
+      "received": 25,
+      "accepted": 25
+    },
+    {
+      "id": "undervalued_growth_stocks",
+      "status": "ok",
+      "received": 25,
+      "accepted": 25
+    }
+  ],
+  "stocks": [
+    {
+      "ticker": "UTHR",
+      "name": "United Therapeutics Corporation",
+      "price": 541.89,
+      "changePercent": 12.549071,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 23242037248,
+      "volume": 3272761,
+      "relativeVolume": 5.920613125798247,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ROG",
+      "name": "Rogers Corporation",
+      "price": 152.99,
+      "changePercent": 10.7259,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 2733676800,
+      "volume": 1091306,
+      "relativeVolume": 4.783115209635428,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "FORM",
+      "name": "FormFactor, Inc.",
+      "price": 149.31,
+      "changePercent": 9.5853195,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 11664205824,
+      "volume": 2198784,
+      "relativeVolume": 1.6937474627882023,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "NWCL",
+      "name": "newcleo plc",
+      "price": 7.85,
+      "changePercent": 9.331477,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 2171187968,
+      "volume": 510629,
+      "relativeVolume": 1.3619206631584844,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ZETA",
+      "name": "Zeta Global Holdings Corp.",
+      "price": 31.575,
+      "changePercent": 9.0297,
+      "marketAt": "2026-09-30T19:59:59.000Z",
+      "marketCap": 7870309376,
+      "volume": 11134281,
+      "relativeVolume": 1.4364121152511664,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "BRZE",
+      "name": "Braze, Inc.",
+      "price": 25.1,
+      "changePercent": 8.42333,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 2850969088,
+      "volume": 2880078,
+      "relativeVolume": 1.1449558309470795,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "FROG",
+      "name": "JFrog Ltd.",
+      "price": 97.04,
+      "changePercent": 7.380766,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 11965159424,
+      "volume": 1780362,
+      "relativeVolume": 0.8511473811026332,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ACMR",
+      "name": "ACM Research, Inc.",
+      "price": 80.92,
+      "changePercent": 7.022877,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 5636013056,
+      "volume": 1743754,
+      "relativeVolume": 1.6347075626202885,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SLS",
+      "name": "SELLAS Life Sciences Group, Inc.",
+      "price": 12.31,
+      "changePercent": 6.950479,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 2485951744,
+      "volume": 8554233,
+      "relativeVolume": 1.191449292984499,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "IBRX",
+      "name": "ImmunityBio, Inc.",
+      "price": 9.44,
+      "changePercent": 6.908263,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 10004853760,
+      "volume": 27160764,
+      "relativeVolume": 2.8154499586505377,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "DOCS",
+      "name": "Doximity, Inc.",
+      "price": 28.34,
+      "changePercent": 6.86274,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 5051491328,
+      "volume": 4933852,
+      "relativeVolume": 1.1149096408003185,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "EPR-PG",
+      "name": "EPR Properties",
+      "price": 19.56,
+      "changePercent": 6.35854,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": null,
+      "volume": 26243,
+      "relativeVolume": 4.358578309250955,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "PGEN",
+      "name": "Precigen, Inc.",
+      "price": 8.56,
+      "changePercent": 6.335407,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 3064781824,
+      "volume": 11677503,
+      "relativeVolume": 2.391183614596383,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "IMOS",
+      "name": "ChipMOS TECHNOLOGIES INC.",
+      "price": 71.77,
+      "changePercent": 5.9179373,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 2495507712,
+      "volume": 100544,
+      "relativeVolume": 0.9615178639736822,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "LEGN",
+      "name": "Legend Biotech Corporation",
+      "price": 19.89,
+      "changePercent": 5.685439,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 3868374528,
+      "volume": 2954970,
+      "relativeVolume": 1.281591774829629,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "GEN",
+      "name": "Gen Digital Inc.",
+      "price": 22.02,
+      "changePercent": 5.6115108,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 13180886016,
+      "volume": 19341220,
+      "relativeVolume": 2.8348312238575133,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ITUB",
+      "name": "Itaú Unibanco Holding S.A.",
+      "price": 8.53,
+      "changePercent": 5.43881,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 94016569344,
+      "volume": 54092452,
+      "relativeVolume": 2.6178842414287415,
+      "channels": [
+        "day_gainers",
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "TRMD",
+      "name": "TORM plc",
+      "price": 38.05,
+      "changePercent": 5.255872,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 3905861888,
+      "volume": 1907327,
+      "relativeVolume": 1.8679323076320402,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "BPYPP",
+      "name": "Brookfield Property Partners L.P.",
+      "price": 15.93,
+      "changePercent": 5.1485195,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": null,
+      "volume": 34554,
+      "relativeVolume": 2.594144144144144,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SYRE",
+      "name": "Spyre Therapeutics, Inc.",
+      "price": 89.03,
+      "changePercent": 5.0873437,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 7850109952,
+      "volume": 2095889,
+      "relativeVolume": 1.8632111869710546,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "STUB",
+      "name": "StubHub Holdings, Inc.",
+      "price": 5.58,
+      "changePercent": 5.08475,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 2132061952,
+      "volume": 10447536,
+      "relativeVolume": 1.6016576543871548,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "QLYS",
+      "name": "Qualys, Inc.",
+      "price": 187.2,
+      "changePercent": 4.9621477,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 6476184064,
+      "volume": 648296,
+      "relativeVolume": 0.8706634434595756,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SNPS",
+      "name": "Synopsys, Inc.",
+      "price": 434.94,
+      "changePercent": 4.782097,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 83350437888,
+      "volume": 4450379,
+      "relativeVolume": 2.444634566496088,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "BZ",
+      "name": "Kanzhun Limited",
+      "price": 14.8,
+      "changePercent": 4.4460135,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 6479503360,
+      "volume": 7065628,
+      "relativeVolume": 1.173437789077652,
+      "channels": [
+        "day_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "PACB",
+      "name": "Pacific Biosciences of California, Inc.",
+      "price": 2.37,
+      "changePercent": 29.508188,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 736668864,
+      "volume": 79229653,
+      "relativeVolume": 11.534255272253581,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ENVX",
+      "name": "Enovix Corporation",
+      "price": 2.9,
+      "changePercent": 5.454549,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 636400768,
+      "volume": 9407632,
+      "relativeVolume": 1.312706880120113,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SES",
+      "name": "SES AI Corporation",
+      "price": 0.6,
+      "changePercent": 12.2965,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 222772448,
+      "volume": 32587594,
+      "relativeVolume": 1.9204259122593448,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "COUR",
+      "name": "Coursera, Inc.",
+      "price": 4.96,
+      "changePercent": 6.20985,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 1420338816,
+      "volume": 14449759,
+      "relativeVolume": 2.4265476804420185,
+      "channels": [
+        "small_cap_gainers",
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "DNA",
+      "name": "Ginkgo Bioworks Holdings, Inc.",
+      "price": 12.83,
+      "changePercent": 7.27425,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 863975808,
+      "volume": 4623656,
+      "relativeVolume": 3.539196609956721,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ABSI",
+      "name": "Absci Corporation",
+      "price": 10.77,
+      "changePercent": 6.213019,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 1848283008,
+      "volume": 5402196,
+      "relativeVolume": 1.560197856639712,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "AI",
+      "name": "C3.ai, Inc.",
+      "price": 10.99,
+      "changePercent": 6.28626,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 1766970624,
+      "volume": 5307649,
+      "relativeVolume": 1.0665633390221814,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CAPR",
+      "name": "Capricor Therapeutics, Inc.",
+      "price": 9.47,
+      "changePercent": 10.501758,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 550576256,
+      "volume": 20440164,
+      "relativeVolume": 3.1675561787305577,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "BMEA",
+      "name": "Biomea Fusion, Inc.",
+      "price": 1.33,
+      "changePercent": 5.5555596,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 96158256,
+      "volume": 1435721,
+      "relativeVolume": 0.9587087503180179,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CCCC",
+      "name": "C4 Therapeutics, Inc.",
+      "price": 3.33,
+      "changePercent": 6.38977,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 409673696,
+      "volume": 2609141,
+      "relativeVolume": 1.0291511322811762,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CCOI",
+      "name": "Cogent Communications Holdings, Inc.",
+      "price": 7.79,
+      "changePercent": 6.1307874,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 398970592,
+      "volume": 2181951,
+      "relativeVolume": 1.2413833713475229,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "DAVA",
+      "name": "Endava plc",
+      "price": 1.79,
+      "changePercent": 8.48485,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 94588456,
+      "volume": 467542,
+      "relativeVolume": 1.117051726197587,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "MIST",
+      "name": "Milestone Pharmaceuticals Inc.",
+      "price": 0.8657,
+      "changePercent": 5.5731726,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 107777904,
+      "volume": 1263556,
+      "relativeVolume": 0.883131297317245,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ATEN",
+      "name": "A10 Networks, Inc.",
+      "price": 27.11,
+      "changePercent": 5.03681,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 1968430720,
+      "volume": 1786886,
+      "relativeVolume": 1.405108252136695,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "OMDA",
+      "name": "Omada Health, Inc.",
+      "price": 20.81,
+      "changePercent": 7.4341693,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 1273919616,
+      "volume": 1622289,
+      "relativeVolume": 1.171916717715184,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "STRZ",
+      "name": "Starz Entertainment Corp.",
+      "price": 23.57,
+      "changePercent": 6.266905,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 403616736,
+      "volume": 440994,
+      "relativeVolume": 1.8598944780204718,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CHPT",
+      "name": "ChargePoint Holdings, Inc.",
+      "price": 10.08,
+      "changePercent": 5.88235,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 270651264,
+      "volume": 1541426,
+      "relativeVolume": 0.9144531467834501,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "FEAM",
+      "name": "5E Advanced Materials, Inc.",
+      "price": 3.37,
+      "changePercent": 10.491801,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 140351632,
+      "volume": 1040071,
+      "relativeVolume": 1.4369035185154484,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "IDT",
+      "name": "IDT Corporation",
+      "price": 79.97,
+      "changePercent": 5.83643,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 1986321024,
+      "volume": 716102,
+      "relativeVolume": 3.2745522138947445,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CDNL",
+      "name": "Cardinal Infrastructure Group Inc.",
+      "price": 30.6,
+      "changePercent": 11.80124,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 625115456,
+      "volume": 1211219,
+      "relativeVolume": 1.6984666082383875,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SITC",
+      "name": "SITE Centers Corp.",
+      "price": 3.37,
+      "changePercent": 8.36013,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 176841888,
+      "volume": 4081208,
+      "relativeVolume": 4.20163959573248,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "AMBQ",
+      "name": "Ambiq Micro, Inc.",
+      "price": 68.17,
+      "changePercent": 5.18439,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 1648659712,
+      "volume": 540927,
+      "relativeVolume": 1.0504089574497832,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CANG",
+      "name": "Cango Inc.",
+      "price": 2.49,
+      "changePercent": 5.0633,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 102144704,
+      "volume": 1248631,
+      "relativeVolume": 3.2586442226136882,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "PMVP",
+      "name": "PMV Pharmaceuticals, Inc.",
+      "price": 1.67,
+      "changePercent": 16.783218,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 89274952,
+      "volume": 3121778,
+      "relativeVolume": 6.111989317941981,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CTNM",
+      "name": "Contineum Therapeutics, Inc.",
+      "price": 13.42,
+      "changePercent": 16.695652,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 504875584,
+      "volume": 1597697,
+      "relativeVolume": 3.445399045542667,
+      "channels": [
+        "small_cap_gainers"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "NU",
+      "name": "Nu Holdings Ltd.",
+      "price": 12.66,
+      "changePercent": 2.51012,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 61156519936,
+      "volume": 100868354,
+      "relativeVolume": 1.2398486914951679,
+      "channels": [
+        "most_actives",
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "WBD",
+      "name": "Warner Bros. Discovery, Inc.",
+      "price": 30.95,
+      "changePercent": 0.32415032,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 77595885568,
+      "volume": 84452397,
+      "relativeVolume": 2.9849637382264285,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "NVDA",
+      "name": "NVIDIA Corporation",
+      "price": 228.38,
+      "changePercent": 0.5149413,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 5514691870720,
+      "volume": 117687772,
+      "relativeVolume": 0.9529610523622861,
+      "channels": [
+        "most_actives",
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "INTC",
+      "name": "Intel Corporation",
+      "price": 120.23,
+      "changePercent": 3.7091374,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 635548401664,
+      "volume": 92858289,
+      "relativeVolume": 0.8549819248923854,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SPCX",
+      "name": "Space Exploration Technologies Corp.",
+      "price": 150.86,
+      "changePercent": 1.0854965,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 1988603281408,
+      "volume": 78829514,
+      "relativeVolume": 0.8502263500284714,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "NOK",
+      "name": "Nokia Oyj",
+      "price": 10.145,
+      "changePercent": -2.07528,
+      "marketAt": "2026-09-30T19:59:59.000Z",
+      "marketCap": 56798253056,
+      "volume": 64189281,
+      "relativeVolume": 0.7644138672826187,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "GRAB",
+      "name": "Grab Holdings Limited",
+      "price": 3.11,
+      "changePercent": -0.32051253,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 12723948544,
+      "volume": 61097413,
+      "relativeVolume": 1.1656387688562933,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "AAL",
+      "name": "American Airlines Group Inc.",
+      "price": 13.37,
+      "changePercent": -1.7634077,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 8850537472,
+      "volume": 55151911,
+      "relativeVolume": 0.6540318611698919,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "AGNC",
+      "name": "AGNC Investment Corp.",
+      "price": 9.07,
+      "changePercent": -4.0211654,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 10752316416,
+      "volume": 54122610,
+      "relativeVolume": 2.2509082737975596,
+      "channels": [
+        "most_actives",
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "PLUG",
+      "name": "Plug Power Inc.",
+      "price": 1.94,
+      "changePercent": 1.5706854,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 2710558976,
+      "volume": 48970842,
+      "relativeVolume": 0.9115782953831094,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "PCG",
+      "name": "PG&E Corporation",
+      "price": 12.25,
+      "changePercent": 0.989282,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 36778995712,
+      "volume": 45569478,
+      "relativeVolume": 1.303122972694042,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ONDS",
+      "name": "Ondas Inc.",
+      "price": 7.33,
+      "changePercent": -2.005349,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 4268278784,
+      "volume": 46568356,
+      "relativeVolume": 0.5693000451507426,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "PATH",
+      "name": "UiPath, Inc.",
+      "price": 12.84,
+      "changePercent": 4.22078,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 6691635712,
+      "volume": 41994956,
+      "relativeVolume": 0.6063340089138628,
+      "channels": [
+        "most_actives",
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "F",
+      "name": "Ford Motor Company",
+      "price": 12.06,
+      "changePercent": -1.95122,
+      "marketAt": "2026-09-30T19:59:59.000Z",
+      "marketCap": 48090406912,
+      "volume": 50087979,
+      "relativeVolume": 1.0427504332096083,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SOFI",
+      "name": "SoFi Technologies, Inc.",
+      "price": 15.72,
+      "changePercent": -1.1942148,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 20303484928,
+      "volume": 40344324,
+      "relativeVolume": 0.6698665610757522,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SNAP",
+      "name": "Snap Inc.",
+      "price": 5.3935,
+      "changePercent": 1.00187,
+      "marketAt": "2026-09-30T19:59:59.000Z",
+      "marketCap": 9121474560,
+      "volume": 39674548,
+      "relativeVolume": 1.09195006889616,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "T",
+      "name": "AT&T Inc.",
+      "price": 24.4,
+      "changePercent": -0.3267971,
+      "marketAt": "2026-09-30T20:02:48.000Z",
+      "marketCap": 167198212096,
+      "volume": 32364602,
+      "relativeVolume": 0.5983981259267751,
+      "channels": [
+        "most_actives",
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "AUR",
+      "name": "Aurora Innovation, Inc.",
+      "price": 5.54,
+      "changePercent": 2.7829332,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 11103020032,
+      "volume": 37860743,
+      "relativeVolume": 1.3071213237502668,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "MARA",
+      "name": "MARA Holdings, Inc.",
+      "price": 11.33,
+      "changePercent": -5.5045857,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 4376771072,
+      "volume": 40264119,
+      "relativeVolume": 0.8470511320197782,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CAG",
+      "name": "Conagra Brands, Inc.",
+      "price": 13.465,
+      "changePercent": -4.7062984,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 6443886080,
+      "volume": 33797206,
+      "relativeVolume": 2.6967724226638574,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "NKE",
+      "name": "NIKE, Inc.",
+      "price": 35.4,
+      "changePercent": -1.22767,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 52515856384,
+      "volume": 37165319,
+      "relativeVolume": 1.3718426987385837,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "HL",
+      "name": "Hecla Mining Company",
+      "price": 17.03,
+      "changePercent": -0.699702,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 11440217088,
+      "volume": 37026788,
+      "relativeVolume": 0.9827223068624571,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CCL",
+      "name": "Carnival Corporation Ltd.",
+      "price": 24.54,
+      "changePercent": -2.27001,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 32996734976,
+      "volume": 35485376,
+      "relativeVolume": 1.7249933305177618,
+      "channels": [
+        "most_actives"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CDE",
+      "name": "Coeur Mining, Inc.",
+      "price": 17.6,
+      "changePercent": -1.34529,
+      "marketAt": "2026-09-30T20:00:52.000Z",
+      "marketCap": 18091655168,
+      "volume": 37921994,
+      "relativeVolume": 1.1054038375609359,
+      "channels": [
+        "most_actives",
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "TEAD",
+      "name": "Teads Holding Co.",
+      "price": 0.511,
+      "changePercent": -0.73815745,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 50111296,
+      "volume": 1362092,
+      "relativeVolume": 1.6609115862097559,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "JBLU",
+      "name": "JetBlue Airways Corporation",
+      "price": 4.23,
+      "changePercent": -1.1682286,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 1596030592,
+      "volume": 12942827,
+      "relativeVolume": 0.4824924799430977,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "GENI",
+      "name": "Genius Sports Limited",
+      "price": 5.73,
+      "changePercent": -7.13128,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 1533502464,
+      "volume": 7488593,
+      "relativeVolume": 1.2046714320990237,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "GPRO",
+      "name": "GoPro, Inc.",
+      "price": 1.29,
+      "changePercent": -2.6415157,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 266199712,
+      "volume": 7347233,
+      "relativeVolume": 0.21655044286359088,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "GETY",
+      "name": "Getty Images Holdings, Inc.",
+      "price": null,
+      "changePercent": null,
+      "marketAt": "2026-09-28T18:31:48.000Z",
+      "marketCap": 34387856,
+      "volume": 27985411,
+      "relativeVolume": 5.958357684848493,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": [
+        "Price missing, stale or timestamp invalid"
+      ]
+    },
+    {
+      "ticker": "KOS",
+      "name": "Kosmos Energy Ltd.",
+      "price": 2.54,
+      "changePercent": -1.55039,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 1512538624,
+      "volume": 15385450,
+      "relativeVolume": 1.0946171950687391,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "KNDI",
+      "name": "Kandi Technologies Group, Inc.",
+      "price": 0.7898,
+      "changePercent": -2.493829,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 79308056,
+      "volume": 1105852,
+      "relativeVolume": 0.5922546714581804,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "FLNC",
+      "name": "Fluence Energy, Inc.",
+      "price": 7.68,
+      "changePercent": -1.7902857,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 1495010176,
+      "volume": 5244158,
+      "relativeVolume": 0.6517557789073377,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "LAC",
+      "name": "Lithium Americas Corp.",
+      "price": 2.63,
+      "changePercent": 0,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 954803008,
+      "volume": 5976905,
+      "relativeVolume": 0.6159899601419201,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "VISN",
+      "name": "Vistance Networks, Inc.",
+      "price": 5.98,
+      "changePercent": 0.6734,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 1379145984,
+      "volume": 5785395,
+      "relativeVolume": 0.7073921034754118,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ORC",
+      "name": "Orchid Island Capital, Inc.",
+      "price": 5.43,
+      "changePercent": -4.23281,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 1071921664,
+      "volume": 9618197,
+      "relativeVolume": 2.0175410039294888,
+      "channels": [
+        "aggressive_small_caps",
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ORCL-PD",
+      "name": "Oracle Corporation",
+      "price": 44.24,
+      "changePercent": 0.499776,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": null,
+      "volume": 647316,
+      "relativeVolume": 0.3515022507968744,
+      "channels": [
+        "aggressive_small_caps",
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "VNET",
+      "name": "VNET Group, Inc.",
+      "price": 5.55,
+      "changePercent": -2.802099,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 1580038656,
+      "volume": 5234556,
+      "relativeVolume": 1.1724448724984042,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "JELD",
+      "name": "JELD-WEN Holding, Inc.",
+      "price": 1.84,
+      "changePercent": -7.53769,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 159644624,
+      "volume": 2652326,
+      "relativeVolume": 1.6323060874702673,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "PENN",
+      "name": "PENN Entertainment, Inc.",
+      "price": 14.65,
+      "changePercent": 0.27378485,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 1965524736,
+      "volume": 2747551,
+      "relativeVolume": 0.9821086186608254,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "TMC",
+      "name": "TMC the metals company Inc.",
+      "price": 3.84,
+      "changePercent": 2.673794,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 2172813824,
+      "volume": 6018661,
+      "relativeVolume": 1.139172772786111,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "UAMY",
+      "name": "United States Antimony Corporation",
+      "price": 4.17,
+      "changePercent": -0.239229,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 624121280,
+      "volume": 4793056,
+      "relativeVolume": 0.7777538704689024,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "INN",
+      "name": "Summit Hotel Properties, Inc.",
+      "price": 5.97,
+      "changePercent": 1.01523,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 643885184,
+      "volume": 1499905,
+      "relativeVolume": 1.558362286075255,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "OI",
+      "name": "O-I Glass, Inc.",
+      "price": 5.65,
+      "changePercent": 0.177309,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 868177600,
+      "volume": 4154913,
+      "relativeVolume": 1.2230130846007212,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "OLN",
+      "name": "Olin Corporation",
+      "price": 15.5,
+      "changePercent": 0.45366,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 1766728576,
+      "volume": 3705747,
+      "relativeVolume": 1.2509724730133043,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "IVR",
+      "name": "Invesco Mortgage Capital Inc.",
+      "price": 6.07,
+      "changePercent": -3.03514,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 661630016,
+      "volume": 4384185,
+      "relativeVolume": 1.574338574084335,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CSIQ",
+      "name": "Canadian Solar Inc.",
+      "price": 11.52,
+      "changePercent": -0.25973794,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 782170624,
+      "volume": 1951698,
+      "relativeVolume": 0.9567648891387931,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "FUN",
+      "name": "Six Flags Entertainment Corporation",
+      "price": 10.71,
+      "changePercent": -1.38121,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 1095807744,
+      "volume": 4670697,
+      "relativeVolume": 2.1439377386897767,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ULCC",
+      "name": "Frontier Group Holdings, Inc.",
+      "price": 5.97,
+      "changePercent": -2.0508614,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 1374388096,
+      "volume": 2275196,
+      "relativeVolume": 0.7109467620180274,
+      "channels": [
+        "aggressive_small_caps"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ORCL",
+      "name": "Oracle Corporation",
+      "price": 137.31,
+      "changePercent": -0.348353,
+      "marketAt": "2026-09-30T19:59:59.000Z",
+      "marketCap": 416255410176,
+      "volume": 21733420,
+      "relativeVolume": 0.6532874727356269,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "IONQ",
+      "name": "IonQ, Inc.",
+      "price": 43.86,
+      "changePercent": -0.113868,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 17769248768,
+      "volume": 25292091,
+      "relativeVolume": 1.2121177891304116,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SMCI",
+      "name": "Super Micro Computer, Inc.",
+      "price": 41.07,
+      "changePercent": 0.121889904,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 26981568512,
+      "volume": 30931375,
+      "relativeVolume": 0.684274692773104,
+      "channels": [
+        "growth_technology_stocks",
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "MU",
+      "name": "Micron Technology, Inc.",
+      "price": 1065.11,
+      "changePercent": 0.0028194406,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 1202927960064,
+      "volume": 25821880,
+      "relativeVolume": 0.7489398935962093,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "AVGO",
+      "name": "Broadcom Inc.",
+      "price": 351.19,
+      "changePercent": -1.1010994,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 1676451119104,
+      "volume": 18276143,
+      "relativeVolume": 0.8093421604492779,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "AMD",
+      "name": "Advanced Micro Devices, Inc.",
+      "price": 611.76,
+      "changePercent": 0.6896329,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 998682918912,
+      "volume": 16482342,
+      "relativeVolume": 0.683612086186756,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ASTS",
+      "name": "AST SpaceMobile, Inc.",
+      "price": 58.86,
+      "changePercent": -0.9090925,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 22906398720,
+      "volume": 11630634,
+      "relativeVolume": 0.9538485485890044,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "HPE",
+      "name": "Hewlett Packard Enterprise Company",
+      "price": 63.89,
+      "changePercent": 3.90307,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 84811726848,
+      "volume": 32445442,
+      "relativeVolume": 1.6154363005225238,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "PLTR",
+      "name": "Palantir Technologies Inc.",
+      "price": 187.05,
+      "changePercent": 0.04278859,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 449492090880,
+      "volume": 16594655,
+      "relativeVolume": 0.4590066204264931,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CORZ",
+      "name": "Core Scientific, Inc.",
+      "price": 15.98,
+      "changePercent": -2.023298,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 5135020032,
+      "volume": 9613163,
+      "relativeVolume": 0.7969454286922516,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SKHY",
+      "name": "SK hynix Inc.",
+      "price": 184.15,
+      "changePercent": -1.3552598,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 1309445455872,
+      "volume": 10376346,
+      "relativeVolume": 0.34402133338567303,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "APH",
+      "name": "Amphenol Corporation",
+      "price": 84.3,
+      "changePercent": -0.0474191,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 207881011200,
+      "volume": 15653691,
+      "relativeVolume": 1.2397799493671287,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "TSM",
+      "name": "Taiwan Semiconductor Manufacturing Company Limited",
+      "price": 456.19,
+      "changePercent": -0.164135,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 2366017634304,
+      "volume": 8910985,
+      "relativeVolume": 0.7522023756162777,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "ASX",
+      "name": "ASE Technology Holding Co., Ltd.",
+      "price": 44.46,
+      "changePercent": -1.87597,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 115758964736,
+      "volume": 6016687,
+      "relativeVolume": 0.737092853539369,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "LRCX",
+      "name": "Lam Research Corporation",
+      "price": 328.51,
+      "changePercent": 1.4358132,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 411105427456,
+      "volume": 7569547,
+      "relativeVolume": 0.7565103258346048,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "FIS",
+      "name": "Fidelity National Information Services, Inc.",
+      "price": 32.895,
+      "changePercent": -1.36431,
+      "marketAt": "2026-09-30T19:59:58.000Z",
+      "marketCap": 16964146176,
+      "volume": 5791437,
+      "relativeVolume": 0.951270254852533,
+      "channels": [
+        "growth_technology_stocks",
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "CRDO",
+      "name": "Credo Technology Group Holding Ltd",
+      "price": 194.79,
+      "changePercent": 1.2685143,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 36611153920,
+      "volume": 5966462,
+      "relativeVolume": 0.8728866214515393,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "WDC",
+      "name": "Western Digital Corporation",
+      "price": 454.46,
+      "changePercent": 0.21610226,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 163851419648,
+      "volume": 6702704,
+      "relativeVolume": 0.9210542118551219,
+      "channels": [
+        "growth_technology_stocks",
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "DELL",
+      "name": "Dell Technologies Inc.",
+      "price": 538.32,
+      "changePercent": -0.23536749,
+      "marketAt": "2026-09-30T20:00:00.000Z",
+      "marketCap": 342270705664,
+      "volume": 4263963,
+      "relativeVolume": 0.5518456640977925,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "FICO",
+      "name": "Fair Isaac Corporation",
+      "price": 592.47,
+      "changePercent": -4.1109,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 12795951104,
+      "volume": 1984402,
+      "relativeVolume": 4.666589846579312,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "P",
+      "name": "Everpure, Inc.",
+      "price": 130.74,
+      "changePercent": 0.530567,
+      "marketAt": "2026-09-30T19:59:59.000Z",
+      "marketCap": 43566133248,
+      "volume": 2889777,
+      "relativeVolume": 0.6585890975721485,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "DDOG",
+      "name": "Datadog, Inc.",
+      "price": 273.85,
+      "changePercent": 1.9697679,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 98332696576,
+      "volume": 2759722,
+      "relativeVolume": 0.6463718258423939,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "NET",
+      "name": "Cloudflare, Inc.",
+      "price": 347.28,
+      "changePercent": -1.41373,
+      "marketAt": "2026-09-30T19:59:59.000Z",
+      "marketCap": 123659362304,
+      "volume": 2573353,
+      "relativeVolume": 0.756836029982242,
+      "channels": [
+        "growth_technology_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "PBR",
+      "name": "Petróleo Brasileiro S.A. - Petrobras",
+      "price": 20.87,
+      "changePercent": 1.06538,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 134493929472,
+      "volume": 25102355,
+      "relativeVolume": 1.3603814108259618,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "BMY",
+      "name": "Bristol-Myers Squibb Company",
+      "price": 62.4,
+      "changePercent": -0.731783,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 127465398272,
+      "volume": 15525465,
+      "relativeVolume": 1.4182752608497777,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "NLY",
+      "name": "Annaly Capital Management, Inc.",
+      "price": 18.89,
+      "changePercent": -3.47471,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 14237665280,
+      "volume": 23364719,
+      "relativeVolume": 2.9487772366047045,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "VG",
+      "name": "Venture Global, Inc.",
+      "price": 12.64,
+      "changePercent": 0.797451,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 31601174528,
+      "volume": 9238294,
+      "relativeVolume": 0.6297934066587318,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "KGC",
+      "name": "Kinross Gold Corporation",
+      "price": 24.08,
+      "changePercent": -0.986841,
+      "marketAt": "2026-09-30T19:59:58.000Z",
+      "marketCap": 28564676608,
+      "volume": 5247081,
+      "relativeVolume": 0.6507444068718143,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "GAP",
+      "name": "The Gap, Inc.",
+      "price": 22.84,
+      "changePercent": -2.97366,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 8023010304,
+      "volume": 7699976,
+      "relativeVolume": 1.0651164424889277,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "OXY",
+      "name": "Occidental Petroleum Corporation",
+      "price": 55.32,
+      "changePercent": 0.691666,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 55299940352,
+      "volume": 9579226,
+      "relativeVolume": 1.1127959806000058,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "AEO",
+      "name": "American Eagle Outfitters, Inc.",
+      "price": 17.77,
+      "changePercent": -2.03969,
+      "marketAt": "2026-09-30T19:59:59.000Z",
+      "marketCap": 2977778176,
+      "volume": 5318981,
+      "relativeVolume": 0.9530917356312262,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "PBR-A",
+      "name": "Petróleo Brasileiro S.A. - Petrobras",
+      "price": 18.99,
+      "changePercent": 1.06439,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 130015305728,
+      "volume": 9180568,
+      "relativeVolume": 1.3035798518213917,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "IAG",
+      "name": "IAMGOLD Corporation",
+      "price": 18.39,
+      "changePercent": -1.3412,
+      "marketAt": "2026-09-30T19:59:59.000Z",
+      "marketCap": 10500689920,
+      "volume": 4024158,
+      "relativeVolume": 0.7343884704077156,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "M",
+      "name": "Macy's, Inc.",
+      "price": 22.77,
+      "changePercent": -2.14869,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 5946992128,
+      "volume": 6996120,
+      "relativeVolume": 1.2683548888930385,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "HST",
+      "name": "Host Hotels & Resorts, Inc.",
+      "price": 22.39,
+      "changePercent": 0.67445874,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 15554925568,
+      "volume": 7053236,
+      "relativeVolume": 0.7760154234093564,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "SAN",
+      "name": "Banco Santander, S.A.",
+      "price": 13.83,
+      "changePercent": -2.537,
+      "marketAt": "2026-09-30T20:00:02.000Z",
+      "marketCap": 200485289984,
+      "volume": 6461929,
+      "relativeVolume": 0.5220624715768925,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "APA",
+      "name": "APA Corporation",
+      "price": 41.54,
+      "changePercent": -1.540644,
+      "marketAt": "2026-09-30T20:00:01.000Z",
+      "marketCap": 14553602048,
+      "volume": 5740790,
+      "relativeVolume": 1.0209796676937304,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "BCE",
+      "name": "BCE Inc.",
+      "price": 20.34,
+      "changePercent": 0.993052,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 18967574528,
+      "volume": 2814184,
+      "relativeVolume": 0.7318166250896833,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    },
+    {
+      "ticker": "AR",
+      "name": "Antero Resources Corporation",
+      "price": 33.39,
+      "changePercent": -0.536194,
+      "marketAt": "2026-09-30T20:00:03.000Z",
+      "marketCap": 10265388032,
+      "volume": 3655680,
+      "relativeVolume": 0.8741016122082705,
+      "channels": [
+        "undervalued_growth_stocks"
+      ],
+      "warnings": []
+    }
+  ]
+}

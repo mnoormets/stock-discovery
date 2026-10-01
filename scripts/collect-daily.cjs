@@ -78,7 +78,7 @@ async function main() {
       section('Plaan (dry-run ei kirjuta midagi)');
       console.log('  1. runCollection()                 -> snapshots, companies, price_snapshots');
       console.log('  2. collectDefaultBenchmarkPrice()  -> SPY hinnasnapshot (benchmark baseline)');
-      console.log('  3. enrichStoredCompanyFinancials() -> kuni 5 ettevotet/Tallinna paev -> financial_facts');
+      console.log('  3. enrichStoredCompanyFinancials() -> kuni 20 ettevotet/Tallinna paev -> financial_facts');
       console.log('  4. enrichCompanyClassifications()  -> companies.sector/industry');
       console.log(`  5. getRklbDiscoveryCandidates({runType:'rklb_daily', collectionRunId}) -> ${before.today_canonical ? 'taaskasutab tanast canonical run i' : 'LOOB tanase canonical run i'}`);
       console.log('  5b. recordPaperStrategySignals()   -> salvestab ainult versioned paper-policy intents (kui 0008 on rakendatud)');
@@ -104,6 +104,7 @@ async function main() {
     const paperStrategy = loadTs(path.join(root, 'src/lib/paper-strategy-store.ts'));
     const priceTracking = loadTs(path.join(root, 'src/lib/price-tracking.ts'));
 
+    const { MARKET_FINANCIAL_ENRICHMENT_LIMIT } = loadTs(path.join(root, 'src/lib/market-radar.ts'));
     section('1. runCollection');
     const collected = await step('runCollection', () => collect.runCollection());
     if (collected) {
@@ -112,6 +113,12 @@ async function main() {
       line('scanned', collected.scanned);
       line('candidates', collected.candidates);
       line('liveDataSaved', collected.liveDataSaved);
+      line('market radar stocks', collected.marketRadar.stocks.length);
+      await step('market radar coverage', async () => {
+        const failed = collected.marketRadar.channels.filter((channel) => channel.status !== 'ok');
+        if (failed.length) throw new Error('Market radar channels failed: ' + failed.map((channel) => channel.id).join(', '));
+        return true;
+      });
     }
 
     section('2. benchmark (SPY)');
@@ -119,7 +126,7 @@ async function main() {
     line('benchmarkCaptured', benchmark === true ? 'JAH' : 'EI');
 
     section('3. SEC enrichment');
-    const sec = await step('enrichStoredCompanyFinancials', () => financials.enrichStoredCompanyFinancials());
+    const sec = await step('enrichStoredCompanyFinancials', () => financials.enrichStoredCompanyFinancials(MARKET_FINANCIAL_ENRICHMENT_LIMIT));
     if (sec) {
       line('status', sec.status);
       line('attempted', sec.attempted);

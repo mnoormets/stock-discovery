@@ -6,6 +6,9 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- `/today#market-radar` shows six Yahoo market screens beyond social mentions: gainers, small-cap gainers, active trading, small-cap growth, technology growth and undervalued growth. Up to 25 rows per channel are deduplicated with source reasons, observed prices/times, session change, volume ratio and current SEC coverage. Missing financials do not hide a name; channel failures and old quotes remain visible. This bounded daily research radar is separate from the canonical paper-buy shortlist.
+- Daily CLI/API SEC enrichment now shares a 20-company Tallinn-day budget (the standalone helper retains its five-company default); the existing per-company retry windows and SEC pacing remain in force.
+
 - Financial evidence keeps reporting dates and definitions visible: EV/Sales is unavailable when cash/debt dates differ or are stale/unknown/future. Investment deductions may include separately disclosed productive-asset and software purchases; derived FCF requires the same filing and period. Ordinary-share counts are not automatically ADS or fully diluted counts.
 
 - Tickeri valideeritud otsing ja ettevõtte detailvaade.
@@ -24,7 +27,7 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 - Skänneri „Leia järgmine RKLB” preset annab olemasolevast universumist 0-6 läbipaistvalt põhjendatud uurimiskandidaati (kuni kaks igast versioned market-cap tier'ist), ilma koondskoori või ostusoovituseta.
 - Catalyst Evidence V2: catalyst ei ole kaasamisfilter, vaid struktureeritud tõend, mis näitab sündmuse materiality't, suunda, allika kvaliteeti, uudsust, thesis-relevance'i ja mandaadi sobivust eraldi. Planeeritud earnings-kuupäev ega uudise pealkiri ei kvalifitseeru tõendiks.
 - Iga RKLB discovery jooks salvestab muutumatu otsusehetke universumi, kaasatud ja välistatud tickerid, põhjused, skoorid, hinna, market cap'i, runway-kirjelduse, katalüsaatori, riskid ja teadmata info.
-- Päevane `/api/collect` kasvatab olemasoleva SEC CompanyFactsi allika katvust maksimaalselt viie ettevõtte kaupa ning salvestab ühe idempotentse `rklb_daily` canonical discovery run'i Tallinna kalendripäeva kohta. Canonical v4 lubab tier-kohtadele ainult sama collection run'i market-data lookupis kinnitatud tickerid, et varasem salvestatud nimi ei tõrjuks tänast kinnitatud kandidaati välja; käsitsi scanner jääb olemasoleva salvestatud universumi vaateks.
+- Päevane `/api/collect` kasvatab olemasoleva SEC CompanyFactsi allika katvust maksimaalselt 20 ettevõtte kaupa ning salvestab ühe idempotentse `rklb_daily` canonical discovery run'i Tallinna kalendripäeva kohta. Canonical v4 lubab tier-kohtadele ainult sama collection run'i market-data lookupis kinnitatud tickerid, et varasem salvestatud nimi ei tõrjuks tänast kinnitatud kandidaati välja; käsitsi scanner jääb olemasoleva salvestatud universumi vaateks.
 - Iga `runCollection()` põhikogumise katse loob `collection_runs` auditikirje: `running` läheb terminalolekusse `success` või `failure`, säilitades algus-/lõpuaja, kestuse, triggeri, versioonitud JSON-metricud ja piiratud veainfo. Katkenud protsess jääb nähtavalt `running` olekusse.
 - Iga uus canonical `rklb_daily` discovery run saab ühe immutable `data_quality_snapshots` kirje: otsuse hetke universumi SEC/score/sektori/hinnakate, freshness-loendurid ja nähtavad riskiflagid. Manual `rklb` run'idele snapshot'i ei looda.
 - Iga measured candidate outcome saab automaatselt immutable Outcome Analysis Snapshot V1 kirje, mis külmutab ainult otsusehetke decision/quality/collection provenance'i ning outcome'i enda. Winner ja benchmark beat on eraldi; puuduv sisend jääb `unknown`.

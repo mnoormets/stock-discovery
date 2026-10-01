@@ -1,3 +1,4 @@
+import { collectMarketRadar } from './market-radar';
 import { fetchApeWisdom } from './apewisdom';
 import { fetchTradestie } from './tradestie';
 import { fetchFundamentals } from './yahoo';
@@ -251,7 +252,10 @@ async function collectCore(collectionRunId: number) {
   });
   await recordCollectionRunItems(items);
 
+  const marketRadar = await collectMarketRadar();
+
   return {
+    marketRadar,
     captureDate,
     scanned: ape.rawRowCount,
     candidates: candidates.length,
@@ -304,6 +308,7 @@ function collectionMetrics(result: Awaited<ReturnType<typeof collectCore>>): Col
     marketDataLookup: result.marketDataLookup,
     insiderSignal: result.insiderSignal,
     providers: result.providers,
+    marketRadar: result.marketRadar,
   };
 }
 

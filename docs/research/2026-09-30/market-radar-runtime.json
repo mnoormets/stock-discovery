@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-10-01T13:08:32.393Z",
+  "collectionRunId": "62",
+  "status": "success",
+  "stocks": 137,
+  "channels": [
+    {
+      "id": "day_gainers",
+      "status": "ok",
+      "accepted": 24,
+      "received": 25
+    },
+    {
+      "id": "small_cap_gainers",
+      "status": "ok",
+      "accepted": 25,
+      "received": 25
+    },
+    {
+      "id": "most_actives",
+      "status": "ok",
+      "accepted": 25,
+      "received": 25
+    },
+    {
+      "id": "aggressive_small_caps",
+      "status": "ok",
+      "accepted": 25,
+      "received": 25
+    },
+    {
+      "id": "growth_technology_stocks",
+      "status": "ok",
+      "accepted": 25,
+      "received": 25
+    },
+    {
+      "id": "undervalued_growth_stocks",
+      "status": "ok",
+      "accepted": 25,
+      "received": 25
+    }
+  ],
+  "radarCompaniesWithFacts": 45
+}
