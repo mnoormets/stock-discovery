@@ -23,3 +23,5 @@ Typecheck exit 0; lint no warnings/errors. [Production build](early-build.log) c
 Next: verify the published code's unattended execution and evaluate early discoveries forward, including losses, missing coverage and misses. No profitability claim or strategy tuning from two names.
 
 Repeat verification: collection #64 found 2 watch / 47 excluded / 87 unknown from 136 names; each watch row stores 139 validated historical closes. [Final runtime JSON](early-runtime-final.json) and [collector output](early-collect-final.log) show identical first-discovery timestamps/prices before and after the run. Original #63 rows are untouched and have derived context/fact evidence but no raw historical-price array; later scans contain that added trace, not a hindsight backfill.
+
+Published feature commit `4b98b67` to `origin/main`; exact remote SHA verified. Next scheduled execution is pending and is not claimed tested.
