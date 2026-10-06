@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import CapitalResult from '@/components/CapitalResult';
+import { getCapitalDashboard } from '@/lib/paper-capital';
 import PaperSignalEvidence from '@/components/PaperSignalEvidence';
 import {
   getPaperBookStatus,
@@ -101,8 +103,9 @@ function MoneyResult({ book }: { book: PaperBookPerformance }) {
 
 export default async function PerformancePage() {
   let dashboard = null;
+  let capital = null;
   let error = '';
-  try { dashboard = await getPaperPerformanceDashboard(); }
+  try { [dashboard, capital] = await Promise.all([getPaperPerformanceDashboard(), getCapitalDashboard()]); }
   catch (caught) { error = (caught as Error).message; }
 
   return <main className="wrap pageStack">
@@ -113,8 +116,11 @@ export default async function PerformancePage() {
     </section>
     {error && <div className="notice danger">Paper strategy andmeid ei õnnestunud laadida: {error}</div>}
     {dashboard && !dashboard.available && <div className="notice">Paper strategy skeem ei ole selles andmebaasis veel rakendatud. Discovery töötab edasi muutmata; siia ei kuvata oletatud tulemusi.</div>}
+    {capital && <CapitalResult data={capital} />}
     {dashboard?.available && <>
+      <details className="card" open={!capital}><summary>Original V1 control: money made or lost</summary>
       <MoneyResult book={dashboard.books.find((book) => book.strategy === 'entry_aware' && book.book === 'strategy')!} />
+      </details>
       <details className="card"><summary>Comparison, strategy rules and trade history</summary>
       <section className="section">
         <div className="sectionHeading"><div><p className="eyebrow">{dashboard.policyVersion}</p><h2>Kaks poliitikat, sama raha</h2></div><span className="muted">Seis: {dateTime(dashboard.generatedAt)}</span></div>

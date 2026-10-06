@@ -12,6 +12,7 @@ ensureLocalDatabaseUrl();
 
 const { pool } = loadTs(path.join(root, 'src/lib/db.ts'));
 const store = loadTs(path.join(root, 'src/lib/paper-strategy-store.ts'));
+const capital = loadTs(path.join(root, 'src/lib/paper-capital.ts'));
 const policy = loadTs(path.join(root, 'src/lib/paper-strategy.ts'));
 
 function argument(name) {
@@ -42,10 +43,15 @@ async function main() {
   }
   if (command === 'execute') {
     const now = new Date();
+    const capitalResult = await capital.executeCapitalPaper({ now });
+    console.log(JSON.stringify({ capital: capitalResult }, null, 2));
     const result = await store.executePendingPaperOrders({ now });
     console.log(JSON.stringify(result, null, 2));
     if (policy.shouldFailIncompletePaperExecution(result.deferredOrders, result.unmarkedHeldTickers.length, now)) {
       throw new Error(`${result.deferredOrders} hypothetical paper orders deferred; ${result.unmarkedHeldTickers.length} held tickers without fresh marks (${result.unmarkedHeldTickers.join(", ") || "none"}) during the expected New York regular session.`);
+    }
+    if (policy.shouldFailIncompletePaperExecution(0, capitalResult.issues.length, now)) {
+      throw new Error('Capital paper quote coverage incomplete: ' + capitalResult.issues.join('; '));
     }
     return;
   }

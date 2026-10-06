@@ -1,0 +1,1486 @@
+{
+  "version": "early-capital-v1",
+  "status": "active",
+  "startedAt": "2026-10-06T18:12:06.959Z",
+  "completedAt": null,
+  "rules": {
+    "entry": "Latest successful early-opportunities-v1 watch rows; one entry per ticker; no averaging or re-entry.",
+    "initialUsd": 20000,
+    "maxHoldDays": 30,
+    "slippageBps": 5,
+    "maxPositions": 8,
+    "riskFloorUsd": 18000,
+    "cashReserveUsd": 4000,
+    "stopLossPercent": -8,
+    "targetProfitUsd": 10000,
+    "positionBudgetUsd": 2000,
+    "takeProfitPercent": 20
+  },
+  "books": [
+    {
+      "book": "strategy",
+      "cashUsd": 16000,
+      "realizedProfitUsd": 0,
+      "equityUsd": 19996.001999000502,
+      "profitUsd": -3.99800099949789,
+      "positions": [
+        {
+          "ticker": "CDE",
+          "instrument": "CDE",
+          "boughtAt": "2026-10-06T18:12:06.959Z",
+          "buyPrice": 17.368679999999998,
+          "quantity": 115.09222347351671,
+          "latestPrice": 17.36,
+          "markAt": "2026-10-06T18:10:49.000Z",
+          "valueUsd": 1998.0009995002501,
+          "profitUsd": -1.9990004997498545
+        },
+        {
+          "ticker": "AMKR",
+          "instrument": "AMKR",
+          "boughtAt": "2026-10-06T18:12:06.959Z",
+          "buyPrice": 54.006989999999995,
+          "quantity": 37.013727297151725,
+          "latestPrice": 53.98,
+          "markAt": "2026-10-06T18:10:48.000Z",
+          "valueUsd": 1998.00099950025,
+          "profitUsd": -1.9990004997500819
+        }
+      ],
+      "issues": []
+    },
+    {
+      "book": "benchmark",
+      "cashUsd": 16000,
+      "realizedProfitUsd": 0,
+      "equityUsd": 19996.001999000502,
+      "profitUsd": -3.99800099949789,
+      "positions": [
+        {
+          "ticker": "CDE",
+          "instrument": "SPY",
+          "boughtAt": "2026-10-06T18:12:06.959Z",
+          "buyPrice": 780.6301199999999,
+          "quantity": 2.560751819312327,
+          "latestPrice": 780.24,
+          "markAt": "2026-10-06T18:10:49.000Z",
+          "valueUsd": 1998.0009995002501,
+          "profitUsd": -1.9990004997498545
+        },
+        {
+          "ticker": "AMKR",
+          "instrument": "SPY",
+          "boughtAt": "2026-10-06T18:12:06.959Z",
+          "buyPrice": 780.6301199999999,
+          "quantity": 2.560751819312327,
+          "latestPrice": 780.24,
+          "markAt": "2026-10-06T18:10:49.000Z",
+          "valueUsd": 1998.0009995002501,
+          "profitUsd": -1.9990004997498545
+        }
+      ],
+      "issues": []
+    }
+  ],
+  "trades": [
+    {
+      "id": "1",
+      "policy_version": "early-capital-v1",
+      "book_key": "strategy",
+      "signal_ticker": "CDE",
+      "instrument_ticker": "CDE",
+      "side": "buy",
+      "quantity": "115.09222347351671",
+      "price": "17.368679999999998",
+      "gross_usd": "1999",
+      "fee_usd": "1",
+      "market_at": "2026-10-06T18:10:49.000Z",
+      "executed_at": "2026-10-06T18:12:06.959Z",
+      "collection_run_id": "69",
+      "evidence": {
+        "quote": {
+          "symbol": "CDE",
+          "currency": "USD",
+          "marketCap": 17844951040,
+          "marketState": "REGULAR",
+          "regularMarketTime": "2026-10-06T18:10:49.000Z",
+          "regularMarketPrice": 17.36,
+          "regularMarketVolume": 13550400
+        },
+        "candidate": {
+          "name": "Coeur Mining, Inc.",
+          "facts": [
+            {
+              "id": 44539,
+              "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+              "form": "10-Q",
+              "unit": "USD",
+              "value": 1085592000,
+              "metric": "revenue",
+              "derived": false,
+              "filedAt": "2026-08-05",
+              "taxonomy": "us-gaap",
+              "periodEnd": "2026-06-30",
+              "sourceUrl": "https://www.sec.gov/Archives/edgar/data/215466/000021546626000036/",
+              "fiscalYear": 2026,
+              "periodKind": "quarter",
+              "periodStart": "2026-04-01",
+              "fiscalPeriod": "Q2",
+              "accessionNumber": "0000215466-26-000036"
+            },
+            {
+              "id": 44545,
+              "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+              "form": "10-Q",
+              "unit": "USD",
+              "value": 480650000,
+              "metric": "revenue",
+              "derived": false,
+              "filedAt": "2026-08-05",
+              "taxonomy": "us-gaap",
+              "periodEnd": "2025-06-30",
+              "sourceUrl": "https://www.sec.gov/Archives/edgar/data/215466/000021546626000036/",
+              "fiscalYear": 2026,
+              "periodKind": "quarter",
+              "periodStart": "2025-04-01",
+              "fiscalPeriod": "Q2",
+              "accessionNumber": "0000215466-26-000036"
+            },
+            {
+              "id": 44599,
+              "tag": "NetCashProvidedByUsedInOperatingActivities",
+              "form": "10-Q",
+              "unit": "USD",
+              "value": 513232000,
+              "metric": "operating_cash_flow",
+              "derived": false,
+              "filedAt": "2026-08-05",
+              "taxonomy": "us-gaap",
+              "periodEnd": "2026-06-30",
+              "sourceUrl": "https://www.sec.gov/Archives/edgar/data/215466/000021546626000036/",
+              "fiscalYear": 2026,
+              "periodKind": "quarter",
+              "periodStart": "2026-04-01",
+              "fiscalPeriod": "Q2",
+              "accessionNumber": "0000215466-26-000036"
+            }
+          ],
+          "price": 17.05,
+          "state": "watch",
+          "ticker": "CDE",
+          "reasons": [
+            "Revenue grew 125.9% YoY; same-period operating cash flow is positive.",
+            "Observed returns below +20% / +35% / +50% over 1 / 3 / 6 months. Future direction remains unknown."
+          ],
+          "marketAt": "2026-10-05T20:01:39.000Z",
+          "priceContext": {
+            "asOf": "2026-10-05T20:01:39.000Z",
+            "version": "price-context-v1",
+            "recentRunUp": false,
+            "currentPrice": 17.05,
+            "historyStatus": "partial",
+            "fiftyTwoWeekLow": null,
+            "fiftyTwoWeekHigh": null,
+            "observationCount": 137,
+            "recentRunUpReasons": [],
+            "newestObservationAt": "2026-10-05T13:30:00.000Z",
+            "oldestObservationAt": "2026-03-20T13:30:00.000Z",
+            "oneMonthReturnPercent": -19.73,
+            "sixMonthReturnPercent": -13.54,
+            "threeMonthReturnPercent": 6.3,
+            "distanceFrom52WeekLowPercent": null,
+            "distanceFrom52WeekHighPercent": null
+          },
+          "revenueGrowth": 125.85914906896912,
+          "priceObservations": [
+            {
+              "price": 17.670000076293945,
+              "capturedAt": "2026-03-20T13:30:00.000Z"
+            },
+            {
+              "price": 17.889999389648438,
+              "capturedAt": "2026-03-23T13:30:00.000Z"
+            },
+            {
+              "price": 18.309999465942383,
+              "capturedAt": "2026-03-24T13:30:00.000Z"
+            },
+            {
+              "price": 17.84000015258789,
+              "capturedAt": "2026-03-25T13:30:00.000Z"
+            },
+            {
+              "price": 16.170000076293945,
+              "capturedAt": "2026-03-26T13:30:00.000Z"
+            },
+            {
+              "price": 17.1299991607666,
+              "capturedAt": "2026-03-27T13:30:00.000Z"
+            },
+            {
+              "price": 16.5,
+              "capturedAt": "2026-03-30T13:30:00.000Z"
+            },
+            {
+              "price": 18.770000457763672,
+              "capturedAt": "2026-03-31T13:30:00.000Z"
+            },
+            {
+              "price": 19.110000610351562,
+              "capturedAt": "2026-04-01T13:30:00.000Z"
+            },
+            {
+              "price": 19.09000015258789,
+              "capturedAt": "2026-04-02T13:30:00.000Z"
+            },
+            {
+              "price": 18.59000015258789,
+              "capturedAt": "2026-04-06T13:30:00.000Z"
+            },
+            {
+              "price": 19,
+              "capturedAt": "2026-04-07T13:30:00.000Z"
+            },
+            {
+              "price": 19.719999313354492,
+              "capturedAt": "2026-04-08T13:30:00.000Z"
+            },
+            {
+              "price": 19.719999313354492,
+              "capturedAt": "2026-04-09T13:30:00.000Z"
+            },
+            {
+              "price": 20.239999771118164,
+              "capturedAt": "2026-04-10T13:30:00.000Z"
+            },
+            {
+              "price": 20.309999465942383,
+              "capturedAt": "2026-04-13T13:30:00.000Z"
+            },
+            {
+              "price": 21.170000076293945,
+              "capturedAt": "2026-04-14T13:30:00.000Z"
+            },
+            {
+              "price": 19.670000076293945,
+              "capturedAt": "2026-04-15T13:30:00.000Z"
+            },
+            {
+              "price": 19.510000228881836,
+              "capturedAt": "2026-04-16T13:30:00.000Z"
+            },
+            {
+              "price": 20.3799991607666,
+              "capturedAt": "2026-04-17T13:30:00.000Z"
+            },
+            {
+              "price": 19.780000686645508,
+              "capturedAt": "2026-04-20T13:30:00.000Z"
+            },
+            {
+              "price": 18.440000534057617,
+              "capturedAt": "2026-04-21T13:30:00.000Z"
+            },
+            {
+              "price": 19.329999923706055,
+              "capturedAt": "2026-04-22T13:30:00.000Z"
+            },
+            {
+              "price": 18.860000610351562,
+              "capturedAt": "2026-04-23T13:30:00.000Z"
+            },
+            {
+              "price": 19.309999465942383,
+              "capturedAt": "2026-04-24T13:30:00.000Z"
+            },
+            {
+              "price": 18.8799991607666,
+              "capturedAt": "2026-04-27T13:30:00.000Z"
+            },
+            {
+              "price": 17.850000381469727,
+              "capturedAt": "2026-04-28T13:30:00.000Z"
+            },
+            {
+              "price": 17.329999923706055,
+              "capturedAt": "2026-04-29T13:30:00.000Z"
+            },
+            {
+              "price": 17.969999313354492,
+              "capturedAt": "2026-04-30T13:30:00.000Z"
+            },
+            {
+              "price": 17.649999618530273,
+              "capturedAt": "2026-05-01T13:30:00.000Z"
+            },
+            {
+              "price": 17.559999465942383,
+              "capturedAt": "2026-05-04T13:30:00.000Z"
+            },
+            {
+              "price": 17.1299991607666,
+              "capturedAt": "2026-05-05T13:30:00.000Z"
+            },
+            {
+              "price": 18.75,
+              "capturedAt": "2026-05-06T13:30:00.000Z"
+            },
+            {
+              "price": 18.1200008392334,
+              "capturedAt": "2026-05-07T13:30:00.000Z"
+            },
+            {
+              "price": 18.559999465942383,
+              "capturedAt": "2026-05-08T13:30:00.000Z"
+            },
+            {
+              "price": 19.799999237060547,
+              "capturedAt": "2026-05-11T13:30:00.000Z"
+            },
+            {
+              "price": 20.170000076293945,
+              "capturedAt": "2026-05-12T13:30:00.000Z"
+            },
+            {
+              "price": 19.739999771118164,
+              "capturedAt": "2026-05-13T13:30:00.000Z"
+            },
+            {
+              "price": 19.399999618530273,
+              "capturedAt": "2026-05-14T13:30:00.000Z"
+            },
+            {
+              "price": 17.610000610351562,
+              "capturedAt": "2026-05-15T13:30:00.000Z"
+            },
+            {
+              "price": 17.5,
+              "capturedAt": "2026-05-18T13:30:00.000Z"
+            },
+            {
+              "price": 16.760000228881836,
+              "capturedAt": "2026-05-19T13:30:00.000Z"
+            },
+            {
+              "price": 17.729999542236328,
+              "capturedAt": "2026-05-20T13:30:00.000Z"
+            },
+            {
+              "price": 17.829999923706055,
+              "capturedAt": "2026-05-21T13:30:00.000Z"
+            },
+            {
+              "price": 17.6299991607666,
+              "capturedAt": "2026-05-22T13:30:00.000Z"
+            },
+            {
+              "price": 18.3700008392334,
+              "capturedAt": "2026-05-26T13:30:00.000Z"
+            },
+            {
+              "price": 17.84000015258789,
+              "capturedAt": "2026-05-27T13:30:00.000Z"
+            },
+            {
+              "price": 18.59000015258789,
+              "capturedAt": "2026-05-28T13:30:00.000Z"
+            },
+            {
+              "price": 19.31999969482422,
+              "capturedAt": "2026-05-29T13:30:00.000Z"
+            },
+            {
+              "price": 19.31999969482422,
+              "capturedAt": "2026-06-01T13:30:00.000Z"
+            },
+            {
+              "price": 19.190000534057617,
+              "capturedAt": "2026-06-02T13:30:00.000Z"
+            },
+            {
+              "price": 18.149999618530273,
+              "capturedAt": "2026-06-03T13:30:00.000Z"
+            },
+            {
+              "price": 18.479999542236328,
+              "capturedAt": "2026-06-04T13:30:00.000Z"
+            },
+            {
+              "price": 16.3700008392334,
+              "capturedAt": "2026-06-05T13:30:00.000Z"
+            },
+            {
+              "price": 16.729999542236328,
+              "capturedAt": "2026-06-08T13:30:00.000Z"
+            },
+            {
+              "price": 16.09000015258789,
+              "capturedAt": "2026-06-09T13:30:00.000Z"
+            },
+            {
+              "price": 15.40999984741211,
+              "capturedAt": "2026-06-10T13:30:00.000Z"
+            },
+            {
+              "price": 16.399999618530273,
+              "capturedAt": "2026-06-11T13:30:00.000Z"
+            },
+            {
+              "price": 17.200000762939453,
+              "capturedAt": "2026-06-12T13:30:00.000Z"
+            },
+            {
+              "price": 18.65999984741211,
+              "capturedAt": "2026-06-15T13:30:00.000Z"
+            },
+            {
+              "price": 18.790000915527344,
+              "capturedAt": "2026-06-16T13:30:00.000Z"
+            },
+            {
+              "price": 17.530000686645508,
+              "capturedAt": "2026-06-17T13:30:00.000Z"
+            },
+            {
+              "price": 17.510000228881836,
+              "capturedAt": "2026-06-18T13:30:00.000Z"
+            },
+            {
+              "price": 17.469999313354492,
+              "capturedAt": "2026-06-22T13:30:00.000Z"
+            },
+            {
+              "price": 16.31999969482422,
+              "capturedAt": "2026-06-23T13:30:00.000Z"
+            },
+            {
+              "price": 15.470000267028809,
+              "capturedAt": "2026-06-24T13:30:00.000Z"
+            },
+            {
+              "price": 15.989999771118164,
+              "capturedAt": "2026-06-25T13:30:00.000Z"
+            },
+            {
+              "price": 16.020000457763672,
+              "capturedAt": "2026-06-26T13:30:00.000Z"
+            },
+            {
+              "price": 16.329999923706055,
+              "capturedAt": "2026-06-29T13:30:00.000Z"
+            },
+            {
+              "price": 16.31999969482422,
+              "capturedAt": "2026-06-30T13:30:00.000Z"
+            },
+            {
+              "price": 16.540000915527344,
+              "capturedAt": "2026-07-01T13:30:00.000Z"
+            },
+            {
+              "price": 17.299999237060547,
+              "capturedAt": "2026-07-02T13:30:00.000Z"
+            },
+            {
+              "price": 16.989999771118164,
+              "capturedAt": "2026-07-06T13:30:00.000Z"
+            },
+            {
+              "price": 16.040000915527344,
+              "capturedAt": "2026-07-07T13:30:00.000Z"
+            },
+            {
+              "price": 15.239999771118164,
+              "capturedAt": "2026-07-08T13:30:00.000Z"
+            },
+            {
+              "price": 16.020000457763672,
+              "capturedAt": "2026-07-09T13:30:00.000Z"
+            },
+            {
+              "price": 15.979999542236328,
+              "capturedAt": "2026-07-10T13:30:00.000Z"
+            },
+            {
+              "price": 15.59000015258789,
+              "capturedAt": "2026-07-13T13:30:00.000Z"
+            },
+            {
+              "price": 16,
+              "capturedAt": "2026-07-14T13:30:00.000Z"
+            },
+            {
+              "price": 15.90999984741211,
+              "capturedAt": "2026-07-15T13:30:00.000Z"
+            },
+            {
+              "price": 14.789999961853027,
+              "capturedAt": "2026-07-16T13:30:00.000Z"
+            },
+            {
+              "price": 14.350000381469727,
+              "capturedAt": "2026-07-17T13:30:00.000Z"
+            },
+            {
+              "price": 14.15999984741211,
+              "capturedAt": "2026-07-20T13:30:00.000Z"
+            },
+            {
+              "price": 15.300000190734863,
+              "capturedAt": "2026-07-21T13:30:00.000Z"
+            },
+            {
+              "price": 15.84000015258789,
+              "capturedAt": "2026-07-22T13:30:00.000Z"
+            },
+            {
+              "price": 15.239999771118164,
+              "capturedAt": "2026-07-23T13:30:00.000Z"
+            },
+            {
+              "price": 15.130000114440918,
+              "capturedAt": "2026-07-24T13:30:00.000Z"
+            },
+            {
+              "price": 15.359999656677246,
+              "capturedAt": "2026-07-27T13:30:00.000Z"
+            },
+            {
+              "price": 14.90999984741211,
+              "capturedAt": "2026-07-28T13:30:00.000Z"
+            },
+            {
+              "price": 14.630000114440918,
+              "capturedAt": "2026-07-29T13:30:00.000Z"
+            },
+            {
+              "price": 15.399999618530273,
+              "capturedAt": "2026-07-30T13:30:00.000Z"
+            },
+            {
+              "price": 14.90999984741211,
+              "capturedAt": "2026-07-31T13:30:00.000Z"
+            },
+            {
+              "price": 15.5600004196167,
+              "capturedAt": "2026-08-03T13:30:00.000Z"
+            },
+            {
+              "price": 16.209999084472656,
+              "capturedAt": "2026-08-04T13:30:00.000Z"
+            },
+            {
+              "price": 17.43000030517578,
+              "capturedAt": "2026-08-05T13:30:00.000Z"
+            },
+            {
+              "price": 15.649999618530273,
+              "capturedAt": "2026-08-06T13:30:00.000Z"
+            },
+            {
+              "price": 17.389999389648438,
+              "capturedAt": "2026-08-07T13:30:00.000Z"
+            },
+            {
+              "price": 18.149999618530273,
+              "capturedAt": "2026-08-10T13:30:00.000Z"
+            },
+            {
+              "price": 18.579999923706055,
+              "capturedAt": "2026-08-11T13:30:00.000Z"
+            },
+            {
+              "price": 18.799999237060547,
+              "capturedAt": "2026-08-12T13:30:00.000Z"
+            },
+            {
+              "price": 18.450000762939453,
+              "capturedAt": "2026-08-13T13:30:00.000Z"
+            },
+            {
+              "price": 18.809999465942383,
+              "capturedAt": "2026-08-14T13:30:00.000Z"
+            },
+            {
+              "price": 19.309999465942383,
+              "capturedAt": "2026-08-17T13:30:00.000Z"
+            },
+            {
+              "price": 18.510000228881836,
+              "capturedAt": "2026-08-18T13:30:00.000Z"
+            },
+            {
+              "price": 20.93000030517578,
+              "capturedAt": "2026-08-19T13:30:00.000Z"
+            },
+            {
+              "price": 21.110000610351562,
+              "capturedAt": "2026-08-20T13:30:00.000Z"
+            },
+            {
+              "price": 20.969999313354492,
+              "capturedAt": "2026-08-21T13:30:00.000Z"
+            },
+            {
+              "price": 20.8799991607666,
+              "capturedAt": "2026-08-24T13:30:00.000Z"
+            },
+            {
+              "price": 21.59000015258789,
+              "capturedAt": "2026-08-25T13:30:00.000Z"
+            },
+            {
+              "price": 21.440000534057617,
+              "capturedAt": "2026-08-26T13:30:00.000Z"
+            },
+            {
+              "price": 22.209999084472656,
+              "capturedAt": "2026-08-27T13:30:00.000Z"
+            },
+            {
+              "price": 21.1299991607666,
+              "capturedAt": "2026-08-28T13:30:00.000Z"
+            },
+            {
+              "price": 20.780000686645508,
+              "capturedAt": "2026-08-31T13:30:00.000Z"
+            },
+            {
+              "price": 20.200000762939453,
+              "capturedAt": "2026-09-01T13:30:00.000Z"
+            },
+            {
+              "price": 21.420000076293945,
+              "capturedAt": "2026-09-02T13:30:00.000Z"
+            },
+            {
+              "price": 21.649999618530273,
+              "capturedAt": "2026-09-03T13:30:00.000Z"
+            },
+            {
+              "price": 21.239999771118164,
+              "capturedAt": "2026-09-04T13:30:00.000Z"
+            },
+            {
+              "price": 20.65999984741211,
+              "capturedAt": "2026-09-08T13:30:00.000Z"
+            },
+            {
+              "price": 21,
+              "capturedAt": "2026-09-09T13:30:00.000Z"
+            },
+            {
+              "price": 20.34000015258789,
+              "capturedAt": "2026-09-10T13:30:00.000Z"
+            },
+            {
+              "price": 20.579999923706055,
+              "capturedAt": "2026-09-11T13:30:00.000Z"
+            },
+            {
+              "price": 19.8799991607666,
+              "capturedAt": "2026-09-14T13:30:00.000Z"
+            },
+            {
+              "price": 19.90999984741211,
+              "capturedAt": "2026-09-15T13:30:00.000Z"
+            },
+            {
+              "price": 18.979999542236328,
+              "capturedAt": "2026-09-16T13:30:00.000Z"
+            },
+            {
+              "price": 19.979999542236328,
+              "capturedAt": "2026-09-17T13:30:00.000Z"
+            },
+            {
+              "price": 19.760000228881836,
+              "capturedAt": "2026-09-18T13:30:00.000Z"
+            },
+            {
+              "price": 19.520000457763672,
+              "capturedAt": "2026-09-21T13:30:00.000Z"
+            },
+            {
+              "price": 20.489999771118164,
+              "capturedAt": "2026-09-22T13:30:00.000Z"
+            },
+            {
+              "price": 19.31999969482422,
+              "capturedAt": "2026-09-23T13:30:00.000Z"
+            },
+            {
+              "price": 18.940000534057617,
+              "capturedAt": "2026-09-24T13:30:00.000Z"
+            },
+            {
+              "price": 19.219999313354492,
+              "capturedAt": "2026-09-25T13:30:00.000Z"
+            },
+            {
+              "price": 17.8700008392334,
+              "capturedAt": "2026-09-28T13:30:00.000Z"
+            },
+            {
+              "price": 17.84000015258789,
+              "capturedAt": "2026-09-29T13:30:00.000Z"
+            },
+            {
+              "price": 17.600000381469727,
+              "capturedAt": "2026-09-30T13:30:00.000Z"
+            },
+            {
+              "price": 17.559999465942383,
+              "capturedAt": "2026-10-01T13:30:00.000Z"
+            },
+            {
+              "price": 17.65999984741211,
+              "capturedAt": "2026-10-02T13:30:00.000Z"
+            },
+            {
+              "price": 17.049999237060547,
+              "capturedAt": "2026-10-05T13:30:00.000Z"
+            }
+          ]
+        },
+        "slippageBps": 5,
+        "earlyEvaluatedAt": "2026-10-06T05:44:08.777Z"
+      },
+      "reason": "Early source-backed entry"
+    },
+    {
+      "id": "2",
+      "policy_version": "early-capital-v1",
+      "book_key": "benchmark",
+      "signal_ticker": "CDE",
+      "instrument_ticker": "SPY",
+      "side": "buy",
+      "quantity": "2.560751819312327",
+      "price": "780.6301199999999",
+      "gross_usd": "1999",
+      "fee_usd": "1",
+      "market_at": "2026-10-06T18:10:49.000Z",
+      "executed_at": "2026-10-06T18:12:06.959Z",
+      "collection_run_id": "69",
+      "evidence": {
+        "quote": {
+          "symbol": "SPY",
+          "currency": "USD",
+          "marketCap": null,
+          "marketState": "REGULAR",
+          "regularMarketTime": "2026-10-06T18:10:49.000Z",
+          "regularMarketPrice": 780.24,
+          "regularMarketVolume": 19314985
+        },
+        "slippageBps": 5,
+        "signalTicker": "CDE"
+      },
+      "reason": "Matched cash-flow benchmark"
+    },
+    {
+      "id": "3",
+      "policy_version": "early-capital-v1",
+      "book_key": "strategy",
+      "signal_ticker": "AMKR",
+      "instrument_ticker": "AMKR",
+      "side": "buy",
+      "quantity": "37.013727297151725",
+      "price": "54.006989999999995",
+      "gross_usd": "1999",
+      "fee_usd": "1",
+      "market_at": "2026-10-06T18:10:48.000Z",
+      "executed_at": "2026-10-06T18:12:06.959Z",
+      "collection_run_id": "69",
+      "evidence": {
+        "quote": {
+          "symbol": "AMKR",
+          "currency": "USD",
+          "marketCap": 13380158464,
+          "marketState": "REGULAR",
+          "regularMarketTime": "2026-10-06T18:10:48.000Z",
+          "regularMarketPrice": 53.98,
+          "regularMarketVolume": 1744547
+        },
+        "candidate": {
+          "name": "Amkor Technology, Inc.",
+          "facts": [
+            {
+              "id": 19778,
+              "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+              "form": "10-Q",
+              "unit": "USD",
+              "value": 1684701000,
+              "metric": "revenue",
+              "derived": false,
+              "filedAt": "2026-04-28",
+              "taxonomy": "us-gaap",
+              "periodEnd": "2026-03-31",
+              "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1047127/000104712726000020/",
+              "fiscalYear": 2026,
+              "periodKind": "quarter",
+              "periodStart": "2026-01-01",
+              "fiscalPeriod": "Q1",
+              "accessionNumber": "0001047127-26-000020"
+            },
+            {
+              "id": 19784,
+              "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+              "form": "10-Q",
+              "unit": "USD",
+              "value": 1321575000,
+              "metric": "revenue",
+              "derived": false,
+              "filedAt": "2026-04-28",
+              "taxonomy": "us-gaap",
+              "periodEnd": "2025-03-31",
+              "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1047127/000104712726000020/",
+              "fiscalYear": 2026,
+              "periodKind": "quarter",
+              "periodStart": "2025-01-01",
+              "fiscalPeriod": "Q1",
+              "accessionNumber": "0001047127-26-000020"
+            },
+            {
+              "id": 19838,
+              "tag": "NetCashProvidedByUsedInOperatingActivities",
+              "form": "10-Q",
+              "unit": "USD",
+              "value": 145087000,
+              "metric": "operating_cash_flow",
+              "derived": false,
+              "filedAt": "2026-04-28",
+              "taxonomy": "us-gaap",
+              "periodEnd": "2026-03-31",
+              "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1047127/000104712726000020/",
+              "fiscalYear": 2026,
+              "periodKind": "quarter",
+              "periodStart": "2026-01-01",
+              "fiscalPeriod": "Q1",
+              "accessionNumber": "0001047127-26-000020"
+            }
+          ],
+          "price": 54.63,
+          "state": "watch",
+          "ticker": "AMKR",
+          "reasons": [
+            "Revenue grew 27.5% YoY; same-period operating cash flow is positive.",
+            "Observed returns below +20% / +35% / +50% over 1 / 3 / 6 months. Future direction remains unknown."
+          ],
+          "marketAt": "2026-10-05T20:00:01.000Z",
+          "priceContext": {
+            "asOf": "2026-10-05T20:00:01.000Z",
+            "version": "price-context-v1",
+            "recentRunUp": false,
+            "currentPrice": 54.63,
+            "historyStatus": "partial",
+            "fiftyTwoWeekLow": null,
+            "fiftyTwoWeekHigh": null,
+            "observationCount": 137,
+            "recentRunUpReasons": [],
+            "newestObservationAt": "2026-10-05T13:30:00.000Z",
+            "oldestObservationAt": "2026-03-20T13:30:00.000Z",
+            "oneMonthReturnPercent": 14.36,
+            "sixMonthReturnPercent": 4.22,
+            "threeMonthReturnPercent": -16.38,
+            "distanceFrom52WeekLowPercent": null,
+            "distanceFrom52WeekHighPercent": null
+          },
+          "revenueGrowth": 27.476760683275646,
+          "priceObservations": [
+            {
+              "price": 45.810001373291016,
+              "capturedAt": "2026-03-20T13:30:00.000Z"
+            },
+            {
+              "price": 46.119998931884766,
+              "capturedAt": "2026-03-23T13:30:00.000Z"
+            },
+            {
+              "price": 50.2599983215332,
+              "capturedAt": "2026-03-24T13:30:00.000Z"
+            },
+            {
+              "price": 49.93000030517578,
+              "capturedAt": "2026-03-25T13:30:00.000Z"
+            },
+            {
+              "price": 45.13999938964844,
+              "capturedAt": "2026-03-26T13:30:00.000Z"
+            },
+            {
+              "price": 44.45000076293945,
+              "capturedAt": "2026-03-27T13:30:00.000Z"
+            },
+            {
+              "price": 41.25,
+              "capturedAt": "2026-03-30T13:30:00.000Z"
+            },
+            {
+              "price": 45.029998779296875,
+              "capturedAt": "2026-03-31T13:30:00.000Z"
+            },
+            {
+              "price": 46.4900016784668,
+              "capturedAt": "2026-04-01T13:30:00.000Z"
+            },
+            {
+              "price": 46.70000076293945,
+              "capturedAt": "2026-04-02T13:30:00.000Z"
+            },
+            {
+              "price": 47.029998779296875,
+              "capturedAt": "2026-04-06T13:30:00.000Z"
+            },
+            {
+              "price": 47.619998931884766,
+              "capturedAt": "2026-04-07T13:30:00.000Z"
+            },
+            {
+              "price": 52.41999816894531,
+              "capturedAt": "2026-04-08T13:30:00.000Z"
+            },
+            {
+              "price": 55.13999938964844,
+              "capturedAt": "2026-04-09T13:30:00.000Z"
+            },
+            {
+              "price": 57.959999084472656,
+              "capturedAt": "2026-04-10T13:30:00.000Z"
+            },
+            {
+              "price": 60.439998626708984,
+              "capturedAt": "2026-04-13T13:30:00.000Z"
+            },
+            {
+              "price": 61.31999969482422,
+              "capturedAt": "2026-04-14T13:30:00.000Z"
+            },
+            {
+              "price": 59.720001220703125,
+              "capturedAt": "2026-04-15T13:30:00.000Z"
+            },
+            {
+              "price": 62.900001525878906,
+              "capturedAt": "2026-04-16T13:30:00.000Z"
+            },
+            {
+              "price": 67.37000274658203,
+              "capturedAt": "2026-04-17T13:30:00.000Z"
+            },
+            {
+              "price": 69.44000244140625,
+              "capturedAt": "2026-04-20T13:30:00.000Z"
+            },
+            {
+              "price": 70.20999908447266,
+              "capturedAt": "2026-04-21T13:30:00.000Z"
+            },
+            {
+              "price": 72.25,
+              "capturedAt": "2026-04-22T13:30:00.000Z"
+            },
+            {
+              "price": 72.91000366210938,
+              "capturedAt": "2026-04-23T13:30:00.000Z"
+            },
+            {
+              "price": 78.0999984741211,
+              "capturedAt": "2026-04-24T13:30:00.000Z"
+            },
+            {
+              "price": 75.62000274658203,
+              "capturedAt": "2026-04-27T13:30:00.000Z"
+            },
+            {
+              "price": 71.36000061035156,
+              "capturedAt": "2026-04-28T13:30:00.000Z"
+            },
+            {
+              "price": 70.61000061035156,
+              "capturedAt": "2026-04-29T13:30:00.000Z"
+            },
+            {
+              "price": 69.75,
+              "capturedAt": "2026-04-30T13:30:00.000Z"
+            },
+            {
+              "price": 71.08999633789062,
+              "capturedAt": "2026-05-01T13:30:00.000Z"
+            },
+            {
+              "price": 70.95999908447266,
+              "capturedAt": "2026-05-04T13:30:00.000Z"
+            },
+            {
+              "price": 76.70999908447266,
+              "capturedAt": "2026-05-05T13:30:00.000Z"
+            },
+            {
+              "price": 77.22000122070312,
+              "capturedAt": "2026-05-06T13:30:00.000Z"
+            },
+            {
+              "price": 72.2699966430664,
+              "capturedAt": "2026-05-07T13:30:00.000Z"
+            },
+            {
+              "price": 76.61000061035156,
+              "capturedAt": "2026-05-08T13:30:00.000Z"
+            },
+            {
+              "price": 76.69000244140625,
+              "capturedAt": "2026-05-11T13:30:00.000Z"
+            },
+            {
+              "price": 73.44999694824219,
+              "capturedAt": "2026-05-12T13:30:00.000Z"
+            },
+            {
+              "price": 74.61000061035156,
+              "capturedAt": "2026-05-13T13:30:00.000Z"
+            },
+            {
+              "price": 72.08999633789062,
+              "capturedAt": "2026-05-14T13:30:00.000Z"
+            },
+            {
+              "price": 70.3499984741211,
+              "capturedAt": "2026-05-15T13:30:00.000Z"
+            },
+            {
+              "price": 66.04000091552734,
+              "capturedAt": "2026-05-18T13:30:00.000Z"
+            },
+            {
+              "price": 65.54000091552734,
+              "capturedAt": "2026-05-19T13:30:00.000Z"
+            },
+            {
+              "price": 68.48999786376953,
+              "capturedAt": "2026-05-20T13:30:00.000Z"
+            },
+            {
+              "price": 65.9000015258789,
+              "capturedAt": "2026-05-21T13:30:00.000Z"
+            },
+            {
+              "price": 65.75,
+              "capturedAt": "2026-05-22T13:30:00.000Z"
+            },
+            {
+              "price": 73.45999908447266,
+              "capturedAt": "2026-05-26T13:30:00.000Z"
+            },
+            {
+              "price": 72.19000244140625,
+              "capturedAt": "2026-05-27T13:30:00.000Z"
+            },
+            {
+              "price": 70.58000183105469,
+              "capturedAt": "2026-05-28T13:30:00.000Z"
+            },
+            {
+              "price": 69.55999755859375,
+              "capturedAt": "2026-05-29T13:30:00.000Z"
+            },
+            {
+              "price": 72.75,
+              "capturedAt": "2026-06-01T13:30:00.000Z"
+            },
+            {
+              "price": 74.73999786376953,
+              "capturedAt": "2026-06-02T13:30:00.000Z"
+            },
+            {
+              "price": 75.19999694824219,
+              "capturedAt": "2026-06-03T13:30:00.000Z"
+            },
+            {
+              "price": 73.81999969482422,
+              "capturedAt": "2026-06-04T13:30:00.000Z"
+            },
+            {
+              "price": 64.94999694824219,
+              "capturedAt": "2026-06-05T13:30:00.000Z"
+            },
+            {
+              "price": 68.29000091552734,
+              "capturedAt": "2026-06-08T13:30:00.000Z"
+            },
+            {
+              "price": 70.91000366210938,
+              "capturedAt": "2026-06-09T13:30:00.000Z"
+            },
+            {
+              "price": 69.61000061035156,
+              "capturedAt": "2026-06-10T13:30:00.000Z"
+            },
+            {
+              "price": 76.1500015258789,
+              "capturedAt": "2026-06-11T13:30:00.000Z"
+            },
+            {
+              "price": 82.77999877929688,
+              "capturedAt": "2026-06-12T13:30:00.000Z"
+            },
+            {
+              "price": 85.44000244140625,
+              "capturedAt": "2026-06-15T13:30:00.000Z"
+            },
+            {
+              "price": 86.55000305175781,
+              "capturedAt": "2026-06-16T13:30:00.000Z"
+            },
+            {
+              "price": 86.43000030517578,
+              "capturedAt": "2026-06-17T13:30:00.000Z"
+            },
+            {
+              "price": 90.45999908447266,
+              "capturedAt": "2026-06-18T13:30:00.000Z"
+            },
+            {
+              "price": 93.55000305175781,
+              "capturedAt": "2026-06-22T13:30:00.000Z"
+            },
+            {
+              "price": 86.72000122070312,
+              "capturedAt": "2026-06-23T13:30:00.000Z"
+            },
+            {
+              "price": 82.76000213623047,
+              "capturedAt": "2026-06-24T13:30:00.000Z"
+            },
+            {
+              "price": 85.62000274658203,
+              "capturedAt": "2026-06-25T13:30:00.000Z"
+            },
+            {
+              "price": 78.72000122070312,
+              "capturedAt": "2026-06-26T13:30:00.000Z"
+            },
+            {
+              "price": 82.33999633789062,
+              "capturedAt": "2026-06-29T13:30:00.000Z"
+            },
+            {
+              "price": 86.2300033569336,
+              "capturedAt": "2026-06-30T13:30:00.000Z"
+            },
+            {
+              "price": 79.98999786376953,
+              "capturedAt": "2026-07-01T13:30:00.000Z"
+            },
+            {
+              "price": 69.6500015258789,
+              "capturedAt": "2026-07-02T13:30:00.000Z"
+            },
+            {
+              "price": 69.87999725341797,
+              "capturedAt": "2026-07-06T13:30:00.000Z"
+            },
+            {
+              "price": 65.33000183105469,
+              "capturedAt": "2026-07-07T13:30:00.000Z"
+            },
+            {
+              "price": 66.91000366210938,
+              "capturedAt": "2026-07-08T13:30:00.000Z"
+            },
+            {
+              "price": 72.16000366210938,
+              "capturedAt": "2026-07-09T13:30:00.000Z"
+            },
+            {
+              "price": 70.47000122070312,
+              "capturedAt": "2026-07-10T13:30:00.000Z"
+            },
+            {
+              "price": 66.05999755859375,
+              "capturedAt": "2026-07-13T13:30:00.000Z"
+            },
+            {
+              "price": 70.19999694824219,
+              "capturedAt": "2026-07-14T13:30:00.000Z"
+            },
+            {
+              "price": 67.63999938964844,
+              "capturedAt": "2026-07-15T13:30:00.000Z"
+            },
+            {
+              "price": 63.02000045776367,
+              "capturedAt": "2026-07-16T13:30:00.000Z"
+            },
+            {
+              "price": 62.939998626708984,
+              "capturedAt": "2026-07-17T13:30:00.000Z"
+            },
+            {
+              "price": 62.560001373291016,
+              "capturedAt": "2026-07-20T13:30:00.000Z"
+            },
+            {
+              "price": 66.7300033569336,
+              "capturedAt": "2026-07-21T13:30:00.000Z"
+            },
+            {
+              "price": 66.97000122070312,
+              "capturedAt": "2026-07-22T13:30:00.000Z"
+            },
+            {
+              "price": 65.33000183105469,
+              "capturedAt": "2026-07-23T13:30:00.000Z"
+            },
+            {
+              "price": 64.95999908447266,
+              "capturedAt": "2026-07-24T13:30:00.000Z"
+            },
+            {
+              "price": 60.709999084472656,
+              "capturedAt": "2026-07-27T13:30:00.000Z"
+            },
+            {
+              "price": 45.689998626708984,
+              "capturedAt": "2026-07-28T13:30:00.000Z"
+            },
+            {
+              "price": 42.72999954223633,
+              "capturedAt": "2026-07-29T13:30:00.000Z"
+            },
+            {
+              "price": 48.2599983215332,
+              "capturedAt": "2026-07-30T13:30:00.000Z"
+            },
+            {
+              "price": 49.869998931884766,
+              "capturedAt": "2026-07-31T13:30:00.000Z"
+            },
+            {
+              "price": 50.84000015258789,
+              "capturedAt": "2026-08-03T13:30:00.000Z"
+            },
+            {
+              "price": 55.869998931884766,
+              "capturedAt": "2026-08-04T13:30:00.000Z"
+            },
+            {
+              "price": 53.86000061035156,
+              "capturedAt": "2026-08-05T13:30:00.000Z"
+            },
+            {
+              "price": 54.15999984741211,
+              "capturedAt": "2026-08-06T13:30:00.000Z"
+            },
+            {
+              "price": 55.27000045776367,
+              "capturedAt": "2026-08-07T13:30:00.000Z"
+            },
+            {
+              "price": 52.869998931884766,
+              "capturedAt": "2026-08-10T13:30:00.000Z"
+            },
+            {
+              "price": 54.29999923706055,
+              "capturedAt": "2026-08-11T13:30:00.000Z"
+            },
+            {
+              "price": 55.59000015258789,
+              "capturedAt": "2026-08-12T13:30:00.000Z"
+            },
+            {
+              "price": 57.75,
+              "capturedAt": "2026-08-13T13:30:00.000Z"
+            },
+            {
+              "price": 58.9900016784668,
+              "capturedAt": "2026-08-14T13:30:00.000Z"
+            },
+            {
+              "price": 61.29999923706055,
+              "capturedAt": "2026-08-17T13:30:00.000Z"
+            },
+            {
+              "price": 54.84000015258789,
+              "capturedAt": "2026-08-18T13:30:00.000Z"
+            },
+            {
+              "price": 50.88999938964844,
+              "capturedAt": "2026-08-19T13:30:00.000Z"
+            },
+            {
+              "price": 50.86000061035156,
+              "capturedAt": "2026-08-20T13:30:00.000Z"
+            },
+            {
+              "price": 50.2599983215332,
+              "capturedAt": "2026-08-21T13:30:00.000Z"
+            },
+            {
+              "price": 47.900001525878906,
+              "capturedAt": "2026-08-24T13:30:00.000Z"
+            },
+            {
+              "price": 48.70000076293945,
+              "capturedAt": "2026-08-25T13:30:00.000Z"
+            },
+            {
+              "price": 48.400001525878906,
+              "capturedAt": "2026-08-26T13:30:00.000Z"
+            },
+            {
+              "price": 51.7400016784668,
+              "capturedAt": "2026-08-27T13:30:00.000Z"
+            },
+            {
+              "price": 47.880001068115234,
+              "capturedAt": "2026-08-28T13:30:00.000Z"
+            },
+            {
+              "price": 47.29999923706055,
+              "capturedAt": "2026-08-31T13:30:00.000Z"
+            },
+            {
+              "price": 45.72999954223633,
+              "capturedAt": "2026-09-01T13:30:00.000Z"
+            },
+            {
+              "price": 47.16999816894531,
+              "capturedAt": "2026-09-02T13:30:00.000Z"
+            },
+            {
+              "price": 46.939998626708984,
+              "capturedAt": "2026-09-03T13:30:00.000Z"
+            },
+            {
+              "price": 47.77000045776367,
+              "capturedAt": "2026-09-04T13:30:00.000Z"
+            },
+            {
+              "price": 50.720001220703125,
+              "capturedAt": "2026-09-08T13:30:00.000Z"
+            },
+            {
+              "price": 51.349998474121094,
+              "capturedAt": "2026-09-09T13:30:00.000Z"
+            },
+            {
+              "price": 49.529998779296875,
+              "capturedAt": "2026-09-10T13:30:00.000Z"
+            },
+            {
+              "price": 51.72999954223633,
+              "capturedAt": "2026-09-11T13:30:00.000Z"
+            },
+            {
+              "price": 47.119998931884766,
+              "capturedAt": "2026-09-14T13:30:00.000Z"
+            },
+            {
+              "price": 46.380001068115234,
+              "capturedAt": "2026-09-15T13:30:00.000Z"
+            },
+            {
+              "price": 46.279998779296875,
+              "capturedAt": "2026-09-16T13:30:00.000Z"
+            },
+            {
+              "price": 47.95000076293945,
+              "capturedAt": "2026-09-17T13:30:00.000Z"
+            },
+            {
+              "price": 50.29999923706055,
+              "capturedAt": "2026-09-18T13:30:00.000Z"
+            },
+            {
+              "price": 52.189998626708984,
+              "capturedAt": "2026-09-21T13:30:00.000Z"
+            },
+            {
+              "price": 54.59000015258789,
+              "capturedAt": "2026-09-22T13:30:00.000Z"
+            },
+            {
+              "price": 53.31999969482422,
+              "capturedAt": "2026-09-23T13:30:00.000Z"
+            },
+            {
+              "price": 52.689998626708984,
+              "capturedAt": "2026-09-24T13:30:00.000Z"
+            },
+            {
+              "price": 53.61000061035156,
+              "capturedAt": "2026-09-25T13:30:00.000Z"
+            },
+            {
+              "price": 53.18000030517578,
+              "capturedAt": "2026-09-28T13:30:00.000Z"
+            },
+            {
+              "price": 54.13999938964844,
+              "capturedAt": "2026-09-29T13:30:00.000Z"
+            },
+            {
+              "price": 52.380001068115234,
+              "capturedAt": "2026-09-30T13:30:00.000Z"
+            },
+            {
+              "price": 52.900001525878906,
+              "capturedAt": "2026-10-01T13:30:00.000Z"
+            },
+            {
+              "price": 56.02000045776367,
+              "capturedAt": "2026-10-02T13:30:00.000Z"
+            },
+            {
+              "price": 54.630001068115234,
+              "capturedAt": "2026-10-05T13:30:00.000Z"
+            }
+          ]
+        },
+        "slippageBps": 5,
+        "earlyEvaluatedAt": "2026-10-06T05:44:08.777Z"
+      },
+      "reason": "Early source-backed entry"
+    },
+    {
+      "id": "4",
+      "policy_version": "early-capital-v1",
+      "book_key": "benchmark",
+      "signal_ticker": "AMKR",
+      "instrument_ticker": "SPY",
+      "side": "buy",
+      "quantity": "2.560751819312327",
+      "price": "780.6301199999999",
+      "gross_usd": "1999",
+      "fee_usd": "1",
+      "market_at": "2026-10-06T18:10:49.000Z",
+      "executed_at": "2026-10-06T18:12:06.959Z",
+      "collection_run_id": "69",
+      "evidence": {
+        "quote": {
+          "symbol": "SPY",
+          "currency": "USD",
+          "marketCap": null,
+          "marketState": "REGULAR",
+          "regularMarketTime": "2026-10-06T18:10:49.000Z",
+          "regularMarketPrice": 780.24,
+          "regularMarketVolume": 19314985
+        },
+        "slippageBps": 5,
+        "signalTicker": "AMKR"
+      },
+      "reason": "Matched cash-flow benchmark"
+    }
+  ],
+  "latestRun": {
+    "at": "2026-10-06T18:12:06.959Z",
+    "issues": [],
+    "status": "active",
+    "cashUsd": 16000,
+    "filledTrades": 4,
+    "policyVersion": "early-capital-v1",
+    "sourceCurrent": true,
+    "candidateCount": 2,
+    "collectionRunId": "69"
+  }
+}
