@@ -1,0 +1,148 @@
+{
+  "checkedAt": "2026-10-06T17:21:16.572Z",
+  "history": [
+    {
+      "ticker": "AMKR",
+      "first": "2026-10-01T14:01:21.498Z",
+      "start": 52.3464,
+      "latest": 54.63,
+      "marketAt": "2026-10-05T20:00:01.000Z",
+      "returnPercent": 4.362477648892771
+    },
+    {
+      "ticker": "CDE",
+      "first": "2026-10-01T14:01:21.498Z",
+      "start": 17.595,
+      "latest": 17.05,
+      "marketAt": "2026-10-05T20:01:39.000Z",
+      "returnPercent": -3.0974708724069266
+    }
+  ],
+  "books": [
+    {
+      "strategy": "all_picks_baseline",
+      "book": "strategy",
+      "filledOrders": 199,
+      "pendingOrders": 3,
+      "skippedOrders": 0,
+      "investedUsd": 19919.89999999999,
+      "saleProceedsUsd": 0,
+      "currentValueUsd": null,
+      "profitUsd": null,
+      "returnPercent": null,
+      "openPositions": 34,
+      "valuationComplete": false,
+      "valuationIssues": [
+        "FOR: mark date differs from SPY.",
+        "MSC: mark is stale or its timestamp is invalid."
+      ],
+      "oldestMarkAt": "2026-09-28T13:35:43.000Z",
+      "newestMarkAt": "2026-10-06T13:35:34.000Z"
+    },
+    {
+      "strategy": "all_picks_baseline",
+      "book": "benchmark",
+      "filledOrders": 199,
+      "pendingOrders": 3,
+      "skippedOrders": 0,
+      "investedUsd": 19919.89999999999,
+      "saleProceedsUsd": 0,
+      "currentValueUsd": 20217.945574254118,
+      "profitUsd": 298.04557425412713,
+      "returnPercent": 1.496220233305023,
+      "openPositions": 1,
+      "valuationComplete": true,
+      "valuationIssues": [],
+      "oldestMarkAt": "2026-10-06T13:35:33.000Z",
+      "newestMarkAt": "2026-10-06T13:35:33.000Z"
+    },
+    {
+      "strategy": "entry_aware",
+      "book": "strategy",
+      "filledOrders": 107,
+      "pendingOrders": 0,
+      "skippedOrders": 95,
+      "investedUsd": 10710.70000000002,
+      "saleProceedsUsd": 0,
+      "currentValueUsd": null,
+      "profitUsd": null,
+      "returnPercent": null,
+      "openPositions": 14,
+      "valuationComplete": false,
+      "valuationIssues": [
+        "FOR: mark date differs from SPY."
+      ],
+      "oldestMarkAt": "2026-10-05T13:32:12.000Z",
+      "newestMarkAt": "2026-10-06T13:35:34.000Z"
+    },
+    {
+      "strategy": "entry_aware",
+      "book": "benchmark",
+      "filledOrders": 107,
+      "pendingOrders": 0,
+      "skippedOrders": 95,
+      "investedUsd": 10710.70000000002,
+      "saleProceedsUsd": 0,
+      "currentValueUsd": 10868.160511682332,
+      "profitUsd": 157.46051168231133,
+      "returnPercent": 1.4701234436807213,
+      "openPositions": 1,
+      "valuationComplete": true,
+      "valuationIssues": [],
+      "oldestMarkAt": "2026-10-06T13:35:33.000Z",
+      "newestMarkAt": "2026-10-06T13:35:33.000Z"
+    }
+  ],
+  "runs": [
+    {
+      "id": "69",
+      "status": "success",
+      "started_at": "2026-10-06T05:42:13.672Z",
+      "finished_at": "2026-10-06T05:44:09.098Z"
+    },
+    {
+      "id": "68",
+      "status": "success",
+      "started_at": "2026-10-05T05:11:20.009Z",
+      "finished_at": "2026-10-05T05:13:24.061Z"
+    },
+    {
+      "id": "67",
+      "status": "success",
+      "started_at": "2026-10-04T05:11:29.534Z",
+      "finished_at": "2026-10-04T05:13:37.980Z"
+    },
+    {
+      "id": "66",
+      "status": "success",
+      "started_at": "2026-10-03T05:51:17.593Z",
+      "finished_at": "2026-10-03T05:53:48.833Z"
+    },
+    {
+      "id": "65",
+      "status": "success",
+      "started_at": "2026-10-02T05:37:11.137Z",
+      "finished_at": "2026-10-02T05:40:04.630Z"
+    }
+  ],
+  "FOR": [
+    {
+      "price": "25.35",
+      "market_at": "2026-10-05T20:00:02.000Z",
+      "captured_at": "2026-10-06T05:54:57.799Z",
+      "source": "yahoo-tracking-v1"
+    },
+    {
+      "price": "25.75",
+      "market_at": "2026-10-02T20:00:02.000Z",
+      "captured_at": "2026-10-04T05:30:36.487Z",
+      "source": "yahoo-tracking-v1"
+    },
+    {
+      "price": "25.75",
+      "market_at": "2026-10-02T20:00:02.000Z",
+      "captured_at": "2026-10-03T05:51:43.429Z",
+      "source": "yahoo"
+    }
+  ]
+}

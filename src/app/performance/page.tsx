@@ -79,6 +79,9 @@ function MoneyResult({ book }: { book: PaperBookPerformance }) {
       </dl>
       <p className="muted">Actual paper purchases under the app’s entry rules. Open holdings show gains or losses on paper; they are not cashed out. Values use the quote times below.</p>
       {book.profitUsd == null && book.filledOrders > 0 && <p className="riskText">Some prices cannot be used for a complete total. Available stock results are shown below; missing results are not zero.</p>}
+      {book.valuationIssues.length > 0 && <ul className="riskText" aria-label="Missing portfolio prices">
+        {book.valuationIssues.map((issue) => <li key={issue}>{issue}</li>)}
+      </ul>}
       {book.pendingOrders > 0 && <small>{book.pendingOrders} orders awaiting purchase are excluded.</small>}
     </article>
     <div className="card tableWrap"><table>

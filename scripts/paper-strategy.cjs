@@ -44,8 +44,8 @@ async function main() {
     const now = new Date();
     const result = await store.executePendingPaperOrders({ now });
     console.log(JSON.stringify(result, null, 2));
-    if (policy.shouldFailDeferredPaperExecution(result.deferredOrders, now)) {
-      throw new Error(`${result.deferredOrders} hypothetical paper orders remained deferred during the expected New York regular session.`);
+    if (policy.shouldFailIncompletePaperExecution(result.deferredOrders, result.unmarkedHeldTickers.length, now)) {
+      throw new Error(`${result.deferredOrders} hypothetical paper orders deferred; ${result.unmarkedHeldTickers.length} held tickers without fresh marks (${result.unmarkedHeldTickers.join(", ") || "none"}) during the expected New York regular session.`);
     }
     return;
   }

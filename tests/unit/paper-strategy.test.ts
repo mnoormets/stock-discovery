@@ -5,7 +5,7 @@ import {
   derivePaperMarketSetupState,
   evaluatePaperStrategies,
   paperCommissionUsd,
-  shouldFailDeferredPaperExecution,
+  shouldFailIncompletePaperExecution,
   type PaperSignalInput,
 } from '../../src/lib/paper-strategy';
 import type { CandidatePriceContext } from '../../src/lib/price-context';
@@ -108,10 +108,16 @@ describe('paper-strategy-v1 signal policy', () => {
 
 describe('paper execution accounting and freshness', () => {
   it('fails deferred automation only during an expected New York regular session', () => {
-    expect(shouldFailDeferredPaperExecution(2, new Date('2026-09-14T13:35:00Z'))).toBe(true);
-    expect(shouldFailDeferredPaperExecution(0, new Date('2026-09-14T13:35:00Z'))).toBe(false);
-    expect(shouldFailDeferredPaperExecution(2, new Date('2026-09-13T13:35:00Z'))).toBe(false);
-    expect(shouldFailDeferredPaperExecution(2, new Date('2026-09-14T20:05:00Z'))).toBe(false);
+    expect(shouldFailIncompletePaperExecution(2, 0, new Date('2026-09-14T13:35:00Z'))).toBe(true);
+    expect(shouldFailIncompletePaperExecution(0, 0, new Date('2026-09-14T13:35:00Z'))).toBe(false);
+    expect(shouldFailIncompletePaperExecution(2, 0, new Date('2026-09-13T13:35:00Z'))).toBe(false);
+    expect(shouldFailIncompletePaperExecution(2, 0, new Date('2026-09-14T20:05:00Z'))).toBe(false);
+  });
+
+  it('fails missing held marks even with no pending orders, only during an expected session', () => {
+    expect(shouldFailIncompletePaperExecution(0, 1, new Date('2026-09-14T13:35:00Z'))).toBe(true);
+    expect(shouldFailIncompletePaperExecution(0, 1, new Date('2026-09-13T13:35:00Z'))).toBe(false);
+    expect(shouldFailIncompletePaperExecution(0, 1, new Date('2026-09-14T20:05:00Z'))).toBe(false);
   });
 
   it('models the public Lightyear US-share commission floor and cap', () => {

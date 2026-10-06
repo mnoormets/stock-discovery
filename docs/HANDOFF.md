@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-10-01
+Uuendatud: 2026-10-06
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -27,6 +27,10 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Rakendus ei anna ostu- ega müügisoovitusi.
 
 ## Praegune töötav seis
+
+- **2026-10-06 read-only checkpoint:** morning collections #67/#68/#69 (4–6 October) succeeded; latest six radar channels all ok. First early-discovery cohort still only AMKR/CDE: latest stored 5 October close AMKR $54.63 (+4.3625% from $52.3464), CDE $17.05 (-3.0975% from $17.595). These are observation returns, not actual paper profits. Entry-aware paper has 107 filled buys, 14 open positions, $10,710.70 invested, zero pending orders and zero sale proceeds. Current P/L is unavailable because FOR's mark date differs from SPY; matched SPY book is +$157.46 (+1.4701%), but app/benchmark outperformance cannot be computed from incomplete valuation. No code, strategy, schema or production-data changes; no tests/build claimed. [Saved database evidence](research/2026-10-06/checkpoint.json).
+
+- **2026-10-03 early-discovery checkpoint:** read-only Neon check found successful morning collections #65 (2 October) and #66 (3 October), each with all six Yahoo channels ok and early-opportunities-v1 evidence. AMKR first observed 1 October 17:01 Tallinn at $52.3464, latest stored 2 October 23:00:01 Tallinn $56.02 (+7.0179%); CDE first $17.595, latest 2 October 23:00:02 $17.66 (+0.3694%). AMKR now excluded from fresh early list because session gain reached >=5%, but its original discovery remains in history. Only two names and one subsequent trading-day close: not proof of profitability or general predictive effectiveness. These are discovery price changes, not filled paper returns. Trigger field is generic direct, so DB alone confirms successive morning pipeline execution, not external cron service provenance. No production data/code changes or test/build claims. [Saved DB evidence](research/2026-10-03/early-checkpoint.json).
 
 - **2026-10-01 Early Opportunities V1 verified:** separate Yahoo/SEC research scan requires revenue growth >=25%, positive same-period USD OCF, known recent prices and all 1/3/6-month returns below +20%/+35%/+50%, session gain below 5%. Up to 20 chart requests per collection; exclusions and missing data remain visible. First real collection #63 found AMKR/CDE and saved two follow-up prices; repeat #64 preserved both first-discovery timestamps/prices and saved 139 consumed historical closes per latest candidate. The first #63 record preserves fact evidence and derived context; raw chart inputs were added subsequently, without backfilling it. Candidates stay in existing capped price tracking for 30 days; displayed return since observation is not actual paper P/L. Final full isolated suite: 70 files / 523 tests, 296.39s. Typecheck/lint/build passed; restarted app and real UI/DB checks passed. [Evidence](research/2026-10-01/EARLY_DISCOVERY.md). Next unattended execution and effectiveness remain unverified.
 
@@ -263,6 +267,9 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
+**6 October user target and recovery:** user now requests a $20,000 starting paper budget and $10,000 monthly net gain (currency flexible; USD chosen to match existing accounting). This is a 50% monthly target, not a promised return. Loss tolerance remains unspecified; no live-money budget or broker authorization. The existing daily-$100 V1 is not a finite-capital experiment and must not be presented as meeting this mandate. A fresh existing Yahoo execution pass saved 34 marks, filled zero orders, and recovered entry-aware valuation: $10,710.70 invested, $10,582.16 holdings, -$128.54 (-1.2001%) versus matched SPY +$172.51 (+1.6106%), at 6 October ~17:24 UTC. MSC still lacks a usable mark; six HRGN baseline/benchmark orders remained deferred and the CLI correctly failed. No stale quote was forced into a fill. Profitability remains unresolved.
+
+
 **1 October early-discovery request:** user explicitly asked to find stocks before their rise. Delivered a separate versioned scan for documented growth and positive same-period cash flow before elevated 1/3/6-month returns; first qualification is frozen and tracked forward. Real collection #63 found AMKR/CDE and captured two follow-up prices. Verification completed: final 70-file/523-test suite and live repeated-run/UI checks passed. These are research hypotheses, not proven future winners or paper orders.
 
 **1 October current direction:** the user explicitly authorized broader market discovery, superseding the September feature freeze for this coverage work. Radar delivery is verified; next assess new-source coverage, SEC queue progress and whether discoveries precede subsequent price jumps. This is daily bounded discovery, not whole-market or intraday monitoring, and is not yet connected to a separately versioned paper selection policy. Preserve the current strategy control while measuring missed names and entry timing.
@@ -293,6 +300,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
+- Implement a separately versioned $20,000 finite-capital paper policy with explicit sizing/concentration, entry/exit and risk assumptions; preserve V1 as the control. The $10,000 monthly target is a success criterion to evaluate, not a reason to invent returns or retrospectively optimize the record.
+
 - Observe unattended early-opportunities-v1 execution and its 30-day follow-up marks. Compare first discovery with subsequent returns, include losers/misses and coverage gaps, and preserve the existing paper control. Daily sample, unvalidated thresholds and shared 50-symbol tracking capacity remain explicit limits.
 
 - Observe the next unattended collection after publication: all six radar channel states, source/quote timestamps and the shared 20-company SEC budget. Track radar-first observation versus later returns prospectively; do not backfill pre-boom discoveries or reinterpret radar rows as paper buys.
@@ -314,8 +323,6 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing queue order or adding production listing discovery. The daily budget is now 20; the standalone helper default remains five.
 
 ### LATER
-
-- Specify and implement a separate finite-capital paper experiment with position/concentration limits. Keep existing $100 daily policies as controls and compare matched SPY cash flows, fees, drawdowns and missed fills prospectively. This is simulated capital, not authorization to place real trades.
 
 - Broaden discovery only when tracked results and research rejection reasons demonstrate a specific gap. The user explicitly authorized broader market-information channels on 30 September; paid subscriptions still require a separate decision.
 - Supported Next.js upgrade as a separate tested change; authentication/authorization before public exposure. Public deployment and subscriptions are not the present objective.
@@ -1949,3 +1956,20 @@ API: HTTP 200; expected evidence true
 - Real collection #63: 138 radar names, 2 watch / 43 excluded / 93 unknown. AMKR observed $52.3464, revenue +27.48%, 1/3/6m returns +14.47%/-24.84%/+11.30%; CDE $17.595, revenue +125.86%, returns -12.90%/+1.71%/-5.35%. Both have same-period positive OCF. These facts do not establish valuation, organic growth, safety or a future price jump. Canonical #95 reused, zero new orders/decisions/outcomes; tracking attempted/saved 2 with zero gaps or deferred names; CLI exit 0 and heartbeat HTTP 200. Final required verification completed: typecheck/lint/build passed, app restarted, 70 files / 523 tests passed, auth/UI/DB checks passed and isolated test DB count 0.
 
 - **Early-discovery publication:** feature commit `4b98b67` pushed to `origin/main`; exact remote `4b98b67d6e859e8d13e638e86d43855b8227a299` verified. Final code checks and runtime evidence above are complete; next external unattended execution remains pending.
+
+## Session changelog — 2026-10-03 status check
+
+- Answered user follow-up with read-only persisted collection and early-history evidence. Checked first prices, latest known-time marks, AMKR exclusion reason and tracking rows; retained distinction between discovery return and actual paper P/L. Next focus remains broader forward sample, losses/misses and incomplete financial coverage. No code, schema, strategy or production database changes.
+
+## Session changelog — 2026-10-06 status check
+
+- Verified recent persisted collections, first-discovery returns and current paper dashboard using read-only application queries. Reported AMKR gain and CDE loss together; did not substitute discovery gains for filled-trade P/L or invent a total for the incomplete FOR valuation. Next follow-up: FOR mark coverage and broader forward cohort; profitability remains unproven.
+
+
+## Session changelog — 2026-10-06 paper valuation recovery
+
+- User authorized repairing the app and specified $20,000 initial paper capital / $10,000 monthly net-profit target. Fixed-budget policy is not yet implemented; maximum acceptable loss is unresolved.
+- Refreshed existing simulated orders/holdings through the existing Yahoo executor. Actual terminal output: `pendingOrders: 6`, `filledOrders: 0`, `deferredOrders: 6`, `markedTickers: 34`; stale HRGN/MSC remained unusable and CLI exited 1. FOR received a fresh regular-session mark; current entry-aware total is now available and negative. [Recovered database evidence](research/2026-10-06/recovered-paper.json).
+- Local fix exposes distinct `unmarkedHeldTickers` and fails regular-session execution when held-price refresh is incomplete even with no pending orders. Performance displays concrete valuation issues beside the primary money result. Regression checks cover no-pending missing held quotes, repeated fresh marks and market-session boundaries. No selection/eligibility/exit rule, schema, old fill or old evidence was rewritten. Verification completed for this reliability fix only; profitability and the fixed-capital strategy remain unresolved.
+
+- Verification evidence: `npm run typecheck` exit 0; `npm run lint` emitted `No ESLint warnings or errors`; explicit golden-target production build exit 0 (`Compiled successfully`). The ordinary host build deliberately failed the `.env.local`/golden target guard; no guard was disabled. Host Vitest stalled before producing results and was interrupted, not counted as a pass. Supported `docker compose run --rm -T app npm test` completed: 70 files / 524 tests passed, 383.80s, exit 0. App restarted after build; real browser Performance displayed -$128.54 and all 14 positions; HTTP Today/Performance 200; disposable test database count 0. [Full regression output](research/2026-10-06/reliability-tests-docker.log), [build output](research/2026-10-06/reliability-build-golden.log), [runtime executor output](research/2026-10-06/reliability-execute.log). Runtime executor preserved all six deferred orders, inserted 33 new marks and explicitly reported `unmarkedHeldTickers: [MSC]` with exit 1. Next scheduled execution remains unverified.

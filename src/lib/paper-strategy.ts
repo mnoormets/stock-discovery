@@ -144,8 +144,8 @@ export function evaluatePaperStrategies(input: PaperSignalInput): PaperSignalEva
   ];
 }
 
-export function shouldFailDeferredPaperExecution(deferredOrders: number, now: Date): boolean {
-  return deferredOrders > 0 && isExpectedNewYorkRegularSession(now);
+export function shouldFailIncompletePaperExecution(deferredOrders: number, unmarkedHeldTickers: number, now: Date): boolean {
+  return (deferredOrders > 0 || unmarkedHeldTickers > 0) && isExpectedNewYorkRegularSession(now);
 }
 
 export function paperCommissionUsd(grossUsd = PAPER_STRATEGY_ORDER_NOTIONAL_USD): number {

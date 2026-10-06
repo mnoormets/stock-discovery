@@ -89,10 +89,11 @@ describe('paper strategy signal ledger', () => {
       firstBoughtAt: '2026-08-31T14:00:00.000Z', investedUsd: 100.1, currentValueUsd: 110, open: true });
     expect(book.positions[0].profitUsd).toBeCloseTo(9.9);
 
-    await executePendingPaperOrders({
+    const missingMarks = await executePendingPaperOrders({
       now: new Date('2026-09-02T14:00:00Z'),
       quoteFetcher: async () => new Map([['SPY', quote('SPY', 510, '2026-09-02T13:59:00Z')]]),
     });
+    expect(missingMarks).toMatchObject({ pendingOrders: 0, deferredOrders: 0, unmarkedHeldTickers: ['ELF'] });
     const stale = (await getPaperPerformanceDashboard(new Date('2026-09-02T14:00:00Z'))).books.find(
       (item) => item.strategy === 'all_picks_baseline' && item.book === 'strategy',
     )!;
@@ -243,6 +244,7 @@ describe('paper strategy signal ledger', () => {
       filledOrders: 4,
       deferredOrders: 0,
       markedTickers: 2,
+      unmarkedHeldTickers: [],
       reasons: {},
     });
     expect(second).toEqual({
@@ -250,6 +252,7 @@ describe('paper strategy signal ledger', () => {
       filledOrders: 0,
       deferredOrders: 0,
       markedTickers: 0,
+      unmarkedHeldTickers: [],
       reasons: {},
     });
 

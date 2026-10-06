@@ -43,6 +43,7 @@ export interface ExecutePaperOrdersResult {
   filledOrders: number;
   deferredOrders: number;
   markedTickers: number;
+  unmarkedHeldTickers: string[];
   reasons: Record<string, string>;
 }
 
@@ -409,6 +410,8 @@ export async function executePendingPaperOrders(options: {
     filledOrders,
     deferredOrders: pending.rows.length - filledOrders,
     markedTickers,
+    unmarkedHeldTickers: [...new Set(held.rows.map((row) => String(row.instrument_ticker)))]
+      .filter((ticker) => !assessments.get(ticker)?.assessment.executable).sort(),
     reasons,
   };
 }
