@@ -5,6 +5,13 @@ const quote = { symbol: 'META', quoteType: 'EQUITY', currency: 'USD', exchange: 
   regularMarketTime: new Date('2026-09-30T18:55:00Z'), regularMarketPrice: 100,
   regularMarketChangePercent: 3, regularMarketVolume: 200, averageDailyVolume3Month: 100 };
 describe('market radar coverage and evidence', () => {
+  it('validates a quote against receipt time when it arrives after the collection started', async () => {
+    const received = new Date(now.getTime() + 60000);
+    const result = await fetchMarketRadar(now, async () => ({ quotes: [{ ...quote, regularMarketTime: received }] }), async () => received);
+    expect(result.stocks[0].price).toBe(100);
+    const future = await fetchMarketRadar(now, async () => ({ quotes: [{ ...quote, regularMarketTime: new Date(received.getTime() + 1000) }] }), async () => received);
+    expect(future.stocks[0].price).toBeNull();
+  });
   it('keeps a mega-cap and an unscored name without social input; rejects funds and non-US listings', () => {
     const rows = normalizeMarketRadarRows({ quotes: [quote, { ...quote, symbol: 'GLND' },
       { ...quote, symbol: 'ETF', quoteType: 'ETF' }, { ...quote, exchange: 'LSE' }] }, 'day_gainers', now);

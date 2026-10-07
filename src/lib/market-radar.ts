@@ -1,3 +1,4 @@
+import { collectGrowthOpportunities, type GrowthOpportunitySnapshot } from './growth-opportunities';
 import { collectEarlyOpportunities, type EarlyOpportunitySnapshot } from './early-opportunities';
 import YahooFinance from 'yahoo-finance2';
 import { pool, resolveCollectionCompanyIds } from './db';
@@ -27,6 +28,7 @@ export interface MarketRadarSnapshot {
   channels: Array<{ id: Channel; status: 'ok' | 'failed'; received: number; accepted: number }>;
   stocks: MarketRadarStock[];
   early?: EarlyOpportunitySnapshot;
+  growth?: GrowthOpportunitySnapshot;
 }
 const yahoo = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 const number = (v: unknown): number | null => typeof v === 'number' && Number.isFinite(v) ? v : null;
@@ -65,13 +67,14 @@ export async function fetchMarketRadar(
     { scrIds: channel, count: MARKET_RADAR_CHANNEL_LIMIT }, undefined,
     { validateResult: false, fetchOptions: { signal: AbortSignal.timeout(15000) } },
   ),
+  clock: () => Promise<Date> = async () => now,
 ): Promise<MarketRadarSnapshot> {
   const stocks = new Map<string, MarketRadarStock>();
   const channels: MarketRadarSnapshot['channels'] = [];
   for (const channel of MARKET_RADAR_CHANNELS) {
     try {
       const response = await fetchChannel(channel.id);
-      const rows = normalizeMarketRadarRows(response, channel.id, now);
+      const rows = normalizeMarketRadarRows(response, channel.id, await clock());
       channels.push({ id: channel.id, status: 'ok', received: (response as { quotes: unknown[] }).quotes.length, accepted: rows.length });
       for (const row of rows) {
         const previous = stocks.get(row.ticker);
@@ -89,9 +92,16 @@ export async function fetchMarketRadar(
 }
 
 export async function collectMarketRadar(): Promise<MarketRadarSnapshot> {
-  const snapshot = await fetchMarketRadar();
+  // Use the ledger clock: a desktop clock ahead of PostgreSQL otherwise makes the scan look future-dated.
+  const clock = async () => (await pool.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0].now;
+  const snapshot = await fetchMarketRadar(await clock(), undefined, clock);
+  const now = await clock();
   await persistMarketRadarCompanies(snapshot);
-  snapshot.early = await collectEarlyOpportunities(snapshot);
+  snapshot.early = await collectEarlyOpportunities(snapshot, now);
+  snapshot.growth = await collectGrowthOpportunities(snapshot, now);
+  const evaluatedAt = (await clock()).toISOString();
+  snapshot.early.evaluatedAt = evaluatedAt;
+  snapshot.growth.evaluatedAt = evaluatedAt;
   return snapshot;
 }
 

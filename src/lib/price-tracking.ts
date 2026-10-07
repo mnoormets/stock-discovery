@@ -34,6 +34,14 @@ export async function getPriceTrackingQueue(now = new Date()) {
       WHERE r.status='success' AND r.metrics->'marketRadar'->'early'->>'version'='early-opportunities-v1'
         AND item->>'state'='watch' AND r.finished_at <= $1 AND r.finished_at >= $1::timestamptz - interval '30 days'
       UNION
+      SELECT c.id, 'growth opportunity' FROM collection_runs r
+      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(r.metrics->'marketRadar'->'growth'->'rows','[]'::jsonb)) item
+      JOIN companies c ON c.ticker=item->>'ticker'
+      WHERE r.status='success' AND r.metrics->'marketRadar'->'growth'->>'version'='growth-opportunities-v2'
+        AND item->>'state' IN ('early','momentum') AND r.finished_at <= $1
+        AND (r.metrics->'marketRadar'->'growth'->>'evaluatedAt')::timestamptz <= $1
+        AND r.finished_at >= $1::timestamptz - interval '30 days'
+      UNION
       SELECT id, 'benchmark' FROM companies WHERE ticker = 'SPY'
     )
     SELECT c.id AS company_id, c.ticker, array_agg(DISTINCT r.reason ORDER BY r.reason) AS reasons,

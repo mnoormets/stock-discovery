@@ -1,3 +1,4 @@
+import GrowthOpportunities from '@/components/GrowthOpportunities';
 import EarlyOpportunities from '@/components/EarlyOpportunities';
 import MarketRadar from '@/components/MarketRadar';
 import Link from 'next/link';
@@ -352,6 +353,7 @@ export default async function TodayPage() {
       </section>
 
       <div className="todayGuardrail">High scores mean “research further”. “Eligible for paper entry” is the app&apos;s clearest positive state: the entry-aware rules would create a hypothetical buy intent, but this page remains read-only and places no real order.</div>
+      <GrowthOpportunities />
       <EarlyOpportunities />
       <MarketRadar />
 

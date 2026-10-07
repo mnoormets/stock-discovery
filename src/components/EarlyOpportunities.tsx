@@ -33,6 +33,6 @@ export default async function EarlyOpportunities() {
     {!history.length ? <p>No qualifying discovery history yet.</p> : <div style={{ overflowX: 'auto' }}><table><thead><tr><th>Stock</th><th>First early discovery</th><th>Observed price</th><th>Latest usable price</th><th>Change since discovery</th></tr></thead><tbody>
       {history.map(item => <tr key={item.row.ticker}><td><Link href={`/company/${item.row.ticker}`}>{item.row.ticker}</Link></td><td>{item.observedAt}</td><td>${item.row.price!.toFixed(2)}</td><td>{item.latestPrice == null ? 'Unknown' : `$${item.latestPrice.toFixed(2)} at ${item.marketAt}`}</td><td>{item.returnPercent == null ? 'Unknown' : `${item.returnPercent.toFixed(2)}%`}</td></tr>)}
     </tbody></table></div>}
-    <small>Daily bounded Yahoo/SEC research · early-opportunities-v1 · no automatic paper order</small>
+    <small>Daily bounded Yahoo/SEC research · early-opportunities-v1 · research evidence for the separate capital paper entry checks</small>
   </section>;
 }

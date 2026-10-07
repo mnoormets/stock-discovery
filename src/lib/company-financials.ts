@@ -44,6 +44,7 @@ export interface CompanyFinancialSummary {
   cik: string;
   companyName: string | null;
   refreshedAt: string | null;
+  facts?: FinancialPoint[];
   metrics: Partial<Record<FinancialMetric, FinancialMetricSummary>>;
 }
 
@@ -455,7 +456,7 @@ function preferredLatest(metric: FinancialMetric, points: FinancialPoint[]): Fin
   return sorted[0] || null;
 }
 
-function summarize(ticker: string, cik: string, companyName: string | null, rows: any[]): CompanyFinancialSummary {
+function summarize(ticker: string, cik: string, companyName: string | null, rows: any[], includeFacts = false): CompanyFinancialSummary {
   const points: FinancialPoint[] = rows.map((row) => ({
     id: Number(row.id),
     metric: row.metric,
@@ -489,7 +490,7 @@ function summarize(ticker: string, cik: string, companyName: string | null, rows
     };
   }
   const refreshedAt = rows.map((row) => row.updated_at).filter(Boolean).sort().at(-1) || null;
-  return { ticker, cik, companyName, refreshedAt, metrics };
+  return { ticker, cik, companyName, refreshedAt, metrics, ...(includeFacts ? { facts: points } : {}) };
 }
 
 async function readStored(ticker: string): Promise<CompanyFinancialSummary | null> {
@@ -510,7 +511,7 @@ async function readStored(ticker: string): Promise<CompanyFinancialSummary | nul
   return summarize(ticker, company.sec_cik || '', company.name || null, result.rows);
 }
 
-export async function getAllStoredCompanyFinancials(): Promise<CompanyFinancialSummary[]> {
+export async function getAllStoredCompanyFinancials(includeFacts = false): Promise<CompanyFinancialSummary[]> {
   await ensureFinancialSchema();
   const result = await pool.query(
     `SELECT c.id AS company_id, c.ticker, c.name, c.sec_cik,
@@ -537,6 +538,7 @@ export async function getAllStoredCompanyFinancials(): Promise<CompanyFinancialS
     rows[0].sec_cik || '',
     rows[0].name || null,
     rows,
+    includeFacts,
   ));
 }
 
