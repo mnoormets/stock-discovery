@@ -41,8 +41,13 @@ async function main() {
     console.log(JSON.stringify(await store.recordPaperStrategySignals(runId), null, 2));
     return;
   }
+  if (command === 'activate-growth') {
+    const entry = loadTs(path.join(root, 'src/lib/paper-capital-entry.ts'));
+    console.log(JSON.stringify(await entry.activateGrowthCapitalEntry(capital.CAPITAL_VERSION), null, 2));
+    return;
+  }
   if (command === 'execute') {
-    const now = new Date();
+    const now = (await pool.query('SELECT clock_timestamp() AS now')).rows[0].now;
     const capitalResult = await capital.executeCapitalPaper({ now });
     console.log(JSON.stringify({ capital: capitalResult }, null, 2));
     const result = await store.executePendingPaperOrders({ now });
@@ -55,7 +60,7 @@ async function main() {
     }
     return;
   }
-  throw new Error('Usage: npm run paper:strategy -- signal [--run-id N] | execute');
+  throw new Error('Usage: npm run paper:strategy -- signal [--run-id N] | execute | activate-growth');
 }
 
 main()

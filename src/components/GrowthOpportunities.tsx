@@ -8,7 +8,7 @@ export default async function GrowthOpportunities() {
   const candidates = scan?.rows.filter(r => r.state === 'early' || r.state === 'momentum') ?? [];
   return <section className="card" id="growth-opportunities">
     <h2>Growth opportunities — early setups and rising trends</h2>
-    <p>Growing businesses can remain visible after a large price rise. Early and momentum are separate research hypotheses; neither predicts a future gain or triggers a paper purchase.</p>
+    <p>Growing businesses can remain visible after a large price rise. Early and momentum are separate research hypotheses; neither predicts a future gain. A separately activated capital entry policy can use fresh qualifying evidence, subject to its cash, quote and risk checks.</p>
     {!scan ? <p>The next collection will run the new growth scan. Existing early discoveries remain below.</p> : <>
       <p>{candidates.length} candidates from {scan.rows.length} radar stocks: {candidates.filter(r => r.state === 'early').length} early · {candidates.filter(r => r.state === 'momentum').length} momentum. History checked for {scan.historyAttempted}; {scan.historyDeferred} deferred. Evaluated {new Date(scan.evaluatedAt).toLocaleString('en-GB', { timeZone: 'Europe/Tallinn' })} Tallinn.</p>
       <p>Rules: at least 25% revenue growth and positive USD operating cash flow with the same reporting period and filing. Momentum requires positive 1- and 3-month returns plus an elevated run-up. Sorting is by revenue growth, then ticker; up to 20 histories per collection. These thresholds are unvalidated.</p>
@@ -33,6 +33,6 @@ export default async function GrowthOpportunities() {
     {!history.length ? <p>No saved growth discoveries yet.</p> : <div style={{ overflowX: 'auto' }}><table><thead><tr><th>Stock / setup</th><th>First discovery</th><th>Observed price</th><th>Latest usable price</th><th>Change since discovery</th></tr></thead><tbody>
       {history.map(item => <tr key={`${item.row.ticker}-${item.row.state}`}><td><Link href={`/company/${item.row.ticker}`}>{item.row.ticker}</Link> / {item.row.state}</td><td>{item.observedAt}</td><td>${item.row.price!.toFixed(2)}</td><td>{item.latestPrice == null ? 'Unknown' : `$${item.latestPrice.toFixed(2)} at ${item.marketAt}`}</td><td>{item.returnPercent == null ? 'Unknown' : `${item.returnPercent.toFixed(2)}%`}</td></tr>)}
     </tbody></table></div>}
-    <small>growth-opportunities-v2 · Yahoo / SEC · separate from the existing paper entry policy</small>
+    <small>growth-opportunities-v2 · Yahoo / SEC · research evidence for separately versioned capital entry checks</small>
   </section>;
 }

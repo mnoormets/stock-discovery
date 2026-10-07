@@ -22,7 +22,7 @@ Ava **Today → Early opportunities**. See vaade otsib dokumenteeritud käibekas
 
 Ava **Today → Growth opportunities** (`/today#growth-opportunities`). Uus versioon võrdleb sama aruande sama perioodi käivet ja tegevusrahavoogu, sealhulgas poolaasta andmeid. **Early setup** tähistab seniste tõusupiiride alla jäävat hinnaliikumist; **Rising trend / reversal risk** tähistab juba tõusnud firmat, mille 1- ja 3-kuu tootlus on positiivne. Tõusutrend ei tõesta tulevast tõusu. Mõlemad nõuavad vähemalt 25% käibekasvu ja positiivset rahavoogu ning näitavad SEC-i tõendeid.
 
-Vaate all on esimese tegeliku avastamise hind ja sellest järgnenud hinnamuutus. See ei ole pabertehingu kasum: raha teenimist või kaotust vaata **Performance** lehelt. Uus uurimisversioon ei käivita oste ega nulli senist portfelli. Puudulikud tõendid ja 20 ajaloopäringu piirist edasi lükatud nimed jäävad nähtavaks.
+Vaate all on esimese tegeliku avastamise hind ja sellest järgnenud hinnamuutus. See ei ole pabertehingu kasum: raha teenimist või kaotust vaata **Performance** lehelt. Uurimiskaart ise ei loo ostu. Eraldi aktiveeritud growth-capital-entry-v2 sisendreegel lubab sama $20 000 paberikonto executoril kasutada pärast aktiveerimist kogutud early/momentum kandidaate. Alles jäävad olemasolevad positsioonid, kahjum, kulud ja riskipiir; värske ostuhind peab järgima kogumise lõppu. Performance näitab aktiivset sisendversiooni ja aktiveerimisaega. Puudulikud tõendid ja 20 ajaloopäringu piirist edasi lükatud nimed jäävad nähtavaks.
 
 ### Today paper-entry otsus
 

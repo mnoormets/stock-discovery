@@ -4,6 +4,8 @@
 
 **2026-10-06 update:** `0011_paper_capital` applied to Neon after GO preflight, zero duplicate prices/invalid thesis states and a verified PostgreSQL 18 backup. Adds only isolated accounts, immutable filled capital trades and run audits; old paper records are unchanged. Post-apply conformance is `VASTAB` with zero missing/extra objects.
 
+**2026-10-07 update:** `0012_capital_entry_policies` applied to Neon after GO preflight and verified PostgreSQL 18 backup (14,295,236 bytes / 357 TOC entries). Adds one immutable policy-activation table referencing the existing capital account; no accounts/trades/rules rewritten. Apply 117 ms; post-apply conformance VASTAB, zero missing/extra objects. Activation is explicit via `npm run paper:strategy -- activate-growth`; research data before activation cannot trigger new-policy entries.
+
 Runner `scripts/migrate.cjs` is manual: app startup and `npm run check` do not invoke it. `ensureSchema()` remains in production for now and is proven to be a no-op against the migrated schema (see “`ensureSchema()` staatus”).
 
 ## Failinime formaat

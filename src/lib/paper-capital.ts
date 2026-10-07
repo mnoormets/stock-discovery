@@ -1,4 +1,6 @@
 import { pool } from './db';
+import { getCapitalEntryPolicy, GROWTH_CAPITAL_ENTRY_RULES, isGrowthCapitalCandidate } from './paper-capital-entry';
+import type { GrowthOpportunity } from './growth-opportunities';
 import { checkCapitalSplits } from './paper-capital-splits';
 import { EARLY_OPPORTUNITY_VERSION, type EarlyOpportunity } from './early-opportunities';
 import { assessPaperExecutionQuote, paperCommissionUsd } from './paper-strategy';
@@ -44,7 +46,7 @@ function usable(quote: YahooExecutionQuote | undefined, reference: YahooExecutio
     && Math.abs(Date.parse(quote.marketTime!) - Date.parse(reference.marketTime!)) <= 20*60000;
 }
 export async function executeCapitalPaper(options: { now?: Date; quoteFetcher?: typeof fetchExecutionQuotes; splitChecker?: typeof checkCapitalSplits } = {}) {
-  const now = options.now ?? new Date();
+  const now = options.now ?? (await pool.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0].now;
   const available = await pool.query("SELECT to_regclass('public.paper_capital_accounts') IS NOT NULL AS ok");
   if (!available.rows[0].ok) throw new Error('Capital paper schema missing: apply migration 0011.');
   await pool.query(`INSERT INTO paper_capital_accounts(policy_version,initial_usd,target_profit_usd,rules,created_at)
@@ -59,13 +61,19 @@ export async function executeCapitalPaper(options: { now?: Date; quoteFetcher?: 
       throw new Error('Capital policy differs from frozen account rules.');
     if (now.getTime()<new Date(account.created_at).getTime()) throw new Error('Capital execution cannot precede activation.');
     let trades = (await client.query<Trade>('SELECT * FROM paper_capital_trades WHERE policy_version=$1 ORDER BY id',[CAPITAL_VERSION])).rows;
-    const collection = (await client.query(`SELECT id,finished_at,metrics->'marketRadar'->'early' AS early
+    const entryPolicy = await getCapitalEntryPolicy(CAPITAL_VERSION,now);
+    if (entryPolicy && Object.entries(GROWTH_CAPITAL_ENTRY_RULES).some(([k,v])=>JSON.stringify(entryPolicy.rules[k])!==JSON.stringify(v)))
+      throw new Error('Capital entry policy differs from frozen transition rules.');
+    const collection = (await client.query(`SELECT id,finished_at,metrics->'marketRadar'->'early' AS early,metrics->'marketRadar'->'growth' AS growth
       FROM collection_runs WHERE status='success' AND finished_at <= $1 ORDER BY finished_at DESC,id DESC LIMIT 1`,[now.toISOString()])).rows[0];
-    const early = collection?.early;
+    const early = entryPolicy ? collection?.growth : collection?.early;
+    const sourceVersion = entryPolicy ? GROWTH_CAPITAL_ENTRY_RULES.sourceVersion : EARLY_OPPORTUNITY_VERSION;
     const current = collection && now.getTime()-new Date(collection.finished_at).getTime() <= 36*3600000
-      && early?.version===EARLY_OPPORTUNITY_VERSION && Number.isFinite(Date.parse(early.evaluatedAt))
+      && early?.version===sourceVersion
+      && (!entryPolicy || Date.parse(early.evaluatedAt)>=new Date(entryPolicy.activated_at).getTime()) && Number.isFinite(Date.parse(early.evaluatedAt))
       && Date.parse(early.evaluatedAt)<=new Date(collection.finished_at).getTime() && Array.isArray(early.rows);
-    const candidates: EarlyOpportunity[] = current ? early.rows.filter((r: EarlyOpportunity) => isCapitalCandidate(r,new Date(early.evaluatedAt))) : [];
+    const candidates: Array<EarlyOpportunity | GrowthOpportunity> = current ? early.rows.filter((r: EarlyOpportunity | GrowthOpportunity) => entryPolicy
+      ? isGrowthCapitalCandidate(r as GrowthOpportunity,new Date(early.evaluatedAt)) : isCapitalCandidate(r as EarlyOpportunity,new Date(early.evaluatedAt))) : [];
     candidates.sort((a,b) => (b.revenueGrowth??0)-(a.revenueGrowth??0) || a.ticker.localeCompare(b.ticker));
     const book = capitalBook(trades,'strategy');
     const tickers = [...new Set(['SPY',...book.open.map(t=>t.signal_ticker),...candidates.slice(0,20).map(r=>r.ticker)])];
@@ -99,7 +107,7 @@ export async function executeCapitalPaper(options: { now?: Date; quoteFetcher?: 
         quantity,price,gross_usd,fee_usd,market_at,executed_at,collection_run_id,evidence,reason)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14)`,
         [CAPITAL_VERSION,bookKey,signal,bookKey==='strategy'?signal:'SPY',side,qty,price,grossUsd,paperCommissionUsd(grossUsd),
-          q.marketTime,now.toISOString(),collection?.id??null,JSON.stringify({...evidence,quote:q.raw,slippageBps:CAPITAL_RULES.slippageBps}),reason]);
+          q.marketTime,now.toISOString(),collection?.id??null,JSON.stringify({...evidence,entryPolicyVersion:entryPolicy?.entry_version??CAPITAL_VERSION,quote:q.raw,slippageBps:CAPITAL_RULES.slippageBps}),reason]);
       filledTrades++;
     };
     for (const position of book.open) {
@@ -134,14 +142,14 @@ export async function executeCapitalPaper(options: { now?: Date; quoteFetcher?: 
         if (balances.open.length>=CAPITAL_RULES.maxPositions || balances.cashUsd-CAPITAL_RULES.positionBudgetUsd<CAPITAL_RULES.cashReserveUsd
           || benchmarkCash<CAPITAL_RULES.positionBudgetUsd) break;
         const gross=CAPITAL_RULES.positionBudgetUsd-paperCommissionUsd(CAPITAL_RULES.positionBudgetUsd);
-        await writeTrade(candidate.ticker,'strategy','buy',0,gross,'Early source-backed entry',{candidate,earlyEvaluatedAt:early.evaluatedAt});
+        await writeTrade(candidate.ticker,'strategy','buy',0,gross,entryPolicy?'Growth source-backed entry':'Early source-backed entry',{candidate,sourceVersion,earlyEvaluatedAt:early.evaluatedAt});
         await writeTrade(candidate.ticker,'benchmark','buy',0,gross,'Matched cash-flow benchmark',{signalTicker:candidate.ticker});
         trades=(await client.query<Trade>('SELECT * FROM paper_capital_trades WHERE policy_version=$1 ORDER BY id',[CAPITAL_VERSION])).rows;
       }
     }
-    const result={policyVersion:CAPITAL_VERSION,status,filledTrades,issues,splitIssues,splitCheckedAt:now.toISOString(),collectionRunId:collection?.id??null,
+    const result={policyVersion:CAPITAL_VERSION,entryPolicyVersion:entryPolicy?.entry_version??CAPITAL_VERSION,status,filledTrades,issues,splitIssues,splitCheckedAt:now.toISOString(),collectionRunId:collection?.id??null,
       candidateCount:candidates.length,sourceCurrent:!!current,cashUsd:capitalBook(trades,'strategy').cashUsd};
-    if (!current) result.issues.push('Current early scan unavailable; no new entries.');
+    if (!current) result.issues.push(entryPolicy?'Current post-activation growth scan unavailable; no new entries.':'Current early scan unavailable; no new entries.');
     await client.query('INSERT INTO paper_capital_runs(policy_version,evaluated_at,collection_run_id,result) VALUES ($1,$2,$3,$4::jsonb)',
       [CAPITAL_VERSION,now.toISOString(),collection?.id??null,JSON.stringify(result)]);
     await client.query('COMMIT'); return result;
@@ -182,6 +190,6 @@ export async function getCapitalDashboard(now=new Date()) {
       profitUsd:equity==null?null:equity-CAPITAL_RULES.initialUsd,positions,issues};
   });
   return {version:CAPITAL_VERSION,status:account.status as string,startedAt:account.created_at.toISOString(),completedAt:account.completed_at?.toISOString()??null,
-    rules:account.rules as typeof CAPITAL_RULES,books,trades:trades.map(t=>({...t,executed_at:t.executed_at.toISOString()})),
+    entryPolicy:await getCapitalEntryPolicy(CAPITAL_VERSION,now),rules:account.rules as typeof CAPITAL_RULES,books,trades:trades.map(t=>({...t,executed_at:t.executed_at.toISOString()})),
     latestRun:latestRun?{at:latestRun.evaluated_at.toISOString(),...latestRun.result}:null};
 }
