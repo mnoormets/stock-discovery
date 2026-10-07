@@ -1,4 +1,5 @@
 import { pool } from './db';
+import { checkCapitalSplits } from './paper-capital-splits';
 import { EARLY_OPPORTUNITY_VERSION, type EarlyOpportunity } from './early-opportunities';
 import { assessPaperExecutionQuote, paperCommissionUsd } from './paper-strategy';
 import { priceObservationRecency, newYorkPriceDate } from './price-observation';
@@ -42,7 +43,7 @@ function usable(quote: YahooExecutionQuote | undefined, reference: YahooExecutio
     && assessPaperExecutionQuote(reference,now).executable
     && Math.abs(Date.parse(quote.marketTime!) - Date.parse(reference.marketTime!)) <= 20*60000;
 }
-export async function executeCapitalPaper(options: { now?: Date; quoteFetcher?: typeof fetchExecutionQuotes } = {}) {
+export async function executeCapitalPaper(options: { now?: Date; quoteFetcher?: typeof fetchExecutionQuotes; splitChecker?: typeof checkCapitalSplits } = {}) {
   const now = options.now ?? new Date();
   const available = await pool.query("SELECT to_regclass('public.paper_capital_accounts') IS NOT NULL AS ok");
   if (!available.rows[0].ok) throw new Error('Capital paper schema missing: apply migration 0011.');
@@ -69,7 +70,14 @@ export async function executeCapitalPaper(options: { now?: Date; quoteFetcher?: 
     const book = capitalBook(trades,'strategy');
     const tickers = [...new Set(['SPY',...book.open.map(t=>t.signal_ticker),...candidates.slice(0,20).map(r=>r.ticker)])];
     const quotes = await (options.quoteFetcher ?? fetchExecutionQuotes)(tickers);
-    const spy = quotes.get('SPY'); const issues: string[] = [];
+    const holdings = [...book.open, ...capitalBook(trades,'benchmark').open].map(t=>({ticker:t.instrument_ticker,boughtAt:new Date(t.executed_at)}));
+    const splitChecks = await (options.splitChecker ?? checkCapitalSplits)(holdings,now);
+    const splitIssues = [...new Set(holdings.map(h=>h.ticker))].flatMap(ticker=>{
+      const check=splitChecks.find(c=>c.ticker===ticker);
+      return !check || check.issue ? [ticker+': '+(check?.issue??'Split check missing.')] : [];
+    });
+    for (const issue of splitIssues) quotes.delete(issue.split(':')[0]);
+    const spy = quotes.get('SPY'); const issues: string[] = [...splitIssues];
     let filledTrades = 0;
     for (const ticker of tickers) {
       const q = quotes.get(ticker);
@@ -131,7 +139,7 @@ export async function executeCapitalPaper(options: { now?: Date; quoteFetcher?: 
         trades=(await client.query<Trade>('SELECT * FROM paper_capital_trades WHERE policy_version=$1 ORDER BY id',[CAPITAL_VERSION])).rows;
       }
     }
-    const result={policyVersion:CAPITAL_VERSION,status,filledTrades,issues,collectionRunId:collection?.id??null,
+    const result={policyVersion:CAPITAL_VERSION,status,filledTrades,issues,splitIssues,splitCheckedAt:now.toISOString(),collectionRunId:collection?.id??null,
       candidateCount:candidates.length,sourceCurrent:!!current,cashUsd:capitalBook(trades,'strategy').cashUsd};
     if (!current) result.issues.push('Current early scan unavailable; no new entries.');
     await client.query('INSERT INTO paper_capital_runs(policy_version,evaluated_at,collection_run_id,result) VALUES ($1,$2,$3,$4::jsonb)',
@@ -148,11 +156,18 @@ export async function getCapitalDashboard(now=new Date()) {
   const trades=(await pool.query<Trade>('SELECT * FROM paper_capital_trades WHERE policy_version=$1 AND executed_at <= $2 ORDER BY id',[CAPITAL_VERSION,now.toISOString()])).rows;
   const marks=(await pool.query('SELECT DISTINCT ON(ticker) ticker,price,market_time FROM paper_strategy_marks WHERE currency=\'USD\' AND marked_at<=$1 AND market_time<=$1 ORDER BY ticker,market_time DESC,id DESC',[now.toISOString()])).rows;
   const map=new Map(marks.map(m=>[m.ticker,m]));const spy=map.get('SPY');
+  const latestRun=(await pool.query('SELECT evaluated_at,result FROM paper_capital_runs WHERE policy_version=$1 AND evaluated_at <= $2 ORDER BY id DESC LIMIT 1',[CAPITAL_VERSION,now.toISOString()])).rows[0];
+  const splitCheckedAt=Date.parse(latestRun?.result.splitCheckedAt??'');
+  const splitIssues: string[]=latestRun?.result.splitIssues??[];
   const books=(['strategy','benchmark'] as const).map(bookKey=>{
     const book=capitalBook(trades,bookKey);const issues: string[]=[];
     const positions=book.open.map(t=>{
       const mark=map.get(t.instrument_ticker);
-      const valid=mark && spy && priceObservationRecency(mark.market_time.toISOString(),now.toISOString())==='recent'
+      const splitSafe=Number.isFinite(splitCheckedAt) && mark && spy && mark.market_time.getTime()<=splitCheckedAt+20*60000
+        && spy.market_time.getTime()<=splitCheckedAt+20*60000
+        && !splitIssues.some(i=>i.startsWith(t.instrument_ticker+':') || i.startsWith('SPY:'));
+      if (!splitSafe) issues.push(t.instrument_ticker+': split integrity awaiting verification.');
+      const valid=splitSafe && mark && spy && priceObservationRecency(mark.market_time.toISOString(),now.toISOString())==='recent'
         && priceObservationRecency(spy.market_time.toISOString(),now.toISOString())==='recent'
         && newYorkPriceDate(mark.market_time.toISOString())===newYorkPriceDate(spy.market_time.toISOString())
         && Math.abs(mark.market_time.getTime()-spy.market_time.getTime())<=20*60000;
@@ -166,7 +181,6 @@ export async function getCapitalDashboard(now=new Date()) {
     return {book:bookKey,cashUsd:book.cashUsd,realizedProfitUsd:book.realizedProfitUsd,equityUsd:equity,
       profitUsd:equity==null?null:equity-CAPITAL_RULES.initialUsd,positions,issues};
   });
-  const latestRun=(await pool.query('SELECT evaluated_at,result FROM paper_capital_runs WHERE policy_version=$1 AND evaluated_at <= $2 ORDER BY id DESC LIMIT 1',[CAPITAL_VERSION,now.toISOString()])).rows[0];
   return {version:CAPITAL_VERSION,status:account.status as string,startedAt:account.created_at.toISOString(),completedAt:account.completed_at?.toISOString()??null,
     rules:account.rules as typeof CAPITAL_RULES,books,trades:trades.map(t=>({...t,executed_at:t.executed_at.toISOString()})),
     latestRun:latestRun?{at:latestRun.evaluated_at.toISOString(),...latestRun.result}:null};

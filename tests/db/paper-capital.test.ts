@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { pool } from '../../src/lib/db';
-import { executeCapitalPaper, getCapitalDashboard, CAPITAL_VERSION, CAPITAL_RULES } from '../../src/lib/paper-capital';
+import { executeCapitalPaper as executeUnchecked, getCapitalDashboard, CAPITAL_VERSION, CAPITAL_RULES } from '../../src/lib/paper-capital';
 import { evaluateEarlyFundamentals, evaluateEarlyHistory } from '../../src/lib/early-opportunities';
 import { startCollectionRun, succeedCollectionRun } from '../../src/lib/collection-runs';
 import { makeFinancials } from '../fixtures/financials';
 import { resetDb } from '../setup/reset';
 import type { YahooExecutionQuote } from '../../src/lib/yahoo';
 
+const executeCapitalPaper = (options: Parameters<typeof executeUnchecked>[0]) => executeUnchecked({splitChecker:async holdings=>holdings.map(h=>({ticker:h.ticker,issue:null})),...options});
 beforeEach(resetDb);
 const now=new Date('2026-10-06T15:00:00Z');
 function candidate(ticker: string) {
@@ -82,6 +83,19 @@ describe('finite capital paper ledger',()=>{
     expect(data.books[0].cashUsd).toBeGreaterThanOrEqual(30000);expect(data.books[0].positions).toHaveLength(0);
     expect(data.books[0].realizedProfitUsd).toBeGreaterThanOrEqual(10000);
     expect(data.completedAt).toBe(later.toISOString());expect(data.version).toBe(CAPITAL_VERSION);expect(data.rules).toEqual(CAPITAL_RULES);
+  });
+  it('quarantines a split or missing check before any phantom gain can trigger liquidation',async()=>{
+    await source(['AAA','BBB','CCC','DDD','EEE','FFF','GGG','HHH']);
+    await executeCapitalPaper({now,quoteFetcher:fetcher()});
+    const later=new Date('2026-10-07T15:00:00Z');
+    const phantomQuote: ReturnType<typeof fetcher> = async tickers=>{ const quotes=await fetcher(later)(tickers); quotes.get('AAA')!.price=1000; return quotes; };
+    const blocked=await executeCapitalPaper({now:later,quoteFetcher:phantomQuote,splitChecker:async holdings=>holdings.map(h=>({ticker:h.ticker,issue:h.ticker==='AAA'?'Split since entry requires quantity reconciliation.':null}))});
+    expect(blocked.status).toBe('active');expect(blocked.filledTrades).toBe(0);expect(blocked.splitIssues).toHaveLength(1);
+    const data=(await getCapitalDashboard(later))!;
+    expect(data.books[0].profitUsd).toBeNull();expect(data.books[0].positions.map(p=>p.ticker)).toContain('AAA');
+    expect(data.books[0].realizedProfitUsd).toBeLessThan(10000);
+    const missing=await executeCapitalPaper({now:later,quoteFetcher:fetcher(later,200),splitChecker:async()=>[]});
+    expect(missing.filledTrades).toBe(0);expect(missing.splitIssues.length).toBeGreaterThan(0);
   });
   it('does not convert stale collection evidence into a fresh entry',async()=>{
     await source();const late=new Date('2026-10-09T15:00:00Z');
