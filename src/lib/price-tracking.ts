@@ -42,6 +42,13 @@ export async function getPriceTrackingQueue(now = new Date()) {
         AND (r.metrics->'marketRadar'->'growth'->>'evaluatedAt')::timestamptz <= $1
         AND r.finished_at >= $1::timestamptz - interval '30 days'
       UNION
+      SELECT c.id, 'new Nasdaq listing' FROM collection_runs r
+      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(r.metrics->'nasdaqListings'->'rows','[]'::jsonb)) item
+      JOIN companies c ON c.ticker=item->>'ticker'
+      WHERE r.status='success' AND r.metrics->'nasdaqListings'->>'version'='nasdaq-listing-research-v1'
+        AND item->>'eligibility'='lookup_ready' AND r.finished_at <= $1
+        AND (item->>'firstObservedAt')::timestamptz >= $1::timestamptz - interval '30 days'
+      UNION
       SELECT id, 'benchmark' FROM companies WHERE ticker = 'SPY'
     )
     SELECT c.id AS company_id, c.ticker, array_agg(DISTINCT r.reason ORDER BY r.reason) AS reasons,

@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-10-07
+Uuendatud: 2026-10-08
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -27,6 +27,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Rakendus ei anna ostu- ega müügisoovitusi.
 
 ## Praegune töötav seis
+
+- **8 October Nasdaq listing research V1 verified:** Core CLI/API collection now persists official directory/Adds-Deletes observations, exact source payloads and first discovery/price evidence; Today shows bounded research and explicit unknown/excluded/SPAC states. Real collection #76 and replay verified the baseline and three observations. Full suite 78 files/557 tests, focused 3 files/11 tests, typecheck/lint/Docker build/restart/HTTP checks passed. Browser automation was unavailable; no visual check claimed. See [verification](research/2026-10-08/NASDAQ_LISTINGS.md).
 
 - **7 October growth capital entry activated:** growth-capital-entry-v2 now uses new early/momentum collections on the same early-capital-v1 ledger, activated 16:58:20.389 UTC. #74 finished after activation; executor filled six fresh stock buys (MU, PLTR, IREN, CORZ, DELL, AVGO) plus six matched SPY trades. Eight total positions, $4,000 cash, realized $0, equity $19,809.730785 / total -$190.269215; original four trades retain the identical whole-row hash. Repeat executor inserted zero trades, current source true, issues/splitIssues []. AMD is visible but below the six available growth-ranked entry slots. 550 tests / 76 files and typecheck/lint/build passed. Restarted Performance/Today HTTP 200 and actual browser Performance verify the entry version/time, eight positions and -$190.27 / realized $0. Published feature commit 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1; origin/main exact SHA verified. [Evidence](research/2026-10-07/CAPITAL_ENTRY_TRANSITION.md).
 
@@ -283,6 +285,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
+- Nasdaq listing research implementation is verified. Next observe the first unattended collection and first eligible directory addition; preserve shared budgets and capital policy/history. New research coverage is not evidence of future profit.
+
 **7 October AMD diagnosis:** Coherent-period growth/momentum discovery and the DB-clock repair are implemented and verified. Next observe forward discoveries and unattended execution; The same-ledger growth-capital-entry-v2 transition is activated with six new paired entries, preserving the original $20,000 and every gain/loss. Monitor fresh marks, exits, losses and next unattended use of the new entry policy. Broader coverage is not proof of profitability. Persistent Goal usageLimited is separate from ordinary account quota and is not completion.
 
 **6 October user target and recovery:** user now requests a $20,000 starting paper budget and $10,000 monthly net gain (currency flexible; USD chosen to match existing accounting). This is a 50% monthly target, not a promised return. Loss tolerance remains unspecified; no live-money budget or broker authorization. The existing daily-$100 V1 is not a finite-capital experiment and remains a separate control. The new early-capital-v1 account is now activated; see the dated current-state entry. A fresh existing Yahoo execution pass saved 34 marks, filled zero orders, and recovered entry-aware valuation: $10,710.70 invested, $10,582.16 holdings, -$128.54 (-1.2001%) versus matched SPY +$172.51 (+1.6106%), at 6 October ~17:24 UTC. MSC still lacks a usable mark; six HRGN baseline/benchmark orders remained deferred and the CLI correctly failed. No stale quote was forced into a fill. Profitability remains unresolved.
@@ -318,6 +322,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
+- Observe first unattended nasdaq-listing-research-v1 collection and eligible-directory addition; implementation and verification complete.
+
 - Observe published growth-opportunities-v2 prospectively: first discovery, subsequent gains/losses, missing facts and shared tracking capacity. Verify the next unattended collection uses the DB clock and retains both versions. Code/full regression/restarted UI verification are completed; see [evidence](research/2026-10-07/GROWTH_DISCOVERY.md).
 
 - Operate and audit the activated early-capital-v1 forward paper policy; preserve V1 as the control. Verify unattended execution, source coverage, fill timing, losses and realized costs. The $10,000 monthly target is a success criterion to evaluate, not a reason to invent returns or retrospectively optimize the record.
@@ -342,7 +348,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 
 - Review the first v4 names when their stored history and outcome horizons mature, prioritizing falsifiable thesis work for eligible names over changes to the ranking policy based on one cohort.
-- Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing queue order or adding production listing discovery. The daily budget is now 20; the standalone helper default remains five.
+- Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing queue order. Nasdaq listing research V1 is integrated; forward coverage remains to be observed. The daily budget is now 20; the standalone helper default remains five.
 
 ### LATER
 
@@ -358,6 +364,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- nasdaq-listing-research-v1 reuses existing Nasdaq Trader/Yahoo/SEC sources and collection metrics; Add is not proof of IPO. Initial complete directory is baseline. First timestamps/prices are retained; failures and missing evidence remain explicit. Daily quote/SEC/tracking budgets are bounded. No automatic IPO entry or new money.
 
 - **2026-10-01 early-discovery boundary:** use stored SEC facts and bounded Yahoo chart history; no new provider, schema migration, canonical selection or automatic paper order. Thresholds are explicit unvalidated hypotheses; known missing/split/history failures stay unknown. First discovery is read from versioned successful collection metrics, never retroactively dated. Valid USD follow-up prices require non-future quote/receipt times and receipt after discovery. Shared price tracking remains 50 symbols/day; pending coverage is visible. Pre-revenue/event-driven ideas may be missed by the cash-flow rule and require a distinct future investigation, not a fabricated growth candidate.
 
@@ -504,7 +512,7 @@ Current as of 2026-09-13; earlier calibration observations and superseded plans 
 - Historical prices must not be invented or silently backfilled. Reusing existing paper marks for outcome measurement requires a provenance and immutability design before implementation.
 - Capital, risk tolerance, concentration limits and intended holding period remain necessary only for a future finite-cash portfolio-policy experiment. They are not inputs to the current equal-$100 signal-quality comparison.
 - CompanyFacts daily budget remains five, and MIN_MENTIONS remains three. Inspect accumulated observations before retuning either.
-- Nasdaq listing observation is implemented but is not production discovery. Its latest artifact series was not reviewed in this session.
+- Nasdaq listing research V1 is connected to core collection and Today. The separate DB-free observer remains calibration; its artifact series was not re-reviewed. First unattended feature collection and forward effectiveness remain unverified.
 - Authentication/authorization and supported Next.js remain prerequisites for any public deployment. Automated tests, versioned migrations and API/CLI advisory locking already exist; they are not unbuilt blockers.
 - Neon remains the sole canonical database. Host `.env.local` still targets the frozen local discovery database as an intentional mismatch case; normal startup now rejects it when the declared target is `golden`. Docker pins the app to the validated Neon target, and tests use only the isolated local `discovery_test` database.
 - Core collection and paper execution each have their own active Healthchecks heartbeat. The paper check is tied to the post-success executor step through its dedicated GitHub secret; manual run #13 provided the first live-ping proof. Manual run #15 proved the guard commit's closed-market success path and follow-on heartbeat with 34 retryable deferrals. Its first 09:35 market-session run is still required to prove live fills or, if any remain deferred, the red-run/withheld-heartbeat path. Registered filing persistence does not prove historical EDGAR completeness. Fine-grained scheduler PAT expiry remains recorded as 2027-08-20.
@@ -748,6 +756,10 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-10-08 — Nasdaq listing research V1
+
+See [actual verification and limitations](research/2026-10-08/NASDAQ_LISTINGS.md): 78/557 full tests; final 3/11 regressions; typecheck/lint/build/restarted HTTP checks exit 0.
 
 ### 2026-10-01 — Early Opportunities V1
 
@@ -2061,3 +2073,10 @@ API: HTTP 200; expected evidence true
 - Current focus/Now: run the activated policy forward and audit fresh paired marks, risk/target/holding exits and next unattended execution. Entry-policy transition work is completed and removed from Next implementation; broader strategy effectiveness, tracking capacity and legacy HRGN deferrals remain unresolved. No target completion claim.
 
 Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to origin/main, git ls-remote matched. Private backup and raw diagnostics were not staged. Existing scheduled executor now has the new entry-policy code; next unattended run remains unverified. Daily same-chat heartbeat remains ACTIVE and reads this handoff. Profit target remains unachieved; no claim of continuous execution or guaranteed returns.
+
+
+### 2026-10-08 — Nasdaq listing research delivery
+
+- **8 October Nasdaq listing research V1 verified:** Core CLI/API collection now persists official directory/Adds-Deletes observations, exact source payloads and first discovery/price evidence; Today shows bounded research and explicit unknown/excluded/SPAC states. Real collection #76 and replay verified the baseline and three observations. Full suite 78 files/557 tests, focused 3 files/11 tests, typecheck/lint/Docker build/restart/HTTP checks passed. Browser automation was unavailable; no visual check claimed. See [verification](research/2026-10-08/NASDAQ_LISTINGS.md).
+
+- Nasdaq listing research implementation is verified. Next observe the first unattended collection and first eligible directory addition; preserve shared budgets and capital policy/history. New research coverage is not evidence of future profit.

@@ -1,3 +1,4 @@
+import { collectNasdaqListings } from './nasdaq-listings';
 import { collectMarketRadar } from './market-radar';
 import { fetchApeWisdom } from './apewisdom';
 import { fetchTradestie } from './tradestie';
@@ -252,10 +253,12 @@ async function collectCore(collectionRunId: number) {
   });
   await recordCollectionRunItems(items);
 
+  const nasdaqListings = await collectNasdaqListings();
   const marketRadar = await collectMarketRadar();
 
   return {
     marketRadar,
+    nasdaqListings,
     captureDate,
     scanned: ape.rawRowCount,
     candidates: candidates.length,
@@ -309,6 +312,7 @@ function collectionMetrics(result: Awaited<ReturnType<typeof collectCore>>): Col
     insiderSignal: result.insiderSignal,
     providers: result.providers,
     marketRadar: result.marketRadar,
+    nasdaqListings: result.nasdaqListings,
   };
 }
 

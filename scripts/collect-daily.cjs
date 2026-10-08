@@ -114,6 +114,11 @@ async function main() {
       line('candidates', collected.candidates);
       line('liveDataSaved', collected.liveDataSaved);
       line('market radar stocks', collected.marketRadar.stocks.length);
+      line('Nasdaq listing observations', collected.nasdaqListings.rows.length);
+      await step('Nasdaq listing coverage', async () => {
+        if (collected.nasdaqListings.status !== 'ok') throw new Error(collected.nasdaqListings.error);
+        return true;
+      });
       await step('market radar coverage', async () => {
         const failed = collected.marketRadar.channels.filter((channel) => channel.status !== 'ok');
         if (failed.length) throw new Error('Market radar channels failed: ' + failed.map((channel) => channel.id).join(', '));

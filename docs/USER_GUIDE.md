@@ -226,7 +226,7 @@ Sõnastus `needs review`, `new catalyst`, `new risk` ja `no major changes` kirje
 - Free cash flow on rakenduses tuletatud kui operating cash flow miinus capital expenditure.
 - Uudise märksõna on signaal, mitte uudise sisuline faktikontroll.
 - Moat ja mispricing vajavad investori enda algallikaid.
-- Rakendus ei sisalda veel IPO/Nasdaq uute noteeringute radarit ega ajaloolist turu universumi rekonstrueerimist enne salvestatud discovery run'e.
+- `/today#nasdaq-listings` jälgib ametliku Nasdaq directory lisandusi ja Nasdaq-primary Add teateid. Esimene directory on baseline; ei rekonstrueerita varasemaid lisandusi. Vaade säilitab esimese leidmise aja ja kõlbliku USD hinna, näitab SEC kasvutõendeid ning kuni viit kvalifitseeruvat uurimiskandidaati. SPAC-id ja sobimatud instrumendid on eristatud. Puuduv info jääb unknown; Add ei tõenda IPO-t. See on päevane uurimisvaade, mitte ostusignaal või automaatne uus IPO paberstrateegia.
 
 ## Kahe arvuti kasutamine
 

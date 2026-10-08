@@ -35,6 +35,7 @@ function dependencies(): CollectRouteDependencies {
     // Kogu `runCollection` tagastuskuju, mitte cast: nii jääb test seotuks
     // päris tüübiga ja katkeb valjult, kui kuju muutub.
     runCollection: vi.fn(async () => ({
+      nasdaqListings: { version: 'nasdaq-listing-research-v1', observedAt: new Date().toISOString(), status: 'ok' as const, error: null, directoryText: null, actionsText: null, sources: [], baseline: true, previousObservedAt: null, rows: [], quoteAttempted: 0, quoteDeferred: 0 },
       marketRadar: { version: 'market-radar-v1' as const, observedAt: new Date().toISOString(), channels: [], stocks: [] },
       collectionRunId: 1,
       captureDate: '2026-08-17',
@@ -139,6 +140,18 @@ describe('HTTP collect advisory-lock parity', () => {
       );
       held.release();
     }
+  });
+
+  it('returns 503 and releases the lock when Nasdaq source coverage fails', async () => {
+    const deps = dependencies();
+    const result = await deps.runCollection();
+    result.nasdaqListings.status = 'failed';
+    result.nasdaqListings.error = 'Nasdaq sources unavailable';
+    vi.mocked(deps.runCollection).mockResolvedValueOnce(result);
+    const response = await handleCollectRequest(request(), deps);
+    expect(response.status).toBe(503);
+    expect((await response.json()).ok).toBe(false);
+    await expectLockAvailable();
   });
 
   it('releases the lock after a successful HTTP collection attempt', async () => {

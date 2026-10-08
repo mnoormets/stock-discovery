@@ -142,7 +142,7 @@ export async function handleCollectRequest(
     const outcomeUpdates = await dependencies.refreshCandidateOutcomes();
     const trackingComplete = !(priceTracking.failed || priceTracking.missing || priceTracking.invalid || priceTracking.stale || priceTracking.deferred);
     return NextResponse.json({
-      ok: trackingComplete && result.marketRadar.channels.every((channel) => channel.status === 'ok'),
+      ok: trackingComplete && result.marketRadar.channels.every((channel) => channel.status === 'ok') && result.nasdaqListings.status === 'ok',
       ...result,
       benchmarkCaptured,
       financialEnrichment,
@@ -152,7 +152,7 @@ export async function handleCollectRequest(
       dailyDiscovery,
       outcomeUpdates,
       priceTracking,
-    }, { status: trackingComplete && result.marketRadar.channels.every((channel) => channel.status === 'ok') ? 200 : 503 });
+    }, { status: trackingComplete && result.marketRadar.channels.every((channel) => channel.status === 'ok') && result.nasdaqListings.status === 'ok' ? 200 : 503 });
   } catch (err) {
     console.error('Kogumine ebaõnnestus:', err);
     return NextResponse.json(
