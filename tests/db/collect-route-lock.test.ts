@@ -154,6 +154,22 @@ describe('HTTP collect advisory-lock parity', () => {
     await expectLockAvailable();
   });
 
+  it('reuses pre-analysis financial enrichment without a second SEC pass', async () => {
+    const deps=dependencies();const result=await deps.runCollection();const financial=await deps.enrichStoredCompanyFinancials();
+    vi.mocked(deps.enrichStoredCompanyFinancials).mockClear();
+    vi.mocked(deps.runCollection).mockResolvedValueOnce({...result,marketRadar:{...result.marketRadar,financialEnrichment:financial,financialEnrichmentError:null}});
+    const response=await handleCollectRequest(request(),deps);expect(response.status).toBe(200);
+    expect((await response.json()).financialEnrichment).toEqual(financial);expect(deps.enrichStoredCompanyFinancials).not.toHaveBeenCalled();await expectLockAvailable();
+  });
+
+  it('returns 503 on pre-analysis SEC failure and does not retry enrichment after freezing the scan', async () => {
+    const deps=dependencies();const result=await deps.runCollection();
+    vi.mocked(deps.runCollection).mockResolvedValueOnce({...result,marketRadar:{...result.marketRadar,financialEnrichment:null,financialEnrichmentError:'SEC enrichment unavailable'}});
+    vi.spyOn(console,'error').mockImplementation(()=>undefined);
+    const response=await handleCollectRequest(request(),deps);expect(response.status).toBe(503);expect((await response.json()).ok).toBe(false);
+    expect(deps.enrichStoredCompanyFinancials).not.toHaveBeenCalled();await expectLockAvailable();
+  });
+
   it('releases the lock after a successful HTTP collection attempt', async () => {
     const response = await handleCollectRequest(request(), dependencies());
     expect(response.status).toBe(200);

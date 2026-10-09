@@ -1,3 +1,4 @@
+import { enrichStoredCompanyFinancials, type FinancialEnrichmentResult } from './company-financials';
 import { collectGrowthOpportunities, type GrowthOpportunitySnapshot } from './growth-opportunities';
 import { collectEarlyOpportunities, type EarlyOpportunitySnapshot } from './early-opportunities';
 import YahooFinance from 'yahoo-finance2';
@@ -27,6 +28,8 @@ export interface MarketRadarSnapshot {
   version: typeof MARKET_RADAR_VERSION; observedAt: string;
   channels: Array<{ id: Channel; status: 'ok' | 'failed'; received: number; accepted: number }>;
   stocks: MarketRadarStock[];
+  financialEnrichment?: FinancialEnrichmentResult | null;
+  financialEnrichmentError?: string | null;
   early?: EarlyOpportunitySnapshot;
   growth?: GrowthOpportunitySnapshot;
 }
@@ -95,8 +98,15 @@ export async function collectMarketRadar(): Promise<MarketRadarSnapshot> {
   // Use the ledger clock: a desktop clock ahead of PostgreSQL otherwise makes the scan look future-dated.
   const clock = async () => (await pool.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0].now;
   const snapshot = await fetchMarketRadar(await clock(), undefined, clock);
-  const now = await clock();
   await persistMarketRadarCompanies(snapshot);
+  snapshot.financialEnrichment = null;
+  snapshot.financialEnrichmentError = null;
+  try {
+    snapshot.financialEnrichment = await enrichStoredCompanyFinancials(MARKET_FINANCIAL_ENRICHMENT_LIMIT);
+  } catch {
+    snapshot.financialEnrichmentError = 'SEC CompanyFacts enrichment unavailable; scan uses existing stored facts.';
+  }
+  const now = await clock();
   snapshot.early = await collectEarlyOpportunities(snapshot, now);
   snapshot.growth = await collectGrowthOpportunities(snapshot, now);
   const evaluatedAt = (await clock()).toISOString();

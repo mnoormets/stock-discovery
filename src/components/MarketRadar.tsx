@@ -12,6 +12,8 @@ export default async function MarketRadar() {
     {!snapshot ? <p>No market radar snapshot is available from the latest collection.</p> : <>
       <p>{snapshot.stocks.length} distinct stocks · Observed {new Date(snapshot.observedAt).toLocaleString('en-GB', { timeZone: 'Europe/Tallinn' })} Tallinn · Daily collection</p>
       {Date.now() - new Date(snapshot.observedAt).getTime() > 36 * 3600000 && <p className="notice warning">Radar refresh is overdue. These are older observations.</p>}
+      {snapshot.financialEnrichmentError && <p className="notice warning">{snapshot.financialEnrichmentError}</p>}
+      {snapshot.financialEnrichment && <p>SEC enrichment before this scan: {snapshot.financialEnrichment.status} · {snapshot.financialEnrichment.attempted} attempted · {snapshot.financialEnrichment.enriched} enriched · {snapshot.financialEnrichment.failed} failed · {snapshot.financialEnrichment.unavailable} unavailable · {snapshot.financialEnrichment.attemptedTodayBefore} attempted earlier today · {snapshot.financialEnrichment.dailyRemaining} remaining in the shared daily budget.</p>}
       <ul>{snapshot.channels.map((channel) => <li key={channel.id}>
         <a href={`https://finance.yahoo.com/research-hub/screener/${channel.id}/`} target="_blank" rel="noreferrer">{MARKET_RADAR_CHANNELS.find((c) => c.id === channel.id)?.label}</a>
         {channel.status === 'failed' ? ' — Unavailable this run; coverage is incomplete.' : ` — ${channel.accepted} US equity observations from ${channel.received} returned rows (up to 25).`}

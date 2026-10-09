@@ -28,6 +28,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **9 October same-collection enrichment correction verified locally:** Persist discovered radar companies, perform the existing capped SEC pass, then freeze early/growth evidence. CLI/API reuse its result and Today shows coverage/budget/failure; a thrown failure returns API 503. Focused regressions, full isolated 79-file/564-test suite (550.42s), typecheck/lint/Docker build/restart/HTTP and real forward database checks passed. Prior observations remain unchanged; no new source, strategy/risk change or extra daily budget. See [verification](research/2026-10-09/ENRICHMENT_ORDER.md).
+
 - **9 October supported revenue alias correction verified:** Extractor now selects the freshest validated existing revenue concept by reporting end/filing date, with declared-priority ties and no value-based optimization. Real NVDA current Revenues facts and same-filing growth evidence now flow into a new forward collection while older facts/frozen observations remain intact. Focused 27 tests and full 78-file/560-test suite, typecheck/lint/Docker build/restart/HTTP checks passed. See [source correction evidence](research/2026-10-09/REVENUE_ALIAS_RECENCY.md).
 
 - **8 October Nasdaq listing research V1 verified:** Core CLI/API collection now persists official directory/Adds-Deletes observations, exact source payloads and first discovery/price evidence; Today shows bounded research and explicit unknown/excluded/SPAC states. Real collection #76 and replay verified the baseline and three observations. Full suite 78 files/557 tests, focused 3 files/11 tests, typecheck/lint/Docker build/restart/HTTP checks passed. Browser automation was unavailable; no visual check claimed. See [verification](research/2026-10-08/NASDAQ_LISTINGS.md).
@@ -287,7 +289,7 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-- Revenue alias correction is verified. Next fix ingestion-order latency so existing capped SEC enrichment precedes future growth evaluation; keep daily limits, same-filing gates, frozen collections and capital history/rules intact.
+- Revenue alias and enrichment-order corrections are verified locally. Next observe unattended use and future fresh same-run evidence with the original budgets and frozen history preserved.
 
 - Nasdaq listing research implementation is verified. Next observe the first unattended collection and first eligible directory addition; preserve shared budgets and capital policy/history. New research coverage is not evidence of future profit.
 
@@ -2098,4 +2100,11 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 
 - **9 October supported revenue alias correction verified:** Extractor now selects the freshest validated existing revenue concept by reporting end/filing date, with declared-priority ties and no value-based optimization. Real NVDA current Revenues facts and same-filing growth evidence now flow into a new forward collection while older facts/frozen observations remain intact. Focused 27 tests and full 78-file/560-test suite, typecheck/lint/Docker build/restart/HTTP checks passed. See [source correction evidence](research/2026-10-09/REVENUE_ALIAS_RECENCY.md).
 
-- Revenue alias correction is verified. Next fix ingestion-order latency so existing capped SEC enrichment precedes future growth evaluation; keep daily limits, same-filing gates, frozen collections and capital history/rules intact.
+- Revenue alias and enrichment-order corrections are verified locally. Next observe unattended use and future fresh same-run evidence with the original budgets and frozen history preserved.
+
+
+### 2026-10-09 — same-collection SEC enrichment order
+
+- **9 October same-collection enrichment correction verified locally:** Persist discovered radar companies, perform the existing capped SEC pass, then freeze early/growth evidence. CLI/API reuse its result and Today shows coverage/budget/failure; a thrown failure returns API 503. Focused regressions, full isolated 79-file/564-test suite (550.42s), typecheck/lint/Docker build/restart/HTTP and real forward database checks passed. Prior observations remain unchanged; no new source, strategy/risk change or extra daily budget. See [verification](research/2026-10-09/ENRICHMENT_ORDER.md).
+
+- Correction is complete locally. Next unattended use and profitability remain unproven. Publication is pending existing explicit authorization; no remote deployment claim.

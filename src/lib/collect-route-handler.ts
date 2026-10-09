@@ -67,7 +67,8 @@ export async function handleCollectRequest(
     let financialEnrichment: Awaited<ReturnType<typeof enrichStoredCompanyFinancials>> | null = null;
     let financialEnrichmentError: string | null = null;
     try {
-      financialEnrichment = await dependencies.enrichStoredCompanyFinancials(MARKET_FINANCIAL_ENRICHMENT_LIMIT);
+      if (result.marketRadar.financialEnrichmentError) throw new Error(result.marketRadar.financialEnrichmentError);
+      financialEnrichment = result.marketRadar.financialEnrichment ?? await dependencies.enrichStoredCompanyFinancials(MARKET_FINANCIAL_ENRICHMENT_LIMIT);
     } catch (error) {
       financialEnrichmentError = (error as Error).message;
       console.error('Päevane SEC CompanyFactsi enrichment ebaõnnestus:', error);
@@ -142,7 +143,7 @@ export async function handleCollectRequest(
     const outcomeUpdates = await dependencies.refreshCandidateOutcomes();
     const trackingComplete = !(priceTracking.failed || priceTracking.missing || priceTracking.invalid || priceTracking.stale || priceTracking.deferred);
     return NextResponse.json({
-      ok: trackingComplete && result.marketRadar.channels.every((channel) => channel.status === 'ok') && result.nasdaqListings.status === 'ok',
+      ok: trackingComplete && !financialEnrichmentError && result.marketRadar.channels.every((channel) => channel.status === 'ok') && result.nasdaqListings.status === 'ok',
       ...result,
       benchmarkCaptured,
       financialEnrichment,
@@ -152,7 +153,7 @@ export async function handleCollectRequest(
       dailyDiscovery,
       outcomeUpdates,
       priceTracking,
-    }, { status: trackingComplete && result.marketRadar.channels.every((channel) => channel.status === 'ok') && result.nasdaqListings.status === 'ok' ? 200 : 503 });
+    }, { status: trackingComplete && !financialEnrichmentError && result.marketRadar.channels.every((channel) => channel.status === 'ok') && result.nasdaqListings.status === 'ok' ? 200 : 503 });
   } catch (err) {
     console.error('Kogumine ebaõnnestus:', err);
     return NextResponse.json(

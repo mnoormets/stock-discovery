@@ -131,7 +131,10 @@ async function main() {
     line('benchmarkCaptured', benchmark === true ? 'JAH' : 'EI');
 
     section('3. SEC enrichment');
-    const sec = await step('enrichStoredCompanyFinancials', () => financials.enrichStoredCompanyFinancials(MARKET_FINANCIAL_ENRICHMENT_LIMIT));
+    const sec = await step('enrichStoredCompanyFinancials', async () => {
+      if (collected?.marketRadar.financialEnrichmentError) throw new Error(collected.marketRadar.financialEnrichmentError);
+      return collected?.marketRadar.financialEnrichment ?? financials.enrichStoredCompanyFinancials(MARKET_FINANCIAL_ENRICHMENT_LIMIT);
+    });
     if (sec) {
       line('status', sec.status);
       line('attempted', sec.attempted);
