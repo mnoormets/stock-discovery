@@ -1,3 +1,4 @@
+import { selectGrowthEvidence } from '../../src/lib/growth-opportunities';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pool } from '../../src/lib/db';
 import {
@@ -349,5 +350,37 @@ describe('E9.5 — 200 OK ilma ekstraheeritavate mõõdikuteta → unavailable',
     expect(result.financialUniverse).toBe(1);
     expect(result.coveredBefore).toBe(0);
     expect(result.coveredAfter).toBe(0);
+  });
+});
+
+
+describe('revenue concept recency', () => {
+  it('retains old facts but selects the newer supported concept and same-filing comparison on refresh', async () => {
+    const stale = durationUnit({start:'2021-02-01',end:'2022-01-30',filed:'2022-03-18',accn:'old',val:100});
+    stubWithBody(companyFactsBody({RevenueFromContractWithCustomerExcludingAssessedTax:{units:[stale]}}));
+    const companyId=await seedCompany('AAA');
+    const {refreshCompanyFinancials,getAllStoredCompanyFinancials}=await import('../../src/lib/company-financials');
+    await refreshCompanyFinancials('AAA');
+    const old=(await pool.query('SELECT id,fact_key,value FROM financial_facts WHERE company_id=$1',[companyId])).rows;
+    const current=durationUnit({start:'2026-01-01',end:'2026-06-30',filed:'2026-08-06',form:'10-Q',accn:'current',val:150});
+    const prior={...current,start:'2025-01-01',end:'2025-06-30',val:100};
+    stubWithBody(companyFactsBody({RevenueFromContractWithCustomerExcludingAssessedTax:{units:[stale]},Revenues:{units:[current,prior]},NetCashProvidedByUsedInOperatingActivities:{units:[{...current,val:10}]}}));
+    await refreshCompanyFinancials('AAA');
+    const summary=(await getAllStoredCompanyFinancials(true)).find(r=>r.ticker==='AAA')!;
+    const evidence=selectGrowthEvidence(summary.facts!,new Date('2026-10-08T20:00:00Z'));
+    expect(evidence).toHaveLength(3);expect(evidence[0].tag).toBe('Revenues');expect(evidence.map(p=>p.value)).toEqual([150,100,10]);
+    expect((await pool.query('SELECT id,fact_key,value FROM financial_facts WHERE id=$1',[old[0].id])).rows).toEqual(old);
+    const before=await readFacts(companyId);await refreshCompanyFinancials('AAA');expect(await readFacts(companyId)).toEqual(before);
+    expect((await pool.query('SELECT count(*)::int AS n FROM paper_capital_trades')).rows[0].n).toBe(0);
+  });
+  it('retains declared concept priority on equal valid period and filing, independent of value', async () => {
+    stubWithBody(companyFactsBody({RevenueFromContractWithCustomerExcludingAssessedTax:{units:[durationUnit({val:100})]},Revenues:{units:[durationUnit({val:999})]}}));
+    const id=await seedCompany('AAA');const {refreshCompanyFinancials}=await import('../../src/lib/company-financials');await refreshCompanyFinancials('AAA');
+    const revenue=(await readFacts(id)).filter(r=>r.metric==='revenue');expect(revenue).toHaveLength(1);expect(revenue[0].tag).toBe('RevenueFromContractWithCustomerExcludingAssessedTax');expect(Number(revenue[0].value)).toBe(100);
+  });
+  it('does not prefer a newer malformed or disallowed-form concept over valid evidence', async () => {
+    stubWithBody(companyFactsBody({RevenueFromContractWithCustomerExcludingAssessedTax:{units:[durationUnit()]},Revenues:{units:[durationUnit({end:'2026-06-30',form:'8-K'})]}}));
+    const id=await seedCompany('AAA');const {refreshCompanyFinancials}=await import('../../src/lib/company-financials');await refreshCompanyFinancials('AAA');
+    expect((await readFacts(id)).filter(r=>r.metric==='revenue').map(r=>r.tag)).toEqual(['RevenueFromContractWithCustomerExcludingAssessedTax']);
   });
 });

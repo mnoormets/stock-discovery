@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-10-08
+Uuendatud: 2026-10-09
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -27,6 +27,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 - Rakendus ei anna ostu- ega müügisoovitusi.
 
 ## Praegune töötav seis
+
+- **9 October supported revenue alias correction verified:** Extractor now selects the freshest validated existing revenue concept by reporting end/filing date, with declared-priority ties and no value-based optimization. Real NVDA current Revenues facts and same-filing growth evidence now flow into a new forward collection while older facts/frozen observations remain intact. Focused 27 tests and full 78-file/560-test suite, typecheck/lint/Docker build/restart/HTTP checks passed. See [source correction evidence](research/2026-10-09/REVENUE_ALIAS_RECENCY.md).
 
 - **8 October Nasdaq listing research V1 verified:** Core CLI/API collection now persists official directory/Adds-Deletes observations, exact source payloads and first discovery/price evidence; Today shows bounded research and explicit unknown/excluded/SPAC states. Real collection #76 and replay verified the baseline and three observations. Full suite 78 files/557 tests, focused 3 files/11 tests, typecheck/lint/Docker build/restart/HTTP checks passed. Browser automation was unavailable; no visual check claimed. See [verification](research/2026-10-08/NASDAQ_LISTINGS.md).
 
@@ -285,6 +287,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
+- Revenue alias correction is verified. Next fix ingestion-order latency so existing capped SEC enrichment precedes future growth evaluation; keep daily limits, same-filing gates, frozen collections and capital history/rules intact.
+
 - Nasdaq listing research implementation is verified. Next observe the first unattended collection and first eligible directory addition; preserve shared budgets and capital policy/history. New research coverage is not evidence of future profit.
 
 **7 October AMD diagnosis:** Coherent-period growth/momentum discovery and the DB-clock repair are implemented and verified. Next observe forward discoveries and unattended execution; The same-ledger growth-capital-entry-v2 transition is activated with six new paired entries, preserving the original $20,000 and every gain/loss. Monitor fresh marks, exits, losses and next unattended use of the new entry policy. Broader coverage is not proof of profitability. Persistent Goal usageLimited is separate from ordinary account quota and is not completion.
@@ -321,6 +325,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 ## Roadmap
 
 ### NOW - järgmine töö
+
+- Correct future SEC enrichment/growth evaluation order without increasing the daily budget or rewriting terminal collection evidence. Revenue alias correction and required verification completed.
 
 - Observe first unattended nasdaq-listing-research-v1 collection and eligible-directory addition; implementation and verification complete.
 
@@ -364,6 +370,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- Revenue concept recency is a correction within existing supported SEC inputs, not a new trading strategy or threshold. Same-filing comparisons and immutable research/trading history remain required. Late enrichment is forward information for a new collection only.
 
 - nasdaq-listing-research-v1 reuses existing Nasdaq Trader/Yahoo/SEC sources and collection metrics; Add is not proof of IPO. Initial complete directory is baseline. First timestamps/prices are retained; failures and missing evidence remain explicit. Daily quote/SEC/tracking budgets are bounded. No automatic IPO entry or new money.
 
@@ -756,6 +764,10 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-10-09 — supported revenue concept recency
+
+Actual [verification](research/2026-10-09/REVENUE_ALIAS_RECENCY.md): 27 focused /560 full tests (78 files), typecheck/lint/Docker build/restart/HTTP checks passed. Earlier environment/cold-import failures and reproduced red regression are documented.
 
 ### 2026-10-08 — Nasdaq listing research V1
 
@@ -2080,3 +2092,10 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 - **8 October Nasdaq listing research V1 verified:** Core CLI/API collection now persists official directory/Adds-Deletes observations, exact source payloads and first discovery/price evidence; Today shows bounded research and explicit unknown/excluded/SPAC states. Real collection #76 and replay verified the baseline and three observations. Full suite 78 files/557 tests, focused 3 files/11 tests, typecheck/lint/Docker build/restart/HTTP checks passed. Browser automation was unavailable; no visual check claimed. See [verification](research/2026-10-08/NASDAQ_LISTINGS.md).
 
 - Nasdaq listing research implementation is verified. Next observe the first unattended collection and first eligible directory addition; preserve shared budgets and capital policy/history. New research coverage is not evidence of future profit.
+
+
+### 2026-10-09 — revenue alias correction delivered
+
+- **9 October supported revenue alias correction verified:** Extractor now selects the freshest validated existing revenue concept by reporting end/filing date, with declared-priority ties and no value-based optimization. Real NVDA current Revenues facts and same-filing growth evidence now flow into a new forward collection while older facts/frozen observations remain intact. Focused 27 tests and full 78-file/560-test suite, typecheck/lint/Docker build/restart/HTTP checks passed. See [source correction evidence](research/2026-10-09/REVENUE_ALIAS_RECENCY.md).
+
+- Revenue alias correction is verified. Next fix ingestion-order latency so existing capped SEC enrichment precedes future growth evaluation; keep daily limits, same-filing gates, frozen collections and capital history/rules intact.

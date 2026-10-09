@@ -231,6 +231,14 @@ function factKey(point: Omit<FinancialPoint, 'id'>): string {
 }
 
 function extractDefinition(data: SecCompanyFacts, cik: string, definition: MetricDefinition): FinancialPoint[] {
+  // Issuers can switch supported revenue concepts. Choose by valid reporting
+  // recency, never by value; stable ties keep the declared concept priority.
+  if (definition.metric === 'revenue' && definition.tags.length > 1) {
+    const candidates = definition.tags.map(tag => extractDefinition(data, cik, { ...definition, tags: [tag] }));
+    return candidates.filter(points => points.length > 0).sort((a, b) =>
+      (b[0].periodEnd + ':' + b[0].filedAt).localeCompare(a[0].periodEnd + ':' + a[0].filedAt))[0] || [];
+  }
+
   const taxonomyFacts = data.facts?.[definition.taxonomy] || {};
   const tag = definition.tags.find((candidate) => Array.isArray(taxonomyFacts[candidate]?.units?.[definition.unit]));
   if (!tag) return [];
