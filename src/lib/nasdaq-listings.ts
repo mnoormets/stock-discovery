@@ -120,7 +120,7 @@ export async function collectNasdaqListings(options: { fetchText?: (url:string)=
   }
   await resolveCollectionCompanyIds(fundamentals.keys(),fundamentals);
   if (eligible.length) {
-    const enriched=await(options.enrich??enrichStoredCompanyFinancials)(20);
+    const enriched=await(options.enrich??enrichStoredCompanyFinancials)(20,eligible.map(row=>row.ticker));
     snapshot.financialEnrichment={attempted:enriched.attempted,dailyRemaining:enriched.dailyRemaining};
   }
   now=await clock();

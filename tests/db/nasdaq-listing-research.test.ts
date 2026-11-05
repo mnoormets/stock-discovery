@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { pool } from '../../src/lib/db';
 import { collectNasdaqListings, getNasdaqListings } from '../../src/lib/nasdaq-listings';
 import { startCollectionRun, succeedCollectionRun } from '../../src/lib/collection-runs';
@@ -22,4 +22,12 @@ describe('production listing snapshot and tracking',()=>{
     expect(scan.quoteAttempted).toBe(20);expect(scan.quoteDeferred).toBe(4);expect(scan.rows.every(r=>r.firstPrice===null)).toBe(true);expect((await pool.query('SELECT count(*)::int AS n FROM price_snapshots')).rows[0].n).toBe(0);
     const failed=await collectNasdaqListings({fetchText:async()=>{throw new Error('source down');}});expect(failed.status).toBe('failed');expect(failed.rows).toEqual([]);
   });
+});
+
+
+it('passes only confirmed research listings to the shared SEC queue', async () => {
+  const f=await fixtures(['NEW','SPAC']);
+  const enrich=vi.fn(async()=>({status:'completed' as const,financialUniverse:2,coveredBefore:0,coveredAfter:0,attempted:0,enriched:0,unavailable:0,failed:0,dailyLimit:20,attemptedTodayBefore:20,dailyRemaining:0,attemptedTickers:[],unavailableTickers:[],failedTickers:[]}));
+  await collectNasdaqListings({fetchText:async url=>(await f.text(url)).replace('SPAC Common Stock','Acquisition Common Stock'),quoteFetcher:async()=>new Map(),enrich});
+  expect(enrich).toHaveBeenCalledExactlyOnceWith(20,['NEW']);
 });

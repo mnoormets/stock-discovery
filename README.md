@@ -6,6 +6,10 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- Confirmed recent Nasdaq research listings receive priority within the existing shared 20-company SEC budget. A listing with no facts and no stored SEC identity can retry an unavailable result after 24 hours as ticker mappings catch up; other factless unavailable cases retain the 30-day wait. Existing stale-fact refresh rules, retry timestamps, first observations and trading history are preserved.
+
+- Growth opportunities display the frozen positive/flat-or-falling/unknown 1- and 3-month trend assessment. Positive-trend research candidates appear first, while every other qualifying candidate remains visible with a warning. An early setup can still be declining; display order does not change capital eligibility or establish profit.
+
 - Price tracking schedules `growth cohort follow-up v1` for every first-observed growth-radar name with a known baseline price, including excluded and unknown names, when its seven-day target is due (up to three days late). SPY and paper holdings have priority, then the oldest due cohort; the existing shared 50-symbol New York-day cap and idempotent attempt records remain. Stored usable endpoints end this additional eligibility, and later appearances never restart the first-observation window. Expected budget deferrals remain visible in CLI/API counts without failing the job; missing, stale, invalid or failed quotes still fail it. This improves research measurement coverage; it does not change selection, trading rules or establish profit.
 
 - `node scripts/audit-growth-cohort.cjs 7` (or `30`) measures every first-observed growth radar name, including excluded/unknown names, using only stored USD quotes. It retains missing and immature outcomes, aligns available SPY observations, and labels results as exploratory price changes with unverified corporate actions, not simulated portfolio profit. Collection records include sanitized build revision/runner metadata when declared. CLI/API capture the existing benchmark before freezing discovery.

@@ -570,7 +570,7 @@ async function financialUniverseCoverage(): Promise<{ universe: number; covered:
   };
 }
 
-async function financialEnrichmentQueue(limit: number): Promise<Array<{ companyId: number; ticker: string }>> {
+export async function financialEnrichmentQueue(limit: number, recentListingTickers: string[] = []): Promise<Array<{ companyId: number; ticker: string }>> {
   const result = await pool.query(
     `SELECT c.id AS company_id, c.ticker
      FROM companies c
@@ -593,6 +593,8 @@ async function financialEnrichmentQueue(limit: number): Promise<Array<{ companyI
              enrichment.last_attempt_at IS NULL
              OR (enrichment.status = 'error' AND enrichment.last_attempt_at < now() - interval '1 day')
              OR (enrichment.status = 'unavailable' AND enrichment.last_attempt_at < now() - interval '30 days')
+             OR (enrichment.status = 'unavailable' AND c.sec_cik IS NULL
+                 AND c.ticker = ANY($2::text[]) AND enrichment.last_attempt_at < now() - interval '1 day')
            )
          )
          OR (
@@ -600,13 +602,14 @@ async function financialEnrichmentQueue(limit: number): Promise<Array<{ companyI
            AND (enrichment.last_attempt_at IS NULL OR enrichment.last_attempt_at < now() - interval '1 day')
          )
        )
-     ORDER BY (facts.facts_updated_at IS NULL) DESC,
+     ORDER BY (c.ticker = ANY($2::text[])) DESC,
+              (facts.facts_updated_at IS NULL) DESC,
               (enrichment.last_attempt_at IS NULL) DESC,
               enrichment.last_attempt_at ASC NULLS FIRST,
               prices.latest_price_at DESC,
               c.ticker
      LIMIT $1`,
-    [limit],
+    [limit, recentListingTickers],
   );
   return result.rows.map((row) => ({ companyId: Number(row.company_id), ticker: String(row.ticker) }));
 }
@@ -660,6 +663,7 @@ function wait(milliseconds: number): Promise<void> {
 
 export async function enrichStoredCompanyFinancials(
   limit = DAILY_FINANCIAL_ENRICHMENT_LIMIT,
+  recentListingTickers: string[] = [],
 ): Promise<FinancialEnrichmentResult> {
   await ensureFinancialSchema();
   const safeLimit = Math.max(1, Math.min(20, Math.trunc(limit) || DAILY_FINANCIAL_ENRICHMENT_LIMIT));
@@ -685,7 +689,7 @@ export async function enrichStoredCompanyFinancials(
 
   const attemptedTodayBefore = await enrichmentAttemptsToday();
   const availableToday = Math.max(0, safeLimit - attemptedTodayBefore);
-  const queue = availableToday > 0 ? await financialEnrichmentQueue(availableToday) : [];
+  const queue = availableToday > 0 ? await financialEnrichmentQueue(availableToday, recentListingTickers) : [];
   const attemptedTickers: string[] = [];
   const unavailableTickers: string[] = [];
   const failedTickers: string[] = [];

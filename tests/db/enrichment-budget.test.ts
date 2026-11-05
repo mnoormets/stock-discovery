@@ -513,3 +513,40 @@ describe('E8 — tulemuse kuju ja veataluvus', () => {
     expect(result.attempted).toBe(2);
   });
 });
+
+
+describe('recent listing identity recovery', () => {
+  it('retries missing identities after one day only for confirmed recent listing context', async () => {
+    stubSecFetch({ tickerMap: TICKER_MAP });
+    for (const ticker of ['AAA','BBB']) {
+      const id = await seedCompany(ticker);
+      await insertEnrichmentStatus(id, { status: 'unavailable', lastAttempt: ago('2 days') });
+    }
+    const result = await enrichStoredCompanyFinancials(20, ['BBB']);
+    expect(result.attemptedTickers).toEqual(['BBB']);
+    expect((await readEnrichmentStatus((await pool.query("SELECT id FROM companies WHERE ticker='AAA'")).rows[0].id))?.status).toBe('unavailable');
+  });
+
+  it('retains cooldowns for known identities and attempts within one day', async () => {
+    stubSecFetch({ tickerMap: TICKER_MAP });
+    const known = await seedCompany('AAA');
+    await pool.query("UPDATE companies SET sec_cik='0000000100' WHERE id=$1", [known]);
+    await insertEnrichmentStatus(known, { status: 'unavailable', lastAttempt: ago('2 days') });
+    const recent = await seedCompany('BBB');
+    await insertEnrichmentStatus(recent, { status: 'unavailable', lastAttempt: ago('2 hours') });
+    const result = await enrichStoredCompanyFinancials(20, ['AAA','BBB']);
+    expect(result.attempted).toBe(0);
+  });
+
+  it('prioritizes recent listing evidence but retains the shared daily cap on replay', async () => {
+    stubSecFetch({ tickerMap: TICKER_MAP });
+    await seedCompany('AAA');
+    const listing = await seedCompany('BBB');
+    await insertEnrichmentStatus(listing, { status: 'unavailable', lastAttempt: ago('2 days') });
+    const first = await enrichStoredCompanyFinancials(1, ['BBB']);
+    expect(first.attemptedTickers).toEqual(['BBB']);
+    const repeat = await enrichStoredCompanyFinancials(1, ['BBB']);
+    expect(repeat.attempted).toBe(0);
+    expect(repeat.dailyRemaining).toBe(0);
+  });
+});
