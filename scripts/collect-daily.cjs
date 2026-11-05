@@ -199,7 +199,8 @@ async function main() {
     const tracked = await step('collectTrackedPrices', () => priceTracking.collectTrackedPrices());
     if (tracked) {
       line('tracking', JSON.stringify(tracked));
-      if (tracked.failed || tracked.missing || tracked.invalid || tracked.stale || tracked.deferred) {
+      if (tracked.deferred) line('tracking budget deferred', tracked.deferred);
+      if (priceTracking.priceTrackingHasErrors(tracked)) {
         errors.push('Price tracking incomplete; inspect price_tracking_attempts.');
       }
     }

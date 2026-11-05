@@ -176,6 +176,33 @@ describe('HTTP collect advisory-lock parity', () => {
     await expectLockAvailable();
   });
 
+  it('reports expected budget deferrals without failing an otherwise healthy collection', async () => {
+    const deps=dependencies();
+    vi.mocked(deps.collectTrackedPrices).mockResolvedValueOnce({attempted:50,saved:50,unchanged:0,missing:0,stale:0,invalid:0,failed:0,deferred:73});
+    const response=await handleCollectRequest(request(),deps);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ok:true,priceTracking:{attempted:50,deferred:73}});
+    await expectLockAvailable();
+  });
+
+  it.each(['missing','stale','invalid','failed'] as const)('still fails actual %s quotes even with budget deferrals', async (failure) => {
+    const deps=dependencies();
+    vi.mocked(deps.collectTrackedPrices).mockResolvedValueOnce({attempted:1,saved:0,unchanged:0,missing:0,stale:0,invalid:0,failed:0,deferred:73,[failure]:1});
+    const response=await handleCollectRequest(request(),deps);
+    expect(response.status).toBe(503);
+    expect((await response.json()).ok).toBe(false);
+    await expectLockAvailable();
+  });
+
+  it('does not hide earlier quote failures behind a same-day budget-only retry',async()=>{
+    const deps=dependencies();
+    vi.mocked(deps.collectTrackedPrices).mockResolvedValueOnce({attempted:0,saved:0,unchanged:0,missing:0,stale:0,invalid:0,failed:0,deferred:73,previousErrors:1});
+    const response=await handleCollectRequest(request(),deps);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ok:false,priceTracking:{previousErrors:1,deferred:73}});
+    await expectLockAvailable();
+  });
+
   it('releases the lock after a failed HTTP collection attempt', async () => {
     const deps = dependencies();
     vi.mocked(deps.runCollection).mockRejectedValueOnce(new Error('synthetic collection failure'));

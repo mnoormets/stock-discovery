@@ -2107,7 +2107,7 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 
 - **9 October same-collection enrichment correction verified locally:** Persist discovered radar companies, perform the existing capped SEC pass, then freeze early/growth evidence. CLI/API reuse its result and Today shows coverage/budget/failure; a thrown failure returns API 503. Focused regressions, full isolated 79-file/564-test suite (550.42s), typecheck/lint/Docker build/restart/HTTP and real forward database checks passed. Prior observations remain unchanged; no new source, strategy/risk change or extra daily budget. See [verification](research/2026-10-09/ENRICHMENT_ORDER.md).
 
-- Correction is complete locally. Next unattended use and profitability remain unproven. Publication is pending existing explicit authorization; no remote deployment claim.
+- Correction is complete locally. Next unattended use and profitability remain unproven. Prior source publication was subsequently verified at commit 555e29b; subsequent unattended revision metadata remains unverified.
 
 
 ### Research measurement and delivery validation
@@ -2119,4 +2119,15 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 - Prominent radar movers show first observed source evidence and financial exclusion reasons. Split checks use bounded preceding coverage without accepting future bars or ignoring uncertain split events.
 - No new sources, paid data, live trades, capital reset or automatic publication. Runtime deployment must be verified against newly saved collection metadata.
 
-- Verification: full isolated suite 82 files / 579 tests passed (642.63s); typecheck and lint passed; Docker production build completed 22/22 pages, app restarted, Today HTTP 200 and golden-source read-only cohort checks completed. A new local research-only collection persisted capabilities, trend-review and listing financial-assessment fields without altering paper trades. Unattended remote deployment remains pending publication and subsequent revision verification.
+- Verification: full isolated suite 82 files / 579 tests passed (642.63s); typecheck and lint passed; Docker production build completed 22/22 pages, app restarted, Today HTTP 200 and golden-source read-only cohort checks completed. A new local research-only collection persisted capabilities, trend-review and listing financial-assessment fields without altering paper trades. Source publication was subsequently verified at commit 555e29b; a later unattended run still must verify revision metadata.
+
+
+### Cohort follow-up coverage and collection status — 2026-11-05
+
+- Track first-observed growth cohorts, including excluded and unknown names, when their seven-day target is due within the existing three-day endpoint window. Preserve the first baseline and withhold missing/future evidence; usable stored USD endpoints stop the extra eligibility.
+- Retain the shared 50-symbol New York-day cap and idempotent attempt records. Prioritize SPY, open V1/capital holdings, then oldest due cohorts, ahead of the existing research rotation. Existing migrations 0009 and 0011 are required; no new schema or provider is introduced.
+- CLI/API retain visible budget-deferred counts without treating expected capacity limits as quote failures. Current or earlier same-day missing/stale/invalid/failed quotes still fail collection; previousErrors prevents a budget-only retry from hiding earlier problems.
+- Stock selection, entry policy, risk stops, capital and immutable trading history are unchanged. More outcome coverage does not establish profitable predictions.
+- Verification: full isolated suite 83 files / 590 tests passed (675.64s); focused queue/HTTP regressions 5 files / 28 tests passed; typecheck/lint passed; Docker production build completed 22/22 pages, app restarted, Today and Performance HTTP 200. Real database checks respected the exhausted daily cap and repeated safely; rendered queue availability and unchanged capital history were checked. Test database teardown was verified.
+- Completed locally: measurement-queue and collection-status repair. Current focus: explicit source publication review, then actual scheduled-run/endpoints evidence. A first real new cohort capture remains pending a later available budget. Prior source publication at commit 555e29b is verified; subsequent unattended revision metadata still needs a later saved run.
+- Existing delivery constraint remains: no automatic publication. This source-only patch excludes private research, datasets, models, logs, backups and account audits.

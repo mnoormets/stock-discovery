@@ -6,6 +6,8 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- Price tracking schedules `growth cohort follow-up v1` for every first-observed growth-radar name with a known baseline price, including excluded and unknown names, when its seven-day target is due (up to three days late). SPY and paper holdings have priority, then the oldest due cohort; the existing shared 50-symbol New York-day cap and idempotent attempt records remain. Stored usable endpoints end this additional eligibility, and later appearances never restart the first-observation window. Expected budget deferrals remain visible in CLI/API counts without failing the job; missing, stale, invalid or failed quotes still fail it. This improves research measurement coverage; it does not change selection, trading rules or establish profit.
+
 - `node scripts/audit-growth-cohort.cjs 7` (or `30`) measures every first-observed growth radar name, including excluded/unknown names, using only stored USD quotes. It retains missing and immature outcomes, aligns available SPY observations, and labels results as exploratory price changes with unverified corporate actions, not simulated portfolio profit. Collection records include sanitized build revision/runner metadata when declared. CLI/API capture the existing benchmark before freezing discovery.
 
 - Growth collections also freeze `growth-trend-review-v1`: a research-only hypothesis requiring positive known 1- and 3-month returns after the existing growth checks. It does not change capital eligibility, reactivate risk-stopped accounts, create orders or establish profit. Run `node scripts/diagnose-capital.cjs` for a read-only audit of actual closed trades by frozen entry trend.

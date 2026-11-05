@@ -4,14 +4,33 @@ import { newYorkPriceDate, priceObservationRecency } from './price-observation';
 
 export const PRICE_TRACKING_DAILY_LIMIT = 50;
 
+type PriceTrackingCounts = { attempted:number; saved:number; unchanged:number; missing:number; stale:number;
+  invalid:number; failed:number; deferred:number; previousErrors?:number };
+
+export function priceTrackingHasErrors(counts: Pick<PriceTrackingCounts,'failed'|'missing'|'invalid'|'stale'|'previousErrors'>) {
+  return !!(counts.failed || counts.missing || counts.invalid || counts.stale || counts.previousErrors);
+}
+
 export async function priceTrackingAvailable(): Promise<boolean> {
-  return (await pool.query("SELECT to_regclass('public.price_tracking_attempts') IS NOT NULL AS available")).rows[0].available;
+  return (await pool.query(`SELECT to_regclass('public.price_tracking_attempts') IS NOT NULL
+    AND to_regclass('public.paper_capital_trades') IS NOT NULL AS available`)).rows[0].available;
 }
 
 /** Eligibility is separate from discovery selection and never creates items. */
 export async function getPriceTrackingQueue(now = new Date()) {
   const result = await pool.query(`
-    WITH reasons AS (
+    WITH growth_observations AS (
+      SELECT r.id,r.finished_at,item,
+        CASE WHEN pg_input_is_valid(r.metrics->'marketRadar'->'growth'->>'evaluatedAt','timestamptz')
+          THEN (r.metrics->'marketRadar'->'growth'->>'evaluatedAt')::timestamptz END AS evaluated_at
+      FROM collection_runs r
+      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(r.metrics->'marketRadar'->'growth'->'rows','[]'::jsonb)) item
+      WHERE r.status='success' AND r.metrics->'marketRadar'->'growth'->>'version'='growth-opportunities-v2'
+        AND r.finished_at <= $1
+    ), growth_first AS (
+      SELECT DISTINCT ON (item->>'ticker') * FROM growth_observations
+      ORDER BY item->>'ticker',finished_at,id
+    ), reasons AS (
       SELECT c.id AS company_id, 'active research' AS reason
       FROM companies c JOIN portfolio_positions p ON p.ticker = c.ticker
       WHERE p.status IN ('active', 'watch')
@@ -21,6 +40,12 @@ export async function getPriceTrackingQueue(now = new Date()) {
         GROUP BY policy_version, strategy_key, book_key, instrument_ticker
         HAVING sum(CASE WHEN side = 'buy' THEN executed_quantity ELSE -executed_quantity END) > 1e-12
       ) h ON h.instrument_ticker = c.ticker
+      UNION
+      SELECT c.id, 'paper holding' FROM companies c JOIN (
+        SELECT instrument_ticker FROM paper_capital_trades WHERE executed_at <= $1
+        GROUP BY policy_version,book_key,signal_ticker,instrument_ticker
+        HAVING sum(CASE WHEN side='buy' THEN quantity ELSE -quantity END) > 1e-12
+      ) h ON h.instrument_ticker=c.ticker
       UNION
       SELECT d.company_id, 'outcome horizon' FROM discovery_decisions d
       JOIN discovery_runs r ON r.id = d.run_id
@@ -34,13 +59,22 @@ export async function getPriceTrackingQueue(now = new Date()) {
       WHERE r.status='success' AND r.metrics->'marketRadar'->'early'->>'version'='early-opportunities-v1'
         AND item->>'state'='watch' AND r.finished_at <= $1 AND r.finished_at >= $1::timestamptz - interval '30 days'
       UNION
-      SELECT c.id, 'growth opportunity' FROM collection_runs r
-      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(r.metrics->'marketRadar'->'growth'->'rows','[]'::jsonb)) item
-      JOIN companies c ON c.ticker=item->>'ticker'
-      WHERE r.status='success' AND r.metrics->'marketRadar'->'growth'->>'version'='growth-opportunities-v2'
-        AND item->>'state' IN ('early','momentum') AND r.finished_at <= $1
-        AND (r.metrics->'marketRadar'->'growth'->>'evaluatedAt')::timestamptz <= $1
-        AND r.finished_at >= $1::timestamptz - interval '30 days'
+      SELECT c.id, 'growth opportunity' FROM growth_observations g
+      JOIN companies c ON c.ticker=g.item->>'ticker'
+      WHERE g.item->>'state' IN ('early','momentum') AND g.evaluated_at <= $1
+        AND g.finished_at >= $1::timestamptz - interval '30 days'
+      UNION
+      SELECT c.id, 'growth cohort follow-up v1' FROM growth_first f
+      JOIN companies c ON c.ticker=f.item->>'ticker'
+      WHERE f.finished_at + interval '7 days' <= $1 AND f.finished_at + interval '10 days' >= $1
+        AND f.evaluated_at <= f.finished_at
+        AND CASE WHEN jsonb_typeof(f.item->'price')='number' THEN (f.item->>'price')::numeric > 0 ELSE false END
+        AND CASE WHEN pg_input_is_valid(f.item->>'marketAt','timestamptz')
+          THEN (f.item->>'marketAt')::timestamptz <= f.finished_at ELSE false END
+        AND NOT EXISTS (SELECT 1 FROM price_snapshots p WHERE p.company_id=c.id AND p.currency='USD'
+          AND p.price > 0 AND p.market_at >= f.finished_at + interval '7 days'
+          AND p.market_at <= f.finished_at + interval '10 days' AND p.market_at <= p.captured_at
+          AND p.captured_at <= f.finished_at + interval '11 days' AND p.captured_at <= $1)
       UNION
       SELECT c.id, 'new Nasdaq listing' FROM collection_runs r
       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(r.metrics->'nasdaqListings'->'rows','[]'::jsonb)) item
@@ -54,9 +88,13 @@ export async function getPriceTrackingQueue(now = new Date()) {
     SELECT c.id AS company_id, c.ticker, array_agg(DISTINCT r.reason ORDER BY r.reason) AS reasons,
       (SELECT max(a.attempted_at) FROM price_tracking_attempts a WHERE a.company_id = c.id) AS last_attempt
     FROM reasons r JOIN companies c ON c.id = r.company_id
+    LEFT JOIN growth_first f ON f.item->>'ticker'=c.ticker
     WHERE NOT EXISTS (SELECT 1 FROM price_tracking_attempts a WHERE a.company_id = c.id AND a.tracking_date = $2)
     GROUP BY c.id, c.ticker
-    ORDER BY (c.ticker = 'SPY') DESC, last_attempt ASC NULLS FIRST, c.ticker`,
+    ORDER BY (c.ticker = 'SPY') DESC, bool_or(r.reason='paper holding') DESC,
+      bool_or(r.reason='growth cohort follow-up v1') DESC,
+      min(f.finished_at) FILTER (WHERE r.reason='growth cohort follow-up v1') ASC NULLS LAST,
+      last_attempt ASC NULLS FIRST, c.ticker`,
   [now.toISOString(), newYorkPriceDate(now.toISOString())]);
   return result.rows as { company_id: string; ticker: string; reasons: string[]; last_attempt: Date | null }[];
 }
@@ -65,7 +103,7 @@ export async function collectTrackedPrices(options: {
   now?: Date;
   quoteFetcher?: (tickers: string[]) => Promise<Map<string, YahooExecutionQuote>>;
 } = {}) {
-  if (!(await priceTrackingAvailable())) throw new Error('Price tracking requires migration 0009.');
+  if (!(await priceTrackingAvailable())) throw new Error('Price tracking requires migrations 0009 and 0011.');
   const now = options.now ?? new Date();
   const date = newYorkPriceDate(now.toISOString());
   const client = await pool.connect();
@@ -73,10 +111,14 @@ export async function collectTrackedPrices(options: {
   try {
     locked = (await client.query("SELECT pg_try_advisory_lock(hashtext('stock-discovery:price-tracking')) AS locked")).rows[0].locked;
     if (!locked) throw new Error('Price tracking is already running.');
-    const used = Number((await client.query('SELECT count(*) FROM price_tracking_attempts WHERE tracking_date = $1', [date])).rows[0].count);
+    const budget = (await client.query(`SELECT count(*) AS used,
+      count(*) FILTER (WHERE status IN ('failed','missing','invalid','stale')) AS previous_errors
+      FROM price_tracking_attempts WHERE tracking_date=$1`,[date])).rows[0];
+    const used = Number(budget.used);
     const queue = await getPriceTrackingQueue(now);
     const selected = queue.slice(0, Math.max(0, PRICE_TRACKING_DAILY_LIMIT - used));
-    const counts = { attempted: 0, saved: 0, unchanged: 0, missing: 0, stale: 0, invalid: 0, failed: 0, deferred: queue.length - selected.length };
+    const counts: PriceTrackingCounts = { attempted: 0, saved: 0, unchanged: 0, missing: 0, stale: 0, invalid: 0,
+      failed: 0, deferred: queue.length - selected.length, previousErrors: Number(budget.previous_errors) };
     for (let offset = 0; offset < selected.length; offset += 8) {
       if (offset > 0 && !options.quoteFetcher) await new Promise((resolve) => setTimeout(resolve, 1200));
       const batch = selected.slice(offset, offset + 8);

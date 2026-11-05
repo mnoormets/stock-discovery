@@ -9,7 +9,7 @@ import { enrichCompanyClassifications } from '@/lib/company-classification';
 import { getRklbDiscoveryCandidates } from '@/lib/rklb-discovery';
 import { RequiredDataQualitySnapshotError } from '@/lib/data-quality-snapshots';
 import { pool } from '@/lib/db';
-import { collectTrackedPrices } from '@/lib/price-tracking';
+import { collectTrackedPrices, priceTrackingHasErrors } from '@/lib/price-tracking';
 import { releaseCollectionLock, tryAcquireCollectionLock } from '@/lib/collection-lock';
 
 export interface CollectRouteDependencies {
@@ -142,9 +142,9 @@ export async function handleCollectRequest(
     }
     const priceTracking = await dependencies.collectTrackedPrices();
     const outcomeUpdates = await dependencies.refreshCandidateOutcomes();
-    const trackingComplete = !(priceTracking.failed || priceTracking.missing || priceTracking.invalid || priceTracking.stale || priceTracking.deferred);
+    const trackingHealthy = !priceTrackingHasErrors(priceTracking);
     return NextResponse.json({
-      ok: trackingComplete && !financialEnrichmentError && result.marketRadar.channels.every((channel) => channel.status === 'ok') && result.nasdaqListings.status === 'ok',
+      ok: trackingHealthy && !financialEnrichmentError && result.marketRadar.channels.every((channel) => channel.status === 'ok') && result.nasdaqListings.status === 'ok',
       ...result,
       benchmarkCaptured,
       financialEnrichment,
@@ -154,7 +154,7 @@ export async function handleCollectRequest(
       dailyDiscovery,
       outcomeUpdates,
       priceTracking,
-    }, { status: trackingComplete && !financialEnrichmentError && result.marketRadar.channels.every((channel) => channel.status === 'ok') && result.nasdaqListings.status === 'ok' ? 200 : 503 });
+    }, { status: trackingHealthy && !financialEnrichmentError && result.marketRadar.channels.every((channel) => channel.status === 'ok') && result.nasdaqListings.status === 'ok' ? 200 : 503 });
   } catch (err) {
     console.error('Kogumine ebaõnnestus:', err);
     return NextResponse.json(

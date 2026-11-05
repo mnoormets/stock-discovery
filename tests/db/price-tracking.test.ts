@@ -49,7 +49,7 @@ describe('continued price tracking', () => {
     await insertCompany('SPY');
     const now = new Date('2026-09-06T12:00:00Z');
     expect(await collectTrackedPrices({ now, quoteFetcher: async () => new Map() })).toMatchObject({ attempted: 50, missing: 50, deferred: 6 });
-    expect(await collectTrackedPrices({ now, quoteFetcher: async () => { throw Error('must not fetch'); } })).toMatchObject({ attempted: 0, deferred: 6 });
+    expect(await collectTrackedPrices({ now, quoteFetcher: async () => { throw Error('must not fetch'); } })).toMatchObject({ attempted: 0, deferred: 6, previousErrors: 50 });
     const next = await getPriceTrackingQueue(new Date('2026-09-07T12:00:00Z'));
     expect(next.slice(1,7).map((row) => row.ticker)).toEqual(['T050','T051','T052','T053','T054','T055']);
   });
