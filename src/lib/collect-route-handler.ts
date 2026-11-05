@@ -62,8 +62,9 @@ export async function handleCollectRequest(
       );
     }
 
-    const result = await dependencies.runCollection({ trigger: 'api' });
+    // Establish benchmark evidence before freezing the discovery decision.
     const benchmarkCaptured = await dependencies.collectDefaultBenchmarkPrice();
+    const result = await dependencies.runCollection({ trigger: 'api' });
     let financialEnrichment: Awaited<ReturnType<typeof enrichStoredCompanyFinancials>> | null = null;
     let financialEnrichmentError: string | null = null;
     try {

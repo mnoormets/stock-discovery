@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-10-09
+Uuendatud: 2026-11-05
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -2108,3 +2108,15 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 - **9 October same-collection enrichment correction verified locally:** Persist discovered radar companies, perform the existing capped SEC pass, then freeze early/growth evidence. CLI/API reuse its result and Today shows coverage/budget/failure; a thrown failure returns API 503. Focused regressions, full isolated 79-file/564-test suite (550.42s), typecheck/lint/Docker build/restart/HTTP and real forward database checks passed. Prior observations remain unchanged; no new source, strategy/risk change or extra daily budget. See [verification](research/2026-10-09/ENRICHMENT_ORDER.md).
 
 - Correction is complete locally. Next unattended use and profitability remain unproven. Publication is pending existing explicit authorization; no remote deployment claim.
+
+
+### Research measurement and delivery validation
+
+- Independent new-listing financial evidence remains visible without a fresh quote; shortlist eligibility still requires a usable price.
+- Growth collections include a separately versioned, research-only positive-trend hypothesis. Risk-stopped capital is never reactivated and all prior history remains intact.
+- Read-only fixed-horizon cohort audit retains excluded names, missing outcomes and as-known benchmark gaps; raw price changes are not portfolio profit and corporate actions remain unverified.
+- Collection records store sanitized declared revision/runner metadata. CLI/API capture the existing benchmark before freezing decisions.
+- Prominent radar movers show first observed source evidence and financial exclusion reasons. Split checks use bounded preceding coverage without accepting future bars or ignoring uncertain split events.
+- No new sources, paid data, live trades, capital reset or automatic publication. Runtime deployment must be verified against newly saved collection metadata.
+
+- Verification: full isolated suite 82 files / 579 tests passed (642.63s); typecheck and lint passed; Docker production build completed 22/22 pages, app restarted, Today HTTP 200 and golden-source read-only cohort checks completed. A new local research-only collection persisted capabilities, trend-review and listing financial-assessment fields without altering paper trades. Unattended remote deployment remains pending publication and subsequent revision verification.

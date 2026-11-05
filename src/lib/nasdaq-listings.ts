@@ -13,6 +13,7 @@ export interface ListingRow {
   eligibility: string; reasons: string[]; firstPrice: number | null;
   firstPriceAt: string | null; priceObservedAt: string | null; lookupAt: string | null;
   price: number | null; marketAt: string | null; facts: FinancialPoint[];
+  financialAssessment?: 'passes' | 'weak' | 'unknown';
   revenueGrowth: number | null; analysis: 'research' | 'weak' | 'unknown';
 }
 export interface ListingSnapshot {
@@ -71,19 +72,21 @@ export function discoverListingRows(directoryText: string, actionsText: string, 
       {url:source.NASDAQ_ADDS_DELETES_URL,sha256:actions.contentSha256,fileDate:actions.fileCreation.date}] };
 }
 export function analyzeListing(row: ListingRow, points: FinancialPoint[], now: Date): ListingRow {
-  const result={...row,facts:[] as FinancialPoint[],revenueGrowth:null as number|null,analysis:'unknown' as ListingRow['analysis'],reasons:[...row.reasons]};
+  const result={...row,facts:[] as FinancialPoint[],revenueGrowth:null as number|null,analysis:'unknown' as ListingRow['analysis'],financialAssessment:'unknown' as NonNullable<ListingRow['financialAssessment']>,reasons:[...row.reasons]};
   if (row.eligibility!=='lookup_ready') return result;
-  if (row.price==null || priceObservationRecency(row.marketAt,now.toISOString())!=='recent') {
-    result.reasons.push('Usable USD price unavailable; valuation unknown.'); return result;
-  }
-  result.facts=selectGrowthEvidence(points,new Date(row.marketAt!));
+  const usablePrice=row.price!=null && Number.isFinite(row.price) && row.price>0
+    && priceObservationRecency(row.marketAt,now.toISOString())==='recent';
+  if (!usablePrice) result.reasons.push('Usable USD price unavailable; valuation unknown.');
+  result.facts=selectGrowthEvidence(points,usablePrice ? new Date(row.marketAt!) : now);
   if (result.facts.length!==3) {
     result.reasons.push('Comparable recent same-filing USD revenue and operating cash flow unavailable.'); return result;
   }
   const [revenue,previous,cash]=result.facts;
   if (previous.value>0 && revenue.value>0) result.revenueGrowth=(revenue.value/previous.value-1)*100;
-  result.analysis=result.revenueGrowth!=null && result.revenueGrowth>=25 && cash.value>0?'research':'weak';
-  result.reasons.push(result.analysis==='research'?'Revenue growth at least 25% and positive same-period OCF: research further.':'Growth/cash-flow research checks not met.');
+  const passes=result.revenueGrowth!=null && result.revenueGrowth>=25 && cash.value>0;
+  result.financialAssessment=passes?'passes':'weak';
+  result.analysis=passes?(usablePrice?'research':'unknown'):'weak';
+  result.reasons.push(passes?(usablePrice?'Revenue growth at least 25% and positive same-period OCF: research further.':'Financial checks pass; fresh price still required for the shortlist.'):'Growth/cash-flow research checks not met.');
   return result;
 }
 export async function collectNasdaqListings(options: { fetchText?: (url:string)=>Promise<string>; quoteFetcher?:typeof fetchExecutionQuotes; enrich?:typeof enrichStoredCompanyFinancials }={}): Promise<ListingSnapshot> {

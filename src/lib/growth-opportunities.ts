@@ -16,6 +16,20 @@ export interface GrowthOpportunity extends Omit<EarlyOpportunity, 'state'> {
 export interface GrowthOpportunitySnapshot {
   version: typeof GROWTH_OPPORTUNITY_VERSION; evaluatedAt: string;
   historyAttempted: number; historyDeferred: number; rows: GrowthOpportunity[];
+  trendReview?: ReturnType<typeof reviewGrowthTrends>;
+}
+/** Forward research hypothesis only. Never consumed by the capital executor. */
+export function reviewGrowthTrends(rows: GrowthOpportunity[]) {
+  return { version: 'growth-trend-review-v1' as const,
+    rule: 'Existing early/momentum financial checks plus positive known 1- and 3-month price returns. Research only; no orders or profit claim.',
+    rows: rows.map(row => {
+      const one = row.priceContext?.oneMonthReturnPercent;
+      const three = row.priceContext?.threeMonthReturnPercent;
+      const state = !['early','momentum'].includes(row.state) ? 'not_qualified'
+        : one == null || three == null || !Number.isFinite(one) || !Number.isFinite(three) ? 'unknown'
+        : one > 0 && three > 0 ? 'observe' : 'declining_or_flat';
+      return { ticker: row.ticker, state, oneMonthReturnPercent: one ?? null, threeMonthReturnPercent: three ?? null };
+    }) };
 }
 function known(point: FinancialPoint, clock: number) {
   const start = Date.parse(point.periodStart ?? '');
@@ -109,7 +123,7 @@ export async function collectGrowthOpportunities(radar: MarketRadarSnapshot, now
   }
   for (const row of eligible.slice(GROWTH_HISTORY_LIMIT)) row.reasons.push('History deferred by the 20-symbol growth scan limit.');
   return { version: GROWTH_OPPORTUNITY_VERSION, evaluatedAt: new Date().toISOString(), historyAttempted: selected.length,
-    historyDeferred: Math.max(0, eligible.length - selected.length), rows };
+    historyDeferred: Math.max(0, eligible.length - selected.length), rows, trendReview: reviewGrowthTrends(rows) };
 }
 export async function getGrowthOpportunityHistory(now = new Date()) {
   const result = await pool.query(`WITH observations AS (

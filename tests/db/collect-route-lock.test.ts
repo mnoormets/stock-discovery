@@ -186,3 +186,10 @@ describe('HTTP collect advisory-lock parity', () => {
     await expectLockAvailable();
   });
 });
+
+it('captures benchmark before freezing discovery so later benchmark reads cannot masquerade as known start evidence',async()=>{
+  const deps=dependencies();const response=await handleCollectRequest(request(),deps);
+  expect(response.status).toBe(200);
+  expect(vi.mocked(deps.collectDefaultBenchmarkPrice).mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(deps.runCollection).mock.invocationCallOrder[0]);
+  expect(deps.collectDefaultBenchmarkPrice).toHaveBeenCalledTimes(1);
+});

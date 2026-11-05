@@ -1,3 +1,4 @@
+import RadarLeads from './RadarLeads';
 import Link from 'next/link';
 import { getMarketRadar, MARKET_RADAR_CHANNELS } from '@/lib/market-radar';
 import { priceObservationRecency } from '@/lib/price-observation';
@@ -6,7 +7,9 @@ export default async function MarketRadar() {
   const data = await getMarketRadar().catch(() => null);
   const snapshot = data?.snapshot;
   const now = new Date().toISOString();
-  return <section className="card" id="market-radar">
+  return <>
+    {snapshot && <RadarLeads snapshot={snapshot} firstSeen={data!.firstSeen} now={now} />}
+    <section className="card" id="market-radar">
     <h2>Market radar — beyond social media</h2>
     <p>US-listed stocks from independent Yahoo screens. All observed names remain visible even without SEC financials. These are research leads, not paper buy signals or predictions of a price jump.</p>
     {!snapshot ? <p>No market radar snapshot is available from the latest collection.</p> : <>
@@ -20,8 +23,10 @@ export default async function MarketRadar() {
       </li>)}</ul>
       <p>Gainers have already moved. Growth screens provide additional leads; their provider criteria are not verified investment theses. This is a bounded sample, not the entire market. Volume ratio compares session volume with the three-month daily average and is incomplete during trading.</p>
       <div style={{ overflowX: 'auto', maxHeight: 560, overflowY: 'auto' }}>
-        <table><thead><tr><th>Company</th><th>Why it appeared</th><th>Observed price</th><th>Session change</th><th>Volume / average</th><th>Financial evidence now</th></tr></thead>
-          <tbody>{snapshot.stocks.map((stock) => {
+        <table><thead><tr><th>Company</th><th>Why it appeared</th><th>Observed price</th><th>Session change</th><th>Volume / average</th><th>Financial evidence now</th><th>First radar observation</th><th>Growth filter evidence</th></tr></thead>
+          <tbody>{[...snapshot.stocks].sort((a,b)=>(b.changePercent ?? -Infinity)-(a.changePercent ?? -Infinity) || a.ticker.localeCompare(b.ticker)).map((stock) => {
+            const first = data!.firstSeen[stock.ticker];
+            const growth = snapshot.growth?.rows.find(r=>r.ticker===stock.ticker);
             const usable = stock.price != null && priceObservationRecency(stock.marketAt, now) === 'recent';
             return <tr key={stock.ticker}>
               <td><Link href={`/company/${encodeURIComponent(stock.ticker)}`}>{stock.ticker}</Link><br /><small>{stock.name}</small></td>
@@ -30,6 +35,8 @@ export default async function MarketRadar() {
               <td>{usable && stock.changePercent != null ? `${stock.changePercent > 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unknown'}</td>
               <td>{stock.relativeVolume == null ? 'Unknown' : `${stock.relativeVolume.toFixed(2)}×`}</td>
               <td>{data!.facts[stock.ticker] ? 'SEC facts available — review coverage and freshness' : 'SEC facts missing — research incomplete; still visible'}</td>
+              <td>{first ? <>{new Date(first.at).toLocaleString('en-GB', { timeZone: 'Europe/Tallinn' })} Tallinn<br />{first.price == null ? 'Original price unavailable' : `${first.price.toFixed(2)} USD observed`}</> : 'Unknown'}</td>
+              <td>{growth ? <>{growth.state}<br />{growth.reasons.join(' ')}</> : 'Growth evidence unavailable'}</td>
             </tr>;
           })}</tbody>
         </table>
@@ -37,5 +44,5 @@ export default async function MarketRadar() {
       {!snapshot.stocks.length && <p>No usable US equity observations returned. See channel status above.</p>}
       <p><small>Source: Yahoo Finance · {snapshot.version} · Quote time is separate from collection time. Financial availability is current, not a historical score.</small></p>
     </>}
-  </section>;
+  </section></>;
 }

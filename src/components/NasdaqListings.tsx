@@ -20,6 +20,7 @@ export default async function NasdaqListings() {
         <h3><Link href={`/company/${r.ticker}`}>{r.ticker}</Link> — {r.name}</h3>
         <p>{r.origin==='trading_add'?'Trading-system Add announcement':'Added since the previous complete directory'} · effective date {r.effectiveDate??'unknown'} · first observed {r.firstObservedAt}.</p>
         <p>{r.eligibility==='lookup_ready'?'Directory confirmed':r.eligibility==='radar_only'?'SPAC / blank-check: observation only':r.eligibility==='excluded'?'Excluded instrument or listing status':'Awaiting effective date / directory confirmation'} · {r.analysis==='research'?'Research further':r.analysis==='weak'?'Financial checks not met':'Financial assessment unknown'}.</p>
+        <p>Financial evidence: {r.financialAssessment??'unknown'} · Price coverage is checked separately.</p>
         <p>First observed USD price {r.firstPrice==null?'unavailable':`$${r.firstPrice.toFixed(2)}`} at {r.firstPriceAt??'unknown'}; received {r.priceObservedAt??'unknown'}. Scan price {r.price==null?'unavailable':`$${r.price.toFixed(2)}`} at {r.marketAt??'unknown'}.</p>
         <ul>{r.reasons.map((reason,i)=><li key={i}>{reason}</li>)}</ul>
         {r.revenueGrowth!=null&&<p>Revenue growth {r.revenueGrowth.toFixed(1)}%.</p>}

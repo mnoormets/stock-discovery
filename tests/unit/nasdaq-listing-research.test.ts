@@ -36,3 +36,14 @@ describe('new Nasdaq listing discovery',()=>{
     facts[2].value=-1;expect(analyzeListing(row,facts,now).analysis).toBe('weak');
   });
 });
+
+it('assesses financials without a price but never invents shortlist eligibility or future facts',()=>{
+  const row=discoverListingRows(directory([common('NEW')]),actions([]),previous(directory([])),now).rows[0];
+  const period={periodStart:'2026-01-01',periodEnd:'2026-06-30',periodKind:'ytd' as const,filedAt:'2026-08-01',accessionNumber:'same'};
+  const facts=[makePoint('revenue',150,period),makePoint('revenue',100,{...period,periodStart:'2025-01-01',periodEnd:'2025-06-30'}),makePoint('operating_cash_flow',10,period)];
+  const result=analyzeListing({...row,price:null,marketAt:null},facts,now);
+  expect(result.facts).toHaveLength(3);expect(result.financialAssessment).toBe('passes');expect(result.analysis).toBe('unknown');
+  expect(result.reasons.join(' ')).toContain('fresh price still required');
+  expect(analyzeListing(row,facts.map(f=>({...f,filedAt:'2026-10-09'})),now).facts).toHaveLength(0);
+  facts[2].value=-1;expect(analyzeListing(row,facts,now).financialAssessment).toBe('weak');
+});

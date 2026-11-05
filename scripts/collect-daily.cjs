@@ -105,6 +105,11 @@ async function main() {
     const priceTracking = loadTs(path.join(root, 'src/lib/price-tracking.ts'));
 
     const { MARKET_FINANCIAL_ENRICHMENT_LIMIT } = loadTs(path.join(root, 'src/lib/market-radar.ts'));
+    // Capture benchmark before decisions so comparisons need no hindsight start price.
+    section('2. benchmark (SPY)');
+    const benchmark = await step('collectDefaultBenchmarkPrice', () => backtest.collectDefaultBenchmarkPrice());
+    line('benchmarkCaptured', benchmark === true ? 'JAH' : 'EI');
+
     section('1. runCollection');
     const collected = await step('runCollection', () => collect.runCollection());
     if (collected) {
@@ -125,10 +130,6 @@ async function main() {
         return true;
       });
     }
-
-    section('2. benchmark (SPY)');
-    const benchmark = await step('collectDefaultBenchmarkPrice', () => backtest.collectDefaultBenchmarkPrice());
-    line('benchmarkCaptured', benchmark === true ? 'JAH' : 'EI');
 
     section('3. SEC enrichment');
     const sec = await step('enrichStoredCompanyFinancials', async () => {

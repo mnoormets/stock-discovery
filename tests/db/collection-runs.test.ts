@@ -1,3 +1,4 @@
+import { collectionBuildProvenance } from '../../src/lib/collection-build';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { pool } from '../../src/lib/db';
 import {
@@ -112,4 +113,12 @@ describe('collection_runs lifecycle', () => {
       trigger: 'test-failure', status: 'failure', errorMessage: 'ape wisdom unavailable',
     });
   });
+});
+
+it('retains sanitized build provenance through both successful and failed collection terminal states',async()=>{
+  const build=collectionBuildProvenance({GITHUB_SHA:'b'.repeat(40),GITHUB_ACTIONS:'true',GITHUB_RUN_ID:'456'});
+  const success=await executeCollectionRun({initialMetrics:{build},operation:async()=>({count:1}),successMetrics:r=>r});
+  expect(success.run.metrics.build).toEqual(build);
+  await expect(executeCollectionRun({initialMetrics:{build},operation:async()=>{throw new Error('test failure');},successMetrics:()=>({})})).rejects.toThrow('test failure');
+  const records=await listCollectionRuns();expect(records).toHaveLength(2);for(const record of records)expect(record.metrics.build).toEqual(build);
 });

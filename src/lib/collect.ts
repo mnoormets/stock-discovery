@@ -1,3 +1,4 @@
+import { collectionBuildProvenance } from './collection-build';
 import { collectNasdaqListings } from './nasdaq-listings';
 import { collectMarketRadar } from './market-radar';
 import { fetchApeWisdom } from './apewisdom';
@@ -322,7 +323,7 @@ export async function runCollection(options: RunCollectionOptions = {}) {
   await ensureSchema();
   const execution = await executeCollectionRun({
     trigger: options.trigger || 'direct',
-    initialMetrics: { schemaVersion: COLLECTION_METRICS_VERSION },
+    initialMetrics: { schemaVersion: COLLECTION_METRICS_VERSION, build: collectionBuildProvenance() },
     operation: (run) => collectCore(run.id),
     successMetrics: collectionMetrics,
   });

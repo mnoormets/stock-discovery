@@ -6,6 +6,13 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- `node scripts/audit-growth-cohort.cjs 7` (or `30`) measures every first-observed growth radar name, including excluded/unknown names, using only stored USD quotes. It retains missing and immature outcomes, aligns available SPY observations, and labels results as exploratory price changes with unverified corporate actions, not simulated portfolio profit. Collection records include sanitized build revision/runner metadata when declared. CLI/API capture the existing benchmark before freezing discovery.
+
+- Growth collections also freeze `growth-trend-review-v1`: a research-only hypothesis requiring positive known 1- and 3-month returns after the existing growth checks. It does not change capital eligibility, reactivate risk-stopped accounts, create orders or establish profit. Run `node scripts/diagnose-capital.cjs` for a read-only audit of actual closed trades by frozen entry trend.
+- New-listing financial evidence is assessed independently of price availability. Missing prices still block the research shortlist; financial facts remain visible with their filing dates.
+
+- Today leads with five largest positive session movers in the latest collected Yahoo radar, including growth-filter exclusions. Each shows original radar collection time/price and frozen growth evidence, without treating a past move as a forecast or earned profit. Full source coverage remains available below; collection is daily and does not send live alerts.
+
 - `/today#growth-opportunities` adds separately versioned `growth-opportunities-v2` research across the current radar. It selects recent USD revenue and OCF with identical reporting start/end, period kind and accession, plus comparable prior-year revenue from that same filing. At least 25% revenue growth and positive OCF are required. Completed prior-day Yahoo history separates early setups from positive 1/3-month momentum with an elevated run-up; already-rising companies stay visible. Up to 20 histories per collection, ordered by revenue growth then ticker; unknown/failed/deferred evidence stays explicit. Immutable collection metrics freeze first actual discovery per ticker/category; names share the existing 30-day/50-symbol price tracking budget. Research categories are separate from paper execution. Explicit `npm run paper:strategy -- activate-growth` enables growth-capital-entry-v2 on the existing capital account after migration 0012; only post-activation collections qualify, and historical price gains are never credited as earned profit. Existing V1 signals, capital and losses remain intact.
 
 

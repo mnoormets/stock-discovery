@@ -128,16 +128,25 @@ export async function persistMarketRadarCompanies(snapshot: MarketRadarSnapshot)
 
 export async function getMarketRadar(): Promise<{
   snapshot: MarketRadarSnapshot | null; facts: Record<string, number>; runAt: string | null;
+  firstSeen: Record<string, { at: string; price: number | null }>;
 }> {
   // Latest collection only: never hide a failed/missing refresh behind an old success.
   const result = await pool.query(`SELECT metrics->'marketRadar' AS radar, started_at
     FROM collection_runs ORDER BY id DESC LIMIT 1`);
   const snapshot = result.rows[0]?.radar as MarketRadarSnapshot | null;
   if (!snapshot || snapshot.version !== MARKET_RADAR_VERSION || !Array.isArray(snapshot.stocks)) {
-    return { snapshot: null, facts: {}, runAt: result.rows[0]?.started_at?.toISOString() ?? null };
+    return { snapshot: null, facts: {}, firstSeen: {}, runAt: result.rows[0]?.started_at?.toISOString() ?? null };
   }
   const coverage = await pool.query(`SELECT c.ticker, count(f.id)::int AS facts FROM companies c
     LEFT JOIN financial_facts f ON f.company_id=c.id WHERE c.ticker=ANY($1::text[]) GROUP BY c.ticker`,
   [snapshot.stocks.map((s) => s.ticker)]);
-  return { snapshot, facts: Object.fromEntries(coverage.rows.map((r) => [r.ticker, r.facts])), runAt: result.rows[0].started_at.toISOString() };
+  const history = await pool.query(`SELECT DISTINCT ON (item->>'ticker') item->>'ticker' AS ticker,
+    r.finished_at AS at, item->>'price' AS price FROM collection_runs r CROSS JOIN LATERAL
+    jsonb_array_elements(COALESCE(r.metrics->'marketRadar'->'stocks','[]'::jsonb)) item
+    WHERE r.status='success' AND r.finished_at <= clock_timestamp()
+      AND r.metrics->'marketRadar'->>'version'=$2 AND item->>'ticker'=ANY($1::text[])
+    ORDER BY item->>'ticker',r.finished_at,r.id`, [snapshot.stocks.map(s=>s.ticker), MARKET_RADAR_VERSION]);
+  const firstSeen = Object.fromEntries(history.rows.map(r=>[r.ticker,{ at:r.at.toISOString(),
+    price:r.price != null && Number.isFinite(Number(r.price)) && Number(r.price)>0 ? Number(r.price) : null }]));
+  return { snapshot, firstSeen, facts: Object.fromEntries(coverage.rows.map((r) => [r.ticker, r.facts])), runAt: result.rows[0].started_at.toISOString() };
 }
