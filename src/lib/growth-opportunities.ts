@@ -8,15 +8,18 @@ import type { MarketRadarSnapshot, MarketRadarStock } from './market-radar';
 
 export const GROWTH_OPPORTUNITY_VERSION = 'growth-opportunities-v2';
 export const GROWTH_HISTORY_LIMIT = 20;
+export const GROWTH_HISTORY_SELECTION_VERSION = 'least-recently-attempted-v1';
 const DAY = 86400000;
 const yahoo = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 export interface GrowthOpportunity extends Omit<EarlyOpportunity, 'state'> {
   state: 'early' | 'momentum' | 'excluded' | 'unknown';
+  historyAttempted?: boolean; previousHistoryAttemptAt?: string | null;
 }
 export interface GrowthOpportunitySnapshot {
   version: typeof GROWTH_OPPORTUNITY_VERSION; evaluatedAt: string;
   historyAttempted: number; historyDeferred: number; rows: GrowthOpportunity[];
   trendReview?: ReturnType<typeof reviewGrowthTrends>;
+  historySelectionVersion?: typeof GROWTH_HISTORY_SELECTION_VERSION;
 }
 /** Forward research hypothesis only. Never consumed by the capital executor. */
 export function reviewGrowthTrends(rows: GrowthOpportunity[]) {
@@ -106,6 +109,19 @@ export function evaluateGrowthHistory(row: GrowthOpportunity, stock: MarketRadar
   }
   return { ...row, state, priceContext: context, priceObservations: observations, reasons: [...row.reasons, reason] };
 }
+export async function getLastGrowthHistoryAttempts(tickers: string[], now: Date): Promise<Map<string,Date>> {
+  if (!tickers.length) return new Map();
+  const result = await pool.query<{ticker:string;attempted_at:Date}>(`SELECT item->>'ticker' AS ticker,max(r.finished_at) AS attempted_at
+    FROM collection_runs r CROSS JOIN LATERAL
+      jsonb_array_elements(COALESCE(r.metrics->'marketRadar'->'growth'->'rows','[]'::jsonb)) item
+    WHERE r.status='success' AND r.finished_at<=$1
+      AND r.metrics->'marketRadar'->'growth'->>'version'=$3 AND item->>'ticker'=ANY($2::text[])
+      AND (item->>'historyAttempted'='true' OR (NOT (item ? 'historyAttempted')
+        AND (jsonb_typeof(item->'priceObservations')='array' OR jsonb_typeof(item->'priceContext')='object')))
+    GROUP BY item->>'ticker'`,[now.toISOString(),tickers,GROWTH_OPPORTUNITY_VERSION]);
+  return new Map(result.rows.map(row=>[row.ticker,row.attempted_at]));
+}
+
 export async function collectGrowthOpportunities(radar: MarketRadarSnapshot, now = new Date(),
   financials?: Map<string, FinancialPoint[]>,
   chartFetcher: (ticker: string) => Promise<EarlyHistory> = ticker => yahoo.chart(ticker,
@@ -115,15 +131,22 @@ export async function collectGrowthOpportunities(radar: MarketRadarSnapshot, now
   const facts = financials ?? new Map((await getAllStoredCompanyFinancials(true)).map(f => [f.ticker, f.facts ?? []]));
   const rows = radar.stocks.map(s => evaluateGrowthFundamentals(s, facts.get(s.ticker) ?? [], now));
   const eligible = rows.filter(r => r.state === 'unknown' && r.facts.length === 3);
-  eligible.sort((a, b) => b.revenueGrowth! - a.revenueGrowth! || a.ticker.localeCompare(b.ticker));
+  const attempts = await getLastGrowthHistoryAttempts(eligible.map(row=>row.ticker),now);
+  eligible.sort((a,b)=>(attempts.get(a.ticker)?.getTime()??0)-(attempts.get(b.ticker)?.getTime()??0)
+    || b.revenueGrowth!-a.revenueGrowth! || a.ticker.localeCompare(b.ticker));
+  for (const row of eligible) {
+    row.historyAttempted=false;
+    row.previousHistoryAttemptAt=attempts.get(row.ticker)?.toISOString()??null;
+  }
   const selected = eligible.slice(0, GROWTH_HISTORY_LIMIT);
   for (const row of selected) {
+    row.historyAttempted=true;
     try { Object.assign(row, evaluateGrowthHistory(row, radar.stocks.find(s => s.ticker === row.ticker)!, await chartFetcher(row.ticker), now)); }
     catch { row.reasons.push('Yahoo history request failed; setup is unknown.'); }
   }
   for (const row of eligible.slice(GROWTH_HISTORY_LIMIT)) row.reasons.push('History deferred by the 20-symbol growth scan limit.');
   return { version: GROWTH_OPPORTUNITY_VERSION, evaluatedAt: new Date().toISOString(), historyAttempted: selected.length,
-    historyDeferred: Math.max(0, eligible.length - selected.length), rows, trendReview: reviewGrowthTrends(rows) };
+    historyDeferred: Math.max(0, eligible.length - selected.length), historySelectionVersion:GROWTH_HISTORY_SELECTION_VERSION, rows, trendReview: reviewGrowthTrends(rows) };
 }
 export async function getGrowthOpportunityHistory(now = new Date()) {
   const result = await pool.query(`WITH observations AS (
