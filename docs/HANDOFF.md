@@ -2139,3 +2139,11 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 - Existing frozen trend assessments are visible on Growth opportunities: positive/flat-or-falling/unknown counts, positive trends first, explicit per-candidate warnings and unknown handling for older snapshots. All qualifying names stay visible. No strategy eligibility, entry, scoring, risk, funds, schema or source changes.
 - Verification: typecheck/lint passed; full isolated83files/594tests passed627.80s; Dockerbuild22/22pages followed by apprestart. Actual queue/repeated capped calls and unchanged trade history checked; Today/PerformanceHTTP200, missing-financial/trend/risk-stop rendering verified. TestDB teardown independently verified.
 - Completed locally: source repairs and runtime checks. Currentfocus/Next: approved publication, then actual fresh-budget identity/fact recovery and scheduled revision/endpoints. Queue eligibility is not usable financials or investment profit. Private audits, datasets, models, logs and backups excluded.
+
+
+### 2026-11-06 — protect due discovery tracking from legacy-control starvation
+
+- Shared tracking priority is SPY, open capital-experiment holdings, oldest due growth cohorts, legacy control holdings, then remaining research rotation. Capital safety is retained; the legacy control executor keeps its independent daily quote/exit cadence. Same50-symbol NY-day cap and idempotent receipts; no entry, strategy, risk, schema or provider change.
+- A meaningful regression with55legacy holdings reproduces starvation before the fix and verifies due selection, capital protection, bounded repeat calls, next-day rotation and unchanged trading records afterward.
+- Required verification: typecheck/lint passed; full isolated83files/595tests passed361.58s; Dockerbuild22/22 followed by apprestart. Actual database queue/cap replay and unchanged ledgers checked; Today/PerformanceHTTP200 with tracking available and risk stop retained. Temporary testDB removal verified.
+- Completed locally: queue repair and runtime checks. Currentfocus/Next: approved source-only publication and actual next-budget priority captures. Queue eligibility is not proof of captured outcomes or investment profit. Private audits/logs/account data excluded from delivery.

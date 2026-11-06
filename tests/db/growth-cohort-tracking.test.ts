@@ -4,6 +4,8 @@ import { collectTrackedPrices, getPriceTrackingQueue } from '../../src/lib/price
 import type { YahooExecutionQuote } from '../../src/lib/yahoo';
 import { insertCompany } from '../fixtures/company';
 import { resetDb } from '../setup/reset';
+import { recordDiscoveryRun } from '../../src/lib/discovery-validation';
+import { makeDecisionInput } from '../fixtures/decision';
 
 beforeEach(resetDb);
 const first='2026-10-07T14:00:00Z';
@@ -83,4 +85,30 @@ describe('full-cohort seven-day tracking',()=>{
       VALUES ('test','strategy','ZZZHOLD','ZZZHOLD','sell',1,100,100,1,$1,$1,'{}','test')`,[now.toISOString()]);
     expect((await getPriceTrackingQueue(now)).map(r=>r.ticker)).toEqual(['SPY','DUE']);
   });
+});
+
+
+it('does not let a large legacy control book starve due cohorts, while protecting capital and the shared cap',async()=>{
+  await pool.query("INSERT INTO companies(ticker,name,source) SELECT 'L'||lpad(n::text,3,'0'),'Legacy','test' FROM generate_series(1,55)n");
+  const companyId=Number((await pool.query("SELECT id FROM companies WHERE ticker='L001'")).rows[0].id);
+  await recordDiscoveryRun([], [makeDecisionInput({companyId,ticker:'L001'})],new Date(first),'rklb_daily');
+  await pool.query(`INSERT INTO paper_strategy_orders(policy_version,signal_snapshot_version,strategy_key,book_key,run_id,decision_id,signal_ticker,instrument_ticker,side,status,signal_at,eligibility_snapshot,execution_price,executed_quantity,gross_usd,fee_usd,executed_at,execution_market_time,execution_source)
+    SELECT 'legacy-test','test','all_picks_baseline','strategy',d.run_id,d.id,c.ticker,c.ticker,'buy','filled',$1,'{}',100,1,100,1,$1,$1,'yahoo'
+    FROM companies c CROSS JOIN discovery_decisions d WHERE c.ticker LIKE 'L%'`,[first]);
+  await insertCompany('SPY');await insertCompany('CAPITAL');await insertCompany('DUEA');await insertCompany('DUEB');
+  await snapshot('DUEA');await snapshot('DUEB');
+  await pool.query(`INSERT INTO paper_capital_accounts(policy_version,initial_usd,target_profit_usd,rules,created_at) VALUES('test',20000,10000,'{}',$1)`,[first]);
+  await pool.query(`INSERT INTO paper_capital_trades(policy_version,book_key,signal_ticker,instrument_ticker,side,quantity,price,gross_usd,fee_usd,market_at,executed_at,evidence,reason)
+    VALUES('test','strategy','CAPITAL','CAPITAL','buy',1,100,100,1,$1,$1,'{}','test')`,[first]);
+  const controls=(await pool.query('SELECT * FROM paper_strategy_orders ORDER BY id')).rows;
+  const capital=(await pool.query('SELECT * FROM paper_capital_trades ORDER BY id')).rows;
+  const queue=await getPriceTrackingQueue(now);
+  expect(queue.slice(0,4).map(r=>r.ticker)).toEqual(['SPY','CAPITAL','DUEA','DUEB']);
+  const fetcher=async(tickers:string[])=>new Map(tickers.map((ticker):[string,YahooExecutionQuote]=>[ticker,{ticker,price:110,currency:'USD',marketTime:'2026-10-14T15:59:00Z',marketState:'REGULAR',source:'yahoo',raw:{}}]));
+  expect(await collectTrackedPrices({now,quoteFetcher:fetcher})).toMatchObject({attempted:50,saved:50,deferred:9});
+  expect(await collectTrackedPrices({now,quoteFetcher:async()=>{throw Error('must respect exhausted cap');}})).toMatchObject({attempted:0,deferred:9});
+  expect((await pool.query("SELECT ticker FROM price_tracking_attempts WHERE ticker IN ('DUEA','DUEB','CAPITAL') ORDER BY ticker")).rows.map(r=>r.ticker)).toEqual(['CAPITAL','DUEA','DUEB']);
+  expect((await getPriceTrackingQueue(new Date('2026-10-15T16:00:00Z'))).slice(0,3).map(r=>r.ticker)).toEqual(['SPY','CAPITAL','L047']);
+  expect((await pool.query('SELECT * FROM paper_strategy_orders ORDER BY id')).rows).toEqual(controls);
+  expect((await pool.query('SELECT * FROM paper_capital_trades ORDER BY id')).rows).toEqual(capital);
 });

@@ -41,7 +41,7 @@ export async function getPriceTrackingQueue(now = new Date()) {
         HAVING sum(CASE WHEN side = 'buy' THEN executed_quantity ELSE -executed_quantity END) > 1e-12
       ) h ON h.instrument_ticker = c.ticker
       UNION
-      SELECT c.id, 'paper holding' FROM companies c JOIN (
+      SELECT c.id, 'capital holding' FROM companies c JOIN (
         SELECT instrument_ticker FROM paper_capital_trades WHERE executed_at <= $1
         GROUP BY policy_version,book_key,signal_ticker,instrument_ticker
         HAVING sum(CASE WHEN side='buy' THEN quantity ELSE -quantity END) > 1e-12
@@ -91,10 +91,10 @@ export async function getPriceTrackingQueue(now = new Date()) {
     LEFT JOIN growth_first f ON f.item->>'ticker'=c.ticker
     WHERE NOT EXISTS (SELECT 1 FROM price_tracking_attempts a WHERE a.company_id = c.id AND a.tracking_date = $2)
     GROUP BY c.id, c.ticker
-    ORDER BY (c.ticker = 'SPY') DESC, bool_or(r.reason='paper holding') DESC,
+    ORDER BY (c.ticker = 'SPY') DESC, bool_or(r.reason='capital holding') DESC,
       bool_or(r.reason='growth cohort follow-up v1') DESC,
       min(f.finished_at) FILTER (WHERE r.reason='growth cohort follow-up v1') ASC NULLS LAST,
-      last_attempt ASC NULLS FIRST, c.ticker`,
+      bool_or(r.reason='paper holding') DESC, last_attempt ASC NULLS FIRST, c.ticker`,
   [now.toISOString(), newYorkPriceDate(now.toISOString())]);
   return result.rows as { company_id: string; ticker: string; reasons: string[]; last_attempt: Date | null }[];
 }
