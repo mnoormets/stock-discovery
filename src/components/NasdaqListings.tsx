@@ -6,6 +6,7 @@ export default async function NasdaqListings() {
   const priority=rows.filter(r=>r.analysis==='research').sort((a,b)=>(b.revenueGrowth??0)-(a.revenueGrowth??0)||a.ticker.localeCompare(b.ticker)).slice(0,5);
   return <section className="card" id="nasdaq-listings">
     <h2>New Nasdaq listings</h2>
+    <p><Link href="#listing-entry-evaluation">Check entry and exit evidence</Link></p>
     <p>Newly observed listings and announced additions, followed for 30 days. A trading-system addition is not proof of an IPO. Short trading history does not hide a company; missing evidence stays unknown. Initial discovery prices can be older; follow-up listing quotes wait for regular sessions and must be fresh. These observations do not establish a filled trade.</p>
     {!snapshot?<p>Waiting for the first listing collection.</p>:<>
       <p>Observed {new Date(snapshot.observedAt).toLocaleString('en-GB',{timeZone:'Europe/Tallinn'})} Tallinn · {rows.length} observations · {snapshot.quoteAttempted} initial quote checks · {snapshot.quoteDeferred} deferred.</p>

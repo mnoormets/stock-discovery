@@ -6,6 +6,9 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- `/today#listing-entry-evaluation` and `node scripts/audit-listing-entry.cjs` apply the frozen `listing-entry-shadow-v1` unfunded protocol to stored evidence. First directory-confirmed discovery is retained per ticker; only discoveries after 2026-11-06T20:43:36.660Z are prospective. Compare all confirmed listings with the first-snapshot financial-pass subset. Entry needs a strictly later regular-session USD quote within three elapsed days, received within 20 minutes; exit is after seven days with three days of grace. Individual $1,000 quote scenarios include $1 per side plus 5 bps slippage per side. Missing/pending outcomes remain visible, and later facts cannot rewrite selection. IPO identity/corporate actions remain unverified; these are not funded trades, portfolio profits or capital-goal credit. The page and CLI read existing data only.
+
+
 - Confirmed recent Nasdaq research listings receive priority within the existing shared 20-company SEC budget. A listing with no facts and no stored SEC identity can retry an unavailable result after 24 hours as ticker mappings catch up; other factless unavailable cases retain the 30-day wait. Existing stale-fact refresh rules, retry timestamps, first observations and trading history are preserved.
 
 - Growth opportunities display the frozen positive/flat-or-falling/unknown 1- and 3-month trend assessment. Positive-trend research candidates appear first, while every other qualifying candidate remains visible with a warning. An early setup can still be declining; display order does not change capital eligibility or establish profit.
