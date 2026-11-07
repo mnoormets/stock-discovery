@@ -55,3 +55,14 @@ jobs:
             exit 0
           fi
           curl --fail --silent --show-error --max-time 10 "$PAPER_STRATEGY_HEALTHCHECKS_PING_URL"
+
+      # Independent research capture still runs if an old control order failed.
+      # The CLI skips outside regular sessions and retains the shared 50/day cap.
+      - name: Capture regular-session research prices
+        if: ${{ !cancelled() }}
+        timeout-minutes: 2
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DATABASE_TARGET: golden
+          TZ: America/New_York
+        run: node scripts/track-session-prices.cjs

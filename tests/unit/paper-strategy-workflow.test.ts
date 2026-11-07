@@ -4,6 +4,16 @@ import { describe, expect, it } from 'vitest';
 const workflow = readFileSync('.github/workflows/paper-strategy-execute.yml', 'utf8');
 
 describe('paper strategy execution workflow safety', () => {
+  it('runs independent session research after paper execution even when the control fails', () => {
+    expect(workflow.indexOf('node scripts/track-session-prices.cjs')).toBeGreaterThan(workflow.indexOf('npm run paper:strategy -- execute'));
+    expect(workflow).toContain('if: ${{ !cancelled() }}');
+    expect(workflow).toContain('timeout-minutes: 2');
+    const cli=readFileSync('scripts/track-session-prices.cjs','utf8');
+    expect(cli).toContain('isExpectedNewYorkRegularSession(now)');
+    expect(cli).toContain('collectTrackedPrices()');
+    expect(cli).not.toContain('executeCapitalPaper');
+    expect(cli).not.toContain('executePendingPaperOrders');
+  });
   it('is manually dispatchable, bounded, serialized, and calls only the paper runner', () => {
     expect(workflow).toContain('workflow_dispatch:');
     expect(workflow).not.toMatch(/^\s+schedule:/m);

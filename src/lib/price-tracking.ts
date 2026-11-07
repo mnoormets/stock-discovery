@@ -1,8 +1,30 @@
 import { pool } from './db';
 import { fetchExecutionQuotes, type YahooExecutionQuote } from './yahoo';
-import { newYorkPriceDate, priceObservationRecency } from './price-observation';
+import { isExpectedNewYorkRegularSession, newYorkPriceDate, priceObservationRecency } from './price-observation';
 
 export const PRICE_TRACKING_DAILY_LIMIT = 50;
+export const LISTING_SESSION_RESERVED_SLOTS = 10;
+type TrackingCandidate = { company_id: string; ticker: string; reasons: string[]; last_attempt: Date | null };
+/** Reserve existing capacity before open; capital quote coverage always wins. */
+export function selectPriceTrackingBatch(queue: TrackingCandidate[], used: number, now: Date) {
+  const available = Math.max(0, PRICE_TRACKING_DAILY_LIMIT - used);
+  const critical = (row: TrackingCandidate) => row.ticker === 'SPY' || row.reasons.includes('capital holding');
+  const listings = queue.filter(row => row.reasons.includes('new Nasdaq listing') && !critical(row))
+    .sort((a,b)=>(a.last_attempt?.getTime()??0)-(b.last_attempt?.getTime()??0)||a.ticker.localeCompare(b.ticker));
+  const listingNames = new Set(listings.map(row=>row.ticker));
+  if (isExpectedNewYorkRegularSession(now)) {
+    const priority = [...queue.filter(critical), ...listings.slice(0, LISTING_SESSION_RESERVED_SLOTS)];
+    const names = new Set(priority.map(row=>row.ticker));
+    return [...priority, ...queue.filter(row=>!names.has(row.ticker))].slice(0,available);
+  }
+  const day = newYorkPriceDate(now.toISOString())!;
+  const localTime = new Intl.DateTimeFormat('en-GB',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(now);
+  const beforeOpen = localTime < '09:30';
+  const hasSession = isExpectedNewYorkRegularSession(day+'T16:00:00Z');
+  const reserve = beforeOpen && hasSession ? Math.min(LISTING_SESSION_RESERVED_SLOTS,listings.length) : 0;
+  const capacity = Math.min(available,Math.max(queue.filter(critical).length,available-reserve));
+  return queue.filter(row=>!listingNames.has(row.ticker)).slice(0,capacity);
+}
 
 type PriceTrackingCounts = { attempted:number; saved:number; unchanged:number; missing:number; stale:number;
   invalid:number; failed:number; deferred:number; previousErrors?:number };
@@ -116,7 +138,7 @@ export async function collectTrackedPrices(options: {
       FROM price_tracking_attempts WHERE tracking_date=$1`,[date])).rows[0];
     const used = Number(budget.used);
     const queue = await getPriceTrackingQueue(now);
-    const selected = queue.slice(0, Math.max(0, PRICE_TRACKING_DAILY_LIMIT - used));
+    const selected = selectPriceTrackingBatch(queue, used, now);
     const counts: PriceTrackingCounts = { attempted: 0, saved: 0, unchanged: 0, missing: 0, stale: 0, invalid: 0,
       failed: 0, deferred: queue.length - selected.length, previousErrors: Number(budget.previous_errors) };
     for (let offset = 0; offset < selected.length; offset += 8) {
@@ -135,6 +157,11 @@ export async function collectTrackedPrices(options: {
             : quote.ticker !== item.ticker || quote.price == null || !Number.isFinite(quote.price) || quote.price <= 0
               || quote.currency !== 'USD' || recency === 'unknown' ? 'invalid'
               : recency === 'stale' ? 'stale' : 'saved';
+        // Listing entry research needs a live session observation, not a prior close.
+        if (status === 'saved' && item.reasons.includes('new Nasdaq listing')
+          && !item.reasons.includes('capital holding') && item.ticker !== 'SPY'
+          && (quote!.marketState !== 'REGULAR' || !isExpectedNewYorkRegularSession(quote!.marketTime!)
+            || receivedAt.getTime() - Date.parse(quote!.marketTime!) > 20 * 60000)) status = 'stale';
         let snapshotId: number | null = null;
         await client.query('BEGIN');
         try {
