@@ -41,3 +41,21 @@ describe('price observation recency', () => {
     expect(isExpectedNewYorkRegularSession(timestamp)).toBe(expected);
   });
 });
+
+
+describe('published NYSE early closes',()=>{
+  it.each([
+    ['2026-11-27',18],['2026-12-24',18],['2027-11-26',18],['2028-07-03',17],['2028-11-24',18],
+  ] as const)('ends the session at13:00 NewYork on %s across DST offsets',(day,utcHour)=>{
+    const close=Date.parse(day+'T'+utcHour+':00:00Z'),open=close-3.5*3600000;
+    expect(isExpectedNewYorkRegularSession(new Date(open-1))).toBe(false);
+    expect(isExpectedNewYorkRegularSession(new Date(open))).toBe(true);
+    expect(isExpectedNewYorkRegularSession(new Date(close-1))).toBe(true);
+    expect(isExpectedNewYorkRegularSession(new Date(close))).toBe(false);
+    expect(isExpectedNewYorkRegularSession(new Date(close+3600000))).toBe(false);
+  });
+  it('retains neighboring full sessions and full-day holidays',()=>{
+    for(const timestamp of ['2026-11-25T20:00:00Z','2027-12-23T20:00:00Z','2028-07-05T19:00:00Z'])expect(isExpectedNewYorkRegularSession(timestamp)).toBe(true);
+    for(const timestamp of ['2026-11-26T16:00:00Z','2027-12-24T16:00:00Z','2028-07-04T16:00:00Z'])expect(isExpectedNewYorkRegularSession(timestamp)).toBe(false);
+  });
+});

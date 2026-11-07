@@ -104,3 +104,15 @@ describe('finite capital paper ledger',()=>{
     expect(result.issues).toContain('Current early scan unavailable; no new entries.');
   });
 });
+
+
+it('preserves held trades after an early close despite REGULAR labels, then exits during a real session',async()=>{
+  await source();await executeCapitalPaper({now,quoteFetcher:fetcher()});
+  const before=(await pool.query('SELECT * FROM paper_capital_trades ORDER BY id')).rows;
+  const closed=new Date('2026-11-27T18:10:00Z');
+  expect((await executeCapitalPaper({now:closed,quoteFetcher:fetcher(closed,140)})).filledTrades).toBe(0);
+  expect((await pool.query('SELECT * FROM paper_capital_trades ORDER BY id')).rows).toEqual(before);
+  const next=new Date('2026-11-30T15:00:00Z');
+  expect((await executeCapitalPaper({now:next,quoteFetcher:fetcher(next,140)})).filledTrades).toBe(2);
+  expect((await getCapitalDashboard(next))!.books[0].positions).toHaveLength(0);
+});

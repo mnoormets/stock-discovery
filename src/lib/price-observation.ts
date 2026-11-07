@@ -19,12 +19,17 @@ const KNOWN_NYSE_HOLIDAYS = new Set([
   '2028-07-04', '2028-09-04', '2028-11-23', '2028-12-25',
 ]);
 
+// Published 13:00 Eastern equity closes; options and late sessions are not regular trading.
+const KNOWN_NYSE_EARLY_CLOSES = new Set([
+  '2026-11-27', '2026-12-24', '2027-11-26', '2028-07-03', '2028-11-24',
+]);
+
 export function newYorkPriceDate(timestamp: string): string | null {
   const date = new Date(timestamp);
   return Number.isFinite(date.getTime()) ? newYorkFormatter.format(date) : null;
 }
 
-/** True only during an expected full-day NYSE regular session. */
+/** True only during an expected NYSE regular session, including published early closes. */
 export function isExpectedNewYorkRegularSession(value: string | Date): boolean {
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) return false;
@@ -37,7 +42,8 @@ export function isExpectedNewYorkRegularSession(value: string | Date): boolean {
   const minute = Number(parts.find((part) => part.type === 'minute')?.value);
   if (!Number.isInteger(hour) || !Number.isInteger(minute)) return false;
   const minutes = hour * 60 + minute;
-  return minutes >= 9 * 60 + 30 && minutes < 16 * 60;
+  const closeMinutes = KNOWN_NYSE_EARLY_CLOSES.has(dateOnly) ? 13 * 60 : 16 * 60;
+  return minutes >= 9 * 60 + 30 && minutes < closeMinutes;
 }
 
 /**

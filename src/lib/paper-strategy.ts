@@ -176,5 +176,8 @@ export function assessPaperExecutionQuote(
   if (!Number.isFinite(marketTime) || age < -60_000 || age > PAPER_STRATEGY_EXECUTION_QUOTE_MAX_AGE_MS) {
     return { executable: false, reason: 'Execution quote timestamp is missing, in the future, or stale.' };
   }
+  if (!isExpectedNewYorkRegularSession(now) || !isExpectedNewYorkRegularSession(new Date(marketTime))) {
+    return { executable: false, reason: 'Execution clock or quote is outside the expected regular session.' };
+  }
   return { executable: true, reason: null };
 }

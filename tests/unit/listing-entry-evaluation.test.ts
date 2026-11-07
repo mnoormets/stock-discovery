@@ -32,3 +32,10 @@ describe('frozen listing entry evaluation',()=>{
   for(const quote of [{...entry,price:null},{...entry,price:0},{...entry,marketAt:null},{...entry,marketAt:'2026-10-12T15:00:00Z',capturedAt:'2026-10-12T14:00:00Z'}])expect(evaluateListingEntries([first],[quote],asOf).rows[0].entry).toBeNull();
  });
 });
+
+
+it('does not manufacture a listing entry from an early-close afternoon quote',()=>{
+  const discovery={...first,discoveredAt:'2026-11-27T17:50:00Z'};
+  const result=evaluateListingEntries([discovery],[q('2026-11-27T18:10:00Z'),q('2026-12-04T18:10:00Z')],'2026-12-10T19:00:00Z');
+  expect(result.rows[0]).toMatchObject({status:'entry_unavailable',entry:null,modeledNetUSD:null});
+});

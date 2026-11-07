@@ -6,6 +6,8 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- The shared New York regular-session gate follows the existing NYSE calendar, including its published 13:00 Eastern equity closes for 2026–2028. Capture, paper-execution checks and listing quote evaluation reject the early-close afternoon; full-day holidays and daylight-saving conversion remain intact.
+
 - `/today#listing-entry-evaluation` and `node scripts/audit-listing-entry.cjs` apply the frozen `listing-entry-shadow-v1` unfunded protocol to stored evidence. First directory-confirmed discovery is retained per ticker; only discoveries after 2026-11-06T20:43:36.660Z are prospective. Compare all confirmed listings with the first-snapshot financial-pass subset. Entry needs a strictly later regular-session USD quote within three elapsed days, received within 20 minutes; exit is after seven days with three days of grace. Individual $1,000 quote scenarios include $1 per side plus 5 bps slippage per side. Missing/pending outcomes remain visible, and later facts cannot rewrite selection. IPO identity/corporate actions remain unverified; these are not funded trades, portfolio profits or capital-goal credit. The page and CLI read existing data only.
 
 

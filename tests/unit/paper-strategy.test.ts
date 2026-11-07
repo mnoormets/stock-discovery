@@ -150,3 +150,14 @@ describe('paper execution accounting and freshness', () => {
     }, now).executable).toBe(false);
   });
 });
+
+
+it.each([
+  '2026-11-07T15:00:00Z','2026-11-26T15:00:00Z','2026-11-27T18:10:00Z',
+  '2028-07-03T17:10:00Z','2026-11-09T21:10:00Z','2026-11-09T14:20:00Z',
+])('rejects a misleading REGULAR flag outside the actual session at %s',timestamp=>{
+  expect(assessPaperExecutionQuote({price:100,currency:'USD',marketState:'REGULAR',marketTime:timestamp},new Date(timestamp)).executable).toBe(false);
+});
+it('rejects a pre-open quote even when the execution clock has just entered the session',()=>{
+  expect(assessPaperExecutionQuote({price:100,currency:'USD',marketState:'REGULAR',marketTime:'2026-11-09T14:29:30Z'},new Date('2026-11-09T14:30:05Z')).executable).toBe(false);
+});
