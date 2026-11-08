@@ -1,3 +1,4 @@
+import { hasReviewedTradingCessation } from './reviewed-trading-cessations';
 import { pool } from './db';
 import { fetchExecutionQuotes, type YahooExecutionQuote } from './yahoo';
 import { isExpectedNewYorkRegularSession, newYorkPriceDate, priceObservationRecency } from './price-observation';
@@ -107,7 +108,9 @@ export async function getPriceTrackingQueue(now = new Date()) {
       UNION
       SELECT id, 'benchmark' FROM companies WHERE ticker = 'SPY'
     )
-    SELECT c.id AS company_id, c.ticker, array_agg(DISTINCT r.reason ORDER BY r.reason) AS reasons,
+    SELECT c.id AS company_id, c.ticker, c.sec_cik,
+      EXISTS (SELECT 1 FROM portfolio_positions p WHERE p.ticker=c.ticker AND p.quantity>0 AND p.status IN ('active','watch')) AS has_portfolio_holding,
+      array_agg(DISTINCT r.reason ORDER BY r.reason) AS reasons,
       (SELECT max(a.attempted_at) FROM price_tracking_attempts a WHERE a.company_id = c.id) AS last_attempt
     FROM reasons r JOIN companies c ON c.id = r.company_id
     LEFT JOIN growth_first f ON f.item->>'ticker'=c.ticker
@@ -118,7 +121,9 @@ export async function getPriceTrackingQueue(now = new Date()) {
       min(f.finished_at) FILTER (WHERE r.reason='growth cohort follow-up v1') ASC NULLS LAST,
       bool_or(r.reason='paper holding') DESC, last_attempt ASC NULLS FIRST, c.ticker`,
   [now.toISOString(), newYorkPriceDate(now.toISOString())]);
-  return result.rows as { company_id: string; ticker: string; reasons: string[]; last_attempt: Date | null }[];
+  const rows = result.rows as { company_id:string; ticker:string; sec_cik:string|null; has_portfolio_holding:boolean; reasons:string[]; last_attempt:Date|null }[];
+  return rows.filter(row=>!hasReviewedTradingCessation(row.ticker,row.sec_cik,now)
+    || row.has_portfolio_holding || row.reasons.includes('capital holding') || row.reasons.includes('paper holding'));
 }
 
 export async function collectTrackedPrices(options: {

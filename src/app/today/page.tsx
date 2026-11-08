@@ -1,3 +1,4 @@
+import { getReviewedTradingCessations } from '@/lib/reviewed-trading-cessations';
 import ListingEntryEvaluation from '@/components/ListingEntryEvaluation';
 import NasdaqListings from '@/components/NasdaqListings';
 import GrowthOpportunities from '@/components/GrowthOpportunities';
@@ -363,6 +364,11 @@ export default async function TodayPage() {
 
       <section className="card">
         <h2>Continued price tracking</h2>
+        {getReviewedTradingCessations().map(event=><div className="notice" key={event.ticker+event.cik}>
+          <p><strong>{event.ticker} — reviewed trading cessation</strong>: {event.issuer}, SEC CIK {event.cik}. Trading ended {event.effectiveAt}; verified {event.verifiedAt}. <a href={event.sourceUrl} target="_blank" rel="noreferrer">SEC filing evidence</a>.</p>
+          <p>Routine research quote checks are omitted for this issuer. Open holdings remain in coverage and require separate reconciliation. Historical missing outcomes remain unknown; no cash, successor shares or liquidation proceeds are booked.</p>
+        </div>)}
+
         <p>Open holdings, active/watchlist research and outstanding outcome horizons are checked separately from discovery. Up to 50 symbols per New York day, including SPY. These follow-up prices do not rewrite the daily snapshot above.</p>
         {tracking.available && <p>{tracking.waiting} eligible symbols still awaiting a check today. A quote gap is retried on the next day; it never becomes a zero price.</p>}
         {!tracking.available ? <p>Tracking unavailable; migration 0009 is required or the database could not be read.</p>
