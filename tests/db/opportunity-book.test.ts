@@ -36,3 +36,13 @@ describe('unified immutable cost journal',()=>{
   expect((await collectTrackedPrices(options)).attempted).toBe(0);expect(calls).toBe(1);expect((await pool.query('SELECT count(*)::int n FROM unified_opportunity_paper')).rows[0].n).toBe(1);
  });
 });
+
+ it('waits before open, rejects prior close, preserves that failure and records only a later live-session observation',async()=>{
+  await seed();let calls=0;const preopen=new Date('2026-11-11T13:00:00Z');
+  const fetcher=async()=>{calls++;return new Map([['TEST',{ticker:'TEST',price:100,currency:'USD',marketState:'CLOSED',marketTime:'2026-11-10T21:00:00Z',source:'yahoo' as const,raw:{}}]])};
+  expect((await collectTrackedPrices({now:preopen,quoteFetcher:fetcher})).attempted).toBe(0);expect(calls).toBe(0);
+  const open=new Date('2026-11-11T15:00:00Z');expect((await collectTrackedPrices({now:open,quoteFetcher:fetcher})).stale).toBe(1);expect((await getOpportunityBook(open)).rows[0].buy).toBeNull();
+  const later=new Date('2026-11-12T15:00:00Z');await collectTrackedPrices({now:later,quoteFetcher:async()=>new Map([['TEST',{ticker:'TEST',price:101,currency:'USD',marketState:'REGULAR',marketTime:later.toISOString(),source:'yahoo' as const,raw:{}}]])});
+  expect((await getOpportunityBook(later)).rows[0].buy).not.toBeNull();expect((await pool.query('SELECT status FROM price_tracking_attempts ORDER BY tracking_date')).rows.map(x=>x.status)).toEqual(['stale','saved']);
+  expect((await pool.query('SELECT count(*)::int n FROM paper_capital_trades')).rows[0].n).toBe(0);
+ });

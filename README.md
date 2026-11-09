@@ -6,6 +6,8 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- Unified paper entry/exit quote requests wait for the regular session and reject prior-close/non-REGULAR/over-20-minute quotes. Before open, reserve up to ten slots for due unified scenarios in addition to the existing ten listing slots, all within the shared 50-symbol daily limit; SPY and open capital holdings retain priority. No extra budget or retry reset.
+
 - Canonical `rklb-discovery-v5` applies the same evidence rules to familiar and reference-company common stocks; V1–V4 history stays separate. Social selection retains instrument/fund exclusions while dropping name-only company exclusions. The versioned `all-collected-us-equities-v1` radar input reuses validated USD US-equity metadata from existing Yahoo lookups alongside screens/searches, with source reasons and original quote timestamps. Unknown classification remains unavailable; no additional quote budget, automatic capital activation or retrospective entries.
 
 - `/today#discovery-evidence` records bounded free Google/Bing News and general web searches, SEC exchange/ticker inventory, recent financial filing RSS and daily indexes, with queries, receipt/publication dates, issuer matching, source hashes and failures. Newly observed financial filings take priority in the existing shared 20-company SEC budget; a filing notice never pretends the numeric facts were refreshed.
