@@ -25,7 +25,7 @@ describe('growth history work rotation',()=>{
   const names=[...high,'NEVER'],financials=new Map(names.map(t=>[t,facts(t==='NEVER'?125:150)]));const calls:string[]=[];
   const result=await collectGrowthOpportunities(radar(names),now,financials,async ticker=>{calls.push(ticker);return chart(ticker);});
   expect(calls[0]).toBe('NEVER');expect(calls).toHaveLength(20);
-  expect(result).toMatchObject({historyAttempted:20,historyDeferred:1,historySelectionVersion:'least-recently-attempted-v1'});
+  expect(result).toMatchObject({historyAttempted:20,historyDeferred:1,historySelectionVersion:'fundamental-and-price-history-v1'});
   expect(result.rows.find(r=>r.ticker==='NEVER')).toMatchObject({state:'early',historyAttempted:true,previousHistoryAttemptAt:null});
   expect(result.rows.find(r=>r.ticker==='H19')).toMatchObject({state:'unknown',historyAttempted:false});
   expect((await pool.query('SELECT * FROM collection_runs ORDER BY id')).rows).toEqual(before);
@@ -53,5 +53,24 @@ describe('growth history work rotation',()=>{
   expect(calls[0]).toBe('S20');expect(calls).toHaveLength(20);expect(second.historyDeferred).toBe(1);
   expect((await pool.query('SELECT * FROM collection_runs ORDER BY id')).rows).toEqual(original);
   expect((await pool.query('SELECT count(*)::int n FROM paper_strategy_orders')).rows[0].n).toBe(0);
+ });
+});
+
+describe('shared price and fundamental history coverage',()=>{
+ it('checks cash-flow exclusions fairly without extra calls, changed financial decisions or trade writes',async()=>{
+  const good=Array.from({length:12},(_,i)=>'F'+String(i).padStart(2,'0')),other=Array.from({length:12},(_,i)=>'P'+String(i).padStart(2,'0'));
+  const names=[...good,...other],financials=new Map(good.map(t=>[t,facts()]));
+  const negative=facts();negative.find(f=>f.metric==='operating_cash_flow')!.value=-1;
+  for(const t of other)financials.set(t,negative);
+  const calls:string[]=[];const result=await collectGrowthOpportunities(radar(names),now,financials,async t=>{calls.push(t);return chart(t);});
+  expect(calls).toHaveLength(20);expect(calls.filter(t=>t.startsWith('F'))).toHaveLength(10);expect(calls.filter(t=>t.startsWith('P'))).toHaveLength(10);
+  expect(result.rows.filter(r=>r.ticker.startsWith('P')).every(r=>r.state==='excluded')).toBe(true);
+  expect(result.priceMomentum?.rows.filter(r=>r.historyAttempted)).toHaveLength(20);
+  expect(result.priceMomentum?.rows.find(r=>r.ticker==='P00')?.state).toBe('observe');
+  await prior(result.rows,now);const frozen=(await pool.query('SELECT * FROM collection_runs ORDER BY id')).rows;
+  const next:string[]=[];await collectGrowthOpportunities(radar(names),new Date(now.getTime()+60000),financials,async t=>{next.push(t);return chart(t);});
+  expect(next.slice(0,4)).toEqual(['F10','P10','F11','P11']);expect(next).toHaveLength(20);
+  expect((await pool.query('SELECT * FROM collection_runs ORDER BY id')).rows).toEqual(frozen);
+  for(const table of ['paper_capital_trades','paper_strategy_orders'])expect((await pool.query('SELECT count(*)::int n FROM '+table)).rows[0].n).toBe(0);
  });
 });

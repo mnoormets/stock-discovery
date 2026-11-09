@@ -41,13 +41,18 @@ export function measureGrowthCohort(points:CohortPoint[],benchmark:BenchmarkPoin
   return {version:'growth-cohort-v1',asOf,horizonDays,
     limitation:'Exploratory raw USD quote changes, not trades or investment returns. Corporate actions unverified; costs excluded. Missing outcomes remain in denominators. Groups have different discovery dates and nonrandom coverage; historical comparison is not independent strategy validation.',groups,rows};
 }
-export async function getGrowthCohortReport(horizonDays=7) {
+export async function getGrowthCohortReport(horizonDays=7, review: 'growth' | 'priceMomentum' = 'growth') {
   const asOf=(await pool.query<{now:Date}>('SELECT clock_timestamp() now')).rows[0].now.toISOString();
   const {rows}=await pool.query(`SELECT item->>'ticker' ticker,item->>'state' state,r.finished_at AS observed_at,
     item->>'marketAt' market_at,item->>'price' price FROM collection_runs r
-    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(r.metrics->'marketRadar'->'growth'->'rows','[]'::jsonb)) item
-    WHERE r.status='success' AND r.finished_at<=$1 AND r.metrics->'marketRadar'->'growth'->>'version'='growth-opportunities-v2'
-    ORDER BY r.finished_at,r.id`,[asOf]);
+    CROSS JOIN LATERAL (SELECT r.metrics #> $2::text[] AS scan) v
+    CROSS JOIN LATERAL jsonb_array_elements(COALESCE(v.scan->'rows','[]'::jsonb)) item
+    WHERE r.status='success' AND r.finished_at<=$1 AND v.scan->>'version'=$3
+      AND ($4::boolean OR (item->>'state'='observe' AND
+        CASE WHEN pg_input_is_valid(v.scan->>'evaluatedAt','timestamptz')
+          THEN (v.scan->>'evaluatedAt')::timestamptz <= r.finished_at ELSE false END))
+    ORDER BY r.finished_at,r.id`,[asOf,review==='growth'?['marketRadar','growth']:['marketRadar','growth','priceMomentum'],
+      review==='growth'?'growth-opportunities-v2':'price-momentum-review-v1',review==='growth']);
   const b=await pool.query(`SELECT market_time, greatest(marked_at,market_time) observed_at,price FROM paper_strategy_marks
     WHERE ticker='SPY' AND currency='USD' AND market_time<=$1 AND marked_at<=$1
     UNION ALL SELECT p.market_at,greatest(p.captured_at,p.market_at),p.price FROM price_snapshots p JOIN companies c ON c.id=p.company_id

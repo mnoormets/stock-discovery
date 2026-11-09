@@ -53,6 +53,18 @@ export async function getPriceTrackingQueue(now = new Date()) {
     ), growth_first AS (
       SELECT DISTINCT ON (item->>'ticker') * FROM growth_observations
       ORDER BY item->>'ticker',finished_at,id
+    ), momentum_observations AS (
+      SELECT r.id,r.finished_at,item,
+        CASE WHEN pg_input_is_valid(r.metrics->'marketRadar'->'growth'->'priceMomentum'->>'evaluatedAt','timestamptz')
+          THEN (r.metrics->'marketRadar'->'growth'->'priceMomentum'->>'evaluatedAt')::timestamptz END AS evaluated_at
+      FROM collection_runs r CROSS JOIN LATERAL jsonb_array_elements(
+        COALESCE(r.metrics->'marketRadar'->'growth'->'priceMomentum'->'rows','[]'::jsonb)) item
+      WHERE r.status='success' AND r.finished_at <= $1
+        AND r.metrics->'marketRadar'->'growth'->'priceMomentum'->>'version'='price-momentum-review-v1'
+        AND item->>'state'='observe'
+    ), momentum_first AS (
+      SELECT DISTINCT ON (item->>'ticker') * FROM momentum_observations WHERE evaluated_at <= finished_at
+      ORDER BY item->>'ticker',finished_at,id
     ), reasons AS (
       SELECT c.id AS company_id, 'active research' AS reason
       FROM companies c JOIN portfolio_positions p ON p.ticker = c.ticker
@@ -99,6 +111,17 @@ export async function getPriceTrackingQueue(now = new Date()) {
           AND p.market_at <= f.finished_at + interval '10 days' AND p.market_at <= p.captured_at
           AND p.captured_at <= f.finished_at + interval '11 days' AND p.captured_at <= $1)
       UNION
+      SELECT c.id, 'price momentum follow-up v1' FROM momentum_first f
+      JOIN companies c ON c.ticker=f.item->>'ticker'
+      WHERE f.finished_at + interval '7 days' <= $1 AND f.finished_at + interval '10 days' >= $1
+        AND CASE WHEN jsonb_typeof(f.item->'price')='number' THEN (f.item->>'price')::numeric > 0 ELSE false END
+        AND CASE WHEN pg_input_is_valid(f.item->>'marketAt','timestamptz')
+          THEN (f.item->>'marketAt')::timestamptz <= f.finished_at ELSE false END
+        AND NOT EXISTS (SELECT 1 FROM price_snapshots p WHERE p.company_id=c.id AND p.currency='USD'
+          AND p.price > 0 AND p.market_at >= f.finished_at + interval '7 days'
+          AND p.market_at <= f.finished_at + interval '10 days' AND p.market_at <= p.captured_at
+          AND p.captured_at <= f.finished_at + interval '11 days' AND p.captured_at <= $1)
+      UNION
       SELECT c.id, 'new Nasdaq listing' FROM collection_runs r
       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(r.metrics->'nasdaqListings'->'rows','[]'::jsonb)) item
       JOIN companies c ON c.ticker=item->>'ticker'
@@ -114,6 +137,7 @@ export async function getPriceTrackingQueue(now = new Date()) {
       (SELECT max(a.attempted_at) FROM price_tracking_attempts a WHERE a.company_id = c.id) AS last_attempt
     FROM reasons r JOIN companies c ON c.id = r.company_id
     LEFT JOIN growth_first f ON f.item->>'ticker'=c.ticker
+    LEFT JOIN momentum_first m ON m.item->>'ticker'=c.ticker
     WHERE NOT EXISTS (SELECT 1 FROM price_tracking_attempts a WHERE a.company_id = c.id AND a.tracking_date = $2)
     GROUP BY c.id, c.ticker
     ORDER BY (c.ticker = 'SPY') DESC, bool_or(r.reason='capital holding') DESC,

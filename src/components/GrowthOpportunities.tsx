@@ -1,9 +1,11 @@
+import PriceMomentumReview from './PriceMomentumReview';
+import { getGrowthCohortReport } from '@/lib/growth-cohort';
 import Link from 'next/link';
 import { getMarketRadar } from '@/lib/market-radar';
 import { getGrowthOpportunityHistory } from '@/lib/growth-opportunities';
 
 export default async function GrowthOpportunities() {
-  const [radar, history] = await Promise.all([getMarketRadar(), getGrowthOpportunityHistory()]);
+  const [radar, history, momentumCohort] = await Promise.all([getMarketRadar(), getGrowthOpportunityHistory(), getGrowthCohortReport(7, 'priceMomentum')]);
   const scan = radar.snapshot?.growth;
   const candidates = scan?.rows.filter(r => r.state === 'early' || r.state === 'momentum') ?? [];
   const trendRows = scan?.trendReview?.rows ?? [];
@@ -11,12 +13,12 @@ export default async function GrowthOpportunities() {
   const positiveTrend = candidates.filter(row => trendByTicker.get(row.ticker)?.state === 'observe');
   const decliningTrend = candidates.filter(row => trendByTicker.get(row.ticker)?.state === 'declining_or_flat');
   const displayCandidates = [...positiveTrend, ...candidates.filter(row => trendByTicker.get(row.ticker)?.state !== 'observe')];
-  return <section className="card" id="growth-opportunities">
+  return <><PriceMomentumReview scan={scan?.priceMomentum} cohort={momentumCohort} /><section className="card" id="growth-opportunities">
     <h2>Growth opportunities — early setups and rising trends</h2>
     <p>Growing businesses can remain visible after a large price rise. Early and momentum are separate research hypotheses; neither predicts a future gain. A separately activated capital entry policy can use fresh qualifying evidence, subject to its cash, quote and risk checks.</p>
     {!scan ? <p>The next collection will run the new growth scan. Existing early discoveries remain below.</p> : <>
       <p>{candidates.length} candidates from {scan.rows.length} radar stocks: {candidates.filter(r => r.state === 'early').length} early · {candidates.filter(r => r.state === 'momentum').length} momentum. History checked for {scan.historyAttempted}; {scan.historyDeferred} deferred. Evaluated {new Date(scan.evaluatedAt).toLocaleString('en-GB', { timeZone: 'Europe/Tallinn' })} Tallinn.</p>
-      <p>Rules: at least 25% revenue growth and positive USD operating cash flow with the same reporting period and filing. Momentum requires positive 1- and 3-month returns plus an elevated run-up. {scan.historySelectionVersion === 'least-recently-attempted-v1' ? 'History checks prioritize unchecked names, then the oldest recorded attempt; revenue growth and ticker break ties.' : 'This snapshot prioritized history checks by revenue growth, then ticker.'} Up to 20 histories per collection. These thresholds are unvalidated.</p>
+      <p>Rules: at least 25% revenue growth and positive USD operating cash flow with the same reporting period and filing. Momentum requires positive 1- and 3-month returns plus an elevated run-up. {scan.historySelectionVersion === 'fundamental-and-price-history-v1' ? 'History alternates fundamental-qualified and other valid radar names within the shared 20-request limit. Never-checked and oldest attempts lead each queue.' : scan.historySelectionVersion === 'least-recently-attempted-v1' ? 'History checks prioritize unchecked names, then the oldest recorded attempt; revenue growth and ticker break ties.' : 'This snapshot prioritized history checks by revenue growth, then ticker.'} Up to 20 histories per collection. These thresholds are unvalidated.</p>
       {Date.now() - Date.parse(scan.evaluatedAt) > 36 * 3600000 && <p className="notice warning">Scan refresh is overdue; these are older observations.</p>}
       {!candidates.length && <p>No candidate passes the evidence checks in this collection.</p>}
       <div className="notice">
@@ -48,5 +50,5 @@ export default async function GrowthOpportunities() {
       {history.map(item => <tr key={`${item.row.ticker}-${item.row.state}`}><td><Link href={`/company/${item.row.ticker}`}>{item.row.ticker}</Link> / {item.row.state}</td><td>{item.observedAt}</td><td>${item.row.price!.toFixed(2)}</td><td>{item.latestPrice == null ? 'Unknown' : `$${item.latestPrice.toFixed(2)} at ${item.marketAt}`}</td><td>{item.returnPercent == null ? 'Unknown' : `${item.returnPercent.toFixed(2)}%`}</td></tr>)}
     </tbody></table></div>}
     <small>growth-opportunities-v2 · Yahoo / SEC · research evidence for separately versioned capital entry checks</small>
-  </section>;
+  </section></>;
 }

@@ -1,3 +1,4 @@
+import { evaluatePriceMomentum, usableMomentumQuote, PRICE_MOMENTUM_VERSION, type PriceMomentumReview } from './price-momentum';
 import YahooFinance from 'yahoo-finance2';
 import { pool } from './db';
 import { getAllStoredCompanyFinancials, type FinancialPoint } from './company-financials';
@@ -8,7 +9,7 @@ import type { MarketRadarSnapshot, MarketRadarStock } from './market-radar';
 
 export const GROWTH_OPPORTUNITY_VERSION = 'growth-opportunities-v2';
 export const GROWTH_HISTORY_LIMIT = 20;
-export const GROWTH_HISTORY_SELECTION_VERSION = 'least-recently-attempted-v1';
+export const GROWTH_HISTORY_SELECTION_VERSION = 'fundamental-and-price-history-v1';
 const DAY = 86400000;
 const yahoo = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 export interface GrowthOpportunity extends Omit<EarlyOpportunity, 'state'> {
@@ -19,6 +20,7 @@ export interface GrowthOpportunitySnapshot {
   version: typeof GROWTH_OPPORTUNITY_VERSION; evaluatedAt: string;
   historyAttempted: number; historyDeferred: number; rows: GrowthOpportunity[];
   trendReview?: ReturnType<typeof reviewGrowthTrends>;
+  priceMomentum?: PriceMomentumReview;
   historySelectionVersion?: typeof GROWTH_HISTORY_SELECTION_VERSION;
 }
 /** Forward research hypothesis only. Never consumed by the capital executor. */
@@ -131,22 +133,36 @@ export async function collectGrowthOpportunities(radar: MarketRadarSnapshot, now
   const facts = financials ?? new Map((await getAllStoredCompanyFinancials(true)).map(f => [f.ticker, f.facts ?? []]));
   const rows = radar.stocks.map(s => evaluateGrowthFundamentals(s, facts.get(s.ticker) ?? [], now));
   const eligible = rows.filter(r => r.state === 'unknown' && r.facts.length === 3);
-  const attempts = await getLastGrowthHistoryAttempts(eligible.map(row=>row.ticker),now);
-  eligible.sort((a,b)=>(attempts.get(a.ticker)?.getTime()??0)-(attempts.get(b.ticker)?.getTime()??0)
-    || b.revenueGrowth!-a.revenueGrowth! || a.ticker.localeCompare(b.ticker));
-  for (const row of eligible) {
-    row.historyAttempted=false;
-    row.previousHistoryAttemptAt=attempts.get(row.ticker)?.toISOString()??null;
+  const priceOnly = rows.filter(r => !eligible.includes(r) && usableMomentumQuote(radar.stocks.find(s => s.ticker === r.ticker)!, now));
+  const attempts = await getLastGrowthHistoryAttempts([...eligible, ...priceOnly].map(row => row.ticker), now);
+  const age = (row: GrowthOpportunity) => attempts.get(row.ticker)?.getTime() ?? 0;
+  eligible.sort((a,b) => age(a)-age(b) || b.revenueGrowth!-a.revenueGrowth! || a.ticker.localeCompare(b.ticker));
+  priceOnly.sort((a,b) => age(a)-age(b) || a.ticker.localeCompare(b.ticker));
+  // Alternate the two queues; either can use the other's unused slots. No extra history calls.
+  const selected: GrowthOpportunity[] = [];
+  for (let i=0; selected.length < GROWTH_HISTORY_LIMIT && (i<eligible.length || i<priceOnly.length); i++) {
+    for (const row of [eligible[i], priceOnly[i]]) if (row && selected.length < GROWTH_HISTORY_LIMIT) selected.push(row);
   }
-  const selected = eligible.slice(0, GROWTH_HISTORY_LIMIT);
+  for (const row of [...eligible, ...priceOnly]) {
+    row.historyAttempted = false; row.previousHistoryAttemptAt = attempts.get(row.ticker)?.toISOString() ?? null;
+  }
+  const priceRows = new Map(radar.stocks.map(stock => [stock.ticker, evaluatePriceMomentum(stock, null, now)]));
   for (const row of selected) {
-    row.historyAttempted=true;
-    try { Object.assign(row, evaluateGrowthHistory(row, radar.stocks.find(s => s.ticker === row.ticker)!, await chartFetcher(row.ticker), now)); }
-    catch { row.reasons.push('Yahoo history request failed; setup is unknown.'); }
+    row.historyAttempted = true;
+    try {
+      const stock = radar.stocks.find(s => s.ticker === row.ticker)!; const chart = await chartFetcher(row.ticker);
+      if (eligible.includes(row)) Object.assign(row, evaluateGrowthHistory(row, stock, chart, now));
+      priceRows.set(row.ticker, evaluatePriceMomentum(stock, chart, now));
+    } catch { row.reasons.push('Yahoo history request failed; setup is unknown.');
+      priceRows.get(row.ticker)!.reasons = ['Yahoo history request failed; price trend remains unknown.']; }
+    priceRows.get(row.ticker)!.historyAttempted = true;
   }
-  for (const row of eligible.slice(GROWTH_HISTORY_LIMIT)) row.reasons.push('History deferred by the 20-symbol growth scan limit.');
-  return { version: GROWTH_OPPORTUNITY_VERSION, evaluatedAt: new Date().toISOString(), historyAttempted: selected.length,
-    historyDeferred: Math.max(0, eligible.length - selected.length), historySelectionVersion:GROWTH_HISTORY_SELECTION_VERSION, rows, trendReview: reviewGrowthTrends(rows) };
+  for (const row of [...eligible, ...priceOnly].filter(r => !r.historyAttempted)) row.reasons.push('History deferred by the shared 20-symbol scan limit.');
+  return { version: GROWTH_OPPORTUNITY_VERSION, evaluatedAt: now.toISOString(), historyAttempted: selected.length,
+    historyDeferred: eligible.length + priceOnly.length - selected.length, historySelectionVersion: GROWTH_HISTORY_SELECTION_VERSION,
+    rows, trendReview: reviewGrowthTrends(rows),
+    priceMomentum: { version: PRICE_MOMENTUM_VERSION, evaluatedAt: now.toISOString(), rows: [...priceRows.values()] } };
+
 }
 export async function getGrowthOpportunityHistory(now = new Date()) {
   const result = await pool.query(`WITH observations AS (

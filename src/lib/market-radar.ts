@@ -112,6 +112,7 @@ export async function collectMarketRadar(): Promise<MarketRadarSnapshot> {
   const evaluatedAt = (await clock()).toISOString();
   snapshot.early.evaluatedAt = evaluatedAt;
   snapshot.growth.evaluatedAt = evaluatedAt;
+  if (snapshot.growth.priceMomentum) snapshot.growth.priceMomentum.evaluatedAt = evaluatedAt;
   return snapshot;
 }
 
