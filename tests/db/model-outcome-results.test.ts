@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getBacktestDashboard } from '../../src/lib/backtest';
-import { getValidationDashboard, recordDiscoveryRun } from '../../src/lib/discovery-validation';
+import { DISCOVERY_MODEL_VERSION, getValidationDashboard, recordDiscoveryRun } from '../../src/lib/discovery-validation';
 import { pool } from '../../src/lib/db';
 import { insertCompany } from '../fixtures/company';
 import { makeDecisionInput } from '../fixtures/decision';
@@ -73,7 +73,7 @@ describe('model-version and horizon result cohorts', () => {
     const backtest = await getBacktestDashboard();
 
     expect(validation.models.map((model) => model.modelVersion)).toEqual([
-      'rklb-discovery-v4',
+      DISCOVERY_MODEL_VERSION,
       'rklb-discovery-v2',
     ]);
     const validationV2 = validation.models[1];

@@ -62,6 +62,10 @@ export async function fetchFundamentals(tickers: string[]): Promise<Map<string, 
             // quoteType 'ETF'/'MUTUALFUND' → fond, filtreerime välja
             isFund: q.quoteType === 'ETF' || q.quoteType === 'MUTUALFUND',
             source: 'yahoo',
+            researchQuote: { quoteType: q.quoteType ?? null, exchange: q.exchange ?? null,
+              changePercent: typeof q.regularMarketChangePercent === 'number' ? q.regularMarketChangePercent : null,
+              volume: typeof q.regularMarketVolume === 'number' ? q.regularMarketVolume : null,
+              averageVolume: typeof q.averageDailyVolume3Month === 'number' ? q.averageDailyVolume3Month : null },
           });
         }
         ok = true;

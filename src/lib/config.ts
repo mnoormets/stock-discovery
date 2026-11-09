@@ -1,14 +1,7 @@
 // Kõik "keeratavad nupud" ühes kohas, et oleks lihtne häälestada.
 
-// Suured tuntud nimed, mille tahame ALATI välja filtreerida (must nimekiri).
-// TÄHTIS: see on sotsiaalse sisendi turvavõrk. Turukapital ei ole enam
-// buildCandidates() kaasamisfilter, kuid see nimekiri katab endiselt levinuimad
-// WSB mega-cap'id ja hoovaga ETF-id.
+// Instrument exclusions only; common stocks are never rejected by company name.
 export const BLACKLIST = new Set([
-  // klassikalised mega-cap tech
-  'NVDA', 'TSLA', 'MSFT', 'AAPL', 'AMZN', 'GOOGL', 'GOOG', 'META',
-  'AMD', 'NFLX', 'INTC', 'AVGO', 'ORCL', 'IBM', 'MU', 'MRVL', 'TSM',
-  'DELL', 'HPE', 'SMCI', 'NOW', 'CRM', 'ADBE', 'QCOM', 'TXN', 'CSCO',
   // indeksid / laiad ETF-id
   'SPY', 'QQQ', 'SPX', 'VOO', 'DIA', 'IWM', 'SMH', 'VIX', 'GLD', 'SLV',
   // hoob-ETF-id (2X/3X, Direxion/ProShares jne) — pole ettevõtted
@@ -18,11 +11,7 @@ export const BLACKLIST = new Set([
   'LABU', 'LABD', 'YINN', 'YANG', 'NUGT', 'DUST', 'JNUG', 'JDST',
   'BOIL', 'KOLD', 'NVDL', 'TSLL', 'TSLQ', 'CONL', 'BITX', 'ETHU',
   'WEBL', 'WEBS', 'DPST', 'DRN', 'DRV', 'CURE', 'FNGU', 'FNGD', 'BULZ',
-  // muud suured/tuntud
-  'LLY', 'NVO', 'JPM', 'BAC', 'GM', 'F', 'BA', 'DIS', 'WMT', 'KO',
-  'PFE', 'XOM', 'CVX', 'MSTR', 'HOOD', 'PLTR', 'COIN', 'BABA', 'UBER',
-  // klassikalised meme-nimed, mis pole enam "tundmatud"
-  'GME', 'AMC', 'BB', 'NOK',
+
 ]);
 
 // Sotsiaalse discovery skoori väiksema turukapi komponendi log-skaala ülemine

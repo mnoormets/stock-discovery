@@ -18,7 +18,7 @@ export const MARKET_RADAR_CHANNELS = [
 ] as const;
 export const MARKET_RADAR_CHANNEL_LIMIT = 25;
 export const MARKET_FINANCIAL_ENRICHMENT_LIMIT = 20;
-type Channel = typeof MARKET_RADAR_CHANNELS[number]['id'] | 'source_discovery';
+type Channel = typeof MARKET_RADAR_CHANNELS[number]['id'] | 'source_discovery' | 'collection_lookup';
 export interface MarketRadarStock {
   ticker: string; name: string; price: number | null; changePercent: number | null;
   marketAt: string | null; marketCap: number | null; volume: number | null;
@@ -26,6 +26,7 @@ export interface MarketRadarStock {
 }
 export interface MarketRadarSnapshot {
   version: typeof MARKET_RADAR_VERSION; observedAt: string;
+  inputVersion?: 'all-collected-us-equities-v1';
   channels: Array<{ id: Channel; status: 'ok' | 'failed'; received: number; accepted: number }>;
   stocks: MarketRadarStock[];
   sourceDiscovery?: { version:string; requested:string[]; accepted:number; cached?:number };
@@ -51,7 +52,7 @@ export function normalizeMarketRadarRows(input: unknown, channel: Channel, now: 
     const ticker = typeof q.symbol === 'string' ? q.symbol.toUpperCase() : '';
     if (!/^[A-Z][A-Z0-9.-]{0,14}$/.test(ticker) || q.quoteType !== 'EQUITY' || q.currency !== 'USD'
       || !['NMS', 'NGM', 'NCM', 'NYQ', 'ASE'].includes(String(q.exchange))) return [];
-    if (channel==='source_discovery' && /\bwarrants?\b|\brights\b|\bunits\b|\bunit[, ]+each\b|\bpreferred (stock|shares)\b/i.test(String(q.longName||q.shortName||''))) return [];
+    if ((channel==='source_discovery'||channel==='collection_lookup') && /\bwarrants?\b|\brights\b|\bunits\b|\bunit[, ]+each\b|\bpreferred (stock|shares)\b/i.test(String(q.longName||q.shortName||''))) return [];
     const marketAt = quoteMarketTime(q.regularMarketTime);
     const fresh = marketAt != null && priceObservationRecency(marketAt, now.toISOString()) === 'recent';
     const price = fresh ? positive(q.regularMarketPrice) : null;
@@ -96,10 +97,38 @@ export async function fetchMarketRadar(
   return { version: MARKET_RADAR_VERSION, observedAt: now.toISOString(), channels, stocks: [...stocks.values()] };
 }
 
-export async function collectMarketRadar(extraTickers: string[] = [], observedTickers: string[] = []): Promise<MarketRadarSnapshot> {
+/** Reuse already-received provider metadata; no additional quote request or inferred security type. */
+export function mergeCollectedMarketQuotes(snapshot: MarketRadarSnapshot, fundamentals: Map<string, Fundamentals>, now: Date): void {
+  const stocks = new Map(snapshot.stocks.map(s => [s.ticker, s]));
+  let accepted = 0;
+  for (const f of fundamentals.values()) {
+    if (f.source !== 'yahoo' || !f.researchQuote) continue;
+    const q = f.researchQuote;
+    const [row] = normalizeMarketRadarRows({ quotes: [{ symbol: f.ticker, longName: f.name,
+      quoteType: q.quoteType, exchange: q.exchange, currency: f.currency,
+      regularMarketPrice: f.price, regularMarketTime: f.marketAt, marketCap: f.marketCap,
+      regularMarketChangePercent: q.changePercent, regularMarketVolume: q.volume,
+      averageDailyVolume3Month: q.averageVolume }] }, 'collection_lookup', now);
+    if (!row) continue;
+    accepted++;
+    const old = stocks.get(row.ticker);
+    if (!old) stocks.set(row.ticker, row);
+    else {
+      const channels = [...new Set([...old.channels, 'collection_lookup' as const])];
+      if (row.price != null && (old.price == null || row.marketAt! > old.marketAt!)) stocks.set(row.ticker, { ...row, channels });
+      else old.channels = channels;
+    }
+  }
+  snapshot.stocks = [...stocks.values()];
+  snapshot.inputVersion = 'all-collected-us-equities-v1';
+  snapshot.channels.push({ id: 'collection_lookup', status: 'ok', received: fundamentals.size, accepted });
+}
+
+export async function collectMarketRadar(extraTickers: string[] = [], observedTickers: string[] = [], fundamentals: Map<string, Fundamentals> = new Map()): Promise<MarketRadarSnapshot> {
   // Use the ledger clock: a desktop clock ahead of PostgreSQL otherwise makes the scan look future-dated.
   const clock = async () => (await pool.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0].now;
   const snapshot = await fetchMarketRadar(await clock(), undefined, clock);
+  if (fundamentals.size) mergeCollectedMarketQuotes(snapshot, fundamentals, await clock());
   let cached=0;
   if (observedTickers.length) {
     const at=await clock();

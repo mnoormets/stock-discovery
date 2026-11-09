@@ -259,7 +259,7 @@ async function collectCore(collectionRunId: number) {
   const discoveryEvidence = await collectDiscoveryEvidence();
   await pool.query("UPDATE collection_runs SET metrics=metrics || jsonb_build_object('discoveryEvidence',$2::jsonb) WHERE id=$1 AND status='running'",[collectionRunId,JSON.stringify(discoveryEvidence)]);
   const nasdaqListings = await collectNasdaqListings();
-  const marketRadar = await collectMarketRadar(discoveryEvidence.quoteTickers,[...new Set([...discoveryEvidence.web.flatMap(w=>w.tickers),...discoveryEvidence.filings.flatMap(f=>f.tickers)])].filter(t=>!discoveryEvidence.identityConflicts.includes(t)));
+  const marketRadar = await collectMarketRadar(discoveryEvidence.quoteTickers,[...new Set([...discoveryEvidence.web.flatMap(w=>w.tickers),...discoveryEvidence.filings.flatMap(f=>f.tickers)])].filter(t=>!discoveryEvidence.identityConflicts.includes(t)), fundamentals);
   const opportunities = buildUnifiedOpportunities(discoveryEvidence, marketRadar, nasdaqListings, (await pool.query<{now:Date}>('SELECT clock_timestamp() now')).rows[0].now);
 
   return {

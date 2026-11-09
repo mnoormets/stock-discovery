@@ -6,6 +6,8 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- Canonical `rklb-discovery-v5` applies the same evidence rules to familiar and reference-company common stocks; V1–V4 history stays separate. Social selection retains instrument/fund exclusions while dropping name-only company exclusions. The versioned `all-collected-us-equities-v1` radar input reuses validated USD US-equity metadata from existing Yahoo lookups alongside screens/searches, with source reasons and original quote timestamps. Unknown classification remains unavailable; no additional quote budget, automatic capital activation or retrospective entries.
+
 - `/today#discovery-evidence` records bounded free Google/Bing News and general web searches, SEC exchange/ticker inventory, recent financial filing RSS and daily indexes, with queries, receipt/publication dates, issuer matching, source hashes and failures. Newly observed financial filings take priority in the existing shared 20-company SEC budget; a filing notice never pretends the numeric facts were refreshed.
 - `/today#opportunity-book` unifies new versioned filing, news, growth, momentum and listing research observations. Additive migration `0013_unified_opportunity_paper` enables append-only, unfunded $1,000 quote scenarios: strictly later fresh regular-session USD entry within three days, exit after seven days with three days of grace, $1 commission and 5 bps slippage each side. The existing capped tracker records them; views are read-only. These independent tickets are not a funded portfolio or goal profit, and corporate actions remain unverified. The original capital account and risk stop remain unchanged.
 

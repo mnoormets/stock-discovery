@@ -114,7 +114,7 @@ const RULES = [
   'Catalyst ei ole kaasamise eeltingimus: catalyst evidence mõjutab ainult järjestust ja nähtavat tõendit.',
   'Catalyst evidence tier: material_new_evidence > weak_or_unconfirmed > scheduled_only / collection_gap > none_recorded.',
   'Materiaalne uus tõend nõuab primaarallikat, kvantifitseeritud muutust, teadaolevat suunda ja uut infot; pealkiri ega planeeritud kuupäev ei kvalifitseeru.',
-  'RKLB ise on võrdlusnäidis ja jäetakse tulemustest välja.',
+  'Tavaaktsiaid ei välistata ettevõtte nime ega tuntuse järgi; RKLB-le kehtivad samad tõendireeglid.',
   `Igast turukapitalitier'ist valitakse kuni ${MARKET_CAP_TIER_CANDIDATES_PER_TIER} kandidaati; vabu kohti ei laenata tier'ide vahel.`,
   'Puuduva või vigase market capiga ettevõte ei saa canonical tier-kohta.',
 ];
@@ -379,7 +379,6 @@ export async function getRklbDiscoveryCandidates(
       catalystCriterion(catalystEvidence),
     ];
     const exclusions: string[] = [];
-    if (financial.ticker === 'RKLB') exclusions.push('RKLB on võrdlusnäidis, mitte kandidaat.');
     if (!growth) exclusions.push('Growth skoor puudub.');
     else if (growth.score < 65) exclusions.push(`Growth ${growth.score}/100 jääb alla 65 lävendi.`);
     if (scores.coverage.score < 70) exclusions.push(`Coverage ${scores.coverage.score}/100 jääb alla 70 lävendi.`);

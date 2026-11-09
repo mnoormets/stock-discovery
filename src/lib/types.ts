@@ -30,6 +30,7 @@ export interface Fundamentals {
   volume?: number;   // keskmine/viimane päevamaht (likviidsuse hindamiseks)
   isFund?: boolean;  // ETF / fond (isEtf / quoteType järgi) → filtreerime välja
   source?: 'yahoo' | 'fmp';
+  researchQuote?: { quoteType: string | null; exchange: string | null; changePercent: number | null; volume: number | null; averageVolume: number | null };
 }
 
 // Üks skooritud kandidaat, valmis DB-sse salvestamiseks

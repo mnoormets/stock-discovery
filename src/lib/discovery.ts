@@ -161,7 +161,7 @@ export function buildCandidates(
   const out: Candidate[] = [];
 
   for (const ape of apeRows) {
-    if (BLACKLIST.has(ape.ticker)) continue;          // FILTER 1: tuntud nimed + hoob-ETF-id
+    if (BLACKLIST.has(ape.ticker)) continue;          // FILTER 1: excluded instruments, never company size/name
     if (ape.mentions < MIN_MENTIONS) continue;        // FILTER 2: müralävi
 
     const fund = fundamentals.get(ape.ticker);
