@@ -28,7 +28,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
-- **2026-11-09 latest verified local delivery:** canonical rklb-discovery-v5 removes common-stock name/reference exclusions; all-collected-us-equities-v1 reuses same-collection validated Yahoo lookups without new requests. Actual collection120 has274 radar names and106 accepted lookup rows; RKLB is visible with original quote time and exclusions. Canonical run140 keeps prior decisions/model history unchanged. Unified tracking now reserves up to10 regular-session slots within the existing50/day cap in addition to existing IPO reservation; capital/SPY priority retained. 48 independent unfunded scenario entries/0 exits, no original-goal profit. Source578823d0158f12b9a3017ff7abeb9bd5edb2877a locally verified; these new fixes are not yet published. Previously approved a820e18 remains remote main.
+- **2026-11-09 latest verified local delivery:** canonical rklb-discovery-v5 removes common-stock name/reference exclusions; all-collected-us-equities-v1 reuses same-collection validated Yahoo lookups without new requests. Actual collection120 has274 radar names and106 accepted lookup rows; RKLB is visible with original quote time and exclusions. Canonical run140 keeps prior decisions/model history unchanged. Unified tracking now reserves up to10 regular-session slots within the existing50/day cap in addition to existing IPO reservation; capital/SPY priority retained. 48 independent unfunded scenario entries/0 exits, no original-goal profit. Source578823d0158f12b9a3017ff7abeb9bd5edb2877a verified and published at7bcb295c3eda01bf7f38cc9b300a1570d036fbfe. Exact-source remote read-only preflight42697378287 succeeded; actual next-session/source-provider operation remains unverified.
 
 
 
@@ -298,7 +298,7 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-- General name-eligibility, lookup-to-radar coverage and unified session-capacity fixes are implemented and verified locally. Now is exact source-only publication review and subsequent remote/runtime verification. Do not leave completed fixes in the active build queue. Preserve original stopped account, prior losses and expired original deadline; funded risk/activation remains separate.
+- General name-eligibility, lookup-to-radar coverage and unified session-capacity fixes are implemented and verified locally. Publication and exact-source read-only preflight are complete. Now is next-session/source-provider runtime verification and prospective net outcomes. Do not leave completed fixes in the active build queue. Preserve original stopped account, prior losses and expired original deadline; funded risk/activation remains separate.
 
 
 ### Varasema fookuse ajalugu — superseded by 2026-11-09 state
@@ -343,7 +343,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Review/publish this exact source-only patch after explicit approval, then verify real remote behavior. No automatic publication. The successful earlier f3a6af4 read-only preflight does not prove these new searches or future price captures succeed.
+- Observe next actual pre-open/session allocation, budget-eligible financial refresh and mature cost-aware exits under the published code. The new exact-source remote read-only preflight succeeded; it does not prove actual remote search/provider availability or future fills.
 
 
 ### Varasem NOW — historical, not the active plan
@@ -553,7 +553,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ## Avatud sõltuvused ja otsused
 
-- Current: exact new-patch publication approval, real remote/next-session verification, prospective matured net outcomes and corporate-action reconciliation. Original funded risk/activation decision remains separate; original deadline failed and is not restarted.
+- Current: real remote/next-session verification, prospective matured net outcomes and corporate-action reconciliation. Original funded risk/activation decision remains separate; original deadline failed and is not restarted.
 
 
 ### Earlier dependency notes — historical context, verify against current state
@@ -2305,3 +2305,10 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 
 - Institutional approach reviewed AQR Implementing Momentum (2017): https://www.aqr.com/insights/research/working-paper/implementing-momentum-what-have-we-learned ; research supports evaluating costs and implementability, not validation of our protocol or a quantum/AI profit guarantee. Private source-backed research note retains limits. Original capital goal not achieved. All previous account losses/deadline preserved; no real trades, paid provider, funds or control executor.
 - Earlier automatic approval review usage-limit failure prevented commands from executing; user requested continuation and the same required checks later ran. No bypass. Current app source is locally committed and ready for exact delivery review, not published. Private research, logs, backups and account audits excluded.
+
+
+### 2026-11-09 — coverage/session fixes published and preflight verified
+
+- Continued under the user's explicit publication authorization and subsequent instruction to continue the repairs. Published the reviewed source-only fixes and sanitized documentation fast-forward to main at7bcb295c3eda01bf7f38cc9b300a1570d036fbfe. Source code remains578823d, prior real collection120/canonicalv5 run140 at37fb421; delivery commit changes documentation only after the tested source. No private research/logs/dumps/account audits published.
+- Exact-SHA read-only GitHub run42697378287 completed success: golden DB connectionOK, readOnlyCompletiontrue, lockSkippedfalse. It did not run a new core/source collection, pricing executor, funded order, or create proof of future scheduled success. Final100files/667tests, lint/build/typechecks, post-suite restart and actual rendered golden DB/UI checks remain valid; app source unchanged.
+- Current status: published fixes, awaiting real next-session budget allocation and prospective mature exits. Existing48 independent unfunded entries/0 exits, no newly proven goal profit; capital stop, all prior losses and original missed deadline preserved. No new20k account, top-up, real trades, paid providers or risk override.
