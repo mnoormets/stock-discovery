@@ -4,6 +4,14 @@ import { describe, expect, it } from 'vitest';
 const workflow = readFileSync('.github/workflows/paper-strategy-execute.yml', 'utf8');
 
 describe('paper strategy execution workflow safety', () => {
+  it('refreshes listings in a separately bounded research job before quote capture without waiting for legacy success',()=>{
+    expect(workflow).toMatch(/^  research:/m);expect(workflow).not.toMatch(/needs:.*execute/);
+    expect(workflow).toContain('timeout-minutes: 10');
+    expect(workflow.indexOf('node scripts/collect-session-research.cjs')).toBeLessThan(workflow.indexOf('node scripts/track-session-prices.cjs'));
+    expect(workflow).toContain('COLLECTION_BUILD_REVISION: ${{ github.sha }}');
+    const cli=readFileSync('scripts/collect-session-research.cjs','utf8');expect(cli).toContain("process.env.FMP_API_KEY=''");
+    expect(cli).not.toContain('executeCapitalPaper');expect(cli).not.toContain('recordPaperStrategySignals');
+  });
   it('runs independent session research after paper execution even when the control fails', () => {
     expect(workflow.indexOf('node scripts/track-session-prices.cjs')).toBeGreaterThan(workflow.indexOf('npm run paper:strategy -- execute'));
     expect(workflow).toContain('if: ${{ !cancelled() }}');
@@ -14,7 +22,7 @@ describe('paper strategy execution workflow safety', () => {
     expect(cli).not.toContain('executeCapitalPaper');
     expect(cli).not.toContain('executePendingPaperOrders');
   });
-  it('is manually dispatchable, bounded, serialized, and calls only the paper runner', () => {
+  it('keeps manual dispatch and bounded serialized paper execution without the canonical collection CLI', () => {
     expect(workflow).toContain('workflow_dispatch:');
     expect(workflow).not.toMatch(/^\s+schedule:/m);
     expect(workflow).toContain('group: paper-strategy-execute');

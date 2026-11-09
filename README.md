@@ -6,6 +6,8 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- The existing paper workflow also starts an independent regular-session research job: refresh existing Nasdaq/Yahoo/SEC coverage once per New York day, then capture tracked quotes. The shared canonical lock prevents concurrent collection, successful session refreshes replay without a new snapshot, and the benchmark is captured before discovery. No canonical paper signals or trades are created by this job. Financial enrichment and tracking retain their shared daily 20/50 caps, and existing per-collection history/initial-quote bounds remain. Optional paid FMP fallback is disabled. This reduces the morning-to-session discovery gap; it is not continuous scanning or a profit claim.
+
 - Manually reviewed SEC filing evidence can stop futile routine research quotes after confirmed trading cessation. The initial KVUE/Kenvue record applies only to the matching SEC CIK and after its recorded verification time; it does not backdate knowledge, hide earlier failures or suppress unexplained stale quotes. Open capital/control/portfolio holdings remain in coverage for reconciliation. Today shows the evidence and accounting limitation; merger cash/shares are not automatically credited, and historical unknown outcomes remain unknown. No new feed or schema is added.
 
 - The shared New York regular-session gate follows the existing NYSE calendar, including its published 13:00 Eastern equity closes for 2026–2028. Capture, paper-execution checks and listing quote evaluation reject the early-close afternoon; full-day holidays and daylight-saving conversion remain intact.

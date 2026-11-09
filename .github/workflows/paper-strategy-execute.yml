@@ -56,6 +56,25 @@ jobs:
           fi
           curl --fail --silent --show-error --max-time 10 "$PAPER_STRATEGY_HEALTHCHECKS_PING_URL"
 
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Refresh regular-session research
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          DATABASE_TARGET: golden
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          COLLECTION_BUILD_REVISION: ${{ github.sha }}
+          TZ: America/New_York
+        run: node scripts/collect-session-research.cjs
+
       # Independent research capture still runs if an old control order failed.
       # The CLI skips outside regular sessions and retains the shared 50/day cap.
       - name: Capture regular-session research prices
