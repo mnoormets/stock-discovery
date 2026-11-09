@@ -572,22 +572,37 @@ async function financialUniverseCoverage(): Promise<{ universe: number; covered:
 
 export async function financialEnrichmentQueue(limit: number, recentListingTickers: string[] = []): Promise<Array<{ companyId: number; ticker: string }>> {
   const result = await pool.query(
-    `SELECT c.id AS company_id, c.ticker
+    `WITH latest_evidence AS (
+       SELECT metrics->'discoveryEvidence' evidence FROM collection_runs
+       WHERE metrics->'discoveryEvidence'->>'version'='discovery-evidence-v1'
+       ORDER BY id DESC LIMIT 1
+     ), notices AS (
+       SELECT ltrim(x->>'cik','0') cik,
+         max(CASE WHEN pg_input_is_valid(x->>'filedAt','date') THEN (x->>'filedAt')::date END) filed_at
+       FROM latest_evidence CROSS JOIN LATERAL jsonb_array_elements(COALESCE(evidence->'filings','[]'::jsonb)) x
+       WHERE x->>'form' IN ('10-Q','10-K','20-F','40-F')
+         AND CASE WHEN pg_input_is_valid(x->>'observedAt','timestamptz') THEN (x->>'observedAt')::timestamptz <= clock_timestamp() ELSE false END
+         AND CASE WHEN pg_input_is_valid(x->>'filedAt','date') THEN (x->>'filedAt')::date <= current_date ELSE false END
+       GROUP BY ltrim(x->>'cik','0')
+     ) SELECT c.id AS company_id, c.ticker
      FROM companies c
      JOIN LATERAL (
        SELECT max(p.captured_at) AS latest_price_at
        FROM price_snapshots p WHERE p.company_id = c.id
      ) prices ON true
      LEFT JOIN LATERAL (
-       SELECT max(f.updated_at) AS facts_updated_at
+       SELECT max(f.updated_at) AS facts_updated_at, max(f.filed_at) AS latest_filed_at
        FROM financial_facts f WHERE f.company_id = c.id
      ) facts ON true
      LEFT JOIN financial_enrichment_status enrichment ON enrichment.company_id = c.id
+     LEFT JOIN notices n ON n.cik=ltrim(c.sec_cik,'0')
      WHERE c.ticker <> 'SPY'
        AND c.quote_type IS DISTINCT FROM 'ETF'
        AND prices.latest_price_at >= now() - interval '30 days'
        AND (
-         (
+         (n.filed_at > COALESCE(facts.latest_filed_at,DATE '1900-01-01')
+          AND (enrichment.last_attempt_at IS NULL OR enrichment.last_attempt_at < now() - interval '1 day'))
+         OR (
            facts.facts_updated_at IS NULL
            AND (
              enrichment.last_attempt_at IS NULL
@@ -602,7 +617,8 @@ export async function financialEnrichmentQueue(limit: number, recentListingTicke
            AND (enrichment.last_attempt_at IS NULL OR enrichment.last_attempt_at < now() - interval '1 day')
          )
        )
-     ORDER BY (c.ticker = ANY($2::text[])) DESC,
+     ORDER BY COALESCE(n.filed_at > COALESCE(facts.latest_filed_at,DATE '1900-01-01'),false) DESC,
+              (c.ticker = ANY($2::text[])) DESC,
               (facts.facts_updated_at IS NULL) DESC,
               (enrichment.last_attempt_at IS NULL) DESC,
               enrichment.last_attempt_at ASC NULLS FIRST,

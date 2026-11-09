@@ -124,3 +124,10 @@ export async function fetchExecutionQuotes(tickers: string[]): Promise<Map<strin
   }
   return result;
 }
+
+/** Bounded source-discovery quotes; callers validate security type and exchange. */
+export async function fetchResearchMarketQuotes(tickers: string[]): Promise<unknown> {
+  if (!tickers.length) return { quotes: [] };
+  const rows = await yahooFinance.quote([...new Set(tickers)].slice(0,10));
+  return { quotes: Array.isArray(rows) ? rows : [rows] };
+}

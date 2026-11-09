@@ -1,3 +1,4 @@
+import { getOpportunityQuoteNeeds, recordOpportunityPaper } from './opportunity-book';
 import { hasReviewedTradingCessation } from './reviewed-trading-cessations';
 import { pool } from './db';
 import { fetchExecutionQuotes, type YahooExecutionQuote } from './yahoo';
@@ -122,6 +123,12 @@ export async function getPriceTrackingQueue(now = new Date()) {
           AND p.market_at <= f.finished_at + interval '10 days' AND p.market_at <= p.captured_at
           AND p.captured_at <= f.finished_at + interval '11 days' AND p.captured_at <= $1)
       UNION
+      SELECT c.id, 'unified opportunity quote v1' FROM collection_runs r
+      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(r.metrics->'opportunities'->'rows','[]'::jsonb)) item
+      JOIN companies c ON c.ticker=item->>'ticker'
+      WHERE r.status='success' AND r.finished_at<=$1 AND r.finished_at >= $1::timestamptz-interval '13 days'
+        AND r.metrics->'opportunities'->>'version'='unified-opportunity-v1' AND item->>'state'='qualified_research'
+      UNION
       SELECT c.id, 'new Nasdaq listing' FROM collection_runs r
       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(r.metrics->'nasdaqListings'->'rows','[]'::jsonb)) item
       JOIN companies c ON c.ticker=item->>'ticker'
@@ -141,16 +148,21 @@ export async function getPriceTrackingQueue(now = new Date()) {
     WHERE NOT EXISTS (SELECT 1 FROM price_tracking_attempts a WHERE a.company_id = c.id AND a.tracking_date = $2)
     GROUP BY c.id, c.ticker
     ORDER BY (c.ticker = 'SPY') DESC, bool_or(r.reason='capital holding') DESC,
-      bool_or(r.reason='growth cohort follow-up v1') DESC,
-      min(f.finished_at) FILTER (WHERE r.reason='growth cohort follow-up v1') ASC NULLS LAST,
+      bool_or(r.reason='unified opportunity quote v1') DESC,
+      bool_or(r.reason IN ('growth cohort follow-up v1','price momentum follow-up v1')) DESC,
+      min(CASE WHEN r.reason='growth cohort follow-up v1' THEN f.finished_at WHEN r.reason='price momentum follow-up v1' THEN m.finished_at END) ASC NULLS LAST,
       bool_or(r.reason='paper holding') DESC, last_attempt ASC NULLS FIRST, c.ticker`,
   [now.toISOString(), newYorkPriceDate(now.toISOString())]);
   const rows = result.rows as { company_id:string; ticker:string; sec_cik:string|null; has_portfolio_holding:boolean; reasons:string[]; last_attempt:Date|null }[];
-  return rows.filter(row=>!hasReviewedTradingCessation(row.ticker,row.sec_cik,now)
-    || row.has_portfolio_holding || row.reasons.includes('capital holding') || row.reasons.includes('paper holding'));
+  if (rows.some(r=>r.reasons.includes('unified opportunity quote v1'))) {
+    const needed=await getOpportunityQuoteNeeds(now);
+    for(const r of rows)if(!needed.has(r.ticker))r.reasons=r.reasons.filter(x=>x!=='unified opportunity quote v1');
+  }
+  return rows.filter(row=>row.reasons.length>0 && (!hasReviewedTradingCessation(row.ticker,row.sec_cik,now)
+    || row.has_portfolio_holding || row.reasons.includes('capital holding') || row.reasons.includes('paper holding')));
 }
 
-export async function collectTrackedPrices(options: {
+async function collectTrackedPricesCore(options: {
   now?: Date;
   quoteFetcher?: (tickers: string[]) => Promise<Map<string, YahooExecutionQuote>>;
 } = {}) {
@@ -232,4 +244,10 @@ export async function getPriceTrackingSummary() {
     ORDER BY ticker`);
   return { available: true, waiting: (await getPriceTrackingQueue()).length,
     rows: result.rows as { ticker: string; status: string; attempted_at: Date; market_at: Date | null; reasons: string[] }[] };
+}
+
+export async function collectTrackedPrices(options: Parameters<typeof collectTrackedPricesCore>[0] = {}) {
+  const result=await collectTrackedPricesCore(options);
+  await recordOpportunityPaper(options.now);
+  return result;
 }

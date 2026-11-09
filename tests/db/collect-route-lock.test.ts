@@ -35,6 +35,8 @@ function dependencies(): CollectRouteDependencies {
     // Kogu `runCollection` tagastuskuju, mitte cast: nii jääb test seotuks
     // päris tüübiga ja katkeb valjult, kui kuju muutub.
     runCollection: vi.fn(async () => ({
+      discoveryEvidence: { version:'discovery-evidence-v1' as const,observedAt:new Date().toISOString(),universeSize:0,universeStatus:'stored_fallback' as const,sources:[],web:[],filings:[],filingsBeforeLimit:0,quoteTickers:[],identityConflicts:[] },
+      opportunities: { version:'unified-opportunity-v1' as const,evaluatedAt:new Date().toISOString(),rows:[] },
       nasdaqListings: { version: 'nasdaq-listing-research-v1', observedAt: new Date().toISOString(), status: 'ok' as const, error: null, directoryText: null, actionsText: null, sources: [], baseline: true, previousObservedAt: null, rows: [], quoteAttempted: 0, quoteDeferred: 0 },
       marketRadar: { version: 'market-radar-v1' as const, observedAt: new Date().toISOString(), channels: [], stocks: [] },
       collectionRunId: 1,

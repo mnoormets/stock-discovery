@@ -1,3 +1,5 @@
+import DiscoveryEvidence from '@/components/DiscoveryEvidence';
+import OpportunityBook from '@/components/OpportunityBook';
 import { getReviewedTradingCessations } from '@/lib/reviewed-trading-cessations';
 import ListingEntryEvaluation from '@/components/ListingEntryEvaluation';
 import NasdaqListings from '@/components/NasdaqListings';
@@ -356,6 +358,8 @@ export default async function TodayPage() {
       </section>
 
       <div className="todayGuardrail">High scores mean “research further”. “Eligible for paper entry” is the app&apos;s clearest positive state: the entry-aware rules would create a hypothetical buy intent, but this page remains read-only and places no real order.</div>
+      <DiscoveryEvidence />
+      <OpportunityBook />
       <MarketRadar />
       <NasdaqListings />
       <ListingEntryEvaluation />

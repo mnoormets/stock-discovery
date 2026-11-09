@@ -1,3 +1,5 @@
+import { collectDiscoveryEvidence } from './discovery-evidence';
+import { buildUnifiedOpportunities } from './opportunity-book';
 import { collectionBuildProvenance } from './collection-build';
 import { collectNasdaqListings } from './nasdaq-listings';
 import { collectMarketRadar } from './market-radar';
@@ -8,7 +10,7 @@ import { fetchFmpFundamentals } from './fmp';
 import { fetchSecSuspensions } from './sec';
 import { buildCandidates } from './discovery';
 import {
-  saveSnapshot, saveCollectedCompanies, ensureSchema, upsertSecSuspensions,
+  pool, saveSnapshot, saveCollectedCompanies, ensureSchema, upsertSecSuspensions,
   getSecSuspendedSet, getMentionHistory, resolveCollectionCompanyIds,
 } from './db';
 import {
@@ -254,12 +256,17 @@ async function collectCore(collectionRunId: number) {
   });
   await recordCollectionRunItems(items);
 
+  const discoveryEvidence = await collectDiscoveryEvidence();
+  await pool.query("UPDATE collection_runs SET metrics=metrics || jsonb_build_object('discoveryEvidence',$2::jsonb) WHERE id=$1 AND status='running'",[collectionRunId,JSON.stringify(discoveryEvidence)]);
   const nasdaqListings = await collectNasdaqListings();
-  const marketRadar = await collectMarketRadar();
+  const marketRadar = await collectMarketRadar(discoveryEvidence.quoteTickers,[...new Set([...discoveryEvidence.web.flatMap(w=>w.tickers),...discoveryEvidence.filings.flatMap(f=>f.tickers)])].filter(t=>!discoveryEvidence.identityConflicts.includes(t)));
+  const opportunities = buildUnifiedOpportunities(discoveryEvidence, marketRadar, nasdaqListings, (await pool.query<{now:Date}>('SELECT clock_timestamp() now')).rows[0].now);
 
   return {
     marketRadar,
     nasdaqListings,
+    discoveryEvidence,
+    opportunities,
     captureDate,
     scanned: ape.rawRowCount,
     candidates: candidates.length,
@@ -314,6 +321,8 @@ function collectionMetrics(result: Awaited<ReturnType<typeof collectCore>>): Col
     providers: result.providers,
     marketRadar: result.marketRadar,
     nasdaqListings: result.nasdaqListings,
+    discoveryEvidence: result.discoveryEvidence,
+    opportunities: result.opportunities,
   };
 }
 

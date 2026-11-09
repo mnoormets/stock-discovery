@@ -18,7 +18,7 @@ export default async function MarketRadar() {
       {snapshot.financialEnrichmentError && <p className="notice warning">{snapshot.financialEnrichmentError}</p>}
       {snapshot.financialEnrichment && <p>SEC enrichment before this scan: {snapshot.financialEnrichment.status} · {snapshot.financialEnrichment.attempted} attempted · {snapshot.financialEnrichment.enriched} enriched · {snapshot.financialEnrichment.failed} failed · {snapshot.financialEnrichment.unavailable} unavailable · {snapshot.financialEnrichment.attemptedTodayBefore} attempted earlier today · {snapshot.financialEnrichment.dailyRemaining} remaining in the shared daily budget.</p>}
       <ul>{snapshot.channels.map((channel) => <li key={channel.id}>
-        <a href={`https://finance.yahoo.com/research-hub/screener/${channel.id}/`} target="_blank" rel="noreferrer">{MARKET_RADAR_CHANNELS.find((c) => c.id === channel.id)?.label}</a>
+        {channel.id==='source_discovery'?<a href="#discovery-evidence">Active web / filing discovery</a>:<a href={`https://finance.yahoo.com/research-hub/screener/${channel.id}/`} target="_blank" rel="noreferrer">{MARKET_RADAR_CHANNELS.find(c=>c.id===channel.id)?.label}</a>}
         {channel.status === 'failed' ? ' — Unavailable this run; coverage is incomplete.' : ` — ${channel.accepted} US equity observations from ${channel.received} returned rows (up to 25).`}
       </li>)}</ul>
       <p>Gainers have already moved. Growth screens provide additional leads; their provider criteria are not verified investment theses. This is a bounded sample, not the entire market. Volume ratio compares session volume with the three-month daily average and is incomplete during trading.</p>
@@ -30,7 +30,7 @@ export default async function MarketRadar() {
             const usable = stock.price != null && priceObservationRecency(stock.marketAt, now) === 'recent';
             return <tr key={stock.ticker}>
               <td><Link href={`/company/${encodeURIComponent(stock.ticker)}`}>{stock.ticker}</Link><br /><small>{stock.name}</small></td>
-              <td>{stock.channels.map((id) => MARKET_RADAR_CHANNELS.find((c) => c.id === id)?.label).join(', ')}</td>
+              <td>{stock.channels.map((id) => id==='source_discovery'?'Active web / filing discovery':MARKET_RADAR_CHANNELS.find((c) => c.id === id)?.label).join(', ')}</td>
               <td>{usable ? `$${stock.price!.toFixed(2)}` : 'Unavailable / stale'}<br /><small>{stock.marketAt ? new Date(stock.marketAt).toLocaleString('en-GB', { timeZone: 'Europe/Tallinn' }) : 'Quote time unknown'}</small></td>
               <td>{usable && stock.changePercent != null ? `${stock.changePercent > 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%` : 'Unknown'}</td>
               <td>{stock.relativeVolume == null ? 'Unknown' : `${stock.relativeVolume.toFixed(2)}×`}</td>

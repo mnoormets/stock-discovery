@@ -54,6 +54,7 @@ const MIGRATED_TABLES = [
   'sec_suspensions',
   'snapshots',
   'thesis_change_events',
+  'unified_opportunity_paper',
 ];
 
 // Kõik selle faili testid algavad puhtalt lehelt. Ilma selleta sõltuksid
