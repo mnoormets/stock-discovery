@@ -28,7 +28,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
-- **2026-11-09 verified local state:** active free Google/Bing News and general-web discovery plus SEC inventory, filing RSS and daily indexes are integrated into collection. New filing notices prioritize financial refresh within the existing shared budget. Today displays frozen evidence and a unified append-only cost journal. Actual source collection 119 observed 121 web results from 41 publishers, 1000 retained filing notices and 193 radar names; 104 first qualifying research scenarios, 0 recorded entries. These are unfunded independent tickets, not capital-goal profit. Original stopped account and all previous ledgers remain unchanged. New source 17b3ad1b79c19dc77cd9665d5ab7d2f582ee3199 is local only; publication and remote verification are pending.
+- **2026-11-09 verified local state:** active free Google/Bing News and general-web discovery plus SEC inventory, filing RSS and daily indexes are integrated into collection. New filing notices prioritize financial refresh within the existing shared budget. Today displays frozen evidence and a unified append-only cost journal. Actual source collection 119 observed 121 web results from 41 publishers, 1000 retained filing notices and 193 radar names; 104 first qualifying research scenarios, 0 recorded entries. These are unfunded independent tickets, not capital-goal profit. Original stopped account and all previous ledgers remain unchanged. Approved delivery f3a6af4100bef9e7ae258f59780fe70f0c8240cb is published on GitHub main. Exact-SHA remote read-only preflight42676572071 succeeded with golden DB connection and no lock skip. This preflight does not execute new source searches, quote fills or prove future scheduled success.
 
 
 - **9 October same-collection enrichment correction verified locally:** Persist discovered radar companies, perform the existing capped SEC pass, then freeze early/growth evidence. CLI/API reuse its result and Today shows coverage/budget/failure; a thrown failure returns API 503. Focused regressions, full isolated 79-file/564-test suite (550.42s), typecheck/lint/Docker build/restart/HTTP and real forward database checks passed. Prior observations remain unchanged; no new source, strategy/risk change or extra daily budget. See [verification](research/2026-10-09/ENRICHMENT_ORDER.md).
@@ -295,7 +295,7 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-- The first three authorized implementation goals are locally complete and verified: broader active search, filing-aware refresh and unified cost-aware research accounting. Current focus is exact source-only publication review, then prospective observations. Do not keep these implementations in the active build queue. The future risk-controller/activation decision is separate; do not reactivate the original stopped capital account.
+- The first three authorized implementation goals are locally complete and verified: broader active search, filing-aware refresh and unified cost-aware research accounting. Publication and exact remote read-only preflight are complete. Current focus is the remaining general selection/coverage gaps, then prospective observations under the published code. Do not keep these implementations in the active build queue. The future risk-controller/activation decision is separate; do not reactivate the original stopped capital account.
 
 ### Varasema fookuse ajalugu — superseded by 2026-11-09 state
 
@@ -339,7 +339,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Review exact new source-only delivery for publication; no automatic push. After publication verify real remote source availability and the next budget-eligible filing refresh / strictly later quote captures. Today's financial and tracking budgets were already exhausted; missing entries are retained rather than filled retrospectively.
+- Investigate and version a general removal of legacy name-only common-stock exclusions while retaining non-equity and risk checks; also bridge same-collection valid lookups that are absent from screen/search radar. RKLB audit proves both remaining gaps. Do not change rules only to credit a known winner or reactivate the stopped account. Next real remote collection and budget-eligible quote/fact refresh remain to be verified; do not confuse the successful read-only preflight with those operations.
 
 ### Varasem NOW — historical, not the active plan
 
@@ -2265,3 +2265,11 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 - Real SEC CompanyFacts imported into a separate disposable database and newer financial filing date verified; repeat enrichment attempted0. Golden numeric refresh remains budget-deferred, not falsely marked imported. Actual journal entries0 pending later fresh quotes; no realized profitability claim. First focused run exposed a duplicate SQL join, fixed; initial full run657pass/1fail exposed schema characterization needing the new table, fixed; corrected full suite659pass.
 
 - Now / Next / Later updated; older focus and roadmap entries retained as history. Source-only publication still requires explicit approval. Private diagnostics, datasets, backups and account audits remain excluded.
+
+
+### 2026-11-09 — approved publication and RKLB gap audit
+
+- User explicitly approved publication of f3a6af4. Exact reviewed22-file source/doc delivery pushed fast-forward from4b5c1cb toGitHub main; remote branch verified. Read-only collect-daily preflight run42676572071 completed success at exactf3a6af4100bef9e7ae258f59780fe70f0c8240cb: DB connectionOK, readOnlyCompletiontrue, lockSkippedfalse. No core collection, paper executor, order or account writes by that preflight.
+- Read-only actual-history RKLB audit: canonical decisions133–139 omitRKLB by the explicit comparison-symbol rule, even with known prices; separate radar first observed it in collection113/6Nov20:01UTC at52.66, excluded by negative OCF financial rule and >=5% already-moved early rule. Latest collection119 contains a same-collection valid stored lookup price but no RKLB radar/growth/momentum/unified row. New sources/journal therefore do not establish complete coverage or a profitable RKLB recommendation. All old decisions/trades remain untouched; no retrospective simulated entry. Detailed private audit excluded frompublication.
+- Remaining work is general eligibility and lookup-to-radar traceability, each prospectively versioned where it changes selection; not a ticker-specific winner override. Existing capital risk stop remains. A hypothetical1000 shares at44USD needs44000USD capital; +14USD/share is14000USD gross before costs/FX/taxes, not a result achieved by the original20000USD account.
+- Master current state/focus/Now updated to publication complete and these remaining gaps. App source unchanged since17b3ad1; existing96 files/659tests, lint/type/build and local DB/UI proof remain applicable. This follow-up changes documentation only; full remote new-source collection remains unverified.
