@@ -28,6 +28,9 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-11-09 verified local state:** active free Google/Bing News and general-web discovery plus SEC inventory, filing RSS and daily indexes are integrated into collection. New filing notices prioritize financial refresh within the existing shared budget. Today displays frozen evidence and a unified append-only cost journal. Actual source collection 119 observed 121 web results from 41 publishers, 1000 retained filing notices and 193 radar names; 104 first qualifying research scenarios, 0 recorded entries. These are unfunded independent tickets, not capital-goal profit. Original stopped account and all previous ledgers remain unchanged. New source 17b3ad1b79c19dc77cd9665d5ab7d2f582ee3199 is local only; publication and remote verification are pending.
+
+
 - **9 October same-collection enrichment correction verified locally:** Persist discovered radar companies, perform the existing capped SEC pass, then freeze early/growth evidence. CLI/API reuse its result and Today shows coverage/budget/failure; a thrown failure returns API 503. Focused regressions, full isolated 79-file/564-test suite (550.42s), typecheck/lint/Docker build/restart/HTTP and real forward database checks passed. Prior observations remain unchanged; no new source, strategy/risk change or extra daily budget. See [verification](research/2026-10-09/ENRICHMENT_ORDER.md).
 
 - **9 October supported revenue alias correction verified:** Extractor now selects the freshest validated existing revenue concept by reporting end/filing date, with declared-priority ties and no value-based optimization. Real NVDA current Revenues facts and same-filing growth evidence now flow into a new forward collection while older facts/frozen observations remain intact. Focused 27 tests and full 78-file/560-test suite, typecheck/lint/Docker build/restart/HTTP checks passed. See [source correction evidence](research/2026-10-09/REVENUE_ALIAS_RECENCY.md).
@@ -175,6 +178,9 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Tehtud verstapostid
 
+- 2026-11-09: all three requested implementations locally verified (active search, filing priority, unified cost journal); source-only publication pending.
+
+
 - Early Opportunities V1: source-backed growth/cash-flow scan, known 1/3/6-month run-up checks, frozen first-discovery price and 30-day continued tracking; verified 1 October with real AMKR/CDE observations.
 
 - Market radar V1: six independently sourced Yahoo screen lists, unscored-name visibility, idempotent company/price persistence and 20-attempt daily SEC enrichment; verified 1 October 2026.
@@ -289,6 +295,11 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
+- The first three authorized implementation goals are locally complete and verified: broader active search, filing-aware refresh and unified cost-aware research accounting. Current focus is exact source-only publication review, then prospective observations. Do not keep these implementations in the active build queue. The future risk-controller/activation decision is separate; do not reactivate the original stopped capital account.
+
+### Varasema fookuse ajalugu — superseded by 2026-11-09 state
+
+
 - Revenue alias and enrichment-order corrections are verified locally. Next observe unattended use and future fresh same-run evidence with the original budgets and frozen history preserved.
 
 - Nasdaq listing research implementation is verified. Next observe the first unattended collection and first eligible directory addition; preserve shared budgets and capital policy/history. New research coverage is not evidence of future profit.
@@ -328,6 +339,11 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
+- Review exact new source-only delivery for publication; no automatic push. After publication verify real remote source availability and the next budget-eligible filing refresh / strictly later quote captures. Today's financial and tracking budgets were already exhausted; missing entries are retained rather than filled retrospectively.
+
+### Varasem NOW — historical, not the active plan
+
+
 - Correct future SEC enrichment/growth evaluation order without increasing the daily budget or rewriting terminal collection evidence. Revenue alias correction and required verification completed.
 
 - Observe first unattended nasdaq-listing-research-v1 collection and eligible-directory addition; implementation and verification complete.
@@ -350,6 +366,11 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NEXT
 
+- Collect prospective entry and seven-day exit evidence within existing limits. Compare source reasons and financial-pass subsets with modeled costs, keeping unavailable outcomes explicit. Validate corporate actions and resolve future capital/risk activation separately before crediting any funded goal result.
+
+### Varasem NEXT — historical, not the active plan
+
+
 - Evaluate forward growth-capital-entry-v2 results separately by entry evidence/version while retaining whole-account P/L. The transition is built and activated; no second funded account, retrospective purchases or loss reset. Review effectiveness and capacity exclusions, rather than changing priorities merely to buy AMD.
 
 - **2026-09-30 external-winner audit:** internet-selected winners compared with historical DB evidence. KOD arrived after its jump; GLND/INOD/VKTX were fetched but have zero financial facts and no canonical decisions, explained by the financial-facts inner join. META/INTC are explicitly blacklisted; MRNA lost tier slots or same-collection eligibility. GRML and several event winners have no recorded coverage under checked tickers. See [external review](research/2026-09-30/EXTERNAL_MOVERS.md). Next: investigate existing-source enrichment coverage and evaluate exclusions against user scope before any separately versioned policy change. No new provider, database writes or strategy changes; read-only evidence and source inspection only.
@@ -359,6 +380,11 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing queue order. Nasdaq listing research V1 is integrated; forward coverage remains to be observed. The daily budget is now 20; the standalone helper default remains five.
 
 ### LATER
+
+- Additional AI/quantitative methods only when unseen cost-aware results justify them. External notifications remain deferred. No new funded capital, loss reset, paid provider, real-money order or restarted 30-day deadline.
+
+### Varasem LATER — historical, not the active plan
+
 
 - Broaden discovery only when tracked results and research rejection reasons demonstrate a specific gap. The user explicitly authorized broader market-information channels on 30 September; paid subscriptions still require a separate decision.
 - Supported Next.js upgrade as a separate tested change; authentication/authorization before public exposure. Public deployment and subscriptions are not the present objective.
@@ -372,6 +398,9 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- **2026-11-09 user authorization:** the first three goals explicitly approve additional free active web/news/SEC sources, reversing the earlier no-new-sources preference for this scope. All issuer sizes remain eligible for research. New unified journal uses explicit versioned independent $1,000 unfunded tickets, $1/side and5bps/side, entry within3days using a strictly later <=20-minute regular-session USD quote, exit after7days plus3days grace. First observation/fills remain immutable. No corporate-action certification or original-goal credit; no funded-account activation.
+
 
 - Revenue concept recency is a correction within existing supported SEC inputs, not a new trading strategy or threshold. Same-filing comparisons and immutable research/trading history remain required. Late enrichment is forward information for a new collection only.
 
@@ -515,6 +544,11 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
   - Runneril `.env` faili ei ole, seega `loadEnv()` (`scripts/_ts-loader.cjs:34`) väljub kohe ja workflow env on ainus allikas. Eraldi fail-fast samm katkestab valjult, kui `NEON_DATABASE_URL` on tühi — muidu langeks `ensureLocalDatabaseUrl()` vaikselt tagasi `localhost:5433`-le, mida runneril ei ole, ja puuduv secret näeks välja nagu arusaamatu ühendusviga.
 
 ## Avatud sõltuvused ja otsused
+
+- Current: publication approval and real remote execution; next budget-eligible numeric refresh and prospective entry/exit observations; corporate actions and separate future capital/risk activation. Original deadline failed and is not restarted.
+
+### Earlier dependency notes — historical context, verify against current state
+
 
 Current as of 2026-09-13; earlier calibration observations and superseded plans are preserved in dated session entries and supporting design documents.
 
@@ -766,6 +800,14 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-11-09 — active discovery, financial refresh and unified journal
+
+- Required checks: 96 files /659 tests passed (410.27s), lint and typecheck exit0, Docker production build22/22 pages. Restarted app only after suite completion. Actual Today/Performance HTTP200; all12 new-source queries and 104 rendered journal rows matched database evidence. Disposable test and live-source databases removed.
+- Golden additive migration0013 applied once, replay0. Frozen research collection119 at exact source17b3ad1b79c19dc77cd9665d5ab7d2f582ee3199; original capital/control/accounts/prior collections/tracking receipts independently unchanged. No canonical or capital executor.
+- Real SEC CompanyFacts imported into a separate disposable database and newer financial filing date verified; repeat enrichment attempted0. Golden numeric refresh remains budget-deferred, not falsely marked imported. Actual journal entries0 pending later fresh quotes; no realized profitability claim. First focused run exposed a duplicate SQL join, fixed; initial full run657pass/1fail exposed schema characterization needing the new table, fixed; corrected full suite659pass.
+
+
 
 ### 2026-10-09 — supported revenue concept recency
 
@@ -2208,3 +2250,18 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 - Verification: 92 files / 646 tests passed (423.77s), lint/typecheck passed, Docker production build completed 22/22 pages. App restarted after the suite; isolated test database removed. Actual Today/Performance HTTP 200; rendered candidate and cohort rows matched the database.
 - Real research collection 118 at exact source 2e8867003021f551852c7dce53b09dfb5bf6049d: 20 histories, 126 observed names, 1 qualifying observation (ADT, excluded by the financial scan), 107 unknown. First qualification and price retained; seven-day result pending. Repeated outcome reads matched. All 64 capital trades, 1560 control orders, accounts, previous collections and tracking receipts unchanged; benchmark captured first, FMP disabled. No trading executor, new funds, account reset, historical backfill or risk-stop override.
 - Completed: local implementation, required verification, real-data freeze and rendered UI checks. Current focus / Now: exact source-only publication review; the following handoff-only commit changes no tested application code. Next: scheduled captures under this revision and unseen outcomes. Later: cost-aware executable entry/exit and corporate-action validation before any strategy activation. Profitability remains unproven; existing original capital/loss history and risk stop remain intact. No automatic publication.
+
+
+### 2026-11-09 — delivered three authorized discovery goals locally
+
+- **2026-11-09 verified local state:** active free Google/Bing News and general-web discovery plus SEC inventory, filing RSS and daily indexes are integrated into collection. New filing notices prioritize financial refresh within the existing shared budget. Today displays frozen evidence and a unified append-only cost journal. Actual source collection 119 observed 121 web results from 41 publishers, 1000 retained filing notices and 193 radar names; 104 first qualifying research scenarios, 0 recorded entries. These are unfunded independent tickets, not capital-goal profit. Original stopped account and all previous ledgers remain unchanged. New source 17b3ad1b79c19dc77cd9665d5ab7d2f582ee3199 is local only; publication and remote verification are pending.
+
+- The first three authorized implementation goals are locally complete and verified: broader active search, filing-aware refresh and unified cost-aware research accounting. Current focus is exact source-only publication review, then prospective observations. Do not keep these implementations in the active build queue. The future risk-controller/activation decision is separate; do not reactivate the original stopped capital account.
+
+### 2026-11-09 — active discovery, financial refresh and unified journal
+
+- Required checks: 96 files /659 tests passed (410.27s), lint and typecheck exit0, Docker production build22/22 pages. Restarted app only after suite completion. Actual Today/Performance HTTP200; all12 new-source queries and 104 rendered journal rows matched database evidence. Disposable test and live-source databases removed.
+- Golden additive migration0013 applied once, replay0. Frozen research collection119 at exact source17b3ad1b79c19dc77cd9665d5ab7d2f582ee3199; original capital/control/accounts/prior collections/tracking receipts independently unchanged. No canonical or capital executor.
+- Real SEC CompanyFacts imported into a separate disposable database and newer financial filing date verified; repeat enrichment attempted0. Golden numeric refresh remains budget-deferred, not falsely marked imported. Actual journal entries0 pending later fresh quotes; no realized profitability claim. First focused run exposed a duplicate SQL join, fixed; initial full run657pass/1fail exposed schema characterization needing the new table, fixed; corrected full suite659pass.
+
+- Now / Next / Later updated; older focus and roadmap entries retained as history. Source-only publication still requires explicit approval. Private diagnostics, datasets, backups and account audits remain excluded.
