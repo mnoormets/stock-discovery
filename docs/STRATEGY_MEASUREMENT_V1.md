@@ -136,3 +136,7 @@ Alles täielike sisendite järel on näha ka tingimuste mittetäitmine: käibeka
 See näitab katvuse pudelikaelu. See **ei näita** kasumlikkust, olematut edge'i ega seda, et kaks eligible nime oleks head ostud. Kõigepealt tuleb parandada kadudeta metadata salvestus ja hinnata uuringu entry/target/benchmark hindade katvust. Ainult benchmark'i määramine ei taga selle quote'i olemasolu: IWO/IWM/QQQ jaoks ei lisatud selles tarneversioonis uusi päringuid ega suurendatud shared50 limiiti. Puuduvad paarid jäävad auditis nähtavale; enne puutumata tootluse võrdlust tuleb nende kogumine kontrollitult lahendada.
 
 Privaatsed tõendid: docs/research/2026-11-10/measurement-revision2-runtime.json, measurement-revision2-audit.json, measurement-ui.json ja measurement-docker-cli.json; täielik CLI JSON säilitab iga eligible/excluded rea. Need andmestikud/logid ei lähe lähtekoodipublikatsiooni. All seven checked trading/decision tables retain original hashes: no funded or unfunded order/trade, capital run, policy activation, loss reset or original-goal profit credit was created by this measurement work.
+
+## Avaldamine
+
+Rakenduse lähtekood on main'is commit ceec713. [Täpsel lähtekoodil kirjutamiseta GitHubi eelkontroll](https://github.com/mnoormets/stock-discovery/actions/runs/42905675760) läbis: moodulid/sõltuvused ja Neoni ühendus korras, kirjutavaid funktsioone ei kutsutud. See ei tõenda järgmise tegeliku ajastatud kogumise või tulevaste quote-paaride õnnestumist.
