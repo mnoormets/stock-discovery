@@ -1,5 +1,6 @@
 import { beforeEach,describe,expect,it } from 'vitest';
 import { pool } from '../../src/lib/db';
+import { summarizeOpportunityResults } from '../../src/lib/opportunity-results';
 import { getOpportunityBook,recordOpportunityPaper } from '../../src/lib/opportunity-book';
 import { getPriceTrackingQueue,collectTrackedPrices } from '../../src/lib/price-tracking';
 import { insertCompany } from '../fixtures/company';
@@ -20,6 +21,7 @@ describe('unified immutable cost journal',()=>{
   const exit=new Date('2026-11-17T16:00:30Z');await quote(exit,110);expect(await recordOpportunityPaper(exit)).toEqual({inserted:1});
   const book=await getOpportunityBook(exit),row=book.rows[0];expect(row.status).toBe('complete_unverified');
   const expected=((1000-1)/(100*1.0005))*(110*.9995)-1-1000;expect(row.modeledNetUSD).toBeCloseTo(expected,8);
+  const results=summarizeOpportunityResults(book.rows);expect(results.groups[0]).toMatchObject({entries:1,closed:1,wins:1,losses:0});expect(results.groups[0].closedNetUSD).toBeCloseTo(expected,8);expect(results.groups.find(g=>g.name==='price_momentum')?.closedNetUSD).toBeCloseTo(expected,8);
   expect(row.capitalDecision).toBe('blocked_by_capital_risk_stop');expect(Number(book.capital.cash_usd)).toBe(20000);
   expect((await pool.query('SELECT * FROM collection_runs ORDER BY id')).rows).toEqual(original);
   for(const table of ['paper_capital_trades','paper_strategy_orders'])expect((await pool.query('SELECT count(*)::int n FROM '+table)).rows[0].n).toBe(0);

@@ -6,6 +6,9 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- Today shows the current filing-refresh backlog with actual shared daily attempt counts, success/unavailable/failure counts, remaining allowance, queue position and retry/coverage reasons. This reads existing evidence and does not spend or reset the 20-company allowance.
+- The unified paper journal and `node scripts/audit-opportunity-book.cjs` summarize outcomes by each first-known source reason and the frozen financial-pass subset. Pending/missing entries, open/missing exits, wins/losses/flat outcomes and closed net after modeled costs stay separate; no completed trades means Unknown. Groups overlap and are not additive funded portfolio returns.
+
 - Unified paper entry/exit quote requests wait for the regular session and reject prior-close/non-REGULAR/over-20-minute quotes. Before open, reserve up to ten slots for due unified scenarios in addition to the existing ten listing slots, all within the shared 50-symbol daily limit; SPY and open capital holdings retain priority. No extra budget or retry reset.
 
 - Canonical `rklb-discovery-v5` applies the same evidence rules to familiar and reference-company common stocks; V1–V4 history stays separate. Social selection retains instrument/fund exclusions while dropping name-only company exclusions. The versioned `all-collected-us-equities-v1` radar input reuses validated USD US-equity metadata from existing Yahoo lookups alongside screens/searches, with source reasons and original quote timestamps. Unknown classification remains unavailable; no additional quote budget, automatic capital activation or retrospective entries.
