@@ -6,6 +6,12 @@ Kasutaja teine review on vastu võetud: olemasolev fail, funktsioon või läbitu
 
 See tarne peatab järgmise AI-skoori, täiendavate skoorikomponentide ja seitsme paralleelse strateegia ehitamise. Fookus on **Strategy Protocol Registry + Outcome Coverage Audit** kahele fikseeritud uurimishüpoteesile. Kapitalikonto, Today skoor/valik, ostureeglid ja riskipiirid ei muutu. Ühtegi paber- ega pärisostu ei aktiveerita.
 
+## Parandusrevisjonide ajalugu
+
+Hüpoteesi ID-d jäävad fundamental_growth_v1 ja dated_news_event_v1; nende eraldi **version** väli on praegu 2. See ei ole uue läve või võitnud variandi valik. Esimene revisjon/audit #124 ja täpne lähtekood commit'is 5b8a8a9 jäävad alles. Revisjon 2 parandab kaks kontrollitud teostusviga: olemasolevad Yahoo NasdaqGS/GM/CM nimed olid liialt kitsast loendist väljas ning täpselt 5% basic-shares'i kasv võis IEEE754 ümarduse tõttu üle piiri näida. Mõlemad hüpoteesid said uue source-bound räsi; vana registrit ega auditit ei kirjutatud üle.
+
+Varasema lähtekoodiga kohort näitab oma salvestatud auditit koos nähtava hoiatusega, mitte tänase mootoriga ümberarvutatud tulemust. Vaikimisi jälgitakse esimese **aktiivse revisjoni** prospektiivset kohorti; vanemad kohordid jäävad valitavaks. Kogu kasumieesmärgi ajalugu ega algset tähtaega see ei muuda.
+
 ## Protokollid ja ette määratud reeglid
 
 Täielikud masinloetavad definitsioonid:
@@ -41,7 +47,7 @@ Iga uue kogumise juures säilib kogu kehtiv SEC USA börside ticker-inventar nin
 - SEC inventari tõrke või tühja vastuse korral märgitakse partial_inventory, mitte täielik turg. Täielik inventarinimekiri ei tähenda täielikke common-stock ega finantsandmeid.
 - Iga rea juures säilivad avastamise alus, eligibility/signal/reference/earliest-executable ajad, komponendid ja puudumised, faktide ID/tag/periood/ühik/filing/tegelik DB teadmise aeg, allikad, rank, välistamispõhjused ja benchmark.
 - Kõik uued protokollid on signal-study-only; ineligible nimede hilisemad hinnad on **kontrollvaatlused**, mitte tagantjärele ostud.
-- Kogumised on korduvate issuer'itega panel. Eri päevade sama issuer'i vaatlused ei ole sõltumatud tehingud. Raport vaikimisi järgib esimest prospektiivset kogumist; see ei vali tagantjärele parimat kohorti.
+- Kogumised on korduvate issuer'itega panel. Eri päevade sama issuer'i vaatlused ei ole sõltumatud tehingud. Raport vaikimisi järgib esimest aktiivse revisjoni prospektiivset kogumist; see ei vali tagantjärele parimat kohorti.
 - Hilisemad parandatud finantsandmed ei muuda külmutatud signaali. Quote/identiteedi puudumine või muutus ei tohi tekitada väljamõeldud tootlust.
 
 ## Registri ja replay leping
@@ -59,6 +65,8 @@ Registreerimine toimub **enne** uue collection'i algust. Snapshot tehakse selle 
 ## Raport ja kasutamine
 
 App: /research/strategy-coverage, link Today allikate juures.
+
+Signaaliuniversum külmutatakse iga uue kogumisega automaatselt. **Salvestatud outcome-raportit uuendab selles tarneversioonis CLI --record; vaate avamine seda ei arvuta ega uuenda.** Vaade näitab alati auditi as-of aega. Hinnad tulevad olemasolevatest kogumistest; audit ei tee hinnapäringuid.
 
 CLI vaikimisi **read-only**:
 
@@ -81,6 +89,12 @@ Raport vastab:
 
 Tulemuste hinnastamine kasutab ainult juba kogutud hindasid, mitte uut mugavat hinnapäringut ainult võitjatele. Olemasolevaid quote-/finants-/ajalooeelarveid ei suurendata. Seetõttu võib välja tulla suur katvuspuudus — see on auditi tulemus, mitte lubadus, et kõigil nimedel tekib hind. Toorhinnapaari modelleeritud excess võib olla diagnostiline, kuid corporate-action'i või täitmiskulude ebakindlusega tulemust ei krediteerita algse kasumieesmärgi täitmiseks.
 
+## Esimese pärisauditi konkreetne leid
+
+Kogumine #124 külmutas 7618 SEC inventarikirjet ja 7736 identiteedikirjet / 7735 erinevat tickerit. Inventari 1025 issuer-iga seotud liikmest 1008-l puudusid kohalikus companies vahemälus quote_type ja exchange. Kümnel olemasoleval Nasdaq equity-kirjel oli tüüp/valuuta olemas, kuid revisjoni 1 kontroll ei tunnistanud provideri pikka börsinime; see on parandatud revisjonis 2, teadmata väärtusi ei täidetud oletusega.
+
+Koodis on konkreetne andmevoo lünk: Yahoo fetchFundamentals säilitab researchQuote.quoteType/exchange, kuid saveCollectedCompanies/saveFundamentalsSnapshot'i senised salvestusteed annavad ettevõttele börsi nullina ning equity tüübi asemel valdavalt nulli (fondi ETF-erand säilib). See aitab selgitada vahemälu puudulikkust; ei tõenda, et kõigi 1008 nime kohta on tänases kogumises värske klassifikatsioon olemas. Järgmine parandussuund on olemasolevate allikate kontrollitud metadata kadudeta edasiandmine uutes vaatlustes, mitte uus AI-skoor ega vana ajaloo täitmine tänaste teadmistega.
+
 ## Mis jääb järgmiseks, pärast seda alust?
 
 1. Lahendada auditis nähtud ajastuse, hinna/benchmark'i või identiteedi katvus enne tulemuste võrdlemist. Mitte lisada uut skoori, et puuduvat tulemust varjata.
@@ -92,4 +106,33 @@ Tõendusastmed jäävad eraldi: **kood olemas → runtime toimib → sisendid/ka
 
 ## Testid ja tegeliku kogumise audit
 
-Sihitud kontroll: 3 faili/37 testi läbisid pärast SQL alias'e ebaselguse parandamist. Täielik suite, tootmisbuild, golden-source migratsioon, päris uus kogumine ja taaskäivitatud UI/DB võrdlus on **veel kontrollimisel**. Konkreetne lõpptulemus lisatakse pärast tõendeid.
+Lõplik kontroll: **105 faili / 695 testi läbisid, 478,62 s**. Lint hoiatusteta; typecheck/build exit0; build23/23. Pärast testide lõppu app taaskäivitatud. Praegune raport, ajalooline #124 ja Today HTTP200; tegeliku DOM-i iga coverage-maatriks vastab salvestatud auditi täielikule nimetajale. Kõik11 kontrollitud konto/tehingu/registri/snapshot/audit tabelit jäid GET kontrollides muutmata. Ajutine discovery_test baas eemaldati (loendur0). Visuaalset screenshot'i ei väideta.
+
+Migratsioon0014 rakendati golden source'ile. Esimene #124/source5b8a8a9/revisjon1 ja parandatud #125/revisjon2 on eraldi muutumatud kirjed. Mõlema hüpoteesi esimese revisjoni kõik kuus lähtekoodiräsi vastavad arhiveeritud Git-versioonile. #125 signaalireplay läbis nii hostil kui tegelikus Node22 Docker CLI-s; sama as-of audit on idempotentne ning #124 registreid/raportit ei kirjutatud ümber.
+
+Parandatud **#125**, külmutatud10.11.2026 / raport21:02:35.738UTC:
+
+| Järjestikune etapp | Fundamentaalne kasv | Dateeritud primaarallika sündmus |
+|---|---:|---:|
+| Kõik säilitatud identiteedikirjed | 7736 | 7736 |
+| Praeguses SEC inventaris | 7618 | 7618 |
+| Kohaliku issuer-identiteediga seotud | 1025 | 1025 |
+| Kohalik US-equity klassifikatsioon täidetud | 17 | 17 |
+| Nõutud tunnused teada | 11 | 0 |
+| Eligible | 2 | 0 |
+| Benchmark määratud eligible nimedel | 2 | 0 |
+| Hilisem entry-vaatlus olemas | 0 | 0 |
+
+Kõik7735 erinevat tickerit jäävad nimetajasse. Tulemustähtajani jõudnud vaatlusi0; raw paired ja verified comparable tulemusi0. Kõigi liikmete seas1037 hinnavaatlust ootavad read ning6699 külmutatud identiteedi tõttu mõõtmispiiranguga rida on eraldi; see ei ole võitude/kaotuste jaotus.
+
+Puuduvad sisendid kogu7736-kirjelises nimetajas (kategooriad kattuvad; neid ei liideta):
+- sidumata/vastuoluline kohalik issuer-identiteet6699;
+- ühildatav käibekasv7040;
+- sama perioodi OCF7025;
+- võrreldavad basic shares6949;
+- benchmark'i määramiseks vajalik market cap6476.
+Alles täielike sisendite järel on näha ka tingimuste mittetäitmine: käibekasv alla25%477, OCF mittepositiivne241, basic-shares'i kasv üle5%220 (samuti kattuvad, hõlmavad ka muul põhjusel välistatud ridu).
+
+See näitab katvuse pudelikaelu. See **ei näita** kasumlikkust, olematut edge'i ega seda, et kaks eligible nime oleks head ostud. Kõigepealt tuleb parandada kadudeta metadata salvestus ja hinnata uuringu entry/target/benchmark hindade katvust. Ainult benchmark'i määramine ei taga selle quote'i olemasolu: IWO/IWM/QQQ jaoks ei lisatud selles tarneversioonis uusi päringuid ega suurendatud shared50 limiiti. Puuduvad paarid jäävad auditis nähtavale; enne puutumata tootluse võrdlust tuleb nende kogumine kontrollitult lahendada.
+
+Privaatsed tõendid: docs/research/2026-11-10/measurement-revision2-runtime.json, measurement-revision2-audit.json, measurement-ui.json ja measurement-docker-cli.json; täielik CLI JSON säilitab iga eligible/excluded rea. Need andmestikud/logid ei lähe lähtekoodipublikatsiooni. All seven checked trading/decision tables retain original hashes: no funded or unfunded order/trade, capital run, policy activation, loss reset or original-goal profit credit was created by this measurement work.

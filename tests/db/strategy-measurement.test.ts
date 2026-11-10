@@ -3,6 +3,8 @@ import {pool} from '../../src/lib/db';
 import {resetDb} from '../setup/reset';
 import {registerResearchProtocols,freezeResearchCollection} from '../../src/lib/strategy-snapshots';
 import {getStrategyCoverage,recordStrategyCoverage} from '../../src/lib/strategy-outcome-audit';
+import {RESEARCH_PROTOCOLS,engineManifest,evidenceHash,protocolHash} from '../../src/lib/strategy-protocols';
+import {getStoredStrategyCoverage} from '../../src/lib/strategy-coverage-store';
 import {researchFacts} from '../fixtures/strategy-measurement';
 import type {DiscoveryEvidence} from '../../src/lib/discovery-evidence';
 beforeEach(resetDb);
@@ -47,10 +49,43 @@ describe('prospective research measurement ledger',()=>{
   expect((await pool.query('SELECT count(*)::int n FROM research_universes')).rows[0].n).toBe(0);
   await expect(getStrategyCoverage(undefined,'2099-01-01T00:00:00Z')).rejects.toThrow('observed past');
  });
+ it('keeps older revisions and returns their stored audit without recalculating with changed code',async()=>{
+  const {run,evidence}=await seed();await freezeResearchCollection(Number(run.id),evidence);await finish(Number(run.id));
+  const at=(await pool.query('SELECT clock_timestamp() now')).rows[0].now.toISOString();
+  const current=(await recordStrategyCoverage(Number(run.id),at)).report!;
+  const universe=(await pool.query('SELECT * FROM research_universes WHERE collection_run_id=$1',[run.id])).rows[0];
+  const snapshots=(await pool.query('SELECT * FROM research_strategy_snapshots WHERE collection_run_id=$1',[run.id])).rows;
+  const old=(await pool.query("INSERT INTO collection_runs(trigger,status,started_at,finished_at,duration_ms,metrics) VALUES('test','success',$1,clock_timestamp(),1,'{}') RETURNING id",[run.started_at])).rows[0].id;
+  const inputs={...universe.inputs,collectionId:Number(old)};
+  await pool.query('INSERT INTO research_universes(collection_run_id,frozen_at,inventory_status,source_hash,member_count,inputs) VALUES($1,$2,$3,$4,$5,$6::jsonb)',
+    [old,universe.frozen_at,universe.inventory_status,evidenceHash(inputs),universe.member_count,JSON.stringify(inputs)]);
+  const legacyManifest={...engineManifest(),'strategy-signal-evaluation.ts':'0'.repeat(64)};
+  const hashes=new Map<string,string>();
+  for(const p of RESEARCH_PROTOCOLS){
+    const definition={...p,version:1},hash=protocolHash(definition,legacyManifest);hashes.set(p.id,hash);
+    await pool.query('INSERT INTO research_protocols(strategy_id,version,definition,version_hash,engine_manifest) VALUES($1,1,$2::jsonb,$3,$4::jsonb)',
+      [p.id,JSON.stringify(definition),hash,JSON.stringify(legacyManifest)]);
+    const s=snapshots.find(s=>s.strategy_id===p.id)!;
+    await pool.query('INSERT INTO research_strategy_snapshots(collection_run_id,strategy_id,version,version_hash,snapshot_hash,rows) VALUES($1,$2,1,$3,$4,$5::jsonb)',
+      [old,p.id,hash,s.snapshot_hash,JSON.stringify(s.rows)]);
+  }
+  const saved={...current,collectionId:Number(old),sourceHash:evidenceHash(inputs),strategies:current.strategies.map(s=>({...s,version:1,versionHash:hashes.get(s.strategyId)}))};
+  await pool.query('INSERT INTO research_outcome_audits(collection_run_id,as_of,audit_hash,report) VALUES($1,$2,$3,$4::jsonb)',[old,at,evidenceHash(saved),JSON.stringify(saved)]);
+  await registerResearchProtocols();expect((await pool.query('SELECT count(*)::int n FROM research_protocols')).rows[0].n).toBe(4);
+  const read=(await getStrategyCoverage(Number(old))).report!;
+  expect(read.historicalAudit).toBe(true);expect(read.asOf).toBe(at);expect(read.strategies.every(s=>!s.engineMatches)).toBe(true);
+  expect((await getStrategyCoverage()).report!.collectionId).toBe(Number(run.id));
+  await expect(recordStrategyCoverage(Number(old),at)).rejects.toThrow('matching source revision');
+  expect((await pool.query('SELECT report FROM research_outcome_audits WHERE collection_run_id=$1',[old])).rows[0].report).toEqual(saved);
+ });
  it('records immutable as-of audits idempotently and preserves missing data in the denominator',async()=>{
   const {run,evidence}=await seed();await freezeResearchCollection(Number(run.id),evidence);await finish(Number(run.id));
   const at=(await pool.query('SELECT clock_timestamp() now')).rows[0].now.toISOString();
   await recordStrategyCoverage(Number(run.id),at);await recordStrategyCoverage(Number(run.id),at);
+  expect((await pool.query('SELECT count(*)::int n FROM research_outcome_audits')).rows[0].n).toBe(1);
+  const full=(await getStrategyCoverage(Number(run.id),at)).report!;
+  const shown=(await getStoredStrategyCoverage(Number(run.id))).report!;
+  expect(shown.asOf).toBe(at);expect(shown.strategies.map(s=>s.groups)).toEqual(full.strategies.map(s=>s.groups));
   expect((await pool.query('SELECT count(*)::int n FROM research_outcome_audits')).rows[0].n).toBe(1);
   await expect(pool.query('DELETE FROM research_outcome_audits')).rejects.toThrow('append-only');
  });

@@ -29,6 +29,9 @@ describe('locked two-protocol measurement',()=>{
  });
  it('uses a declared same-tag basic-share proxy and does not hide excessive or missing dilution',()=>{
   const m=researchMember();m.facts[3].value=110;expect(evaluateResearchProtocol(researchInput([m]),fund)[0].reasons).toContain('basic_shares_growth_above_5');
+  m.facts=researchFacts();m.facts[3].value=105;m.facts[4].value=100;
+  expect(evaluateResearchProtocol(researchInput([m]),fund)[0].eligibility).toBe('eligible');
+  for(const exchange of ['NasdaqGS','NasdaqGM','NasdaqCM']){m.exchange=exchange;expect(evaluateResearchProtocol(researchInput([m]),fund)[0].eligibility).toBe('eligible');}
   m.facts=researchFacts();m.facts[4].tag='DifferentClass';expect(evaluateResearchProtocol(researchInput([m]),fund)[0].reasons).toContain('basic_shares_growth_unavailable');
  });
  it('requires a fresh official issuer-linked event, not a headline, repeated URL variant or future receipt',()=>{

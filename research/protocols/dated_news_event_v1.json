@@ -1,6 +1,6 @@
 {
   "id": "dated_news_event_v1",
-  "version": 1,
+  "version": 2,
   "scope": "signal_study_only_no_orders",
   "universe": "All current SEC US-exchange inventory rows plus previously stored and collection-observed tickers, including unknown/inactive instruments. Unknown common-equity identity is excluded with a retained reason; CIK identifies issuer, not share class.",
   "discoverySource": "Existing SEC exchange inventory, stored issuer facts, collection items and dated SEC financial filing notices. No additional provider or request budget.",

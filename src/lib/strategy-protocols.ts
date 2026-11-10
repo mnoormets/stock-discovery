@@ -20,7 +20,7 @@ export function engineManifest() {
 export function protocolHash(definition:ResearchProtocol,manifest=engineManifest()) {return evidenceHash({definition,engineManifest:manifest});}
 export function validateProtocol(value:ResearchProtocol) {
   if(Object.keys(value).sort().join()!==Object.keys(schema.properties).sort().join()
-    ||schema.required.some(k=>value[k]==null)||value.version!==1||!['fundamental_growth_v1','dated_news_event_v1'].includes(value.id)
+    ||schema.required.some(k=>value[k]==null)||(!Number.isInteger(value.version)||value.version<1)||!['fundamental_growth_v1','dated_news_event_v1'].includes(value.id)
     ||value.scope!=='signal_study_only_no_orders'||!value.horizonsTradingDays.every(n=>Number.isInteger(n)&&n>0))throw Error('Invalid research protocol');
 }
 const DAY=86400000, cache=new Map<string,{open:string;close:string}|null>();

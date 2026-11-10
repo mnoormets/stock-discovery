@@ -22,7 +22,7 @@ export async function freezeResearchCollection(collectionId:number,evidence:Disc
    const existing=(await client.query('SELECT source_hash FROM research_universes WHERE collection_run_id=$1',[collectionId])).rows[0];
    if(existing){await client.query('COMMIT');return {available:true,reused:true,sourceHash:existing.source_hash};}
    const run=(await client.query('SELECT status,started_at FROM collection_runs WHERE id=$1',[collectionId])).rows[0];
-   const registered=(await client.query('SELECT strategy_id,version,version_hash,registered_at FROM research_protocols WHERE strategy_id=ANY($1::text[]) ORDER BY strategy_id',[RESEARCH_PROTOCOLS.map(p=>p.id)])).rows;
+   const registered=(await client.query('SELECT strategy_id,version,version_hash,registered_at FROM research_protocols WHERE (strategy_id,version) IN (SELECT x.id,x.version FROM jsonb_to_recordset($1::jsonb) x(id text,version int)) ORDER BY strategy_id',[JSON.stringify(RESEARCH_PROTOCOLS.map(p=>({id:p.id,version:p.version})))])).rows;
    if(!run||run.status!=='running'||registered.length!==RESEARCH_PROTOCOLS.length||registered.some(p=>p.registered_at>run.started_at))
      throw Error('Research freeze requires a new collection started after protocol registration');
    const now=(await client.query<{now:Date}>('SELECT clock_timestamp() now')).rows[0].now,at=now.toISOString();

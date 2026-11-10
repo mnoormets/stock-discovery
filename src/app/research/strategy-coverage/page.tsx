@@ -1,14 +1,16 @@
 import Link from 'next/link';
 import { pool } from '@/lib/db';
-import { getStrategyCoverage } from '@/lib/strategy-outcome-audit';
+import { getStoredStrategyCoverage } from '@/lib/strategy-coverage-store';
 export const dynamic='force-dynamic';
 export default async function StrategyCoveragePage({searchParams}:{searchParams:{collection?:string}}) {
  const id=searchParams.collection?Number(searchParams.collection):undefined;
- const {available,report}=await getStrategyCoverage(Number.isSafeInteger(id)?id:undefined);
+ const {available,report,notice}=await getStoredStrategyCoverage(Number.isSafeInteger(id)?id:undefined);
  const collections=available?(await pool.query("SELECT u.collection_run_id,u.frozen_at FROM research_universes u JOIN collection_runs c ON c.id=u.collection_run_id WHERE c.status='success' ORDER BY frozen_at DESC LIMIT 30")).rows:[];
  return <main className="wrap page"><h1>Strategy Protocols &amp; Outcome Coverage</h1>
  <p>Two locked research hypotheses. No orders, funded account or changes to Today selection. This report measures coverage and reproducibility; it does not establish an investment edge.</p>
- {!available?<p>Measurement migration required.</p>:!report?<p>No prospective collection frozen after protocol registration yet. Historical collections are not relabeled.</p>:<>
+ {!available||!report?<p>{notice}</p>:<>
+ <p>{notice}</p>
+ {report.engineWarning&&<p className="riskText">{report.engineWarning}</p>}
  <p>Collection {report.collectionId} · frozen {report.frozenAt} · audit {report.asOf}.</p>
  <p>{report.inventoryCount} inventory records; {report.membershipRecords} retained identity memberships / {report.uniqueTickers} distinct tickers / {report.uniqueKnownIssuers} known issuers. Inventory: {report.inventoryStatus}. {report.scope}.</p>
  <nav>Recent collections: {collections.map(c=><span key={String(c.collection_run_id)}><Link href={'?collection='+c.collection_run_id}>#{c.collection_run_id}</Link>{' '}</span>)}</nav>
@@ -22,7 +24,7 @@ export default async function StrategyCoveragePage({searchParams}:{searchParams:
  <h3>Coverage by eligibility, size and complete rank</h3>
  <table id={'coverage-'+s.strategyId}><thead><tr><th>Group</th><th>All rows</th><th>Eligible</th><th>Ineligible</th><th>UI cap excluded</th><th>Horizon</th><th>Due</th><th>Pending</th><th>Unavailable</th><th>Stock observed</th><th>Raw paired</th><th>Verified paired</th></tr></thead>
  <tbody>{s.groups.flatMap(g=>g.outcomes.map(o=><tr key={g.key+':'+o.horizonTradingDays}><td>{g.key}</td><td>{g.rows}</td><td>{g.eligible}</td><td>{g.ineligible}</td><td>{g.uiCapExcluded}</td><td>{o.horizonTradingDays} sessions</td><td>{o.due}</td><td>{o.pending}</td><td>{o.unavailable}</td><td>{o.stockObserved}</td><td>{o.rawPaired}</td><td>{o.verifiedComparable}</td></tr>))}</tbody></table>
- <details><summary>Missing inputs and exclusions</summary><ul>{Object.entries(s.missingReasons).map(([reason,n])=><li key={reason}>{reason}: {n}</li>)}</ul>
+ <details><summary>Missing inputs and exclusions</summary><ul>{Object.entries(s.missingReasons).map(([reason,n])=><li key={reason}>{reason}: {String(n)}</li>)}</ul>
  <p>Names with missing inputs are retained. First 40 examples; the CLI JSON contains every record.</p><ul>{s.rows.filter(r=>r.reasons.length||r.missingComponents.length).slice(0,40).map(r=><li key={r.key}>{r.ticker}: {[...r.reasons,...r.missingComponents].join('; ')}</li>)}</ul></details>
  </section>)}
  <section className="card"><h2>Interpretation limits</h2><ul>{report.limitations.map(x=><li key={x}>{x}</li>)}</ul>

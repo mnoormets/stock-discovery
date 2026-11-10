@@ -1,5 +1,5 @@
 import { pool } from './db';
-import { evidenceHash, protocolHash, engineManifest, referenceWindow, tradingSession, addTradingSessions, type ResearchProtocol } from './strategy-protocols';
+import { RESEARCH_PROTOCOLS, evidenceHash, protocolHash, engineManifest, referenceWindow, tradingSession, addTradingSessions, type ResearchProtocol } from './strategy-protocols';
 import { replaySnapshot, type ResearchInputs, type ResearchSignal } from './strategy-signal-evaluation';
 import { researchSchemaAvailable } from './strategy-snapshots';
 import { isExpectedNewYorkRegularSession, newYorkPriceDate } from './price-observation';
@@ -95,12 +95,21 @@ export async function getStrategyCoverage(collectionId?:number,asOf?:string) {
    if(asOf&&!Number.isFinite(Date.parse(asOf)))throw Error('Invalid audit as-of');
    const at=asOf?new Date(asOf).toISOString():clock.toISOString();if(Date.parse(at)>clock.getTime())throw Error('Audit as-of must be a valid observed past time');
    const universe=(await client.query(`SELECT u.* FROM research_universes u JOIN collection_runs c ON c.id=u.collection_run_id WHERE c.status='success'
-     AND ($1::bigint IS NULL OR u.collection_run_id=$1) ORDER BY u.frozen_at LIMIT 1`,[collectionId??null])).rows[0];
+     AND ($1::bigint IS NULL OR u.collection_run_id=$1)
+     AND ($1::bigint IS NOT NULL OR (SELECT count(*) FROM research_strategy_snapshots s WHERE s.collection_run_id=u.collection_run_id AND s.version_hash=ANY($2::text[]))=$3)
+     ORDER BY u.frozen_at LIMIT 1`,[collectionId??null,RESEARCH_PROTOCOLS.map(p=>protocolHash(p)),RESEARCH_PROTOCOLS.length])).rows[0];
    if(!universe){await client.query('COMMIT');return {available:true as const,report:null};}
    const inputs=universe.inputs as ResearchInputs;if(at<inputs.frozenAt)throw Error('Audit precedes frozen evidence');
    if(evidenceHash(inputs)!==universe.source_hash)throw Error('Frozen universe hash mismatch');
    const snapshots=(await client.query(`SELECT s.*,p.definition,p.engine_manifest FROM research_strategy_snapshots s
      JOIN research_protocols p USING(strategy_id,version,version_hash) WHERE collection_run_id=$1 ORDER BY strategy_id`,[universe.collection_run_id])).rows;
+   const currentManifest=engineManifest();
+   if(snapshots.some(s=>evidenceHash(s.engine_manifest)!==evidenceHash(currentManifest))) {
+     const saved=(await client.query('SELECT report FROM research_outcome_audits WHERE collection_run_id=$1 AND as_of<=$2 ORDER BY as_of DESC LIMIT 1',[universe.collection_run_id,at])).rows[0]?.report;
+     await client.query('COMMIT');
+     return {available:true as const,report:saved?{...saved,historicalAudit:true,engineWarning:'Recorded immutable audit from an earlier source revision; not recomputed with the current engine.',
+       strategies:saved.strategies.map(s=>({...s,recordedReproducible:s.reproducible,reproducible:false,engineMatches:false}))}:null};
+   }
    const symbols=[...new Set(snapshots.flatMap(s=>(s.rows as ResearchSignal[]).flatMap(r=>r.benchmark?[r.benchmark]:[])))];
    const prices=(await client.query(`SELECT p.*,c.ticker FROM price_snapshots p JOIN companies c ON c.id=p.company_id
      WHERE p.market_at>$1 AND p.captured_at<=$2 AND (p.company_id=ANY($3::bigint[]) OR c.ticker=ANY($4::text[]))
@@ -109,7 +118,6 @@ export async function getStrategyCoverage(collectionId?:number,asOf?:string) {
      marketAt:p.market_at.toISOString(),capturedAt:p.captured_at.toISOString()}));
    const identities=(await client.query('SELECT id,ticker,sec_cik FROM companies WHERE id=ANY($1::bigint[])',[inputs.members.map(m=>m.companyId).filter(Boolean)])).rows
      .map(c=>({companyId:String(c.id),ticker:c.ticker,cik:/^\d{1,10}$/.test(c.sec_cik??'')?String(c.sec_cik).padStart(10,'0'):null}));
-   const currentManifest=engineManifest();
    const strategies=snapshots.map(s=>{
      if(evidenceHash(s.rows)!==s.snapshot_hash)throw Error('Frozen signal hash mismatch');
      const sameEngine=evidenceHash(s.engine_manifest)===evidenceHash(currentManifest);
@@ -117,7 +125,7 @@ export async function getStrategyCoverage(collectionId?:number,asOf?:string) {
      return {...auditResearchSignals(s.rows,s.definition,quotes,identities,at),version:s.version,versionHash:s.version_hash,snapshotHash:s.snapshot_hash,
        definitionIntegrity:integrity,reproducible:sameEngine&&integrity&&replaySnapshot(inputs,s.definition,s.rows),engineMatches:sameEngine};
    });
-   const report={version:'strategy-outcome-coverage-v1',asOf:at,collectionId:Number(universe.collection_run_id),frozenAt:inputs.frozenAt,sourceHash:universe.source_hash,
+   const report={historicalAudit:false,engineWarning:null,version:'strategy-outcome-coverage-v1',asOf:at,collectionId:Number(universe.collection_run_id),frozenAt:inputs.frozenAt,sourceHash:universe.source_hash,
      inventoryStatus:inputs.inventoryStatus,inventoryCount:inputs.inventoryCount,membershipRecords:inputs.members.length,
      uniqueTickers:new Set(inputs.members.map(m=>m.ticker)).size,uniqueKnownIssuers:new Set(inputs.members.map(m=>m.cik).filter(Boolean)).size,
      scope:'Frozen inventory plus stored/observed names; not proof of complete common-stock classification or full-market financial coverage',
@@ -130,6 +138,7 @@ export async function getStrategyCoverage(collectionId?:number,asOf?:string) {
 }
 export async function recordStrategyCoverage(collectionId?:number,asOf?:string) {
  const result=await getStrategyCoverage(collectionId,asOf);if(!result.report)return result;
+ if(result.report.historicalAudit)throw Error('Historical audit requires its matching source revision; original record retained');
  const r=result.report,hash=evidenceHash(r);
  await pool.query('INSERT INTO research_outcome_audits(collection_run_id,as_of,audit_hash,report) VALUES($1,$2,$3,$4::jsonb) ON CONFLICT DO NOTHING',[r.collectionId,r.asOf,hash,JSON.stringify(r)]);
  const stored=(await pool.query('SELECT audit_hash FROM research_outcome_audits WHERE collection_run_id=$1 AND as_of=$2',[r.collectionId,r.asOf])).rows[0];

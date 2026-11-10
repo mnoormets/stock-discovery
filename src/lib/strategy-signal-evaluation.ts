@@ -42,7 +42,7 @@ export function evaluateResearchProtocol(input:ResearchInputs,protocol:ResearchP
    const identity=m.cik&&m.storedCIK===m.cik&&m.identityKnownAt&&Date.parse(m.identityKnownAt)<=now;
    if(!identity)reasons.push('issuer_identity_unknown_or_conflicting');
    if(!m.inInventory)reasons.push('not_in_current_inventory');
-   if(m.quoteType!=='EQUITY'||m.currency!=='USD'||!['NMS','NGM','NCM','NYQ','ASE','NASDAQ','NYSE','NYSE American','Nasdaq'].includes(m.exchange??'')
+   if(m.quoteType!=='EQUITY'||m.currency!=='USD'||!['NMS','NGM','NCM','NYQ','ASE','NASDAQ','NYSE','NYSE AMERICAN','NASDAQGS','NASDAQGM','NASDAQCM'].includes((m.exchange??'').trim().toUpperCase())
      ||/\b(warrants?|rights|units)\b|\bpreferred (stock|shares)\b|\bETF\b|\bfund\b/i.test(m.name))reasons.push('common_equity_classification_unverified_or_excluded');
    if(!window)reasons.push('calendar_unavailable');
    const facts=m.facts.filter(f=>Date.parse(f.knownAt)<=now&&Date.parse(f.filedAt)<=now);
@@ -64,7 +64,7 @@ export function evaluateResearchProtocol(input:ResearchInputs,protocol:ResearchP
      if(cash==null){missing.push('same_period_ocf');reasons.push('same_period_ocf_unavailable');}
      else if(cash<=0)reasons.push('operating_cash_flow_not_positive');
      if(dilution==null){missing.push('comparable_basic_shares');reasons.push('basic_shares_growth_unavailable');}
-     else if(dilution>5)reasons.push('basic_shares_growth_above_5');
+     else if(shares[0].value>shares[1].value*1.05)reasons.push('basic_shares_growth_above_5');
    }else if(!event){missing.push('new_confirmed_primary_event');reasons.push('new_confirmed_primary_event_unavailable');}
    const cap=m.marketCapUSD!=null&&Number.isFinite(m.marketCapUSD)&&m.marketCapUSD>0?m.marketCapUSD:null;
    const capGroup=cap==null?'unknown':cap<2e9?'small':cap<1e10?'mid':'large';

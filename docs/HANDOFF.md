@@ -28,7 +28,10 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
-- **Measurement-first delivery in verification:** 2026-11-10 measurement-first implementation: two fixed research protocol IDs, additive0014 append-only registry/universe/signal/audit tables, full inventory plus observed/stored denominators, immutable source hashes and coverage by eligibility/rank/size. No scoring/trading activation. First prospective collection124:7618 inventory records,7736 identity memberships/7735 tickers; replay/idempotence passed and all seven checked trading/history tables unchanged.105 files/694 tests passed535.36s; lint/types/build passed. Initial source/classification and numeric-boundary findings require a corrective revision and final restarted UI verification; this is not a completed profitability claim. See docs/STRATEGY_MEASUREMENT_V1.md.
+- **2026-11-10 measurement-first delivery verified:** Verified corrective revision2 for two fixed hypothesis IDs (not a seven-strategy program). Registry definitions+source hashes, full inventory/stored/observed denominators, every rank/exclusion and as-of outcomes are append-only. Actual125:7618 inventory records,7736 identity memberships/7735 tickers; linked issuer1025, complete cached classification17, fundamental inputs11/eligible2, newseligible0, due/raw-paired/verified-comparable0. Initial124 and exact source5b8a8a9 are preserved; all six archived source hashes matched. Nasdaq long-name and exact5% implementation bugs fixed without threshold tuning or history reset. Final105files/695tests passed478.62s; lint/types/build23/23 exit0; app restarted after tests. Current/historical coverage and TodayHTTP200; actual DOM matrices match full ledger;11 checked tables unchanged; test DB removed. Host and actual Node22 Docker replay true, same-as-of records idempotent. UI reads compact recorded audits with visible as-of; CLI --record refreshes outcomes. No quote/fee budget increase, new source, AI score, orders, capital/risk/Today scoring activation or verified profit. See docs/STRATEGY_MEASUREMENT_V1.md.
+
+
+- **Initial measurement revision — superseded by verified revision2:** 2026-11-10 measurement-first implementation: two fixed research protocol IDs, additive0014 append-only registry/universe/signal/audit tables, full inventory plus observed/stored denominators, immutable source hashes and coverage by eligibility/rank/size. No scoring/trading activation. First prospective collection124:7618 inventory records,7736 identity memberships/7735 tickers; replay/idempotence passed and all seven checked trading/history tables unchanged.105 files/694 tests passed535.36s; lint/types/build passed. Initial source/classification and numeric-boundary findings were corrected in revision2 and final restarted UI verification passed; this is not a completed profitability claim. See docs/STRATEGY_MEASUREMENT_V1.md.
 
 
 - **Article delivery publication verified:** Published application revision2f5c0dcd3aa8ad3ee380065a29399c399db183b8 verified on remote main. Exact-source read-only GitHub preflight42892081010 completed success at20:10:58UTC: npm ci/module loading and Neon connection passed, readOnlyCompletion true, lockSkipped false; Form4 write step skipped. This does not prove the next actual unattended source capture or repair unrelated execution-job failures.
@@ -189,6 +192,9 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Tehtud verstapostid
 
+- 2026-11-10: two-protocol registry/full-denominator coverage, real audits124/125, immutable historical replay and actual read-only UI/DB verification completed.
+
+
 - 2026-11-10: full supplied design-review assessment, original-idea/code map and verified article-body evidence delivery.
 
 
@@ -313,7 +319,10 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-- Article-content implementation/review verified. Next: separately registered strategy protocols and issuer/period/primary-source grounding; establish dated expectations before any semantic entry signal. Preserve existing risk stop, account history and original failed deadline.
+- Measurement infrastructure is verified. Next correct existing Yahoo researchQuote metadata lost by current save paths and assess fair stock/benchmark quote coverage. Code/runtime existence is not incremental OOS edge; no new semantic score before measurement/data-quality acceptance.
+
+
+- Article-content implementation/review verified. Two protocols and coverage are now delivered; next resolve measured metadata/quote gaps and then independent extraction/grounding quality before semantic entry signals. Preserve existing risk stop, account history and original failed deadline.
 
 
 - Financial freshness and honest outcome measurement: actual collection121 retained MRNA's newer filing and completed20 successful refreshes; MRNA is fifth among remaining eligible names. No queue/drop bug or failed request was proven; no cap increase or ticker-specific exception. Backlog/source-result visibility is locally complete. Publication and read-only preflight are complete. Now: observe budget-eligible refresh and mature forward outcomes. Original capital stop, prior losses and expired deadline remain separate from unfunded scenarios.
@@ -362,7 +371,10 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Article reader, full review, required checks, scoped publication and read-only preflight are completed. Observe the next actual unattended content capture; strategy registry/grounding remains the next build task.
+- Two-protocol build, migration0014, actual audit, regression and restarted UI checks are complete. Verify scoped publication/preflight, then repair existing-provider metadata persistence and bounded stock/benchmark coverage; do not rebuild this layer.
+
+
+- Article reader, full review, required checks, scoped publication and read-only preflight are completed. Observe the next actual unattended content capture; strategy registry is now completed; measured metadata and quote coverage are next.
 
 
 - Observe the next budget-eligible filing imports and actual session quote capacity under published code, followed by mature closed net results. Publishing and exact-source read-only preflight are complete. No selection/risk/strategy changes are part of this reporting patch.
@@ -393,6 +405,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - Observe the accepted API/BW/HIMS v3 gates, published HIMS investment extraction, BW/API dated reconciliation and `scores-v2` / `signals-v3` date guard in subsequent refreshes. Do not substitute partial debt or ordinary shares for a current complete definition.
 
 ### NEXT
+
+- Resolve the observed metadata-loss and representative outcome/benchmark coverage before interpreting returns. Existing-provider Yahoo researchQuote has type/exchange but current save paths discard them; unknown values must not be backfilled as historical knowledge. Benchmark assignment does not create its quotes; no extra IWO/IWM/QQQ requests were added in this minimum layer. Article QA/ablation comes later; no AI score or parameter search now.
 
 - Separate strategy targets/horizons and rank-cohort coverage; ground article statements in issuer/period/SEC-IR evidence and genuine pre-event consensus. Then realistic spread/liquidity/corporate-action/benchmark validation before any new funded activation.
 
@@ -432,6 +446,10 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- Two stable hypothesis IDs use separate immutable version fields; corrective revision2 preserves revision1/source5b8a8a9/cohort124. Current-source cohorts replay frozen inputs; changed-source history shows its recorded audit with a warning. CIK is issuer identity, not share-class/FIGI. Unknown identities, prices, benchmarks and corporate actions stay in denominators; verified comparable returns stay zero while unresolved.
+- Automatic collection freezes signal universes; CLI --record produces append-only as-of outcome audits, without prices/orders. Page GET only reads a compact stored projection, preserving full aggregate denominators and exposing audit time. Daily automatic horizon/benchmark capture is not claimed.
+
 
 - Public HTTPS article reader pins validated public IPv4 destinations, checks redirects/robots, caps response/text and never runs scripts, signs in or bypasses paywalls. First successful content is frozen, not a continuous same-URL update monitor. At most60 current bodies; full attempt metadata prevents queue starvation. Earlier snapshots remain intact. This is within the user-authorized public-web scope; strategy/risk/account activation unchanged.
 
@@ -843,6 +861,11 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-11-10 — verified measurement-first delivery
+
+Verified corrective revision2 for two fixed hypothesis IDs (not a seven-strategy program). Registry definitions+source hashes, full inventory/stored/observed denominators, every rank/exclusion and as-of outcomes are append-only. Actual125:7618 inventory records,7736 identity memberships/7735 tickers; linked issuer1025, complete cached classification17, fundamental inputs11/eligible2, newseligible0, due/raw-paired/verified-comparable0. Initial124 and exact source5b8a8a9 are preserved; all six archived source hashes matched. Nasdaq long-name and exact5% implementation bugs fixed without threshold tuning or history reset. Final105files/695tests passed478.62s; lint/types/build23/23 exit0; app restarted after tests. Current/historical coverage and TodayHTTP200; actual DOM matrices match full ledger;11 checked tables unchanged; test DB removed. Host and actual Node22 Docker replay true, same-as-of records idempotent. UI reads compact recorded audits with visible as-of; CLI --record refreshes outcomes. No quote/fee budget increase, new source, AI score, orders, capital/risk/Today scoring activation or verified profit.
+
 
 ### 2026-11-10 — article-content-v1
 
@@ -2389,3 +2412,6 @@ Published application revision2f5c0dcd3aa8ad3ee380065a29399c399db183b8 verified 
 
 ### 2026-11-10 — initial measurement revision
 2026-11-10 measurement-first implementation: two fixed research protocol IDs, additive0014 append-only registry/universe/signal/audit tables, full inventory plus observed/stored denominators, immutable source hashes and coverage by eligibility/rank/size. No scoring/trading activation. First prospective collection124:7618 inventory records,7736 identity memberships/7735 tickers; replay/idempotence passed and all seven checked trading/history tables unchanged.105 files/694 tests passed535.36s; lint/types/build passed. Initial source/classification and numeric-boundary findings require a corrective revision and final restarted UI verification; this is not a completed profitability claim. See docs/STRATEGY_MEASUREMENT_V1.md.
+
+### 2026-11-10 — corrective measurement delivery verified
+Verified corrective revision2 for two fixed hypothesis IDs (not a seven-strategy program). Registry definitions+source hashes, full inventory/stored/observed denominators, every rank/exclusion and as-of outcomes are append-only. Actual125:7618 inventory records,7736 identity memberships/7735 tickers; linked issuer1025, complete cached classification17, fundamental inputs11/eligible2, newseligible0, due/raw-paired/verified-comparable0. Initial124 and exact source5b8a8a9 are preserved; all six archived source hashes matched. Nasdaq long-name and exact5% implementation bugs fixed without threshold tuning or history reset. Final105files/695tests passed478.62s; lint/types/build23/23 exit0; app restarted after tests. Current/historical coverage and TodayHTTP200; actual DOM matrices match full ledger;11 checked tables unchanged; test DB removed. Host and actual Node22 Docker replay true, same-as-of records idempotent. UI reads compact recorded audits with visible as-of; CLI --record refreshes outcomes. No quote/fee budget increase, new source, AI score, orders, capital/risk/Today scoring activation or verified profit. Now: source-only publication/preflight. Next: existing metadata persistence and quote coverage; later: independently labeled semantic quality and prospective incremental-value tests. No capital reactivation, loss reset, restarted goal deadline or edge claim.
