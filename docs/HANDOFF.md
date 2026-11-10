@@ -28,6 +28,9 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **Article delivery publication verified:** Published application revision2f5c0dcd3aa8ad3ee380065a29399c399db183b8 verified on remote main. Exact-source read-only GitHub preflight42892081010 completed success at20:10:58UTC: npm ci/module loading and Neon connection passed, readOnlyCompletion true, lockSkipped false; Form4 write step skipped. This does not prove the next actual unattended source capture or repair unrelated execution-job failures.
+
+
 - **2026-11-10 completed article-content delivery:** article-content-v1 captures bounded public article bodies (10 attempts/collection), receipt/publication/update times, hashes and conservative source claims with opinion/rumor/future markers; direct publisher pages precede aggregator wrappers. Exact-content copies/access failures remain explicit. Source statements are not verified facts, numeric surprise/materiality, new selection rules or profit forecasts. Review and original-idea map: docs/DESIGN_REVIEW_2026-11-10.md. Final required checks:103 files/680 tests passed419.84s; lint/types/build22/22 exit0. Actual core collection123 success,6 bodies/10 attempts,4 explicit access/read failures; cached10-record replay0 requests. Restarted Today/Performance200, actual DOM10 rows/all titles-hashes match Neon; account/trade/history tables preserved. Test DB removed. Initial paragraph/import/type and cold-start failures were corrected or explicitly distinguished from final passing evidence. No screenshot or future unattended success claimed.
 
 
@@ -356,7 +359,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Article reader, complete review and required checks are completed; verify scoped publication/preflight and the next actual unattended content capture. Do not leave article implementation in the active build queue.
+- Article reader, full review, required checks, scoped publication and read-only preflight are completed. Observe the next actual unattended content capture; strategy registry/grounding remains the next build task.
 
 
 - Observe the next budget-eligible filing imports and actual session quote capacity under published code, followed by mature closed net results. Publishing and exact-source read-only preflight are complete. No selection/risk/strategy changes are part of this reporting patch.
@@ -2377,3 +2380,6 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 
 ### 2026-11-10 — article-content evidence and user design review
 article-content-v1 captures bounded public article bodies (10 attempts/collection), receipt/publication/update times, hashes and conservative source claims with opinion/rumor/future markers; direct publisher pages precede aggregator wrappers. Exact-content copies/access failures remain explicit. Source statements are not verified facts, numeric surprise/materiality, new selection rules or profit forecasts. Review and original-idea map: docs/DESIGN_REVIEW_2026-11-10.md. Final required checks:103 files/680 tests passed419.84s; lint/types/build22/22 exit0. Actual core collection123 success,6 bodies/10 attempts,4 explicit access/read failures; cached10-record replay0 requests. Restarted Today/Performance200, actual DOM10 rows/all titles-hashes match Neon; account/trade/history tables preserved. Test DB removed. Initial paragraph/import/type and cold-start failures were corrected or explicitly distinguished from final passing evidence. No screenshot or future unattended success claimed. Now: scoped source publication and actual future operation. Next: strategy registry/grounding and cost/corporate-action-correct validation. No capital restart, funded profit claim or automatic adoption of review risk settings.
+
+### 2026-11-10 — published article delivery preflight
+Published application revision2f5c0dcd3aa8ad3ee380065a29399c399db183b8 verified on remote main. Exact-source read-only GitHub preflight42892081010 completed success at20:10:58UTC: npm ci/module loading and Neon connection passed, readOnlyCompletion true, lockSkipped false; Form4 write step skipped. This does not prove the next actual unattended source capture or repair unrelated execution-job failures. Now: observe actual future capture. Next: registered strategies and grounded news/expectations. No source code changed in this publication record; the existing680-test/build/runtime proof applies.
