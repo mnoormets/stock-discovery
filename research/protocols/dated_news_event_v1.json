@@ -1,0 +1,49 @@
+{
+  "id": "dated_news_event_v1",
+  "version": 1,
+  "scope": "signal_study_only_no_orders",
+  "universe": "All current SEC US-exchange inventory rows plus previously stored and collection-observed tickers, including unknown/inactive instruments. Unknown common-equity identity is excluded with a retained reason; CIK identifies issuer, not share class.",
+  "discoverySource": "Existing SEC exchange inventory, stored issuer facts, collection items and dated SEC financial filing notices. No additional provider or request budget.",
+  "featureKnowledgeRule": "Freeze values, source IDs/URLs, filing dates and actual DB updated_at/receipt times before decision time. Reproduce exclusively from frozen inputs.",
+  "signalTimestampRule": "Decision freeze time after all required inputs are known. Ineligible rows have no signal; retain the same freeze-time control reference.",
+  "earliestExecutableRule": "Strictly later than decision time, in the next/current verified NYSE regular session; no pre-publication or same-quote fills.",
+  "entryPriceRule": "First stored positive USD Yahoo regular-session quote strictly after the frozen reference, captured within 20 minutes of market time, during the next three eligible sessions. Ineligible names use identical control observation rules, never orders.",
+  "benchmarkAssignmentRule": {
+    "marketCapCutoffUSD": 2000000000,
+    "unknown": "unassigned; do not substitute a convenient benchmark",
+    "pricePairMaxSeconds": 300,
+    "basis": "Frozen <=30-day USD market-cap observation, no later reclassification",
+    "small": "IWM",
+    "larger": "SPY",
+    "limitation": "Predeclared size proxies; sector/style residual effects remain"
+  },
+  "costAssumptions": {
+    "notionalUSD": 1000,
+    "feeUSDPerSide": 1,
+    "slippageBpsPerSide": 5,
+    "status": "unvalidated fixed-friction study assumption; spread/impact unknown, not executable portfolio profit"
+  },
+  "exclusionRules": [
+    "unknown/conflicting issuer or common-stock classification",
+    "not in current official inventory",
+    "unknown/non-USD/misaligned/future facts",
+    "missing required features",
+    "invalid/outside-supported-calendar reference"
+  ],
+  "corporateActionStatus": "unverified; no verified comparable return or profit credited until independently resolved",
+  "outcomePriceRule": "First fresh observed quote on the exact Nth trading session after entry; never replace a missing target-session price with a later winner. Pair benchmark entry and exit within five minutes. Missing entry/benchmark/target/identity stays in the denominator.",
+  "uiCap": 6,
+  "calendar": "Existing NYSE 2026-2028 holidays, early closes and America/New_York DST. Outside supported years unavailable.",
+  "eligibilityRules": [
+    "Newly received official SEC 10-Q/10-K/20-F/40-F filing during this collection, linked by CIK and SEC Archives URL",
+    "Filed date not in the future; actual receipt is the conservative publication boundary when only a date is supplied",
+    "Event is financial_report_filed; direction/materiality are unknown, not assumed bullish",
+    "Secondary article/headline extraction is not primary-source confirmation and cannot qualify this v1"
+  ],
+  "horizonsTradingDays": [
+    1,
+    5,
+    20
+  ],
+  "rankingRule": "Newest eligible SEC receipt first, ticker then issuer CIK; all eligible ranks retained, top six display only"
+}

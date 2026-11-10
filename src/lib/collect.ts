@@ -1,3 +1,4 @@
+import { registerResearchProtocols, freezeResearchCollection } from './strategy-snapshots';
 import { collectDiscoveryEvidence } from './discovery-evidence';
 import { buildUnifiedOpportunities } from './opportunity-book';
 import { collectionBuildProvenance } from './collection-build';
@@ -330,10 +331,15 @@ export async function runCollection(options: RunCollectionOptions = {}) {
   // Ledger kuulub põhikogumise lifecycle'i ümber. Skeem peab enne alustamist
   // olemas olema; pärast running-kirjet lõpeb iga püütav tee success/failure'iga.
   await ensureSchema();
+  const researchReady = await registerResearchProtocols();
   const execution = await executeCollectionRun({
     trigger: options.trigger || 'direct',
-    initialMetrics: { schemaVersion: COLLECTION_METRICS_VERSION, build: collectionBuildProvenance() },
-    operation: (run) => collectCore(run.id),
+    initialMetrics: { schemaVersion: COLLECTION_METRICS_VERSION, build: collectionBuildProvenance(), researchMeasurement: researchReady?'enabled':'migration_required' },
+    operation: async (run) => {
+      const result = await collectCore(run.id);
+      if (researchReady) await freezeResearchCollection(run.id,result.discoveryEvidence,[...result.marketRadar.stocks.map(s=>s.ticker),...result.nasdaqListings.rows.map(s=>s.ticker)]);
+      return result;
+    },
     successMetrics: collectionMetrics,
   });
   return { ...execution.result, collectionRunId: execution.run.id };

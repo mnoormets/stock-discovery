@@ -28,6 +28,9 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **Measurement-first delivery in verification:** 2026-11-10 measurement-first implementation: two fixed research protocol IDs, additive0014 append-only registry/universe/signal/audit tables, full inventory plus observed/stored denominators, immutable source hashes and coverage by eligibility/rank/size. No scoring/trading activation. First prospective collection124:7618 inventory records,7736 identity memberships/7735 tickers; replay/idempotence passed and all seven checked trading/history tables unchanged.105 files/694 tests passed535.36s; lint/types/build passed. Initial source/classification and numeric-boundary findings require a corrective revision and final restarted UI verification; this is not a completed profitability claim. See docs/STRATEGY_MEASUREMENT_V1.md.
+
+
 - **Article delivery publication verified:** Published application revision2f5c0dcd3aa8ad3ee380065a29399c399db183b8 verified on remote main. Exact-source read-only GitHub preflight42892081010 completed success at20:10:58UTC: npm ci/module loading and Neon connection passed, readOnlyCompletion true, lockSkipped false; Form4 write step skipped. This does not prove the next actual unattended source capture or repair unrelated execution-job failures.
 
 
@@ -2383,3 +2386,6 @@ article-content-v1 captures bounded public article bodies (10 attempts/collectio
 
 ### 2026-11-10 — published article delivery preflight
 Published application revision2f5c0dcd3aa8ad3ee380065a29399c399db183b8 verified on remote main. Exact-source read-only GitHub preflight42892081010 completed success at20:10:58UTC: npm ci/module loading and Neon connection passed, readOnlyCompletion true, lockSkipped false; Form4 write step skipped. This does not prove the next actual unattended source capture or repair unrelated execution-job failures. Now: observe actual future capture. Next: registered strategies and grounded news/expectations. No source code changed in this publication record; the existing680-test/build/runtime proof applies.
+
+### 2026-11-10 — initial measurement revision
+2026-11-10 measurement-first implementation: two fixed research protocol IDs, additive0014 append-only registry/universe/signal/audit tables, full inventory plus observed/stored denominators, immutable source hashes and coverage by eligibility/rank/size. No scoring/trading activation. First prospective collection124:7618 inventory records,7736 identity memberships/7735 tickers; replay/idempotence passed and all seven checked trading/history tables unchanged.105 files/694 tests passed535.36s; lint/types/build passed. Initial source/classification and numeric-boundary findings require a corrective revision and final restarted UI verification; this is not a completed profitability claim. See docs/STRATEGY_MEASUREMENT_V1.md.

@@ -8,6 +8,7 @@ export default async function DiscoveryEvidence() {
   const backlog=scan?await getFilingRefreshBacklog(scan):null;
   const gaps=backlog?.rows??[];
   return <section className="card" id="discovery-evidence"><h2>Active web searches and filing updates</h2>
+    <p><a href="/research/strategy-coverage">Strategy protocols and complete-universe outcome coverage</a></p>
     <p>Queries search public financial news and the web; official SEC filings supply a separate issuer-wide update stream. These are source observations, not confirmed positive catalysts or forecasts. Coverage is bounded and failures stay visible.</p>
     {!scan?<p>No frozen multi-source discovery snapshot yet.</p>:<>
       <p>Observed {scan.observedAt}. Issuer inventory: {scan.universeSize} exchange-listed ticker records ({scan.universeStatus}); this is not a count of fully analysed common stocks. {scan.web.length} retained web observations · {scan.web.filter(w=>w.tickers.length).length} linked to issuers · {scan.filings.length} retained filings / {scan.filingsBeforeLimit} before the limit.</p>

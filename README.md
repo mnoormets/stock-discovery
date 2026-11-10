@@ -6,6 +6,9 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- `/research/strategy-coverage` and `node scripts/audit-strategy-coverage.cjs` provide two immutable research protocols, full inventory/unknown/excluded denominators, complete eligible ranks, as-known inputs and replay hashes, plus entry/outcome/benchmark gaps by eligibility, size and rank. Additive migration `0014_research_strategy_measurement` freezes only collections started after registration. This is measurement only: no orders, Today score changes or capital activation. See [measurement-first scope and protocol definitions](docs/STRATEGY_MEASUREMENT_V1.md).
+
+
 - `/today#article-contents` reads bounded public HTTPS article bodies from discovery links (up to 10 new attempts per collection), freezes receipt/publication/update dates and content hashes, and exposes event statements, reported quantities, opinions/rumors/forward-looking claims, exact-content duplicates and access failures. Article text is capped at 40,000 characters, with at most 60 bodies retained in the current snapshot and full attempt metadata to avoid queue starvation. Earlier collections remain unchanged. This rules-based evidence intake does not yet establish numeric surprise/materiality or change selection/trading rules.
 - [10 November design review and original-idea map](docs/DESIGN_REVIEW_2026-11-10.md) assesses every supplied review point, distinguishes existing valuation/thesis/insider/listing features from gaps, and orders the next work.
 

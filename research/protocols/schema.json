@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Frozen research strategy protocol",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "scope",
+    "universe",
+    "discoverySource",
+    "featureKnowledgeRule",
+    "signalTimestampRule",
+    "earliestExecutableRule",
+    "entryPriceRule",
+    "benchmarkAssignmentRule",
+    "costAssumptions",
+    "exclusionRules",
+    "corporateActionStatus",
+    "outcomePriceRule",
+    "uiCap",
+    "calendar",
+    "eligibilityRules",
+    "horizonsTradingDays",
+    "rankingRule"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "universe": {
+      "type": "string",
+      "minLength": 1
+    },
+    "discoverySource": {
+      "type": "string",
+      "minLength": 1
+    },
+    "featureKnowledgeRule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "signalTimestampRule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "earliestExecutableRule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entryPriceRule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "benchmarkAssignmentRule": {
+      "type": "object"
+    },
+    "costAssumptions": {
+      "type": "object"
+    },
+    "exclusionRules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "corporateActionStatus": {
+      "type": "string",
+      "minLength": 1
+    },
+    "outcomePriceRule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "uiCap": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "calendar": {
+      "type": "string",
+      "minLength": 1
+    },
+    "eligibilityRules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "horizonsTradingDays": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "rankingRule": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

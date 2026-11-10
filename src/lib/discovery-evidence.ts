@@ -17,6 +17,7 @@ export interface DiscoveryEvidence {
   version:typeof EVIDENCE_VERSION; observedAt:string; universeSize:number; universeStatus:'sec'|'stored_fallback';
   sources:EvidenceSource[]; web:WebObservation[]; filings:FilingNotice[]; filingsBeforeLimit:number;
   quoteTickers:string[]; identityConflicts:string[]; articles?:ArticleScan;
+  universe?:IssuerIdentity[]; universeObservedAt?:string;
 }
 const day=86400000, financialForms=new Set(['10-Q','10-K','20-F','40-F']);
 const cikKey=(s:string)=>/^\d{1,10}$/.test(s)?s.replace(/^0+/,''):'';
@@ -87,6 +88,7 @@ export async function collectDiscoveryEvidence(options:{now?:Date;fetchText?:(ur
   const universeURL='https://www.sec.gov/files/company_tickers_exchange.json';
   try {const text=await get(universeURL);universe=parseIssuerUniverse(text);snapshot.universeStatus='sec';snapshot.sources.push({kind:'universe',query:'SEC exchange/ticker inventory',url:universeURL,status:'ok',received:universe.length,accepted:universe.length,sha256:createHash('sha256').update(text).digest('hex'),observedAt:now.toISOString()});}
   catch {snapshot.sources.push({kind:'universe',query:'SEC exchange/ticker inventory',url:universeURL,status:'failed',received:0,accepted:0,sha256:null,observedAt:now.toISOString()});}
+  now=await clock();snapshot.universe=universe;snapshot.universeObservedAt=now.toISOString();
   snapshot.universeSize=universe.length;
   const urls=WEB_QUERIES.map(query=>({kind:'news_search',query,url:'https://news.google.com/rss/search?q='+encodeURIComponent(query)+'&hl=en-US&gl=US&ceid=US:en'}));
   urls.push({kind:'news_search',query:'stock earnings guidance',url:'https://www.bing.com/news/search?q=stock+earnings+guidance&format=rss&mkt=en-US'});
