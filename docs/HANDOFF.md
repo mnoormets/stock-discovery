@@ -28,7 +28,7 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
-- **2026-11-10 latest verified local delivery:** read-only filing backlog now shows actual shared daily attempt outcomes, remaining allowance, current eligible rank, retry timing and missing-coverage reasons. opportunity-results-v1 summarizes frozen first-known source and financial-pass groups with pending/missing outcomes, open/closed trades, wins/losses/flat and net after recorded costs. Repeated reads/independent SQL/actual rendered UI verified at19e6e2471f25fb55985e6d7e18555dd3ad00f948. No selection, execution, risk, schema or budget changes. This new reporting delivery is not yet published; prior discovery/session fixes remain published.
+- **2026-11-10 latest verified local delivery:** read-only filing backlog now shows actual shared daily attempt outcomes, remaining allowance, current eligible rank, retry timing and missing-coverage reasons. opportunity-results-v1 summarizes frozen first-known source and financial-pass groups with pending/missing outcomes, open/closed trades, wins/losses/flat and net after recorded costs. Repeated reads/independent SQL/actual rendered UI verified at19e6e2471f25fb55985e6d7e18555dd3ad00f948. No selection, execution, risk, schema or budget changes. This reporting delivery is published at3ece64d332498fd47aad3e53f3afa85375f15966 with exact-source read-only preflight42807985411 verified; actual future source/quote operation remains separate.
 
 
 
@@ -301,7 +301,7 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-- Financial freshness and honest outcome measurement: actual collection121 retained MRNA's newer filing and completed20 successful refreshes; MRNA is fifth among remaining eligible names. No queue/drop bug or failed request was proven; no cap increase or ticker-specific exception. Backlog/source-result visibility is locally complete. Now: publish the verified reporting patch, then observe budget-eligible refresh and mature forward outcomes. Original capital stop, prior losses and expired deadline remain separate from unfunded scenarios.
+- Financial freshness and honest outcome measurement: actual collection121 retained MRNA's newer filing and completed20 successful refreshes; MRNA is fifth among remaining eligible names. No queue/drop bug or failed request was proven; no cap increase or ticker-specific exception. Backlog/source-result visibility is locally complete. Publication and read-only preflight are complete. Now: observe budget-eligible refresh and mature forward outcomes. Original capital stop, prior losses and expired deadline remain separate from unfunded scenarios.
 
 
 
@@ -347,7 +347,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Complete source-only publication and exact-source preflight for the verified reporting patch under existing authorization. No further selection/risk/strategy changes are part of this patch.
+- Observe the next budget-eligible filing imports and actual session quote capacity under published code, followed by mature closed net results. Publishing and exact-source read-only preflight are complete. No selection/risk/strategy changes are part of this reporting patch.
 
 
 
@@ -561,7 +561,7 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ## Avatud sõltuvused ja otsused
 
-- Current: reporting-patch publication/preflight, actual budget-eligible refresh and next-session quotes, mature prospective net outcomes and corporate-action reconciliation; future funded risk/activation stays separate.
+- Current: actual budget-eligible refresh and next-session quotes, mature prospective net outcomes and corporate-action reconciliation; future funded risk/activation stays separate.
 
 
 
@@ -2343,3 +2343,10 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 - Docker was stopped; restored verified per-user installation without changing settings/security. Initial container typecheck failed because generated Next type files were missing while dev initialized; required production build regenerated them and final standard typecheck passed. Focused2files/5tests passed6.85s before full suite. Existing real-ledger cost integration additionally verifies summary net equals independently calculated commissions/slippage.
 
 - Completed: actual budget diagnosis, current backlog/retry visibility and frozen-source net-outcome report, standard checks and real DB/UI verification. Now/Next updated. No new paper/real trades, funded account, funds, strategy activation, history reset or profit claim. New source-only patch ready for publication under the user's existing authorization; private research/logs/account audits remain excluded.
+
+
+### 2026-11-10 — reporting patch published; exact-source preflight verified
+
+- Continued user's explicit publication approval while implementing their instruction to act on the diagnosed data/measurement gaps. Published source19e6e24 and sanitized delivery record3ece64d332498fd47aad3e53f3afa85375f15966 fast-forward to main; private research, account audits, logs and backups excluded.
+- Exact-source GitHub read-only preflight42807985411 completed success: DB connectionOK, readOnlyCompletiontrue, lockSkippedfalse. It did not import additional facts, capture quotes, execute a strategy or prove future profitability. Final102files/672tests, lint/typecheck/build22/22 and actual restarted Today/Performance DB/UI checks remain applicable; this follow-up changes documentation only.
+- Now: observe next budget-eligible filing imports and actual session quote capacity; then mature closed net outcomes by frozen source reason. Current real diagnosis remains20 successful attempts/0 available,MRNA queued fifth; 48 independent unfunded entries/0 exits. No selection/risk/budget changes, funds, loss reset, new goal window or goal-profit credit.
