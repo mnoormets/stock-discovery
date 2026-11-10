@@ -1,3 +1,4 @@
+import ArticleContents from './ArticleContents';
 import { pool } from '@/lib/db';
 import { getFilingRefreshBacklog } from '@/lib/financial-refresh-backlog';
 import type { DiscoveryEvidence as Snapshot } from '@/lib/discovery-evidence';
@@ -12,6 +13,7 @@ export default async function DiscoveryEvidence() {
       <p>Observed {scan.observedAt}. Issuer inventory: {scan.universeSize} exchange-listed ticker records ({scan.universeStatus}); this is not a count of fully analysed common stocks. {scan.web.length} retained web observations · {scan.web.filter(w=>w.tickers.length).length} linked to issuers · {scan.filings.length} retained filings / {scan.filingsBeforeLimit} before the limit.</p>
       <p>Initial source quote checks: up to 10 names per collection, never/oldest attempted first. Existing 20 history and shared daily 20 financial / 50 follow-up limits remain. Unknown identity or security type is not a capital buy signal.</p>
       <details open><summary>Searches, source status and provenance</summary><ul>{scan.sources.map(s=><li key={s.url}><a href={s.url} target="_blank" rel="noreferrer">{s.query}</a> — {s.kind}: {s.status}, {s.accepted} accepted / {s.received} received; observed {s.observedAt}; SHA256 {s.sha256??'unavailable'}</li>)}</ul></details>
+      <ArticleContents scan={scan.articles}/>
       <h3>Newer financial reports awaiting stored facts</h3>
       <p>{backlog?.used} / {backlog?.dailyLimit} financial refresh attempts today (Tallinn day): {backlog?.successful} successful, {backlog?.unavailable} unavailable, {backlog?.failed} failed; {backlog?.remaining} remaining. Backlog checked {backlog?.asOf}.</p>
       <p>{gaps.length} known issuers have a newer observed financial filing than their stored facts. They receive refresh priority within the shared budget; a notice does not mean its numbers are already imported.</p>

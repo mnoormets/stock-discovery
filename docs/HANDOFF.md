@@ -28,6 +28,9 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
+- **2026-11-10 completed article-content delivery:** article-content-v1 captures bounded public article bodies (10 attempts/collection), receipt/publication/update times, hashes and conservative source claims with opinion/rumor/future markers; direct publisher pages precede aggregator wrappers. Exact-content copies/access failures remain explicit. Source statements are not verified facts, numeric surprise/materiality, new selection rules or profit forecasts. Review and original-idea map: docs/DESIGN_REVIEW_2026-11-10.md. Final required checks:103 files/680 tests passed419.84s; lint/types/build22/22 exit0. Actual core collection123 success,6 bodies/10 attempts,4 explicit access/read failures; cached10-record replay0 requests. Restarted Today/Performance200, actual DOM10 rows/all titles-hashes match Neon; account/trade/history tables preserved. Test DB removed. Initial paragraph/import/type and cold-start failures were corrected or explicitly distinguished from final passing evidence. No screenshot or future unattended success claimed.
+
+
 - **2026-11-10 latest verified local delivery:** read-only filing backlog now shows actual shared daily attempt outcomes, remaining allowance, current eligible rank, retry timing and missing-coverage reasons. opportunity-results-v1 summarizes frozen first-known source and financial-pass groups with pending/missing outcomes, open/closed trades, wins/losses/flat and net after recorded costs. Repeated reads/independent SQL/actual rendered UI verified at19e6e2471f25fb55985e6d7e18555dd3ad00f948. No selection, execution, risk, schema or budget changes. This reporting delivery is published at3ece64d332498fd47aad3e53f3afa85375f15966 with exact-source read-only preflight42807985411 verified; actual future source/quote operation remains separate.
 
 
@@ -180,6 +183,9 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Tehtud verstapostid
 
+- 2026-11-10: full supplied design-review assessment, original-idea/code map and verified article-body evidence delivery.
+
+
 - 2026-11-10: live filing-refresh backlog and frozen-source cost-aware outcomes, actual diagnosis and required DB/UI/test proof.
 
 - 2026-11-09: equal common-stock eligibility, all validated same-collection quotes joined to radar, session-only paper capacity; required full checks and real golden DB/UI verified.
@@ -301,6 +307,9 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
+- Article-content implementation/review verified. Next: separately registered strategy protocols and issuer/period/primary-source grounding; establish dated expectations before any semantic entry signal. Preserve existing risk stop, account history and original failed deadline.
+
+
 - Financial freshness and honest outcome measurement: actual collection121 retained MRNA's newer filing and completed20 successful refreshes; MRNA is fifth among remaining eligible names. No queue/drop bug or failed request was proven; no cap increase or ticker-specific exception. Backlog/source-result visibility is locally complete. Publication and read-only preflight are complete. Now: observe budget-eligible refresh and mature forward outcomes. Original capital stop, prior losses and expired deadline remain separate from unfunded scenarios.
 
 
@@ -347,6 +356,9 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
+- Article reader, complete review and required checks are completed; verify scoped publication/preflight and the next actual unattended content capture. Do not leave article implementation in the active build queue.
+
+
 - Observe the next budget-eligible filing imports and actual session quote capacity under published code, followed by mature closed net results. Publishing and exact-source read-only preflight are complete. No selection/risk/strategy changes are part of this reporting patch.
 
 
@@ -376,6 +388,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NEXT
 
+- Separate strategy targets/horizons and rank-cohort coverage; ground article statements in issuer/period/SEC-IR evidence and genuine pre-event consensus. Then realistic spread/liquidity/corporate-action/benchmark validation before any new funded activation.
+
 - Verify the next real session quote allocation and budget-eligible filing imports, then assess source groups using actual closed net outcomes and missing coverage. Yesterday's unfunded scenarios remain dated and visible; a fresh evaluation baseline does not erase original losses or restart the failed30-day deadline. Keep funded portfolio/risk activation separate until its protocol is resolved.
 
 
@@ -392,6 +406,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - Continue CompanyFacts before/after queue observations and Nasdaq daily artifacts; inspect valid samples before changing queue order. Nasdaq listing research V1 is integrated; forward coverage remains to be observed. The daily budget is now 20; the standalone helper default remains five.
 
 ### LATER
+
+- Evaluate semantic AI against labeled claims and locked prospective net outcomes. Do not assume free survivorship-free historical data, adopt all review thresholds blindly, reset losses or remove risk protections.
 
 - Additional AI/quantitative methods only when unseen cost-aware results justify them. External notifications remain deferred. No new funded capital, loss reset, paid provider, real-money order or restarted 30-day deadline.
 
@@ -410,6 +426,9 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- Public HTTPS article reader pins validated public IPv4 destinations, checks redirects/robots, caps response/text and never runs scripts, signs in or bypasses paywalls. First successful content is frozen, not a continuous same-URL update monitor. At most60 current bodies; full attempt metadata prevents queue starvation. Earlier snapshots remain intact. This is within the user-authorized public-web scope; strategy/risk/account activation unchanged.
+
 
 - **2026-11-10 evidence correction:** a detected but unimported filing is not automatically a queue bug. Today's20 refreshes all succeeded; MRNA remains rank5 due to bounded capacity. Display facts/queue/budget separately without claiming imported numbers. Closed net requires both recorded trade sides and finite net, and no closes means Unknown. Frozen source groups overlap; do not sum their totals into portfolio P/L. First-known financial failures and unknowns stay in the denominator. No source, schema, strategy, trading, risk or budget modification.
 
@@ -818,6 +837,11 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-11-10 — article-content-v1
+
+Final required checks:103 files/680 tests passed419.84s; lint/types/build22/22 exit0. Actual core collection123 success,6 bodies/10 attempts,4 explicit access/read failures; cached10-record replay0 requests. Restarted Today/Performance200, actual DOM10 rows/all titles-hashes match Neon; account/trade/history tables preserved. Test DB removed. Initial paragraph/import/type and cold-start failures were corrected or explicitly distinguished from final passing evidence. No screenshot or future unattended success claimed.
+
 
 ### 2026-11-10 — read-only freshness backlog and net-result cohorts
 
@@ -2350,3 +2374,6 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 - Continued user's explicit publication approval while implementing their instruction to act on the diagnosed data/measurement gaps. Published source19e6e24 and sanitized delivery record3ece64d332498fd47aad3e53f3afa85375f15966 fast-forward to main; private research, account audits, logs and backups excluded.
 - Exact-source GitHub read-only preflight42807985411 completed success: DB connectionOK, readOnlyCompletiontrue, lockSkippedfalse. It did not import additional facts, capture quotes, execute a strategy or prove future profitability. Final102files/672tests, lint/typecheck/build22/22 and actual restarted Today/Performance DB/UI checks remain applicable; this follow-up changes documentation only.
 - Now: observe next budget-eligible filing imports and actual session quote capacity; then mature closed net outcomes by frozen source reason. Current real diagnosis remains20 successful attempts/0 available,MRNA queued fifth; 48 independent unfunded entries/0 exits. No selection/risk/budget changes, funds, loss reset, new goal window or goal-profit credit.
+
+### 2026-11-10 — article-content evidence and user design review
+article-content-v1 captures bounded public article bodies (10 attempts/collection), receipt/publication/update times, hashes and conservative source claims with opinion/rumor/future markers; direct publisher pages precede aggregator wrappers. Exact-content copies/access failures remain explicit. Source statements are not verified facts, numeric surprise/materiality, new selection rules or profit forecasts. Review and original-idea map: docs/DESIGN_REVIEW_2026-11-10.md. Final required checks:103 files/680 tests passed419.84s; lint/types/build22/22 exit0. Actual core collection123 success,6 bodies/10 attempts,4 explicit access/read failures; cached10-record replay0 requests. Restarted Today/Performance200, actual DOM10 rows/all titles-hashes match Neon; account/trade/history tables preserved. Test DB removed. Initial paragraph/import/type and cold-start failures were corrected or explicitly distinguished from final passing evidence. No screenshot or future unattended success claimed. Now: scoped source publication and actual future operation. Next: strategy registry/grounding and cost/corporate-action-correct validation. No capital restart, funded profit claim or automatic adoption of review risk settings.

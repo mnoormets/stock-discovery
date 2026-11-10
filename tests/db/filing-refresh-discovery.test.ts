@@ -25,9 +25,12 @@ describe('filing-driven financial refresh',()=>{
  it('records independent source failures, merges first observations idempotently and never writes orders',async()=>{
   const now=new Date('2026-11-09T17:00:00Z');const universe=JSON.stringify({fields:['cik','name','ticker','exchange'],data:[[1,'Acme Therapeutics Inc.','ACME','Nasdaq']]});
   const fetchText=async(url:string)=>{if(url.includes('company_tickers'))return universe;if(url.includes('news.google'))return '<rss><item><title>ACME stock raises guidance</title><link>https://publisher.test/a</link><pubDate>Mon, 9 Nov 2026 16:00:00 GMT</pubDate></item></rss>';throw Error('private network detail');};
-  const first=await collectDiscoveryEvidence({now,fetchText});expect(first.web).toHaveLength(1);expect(first.quoteTickers).toEqual(['ACME']);expect(first.sources.some(s=>s.status==='failed')).toBe(true);expect(JSON.stringify(first)).not.toContain('private network');
+  const first=await collectDiscoveryEvidence({now,fetchText,readArticle:async()=>{throw Error('private network detail');}});expect(first.web).toHaveLength(1);expect(first.quoteTickers).toEqual(['ACME']);expect(first.sources.some(s=>s.status==='failed')).toBe(true);expect(JSON.stringify(first)).not.toContain('private network');
   await pool.query(`INSERT INTO collection_runs(trigger,status,started_at,finished_at,duration_ms,metrics) VALUES('test','success',$1,$1,0,$2::jsonb)`,[now,JSON.stringify({discoveryEvidence:first})]);
-  const next=await collectDiscoveryEvidence({now:new Date(now.getTime()+60000),fetchText});expect(next.web).toHaveLength(1);expect(next.web[0].observedAt).toBe(first.web[0].observedAt);
+  const next=await collectDiscoveryEvidence({now:new Date(now.getTime()+60000),fetchText,readArticle:async()=>{throw Error('private network detail');}});expect(next.web).toHaveLength(1);expect(next.web[0].observedAt).toBe(first.web[0].observedAt);
+  expect(next.articles?.attempted).toBe(0);
+  const stored=(await pool.query("SELECT metrics->'discoveryEvidence'->'articles' a FROM collection_runs ORDER BY id DESC LIMIT 1")).rows[0].a;
+  expect(stored.version).toBe('article-content-v1');expect(stored.articles[0].reason).toBe('fetch_failed');
   expect((await pool.query('SELECT count(*)::int n FROM paper_capital_trades')).rows[0].n).toBe(0);
  });
 });

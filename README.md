@@ -6,6 +6,10 @@ Personaalne investeerimisjälgimise alus, mis ühendab tickeri otsingu, ettevõt
 
 ## V1 võimalused
 
+- `/today#article-contents` reads bounded public HTTPS article bodies from discovery links (up to 10 new attempts per collection), freezes receipt/publication/update dates and content hashes, and exposes event statements, reported quantities, opinions/rumors/forward-looking claims, exact-content duplicates and access failures. Article text is capped at 40,000 characters, with at most 60 bodies retained in the current snapshot and full attempt metadata to avoid queue starvation. Earlier collections remain unchanged. This rules-based evidence intake does not yet establish numeric surprise/materiality or change selection/trading rules.
+- [10 November design review and original-idea map](docs/DESIGN_REVIEW_2026-11-10.md) assesses every supplied review point, distinguishes existing valuation/thesis/insider/listing features from gaps, and orders the next work.
+
+
 - Today shows the current filing-refresh backlog with actual shared daily attempt counts, success/unavailable/failure counts, remaining allowance, queue position and retry/coverage reasons. This reads existing evidence and does not spend or reset the 20-company allowance.
 - The unified paper journal and `node scripts/audit-opportunity-book.cjs` summarize outcomes by each first-known source reason and the frozen financial-pass subset. Pending/missing entries, open/missing exits, wins/losses/flat outcomes and closed net after modeled costs stay separate; no completed trades means Unknown. Groups overlap and are not additive funded portfolio returns.
 

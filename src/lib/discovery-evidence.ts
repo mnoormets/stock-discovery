@@ -1,3 +1,4 @@
+import { collectArticleEvidence, type ArticleScan } from './article-evidence';
 import { createHash } from 'node:crypto';
 import { pool } from './db';
 import { rssItems, xmlField, webURL, xmlText } from './discovery-feeds';
@@ -15,7 +16,7 @@ export interface EvidenceSource { kind:string; query:string; url:string; status:
 export interface DiscoveryEvidence {
   version:typeof EVIDENCE_VERSION; observedAt:string; universeSize:number; universeStatus:'sec'|'stored_fallback';
   sources:EvidenceSource[]; web:WebObservation[]; filings:FilingNotice[]; filingsBeforeLimit:number;
-  quoteTickers:string[]; identityConflicts:string[];
+  quoteTickers:string[]; identityConflicts:string[]; articles?:ArticleScan;
 }
 const day=86400000, financialForms=new Set(['10-Q','10-K','20-F','40-F']);
 const cikKey=(s:string)=>/^\d{1,10}$/.test(s)?s.replace(/^0+/,''):'';
@@ -73,7 +74,7 @@ export function parseFilingRSS(text:string,now:Date):FilingNotice[] {
     return [{cik:cik.padStart(10,'0'),name:xmlField(block,'edgar:companyName'),form,filedAt,url,tickers:[],observedAt:now.toISOString()}];
   });
 }
-export async function collectDiscoveryEvidence(options:{now?:Date;fetchText?:(url:string)=>Promise<string>}={}):Promise<DiscoveryEvidence> {
+export async function collectDiscoveryEvidence(options:{now?:Date;fetchText?:(url:string)=>Promise<string>;readArticle?:(url:string)=>Promise<{url:string;html:string}>}={}):Promise<DiscoveryEvidence> {
   const clock=async()=>options.now??(await pool.query<{now:Date}>('SELECT clock_timestamp() now')).rows[0].now;
   let now=await clock();
   const known=(await pool.query('SELECT ticker,name,sec_cik FROM companies')).rows;
@@ -109,6 +110,8 @@ export async function collectDiscoveryEvidence(options:{now?:Date;fetchText?:(ur
   snapshot.filings=[...filings.values()].sort((a,b)=>Number(knownCIKs.has(cikKey(b.cik)))-Number(knownCIKs.has(cikKey(a.cik)))||b.filedAt.localeCompare(a.filedAt)||a.url.localeCompare(b.url)).slice(0,1000);
   const web=new Map<string,WebObservation>();for(const w of [...(previous?.web??[]),...snapshot.web])if((w.publishedAt==null?Date.parse(w.observedAt)>=now.getTime()-7*day:Date.parse(w.publishedAt)>=now.getTime()-7*day)&&Date.parse(w.observedAt)<=now.getTime()) {const old=web.get(w.id);web.set(w.id,old&&old.observedAt<w.observedAt?old:w);}
   snapshot.web=[...web.values()].sort((a,b)=>(b.publishedAt??'').localeCompare(a.publishedAt??'')||a.id.localeCompare(b.id)).slice(0,200);
+  snapshot.articles=await collectArticleEvidence(snapshot.web,previous?.articles,now,options.readArticle,clock);
+  now=await clock();snapshot.observedAt=now.toISOString();
   const names=[...new Set([...snapshot.web.flatMap(w=>w.tickers),...snapshot.filings.flatMap(f=>f.tickers)])];
   const identities=new Map(universe.map(r=>[r.ticker,r.cik]));const conflicts=new Set(known.filter(r=>names.includes(r.ticker)&&r.sec_cik&&identities.has(r.ticker)&&cikKey(r.sec_cik)!==cikKey(identities.get(r.ticker)!)).map(r=>r.ticker));snapshot.identityConflicts=[...conflicts];
   const attempted=(await pool.query("SELECT x ticker,max(r.finished_at) at FROM collection_runs r CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(r.metrics->'marketRadar'->'sourceDiscovery'->'requested','[]'::jsonb)) x WHERE r.status='success' AND r.finished_at<=$1 GROUP BY x",[now.toISOString()])).rows;
