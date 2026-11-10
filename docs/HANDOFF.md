@@ -1,6 +1,6 @@
 # Stock Discovery – master plan ja töö jätkamise memo
 
-Uuendatud: 2026-11-05
+Uuendatud: 2026-11-10
 
 See on projekti elav master-dokument ning toote ja tehnilise seisu peamine tõeallikas. Iga sisulise arendussessiooni järel tuleb siin uuendada tehtut, praegust fookust, järgmist plaani, otsuseid ja testitõendeid. Repo juurkausta `AGENTS.md` teeb selle tulevastele Codexi sessioonidele kohustuslikuks.
 
@@ -28,7 +28,8 @@ Edu ei mõõdeta tagantjärele ideaalse tipu tabamisega. Eesmärk on parandada o
 
 ## Praegune töötav seis
 
-- **2026-11-09 latest verified local delivery:** canonical rklb-discovery-v5 removes common-stock name/reference exclusions; all-collected-us-equities-v1 reuses same-collection validated Yahoo lookups without new requests. Actual collection120 has274 radar names and106 accepted lookup rows; RKLB is visible with original quote time and exclusions. Canonical run140 keeps prior decisions/model history unchanged. Unified tracking now reserves up to10 regular-session slots within the existing50/day cap in addition to existing IPO reservation; capital/SPY priority retained. 48 independent unfunded scenario entries/0 exits, no original-goal profit. Source578823d0158f12b9a3017ff7abeb9bd5edb2877a verified and published at7bcb295c3eda01bf7f38cc9b300a1570d036fbfe. Exact-source remote read-only preflight42697378287 succeeded; actual next-session/source-provider operation remains unverified.
+- **2026-11-10 latest verified local delivery:** read-only filing backlog now shows actual shared daily attempt outcomes, remaining allowance, current eligible rank, retry timing and missing-coverage reasons. opportunity-results-v1 summarizes frozen first-known source and financial-pass groups with pending/missing outcomes, open/closed trades, wins/losses/flat and net after recorded costs. Repeated reads/independent SQL/actual rendered UI verified at19e6e2471f25fb55985e6d7e18555dd3ad00f948. No selection, execution, risk, schema or budget changes. This new reporting delivery is not yet published; prior discovery/session fixes remain published.
+
 
 
 
@@ -179,6 +180,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Tehtud verstapostid
 
+- 2026-11-10: live filing-refresh backlog and frozen-source cost-aware outcomes, actual diagnosis and required DB/UI/test proof.
+
 - 2026-11-09: equal common-stock eligibility, all validated same-collection quotes joined to radar, session-only paper capacity; required full checks and real golden DB/UI verified.
 
 - 2026-11-09: all three requested implementations locally verified (active search, filing priority, unified cost journal); source-only publication pending.
@@ -298,7 +301,8 @@ Growth/Health nimekirjades kuvatakse vähemalt 70 Coverage tulemused enne madala
 
 ## Praegune fookus
 
-- General name-eligibility, lookup-to-radar coverage and unified session-capacity fixes are implemented and verified locally. Publication and exact-source read-only preflight are complete. Now is next-session/source-provider runtime verification and prospective net outcomes. Do not leave completed fixes in the active build queue. Preserve original stopped account, prior losses and expired original deadline; funded risk/activation remains separate.
+- Financial freshness and honest outcome measurement: actual collection121 retained MRNA's newer filing and completed20 successful refreshes; MRNA is fifth among remaining eligible names. No queue/drop bug or failed request was proven; no cap increase or ticker-specific exception. Backlog/source-result visibility is locally complete. Now: publish the verified reporting patch, then observe budget-eligible refresh and mature forward outcomes. Original capital stop, prior losses and expired deadline remain separate from unfunded scenarios.
+
 
 
 ### Varasema fookuse ajalugu — superseded by 2026-11-09 state
@@ -343,7 +347,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NOW - järgmine töö
 
-- Observe next actual pre-open/session allocation, budget-eligible financial refresh and mature cost-aware exits under the published code. The new exact-source remote read-only preflight succeeded; it does not prove actual remote search/provider availability or future fills.
+- Complete source-only publication and exact-source preflight for the verified reporting patch under existing authorization. No further selection/risk/strategy changes are part of this patch.
+
 
 
 ### Varasem NOW — historical, not the active plan
@@ -371,7 +376,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ### NEXT
 
-- Observe next actual pre-open/session quote allocation and budget-eligible filing refresh, then mature prospective cost-aware entry/exit results. Existing model rules still exclude negative OCF, restrict tier slots and defer histories above20; visible radar names do not guarantee a strategy pick or profit. Resolve corporate actions and future capital/risk activation separately.
+- Verify the next real session quote allocation and budget-eligible filing imports, then assess source groups using actual closed net outcomes and missing coverage. Yesterday's unfunded scenarios remain dated and visible; a fresh evaluation baseline does not erase original losses or restart the failed30-day deadline. Keep funded portfolio/risk activation separate until its protocol is resolved.
+
 
 
 ### Varasem NEXT — historical, not the active plan
@@ -404,6 +410,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 - A short paper period can validate operations and usability; it cannot establish reliable profits. Preserve failures, unknowns, version boundaries and as-known-at-the-time history.
 
 ## Olulised tehnilised ja tooteotsused
+
+- **2026-11-10 evidence correction:** a detected but unimported filing is not automatically a queue bug. Today's20 refreshes all succeeded; MRNA remains rank5 due to bounded capacity. Display facts/queue/budget separately without claiming imported numbers. Closed net requires both recorded trade sides and finite net, and no closes means Unknown. Frozen source groups overlap; do not sum their totals into portfolio P/L. First-known financial failures and unknowns stay in the denominator. No source, schema, strategy, trading, risk or budget modification.
 
 - **2026-11-09 scope:** no common-stock name/fame-only exclusions; canonical changes are v5 with old V1-V4 results retained. Lookup metadata must explicitly establish Yahoo USD US EQUITY and exchange; never infer missing classification or convert FMP-only data. Session-only unified quotes require REGULAR state and <=20minute timestamp. Preserve50/day budget, existing IPO reservation and capital/SPY priority. These fixes do not alter financial thresholds, create a hindsight rebound rule, fund the independent tickets or reactivate capital.
 
@@ -553,7 +561,8 @@ The database startup ambiguity is resolved. Host Next startup now rejects the ex
 
 ## Avatud sõltuvused ja otsused
 
-- Current: real remote/next-session verification, prospective matured net outcomes and corporate-action reconciliation. Original funded risk/activation decision remains separate; original deadline failed and is not restarted.
+- Current: reporting-patch publication/preflight, actual budget-eligible refresh and next-session quotes, mature prospective net outcomes and corporate-action reconciliation; future funded risk/activation stays separate.
+
 
 
 ### Earlier dependency notes — historical context, verify against current state
@@ -809,6 +818,13 @@ Ei testita (teadlikult, selle faasi skoobist väljas):
 - catalyst evidence V2, Data Freshness V1 detailarvutus, sector-relative, frequency, valuation, under-recognition, teesi versioonimine, portfell, watchlist ja alert'id.
 
 ## Viimane testitud seis
+
+### 2026-11-10 — read-only freshness backlog and net-result cohorts
+
+- Required checks:102 files/672 tests passed (427.70s), lint/typecheck exit0, Docker production build22/22 pages. App restarted only after suite; Today/Performance HTTP200. All40 displayed backlog rows and8 result-group rows matched golden DB; remaining budget, MRNA rank/reason, Unknown net, cohort overlap, unfunded scope and risk stop verified. Isolated test DB removed.
+- Actual gold source read-only audit:20 successful refresh attempts/0 remaining,278 newer-filing gaps,MRNA rank5/new6Nov filing versus31Jul stored facts; no fake refresh or budget override. Outcome summary148 first-qualified names/48 independent unfunded entries/0 exits, closed netUnknown, independent SQL agrees. Repeat reads deterministic. Hashes matched all financial facts/statuses, accounts, trades/control orders, journal events, collection/decision history and tracking attempts.
+- Docker was stopped; restored verified per-user installation without changing settings/security. Initial container typecheck failed because generated Next type files were missing while dev initialized; required production build regenerated them and final standard typecheck passed. Focused2files/5tests passed6.85s before full suite. Existing real-ledger cost integration additionally verifies summary net equals independently calculated commissions/slippage.
+
 
 ### 2026-11-09 — equal eligibility, joined quotes and regular-session capacity
 
@@ -2312,3 +2328,18 @@ Publication verified: feature 5c1cd2980ff9740a6378b4fc6b14dd31d719d4b1 pushed to
 - Continued under the user's explicit publication authorization and subsequent instruction to continue the repairs. Published the reviewed source-only fixes and sanitized documentation fast-forward to main at7bcb295c3eda01bf7f38cc9b300a1570d036fbfe. Source code remains578823d, prior real collection120/canonicalv5 run140 at37fb421; delivery commit changes documentation only after the tested source. No private research/logs/dumps/account audits published.
 - Exact-SHA read-only GitHub run42697378287 completed success: golden DB connectionOK, readOnlyCompletiontrue, lockSkippedfalse. It did not run a new core/source collection, pricing executor, funded order, or create proof of future scheduled success. Final100files/667tests, lint/build/typechecks, post-suite restart and actual rendered golden DB/UI checks remain valid; app source unchanged.
 - Current status: published fixes, awaiting real next-session budget allocation and prospective mature exits. Existing48 independent unfunded entries/0 exits, no newly proven goal profit; capital stop, all prior losses and original missed deadline preserved. No new20k account, top-up, real trades, paid providers or risk override.
+
+
+### 2026-11-10 — freshness diagnosis and measured-method report verified locally
+
+- **2026-11-10 latest verified local delivery:** read-only filing backlog now shows actual shared daily attempt outcomes, remaining allowance, current eligible rank, retry timing and missing-coverage reasons. opportunity-results-v1 summarizes frozen first-known source and financial-pass groups with pending/missing outcomes, open/closed trades, wins/losses/flat and net after recorded costs. Repeated reads/independent SQL/actual rendered UI verified at19e6e2471f25fb55985e6d7e18555dd3ad00f948. No selection, execution, risk, schema or budget changes. This new reporting delivery is not yet published; prior discovery/session fixes remain published.
+
+- Financial freshness and honest outcome measurement: actual collection121 retained MRNA's newer filing and completed20 successful refreshes; MRNA is fifth among remaining eligible names. No queue/drop bug or failed request was proven; no cap increase or ticker-specific exception. Backlog/source-result visibility is locally complete. Now: publish the verified reporting patch, then observe budget-eligible refresh and mature forward outcomes. Original capital stop, prior losses and expired deadline remain separate from unfunded scenarios.
+
+### 2026-11-10 — read-only freshness backlog and net-result cohorts
+
+- Required checks:102 files/672 tests passed (427.70s), lint/typecheck exit0, Docker production build22/22 pages. App restarted only after suite; Today/Performance HTTP200. All40 displayed backlog rows and8 result-group rows matched golden DB; remaining budget, MRNA rank/reason, Unknown net, cohort overlap, unfunded scope and risk stop verified. Isolated test DB removed.
+- Actual gold source read-only audit:20 successful refresh attempts/0 remaining,278 newer-filing gaps,MRNA rank5/new6Nov filing versus31Jul stored facts; no fake refresh or budget override. Outcome summary148 first-qualified names/48 independent unfunded entries/0 exits, closed netUnknown, independent SQL agrees. Repeat reads deterministic. Hashes matched all financial facts/statuses, accounts, trades/control orders, journal events, collection/decision history and tracking attempts.
+- Docker was stopped; restored verified per-user installation without changing settings/security. Initial container typecheck failed because generated Next type files were missing while dev initialized; required production build regenerated them and final standard typecheck passed. Focused2files/5tests passed6.85s before full suite. Existing real-ledger cost integration additionally verifies summary net equals independently calculated commissions/slippage.
+
+- Completed: actual budget diagnosis, current backlog/retry visibility and frozen-source net-outcome report, standard checks and real DB/UI verification. Now/Next updated. No new paper/real trades, funded account, funds, strategy activation, history reset or profit claim. New source-only patch ready for publication under the user's existing authorization; private research/logs/account audits remain excluded.
